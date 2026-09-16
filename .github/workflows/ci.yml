@@ -60,6 +60,10 @@ jobs:
 
       - run: npm ci
 
+      # The playground is not a workspace member — see D-012 — so it installs
+      # separately.
+      - run: npm --prefix playground ci
+
       # No system Chromium here, so playwright.config.ts falls back to
       # Playwright's own managed browser.
       - name: Install Chromium

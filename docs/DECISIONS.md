@@ -200,3 +200,30 @@ element, so the palette resolves correctly where those declarations appear.
 must be re-declared at every scope where the target changes. Reading the CSS
 would never have caught this; only a computed-style assertion in a real browser
 did.
+
+## D-012 — The playground is not a workspace member
+
+**Date:** 2026-09-16 · **Status:** accepted · **Amends:** D-005
+
+The library lives at the repository root, and `playground/` installs
+independently (`npm --prefix playground install`) rather than as an npm
+workspace.
+
+The root-as-workspace-root layout broke twice: npm does not symlink the root
+package into `node_modules`, so Next could not resolve `pixel-perfect`, and
+changesets only sees workspace *members*, so it reported the library "not in the
+workspace".
+
+The obvious fix is a `packages/ui` monorepo. It was rejected because **npm
+cannot install a git dependency from a subdirectory of a repository.** Moving the
+library out of the root would leave publishing to a registry as the only way to
+consume it, which is precisely the constraint worth avoiding while there is one
+consumer and the API changes weekly.
+
+So: library at the root, playground beside it with its own lockfile. The cost is
+a second `npm ci` in CI and no dependency deduplication in the playground —
+neither of which affects anything shipped.
+
+**Revisit if** the app and library end up in one repo anyway, or a second
+publishable package appears. At that point a workspace is right and the git
+dependency route no longer matters.

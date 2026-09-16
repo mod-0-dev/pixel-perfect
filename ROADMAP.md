@@ -24,9 +24,9 @@ column is `done`.
 
 ### Current state
 
-- **In flight:** 0.8 Changesets + release (`build`)
-- **Next up:** Tier 1 — Atoms
-- **Done:** 9 / 77 tracked items (10 foundations + 67 components)
+- **In flight:** _none_
+- **Next up:** Tier 1 — Atoms (1.1 `Text`). 0.10 docs site is deferred, not blocking
+- **Done:** 10 / 77 tracked items (10 foundations + 67 components)
 
 ---
 
@@ -43,7 +43,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
 | 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines are Linux-only by design; CI is the arbiter. Includes harness self-check assertions |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
-| 0.8 | Changesets + release pipeline | `build` | 0.1 | Docs site split out to 0.10 — it is an app, and it should not block Tier 1 |
+| 0.8 | Changesets + release pipeline | `done` | 0.1 | Versions, changelogs and tags by default; npm publish is opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
 
