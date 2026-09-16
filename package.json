@@ -21,6 +21,7 @@
     "build": "npm run build:js && npm run build:css",
     "build:js": "tsc -p tsconfig.build.json",
     "build:css": "lightningcss --bundle --targets 'defaults' src/styles/index.css -o dist/pixel-perfect.css",
+    "prepare": "npm run build",
     "tokens": "node scripts/generate-tokens.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "npm run lint:css && npm run lint:rules && npm run lint:contrast && npm run lint:self-test",
