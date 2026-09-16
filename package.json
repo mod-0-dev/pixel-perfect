@@ -17,6 +17,9 @@
   "files": [
     "dist"
   ],
+  "workspaces": [
+    "playground"
+  ],
   "scripts": {
     "build": "npm run build:js && npm run build:css",
     "build:js": "tsc -p tsconfig.build.json",
@@ -28,7 +31,8 @@
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:rules": "node scripts/lint-rules.mjs",
     "lint:contrast": "node scripts/check-contrast.mjs",
-    "lint:self-test": "node scripts/test-lint.mjs"
+    "lint:self-test": "node scripts/test-lint.mjs",
+    "dev": "npm run build:css && npm run --workspace playground dev"
   },
   "peerDependencies": {
     "react": ">=18",

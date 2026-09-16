@@ -35,7 +35,7 @@ function tokensIn(block) {
 // data-pp-theme="dark" block (identical to the prefers-color-scheme one).
 const THEMES = {
   light: tokensIn(themeBlock(':root {')),
-  dark: tokensIn(themeBlock(':root[data-pp-theme="dark"]')),
+  dark: tokensIn(themeBlock('[data-pp-theme="dark"] {')),
 };
 
 const CHECKS = [

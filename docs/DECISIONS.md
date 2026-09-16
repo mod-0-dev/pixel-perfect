@@ -147,3 +147,24 @@ stylesheet with no components in it. A linter that has never been observed
 failing provides no evidence about anything. Rules that are not tested decay
 into rules that are not enforced, which is how "no component sets its own
 width" becomes a comment in a README.
+
+## D-010 — Themes bind to any element, not to `:root`
+
+**Date:** 2026-09-16 · **Status:** accepted · **Amends:** D-008
+
+Token themes were originally declared on `:root` and `:root[data-pp-theme]`.
+Building the playground proved that unworkable: with themes pinned to the
+document root, two themes cannot be rendered side by side, and a real app cannot
+have a dark sidebar in a light page or a light popover over a dark one.
+
+`primitives.css` and `semantic.css` now emit four blocks — `:root` (light
+default), `[data-pp-theme="light"]`, `:root:not([data-pp-theme])` under
+`prefers-color-scheme: dark`, and `[data-pp-theme="dark"]`. Custom properties
+inherit, so the nearest ancestor carrying the attribute wins and themes nest
+arbitrarily in both directions.
+
+Light has to be re-declared explicitly. Without it, nesting only works one way:
+a dark subtree inside a light page, never the reverse.
+
+**This is why the playground exists.** The flaw was invisible in the token files
+and obvious within minutes of trying to render both themes at once.

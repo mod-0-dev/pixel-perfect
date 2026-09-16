@@ -175,84 +175,172 @@
     --pp-z-tooltip: 1400;
   }
 
-  /* Dark theme. Applied by `prefers-color-scheme` unless an explicit
-     data-pp-theme is set, and always by data-pp-theme="dark". */
+  /*
+   * Themes bind to [data-pp-theme] on ANY element, not just :root. Custom
+   * properties inherit, so the nearest ancestor carrying the attribute wins.
+   * That is what makes a dark sidebar inside a light app — or both themes
+   * rendered side by side in the playground — possible at all.
+   *
+   * Light is re-declared explicitly so a light subtree can sit inside a dark
+   * one; without it, nesting only works in one direction.
+   */
+  [data-pp-theme="light"] {
+    --pp-palette-neutral-1: oklch(99.4% 0.0002 258);
+    --pp-palette-neutral-2: oklch(98% 0.0005 258);
+    --pp-palette-neutral-3: oklch(95.8% 0.0009 258);
+    --pp-palette-neutral-4: oklch(93.8% 0.0013 258);
+    --pp-palette-neutral-5: oklch(91.5% 0.0017 258);
+    --pp-palette-neutral-6: oklch(88.8% 0.0021 258);
+    --pp-palette-neutral-7: oklch(85% 0.0026 258);
+    --pp-palette-neutral-8: oklch(78% 0.0038 258);
+    --pp-palette-neutral-9: oklch(50% 0.008 258);
+    --pp-palette-neutral-10: oklch(45.5% 0.0078 258);
+    --pp-palette-neutral-11: oklch(53.41% 0.0058 258);
+    --pp-palette-neutral-12: oklch(25% 0.0026 258);
+    --pp-palette-neutral-on-solid: oklch(100% 0 0);
+    --pp-palette-neutral-focus: oklch(65.98% 0.0068 258);
+
+    --pp-palette-accent-1: oklch(99.4% 0.0028 258);
+    --pp-palette-accent-2: oklch(98% 0.0095 258);
+    --pp-palette-accent-3: oklch(95.8% 0.0187 258);
+    --pp-palette-accent-4: oklch(93.8% 0.0272 258);
+    --pp-palette-accent-5: oklch(91.5% 0.0357 258);
+    --pp-palette-accent-6: oklch(88.8% 0.0442 258);
+    --pp-palette-accent-7: oklch(85% 0.0561 258);
+    --pp-palette-accent-8: oklch(78% 0.0816 258);
+    --pp-palette-accent-9: oklch(55% 0.17 258);
+    --pp-palette-accent-10: oklch(50.5% 0.1649 258);
+    --pp-palette-accent-11: oklch(53.61% 0.1224 258);
+    --pp-palette-accent-12: oklch(25% 0.0544 258);
+    --pp-palette-accent-on-solid: oklch(100% 0 0);
+    --pp-palette-accent-focus: oklch(66.18% 0.1445 258);
+
+    --pp-palette-danger-1: oklch(99.4% 0.0029 25);
+    --pp-palette-danger-2: oklch(98% 0.0097 25);
+    --pp-palette-danger-3: oklch(95.8% 0.0207 25);
+    --pp-palette-danger-4: oklch(93.8% 0.0304 25);
+    --pp-palette-danger-5: oklch(91.5% 0.0399 25);
+    --pp-palette-danger-6: oklch(88.8% 0.0494 25);
+    --pp-palette-danger-7: oklch(85% 0.0627 25);
+    --pp-palette-danger-8: oklch(78% 0.0912 25);
+    --pp-palette-danger-9: oklch(57% 0.19 25);
+    --pp-palette-danger-10: oklch(52.5% 0.1843 25);
+    --pp-palette-danger-11: oklch(54.87% 0.1368 25);
+    --pp-palette-danger-12: oklch(25% 0.0608 25);
+    --pp-palette-danger-on-solid: oklch(100% 0 0);
+    --pp-palette-danger-focus: oklch(67.86% 0.1615 25);
+
+    --pp-palette-success-1: oklch(99.4% 0.0045 150);
+    --pp-palette-success-2: oklch(98% 0.009 150);
+    --pp-palette-success-3: oklch(95.8% 0.0165 150);
+    --pp-palette-success-4: oklch(93.8% 0.024 150);
+    --pp-palette-success-5: oklch(91.5% 0.0315 150);
+    --pp-palette-success-6: oklch(88.8% 0.039 150);
+    --pp-palette-success-7: oklch(85% 0.0495 150);
+    --pp-palette-success-8: oklch(78% 0.072 150);
+    --pp-palette-success-9: oklch(53% 0.1461 150);
+    --pp-palette-success-10: oklch(48.5% 0.1337 150);
+    --pp-palette-success-11: oklch(52.37% 0.108 150);
+    --pp-palette-success-12: oklch(25% 0.048 150);
+    --pp-palette-success-on-solid: oklch(100% 0 0);
+    --pp-palette-success-focus: oklch(64.62% 0.1275 150);
+
+    --pp-palette-warning-1: oklch(99.4% 0.0048 80);
+    --pp-palette-warning-2: oklch(98% 0.0096 80);
+    --pp-palette-warning-3: oklch(95.8% 0.0176 80);
+    --pp-palette-warning-4: oklch(93.8% 0.0256 80);
+    --pp-palette-warning-5: oklch(91.5% 0.0336 80);
+    --pp-palette-warning-6: oklch(88.8% 0.0416 80);
+    --pp-palette-warning-7: oklch(85% 0.0528 80);
+    --pp-palette-warning-8: oklch(78% 0.0768 80);
+    --pp-palette-warning-9: oklch(80% 0.16 80);
+    --pp-palette-warning-10: oklch(75.5% 0.1552 80);
+    --pp-palette-warning-11: oklch(53.75% 0.1114 80);
+    --pp-palette-warning-12: oklch(25% 0.0512 80);
+    --pp-palette-warning-on-solid: oklch(22% 0.0462 80);
+    --pp-palette-warning-focus: oklch(66.4% 0.136 80);
+
+    --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.06), 0 1px 3px oklch(0% 0 0 / 0.08);
+    --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.06), 0 4px 12px oklch(0% 0 0 / 0.1);
+    --pp-shadow-3: 0 8px 16px oklch(0% 0 0 / 0.08), 0 16px 40px oklch(0% 0 0 / 0.14);
+  }
+
   @media (prefers-color-scheme: dark) {
-    :root:not([data-pp-theme="light"]) {
-    --pp-palette-neutral-1: oklch(17.8% 0.0002 258);
-    --pp-palette-neutral-2: oklch(21.3% 0.0005 258);
-    --pp-palette-neutral-3: oklch(25.5% 0.0009 258);
-    --pp-palette-neutral-4: oklch(28.8% 0.0013 258);
-    --pp-palette-neutral-5: oklch(32% 0.0017 258);
-    --pp-palette-neutral-6: oklch(36.2% 0.0021 258);
-    --pp-palette-neutral-7: oklch(42.5% 0.0026 258);
-    --pp-palette-neutral-8: oklch(51% 0.0038 258);
-    --pp-palette-neutral-9: oklch(70% 0.008 258);
-    --pp-palette-neutral-10: oklch(74.5% 0.0078 258);
-    --pp-palette-neutral-11: oklch(63.46% 0.0058 258);
-    --pp-palette-neutral-12: oklch(93% 0.0026 258);
-    --pp-palette-neutral-on-solid: oklch(20% 0.0032 258);
-    --pp-palette-neutral-focus: oklch(49.35% 0.0068 258);
+    :root:not([data-pp-theme]) {
+      --pp-palette-neutral-1: oklch(17.8% 0.0002 258);
+      --pp-palette-neutral-2: oklch(21.3% 0.0005 258);
+      --pp-palette-neutral-3: oklch(25.5% 0.0009 258);
+      --pp-palette-neutral-4: oklch(28.8% 0.0013 258);
+      --pp-palette-neutral-5: oklch(32% 0.0017 258);
+      --pp-palette-neutral-6: oklch(36.2% 0.0021 258);
+      --pp-palette-neutral-7: oklch(42.5% 0.0026 258);
+      --pp-palette-neutral-8: oklch(51% 0.0038 258);
+      --pp-palette-neutral-9: oklch(70% 0.008 258);
+      --pp-palette-neutral-10: oklch(74.5% 0.0078 258);
+      --pp-palette-neutral-11: oklch(63.46% 0.0058 258);
+      --pp-palette-neutral-12: oklch(93% 0.0026 258);
+      --pp-palette-neutral-on-solid: oklch(20% 0.0032 258);
+      --pp-palette-neutral-focus: oklch(49.35% 0.0068 258);
 
-    --pp-palette-accent-1: oklch(17.8% 0.0051 258);
-    --pp-palette-accent-2: oklch(21.3% 0.0102 258);
-    --pp-palette-accent-3: oklch(25.5% 0.0187 258);
-    --pp-palette-accent-4: oklch(28.8% 0.0272 258);
-    --pp-palette-accent-5: oklch(32% 0.0357 258);
-    --pp-palette-accent-6: oklch(36.2% 0.0442 258);
-    --pp-palette-accent-7: oklch(42.5% 0.0561 258);
-    --pp-palette-accent-8: oklch(51% 0.0816 258);
-    --pp-palette-accent-9: oklch(70% 0.1582 258);
-    --pp-palette-accent-10: oklch(74.5% 0.1322 258);
-    --pp-palette-accent-11: oklch(63.59% 0.1224 258);
-    --pp-palette-accent-12: oklch(93% 0.0338 258);
-    --pp-palette-accent-on-solid: oklch(20% 0.068 258);
-    --pp-palette-accent-focus: oklch(49.7% 0.1445 258);
+      --pp-palette-accent-1: oklch(17.8% 0.0051 258);
+      --pp-palette-accent-2: oklch(21.3% 0.0102 258);
+      --pp-palette-accent-3: oklch(25.5% 0.0187 258);
+      --pp-palette-accent-4: oklch(28.8% 0.0272 258);
+      --pp-palette-accent-5: oklch(32% 0.0357 258);
+      --pp-palette-accent-6: oklch(36.2% 0.0442 258);
+      --pp-palette-accent-7: oklch(42.5% 0.0561 258);
+      --pp-palette-accent-8: oklch(51% 0.0816 258);
+      --pp-palette-accent-9: oklch(70% 0.1582 258);
+      --pp-palette-accent-10: oklch(74.5% 0.1322 258);
+      --pp-palette-accent-11: oklch(63.59% 0.1224 258);
+      --pp-palette-accent-12: oklch(93% 0.0338 258);
+      --pp-palette-accent-on-solid: oklch(20% 0.068 258);
+      --pp-palette-accent-focus: oklch(49.7% 0.1445 258);
 
-    --pp-palette-danger-1: oklch(17.8% 0.0057 25);
-    --pp-palette-danger-2: oklch(21.3% 0.0114 25);
-    --pp-palette-danger-3: oklch(25.5% 0.0209 25);
-    --pp-palette-danger-4: oklch(28.8% 0.0304 25);
-    --pp-palette-danger-5: oklch(32% 0.0399 25);
-    --pp-palette-danger-6: oklch(36.2% 0.0494 25);
-    --pp-palette-danger-7: oklch(42.5% 0.0627 25);
-    --pp-palette-danger-8: oklch(51% 0.0912 25);
-    --pp-palette-danger-9: oklch(68% 0.19 25);
-    --pp-palette-danger-10: oklch(72.5% 0.1702 25);
-    --pp-palette-danger-11: oklch(64.89% 0.1368 25);
-    --pp-palette-danger-12: oklch(93% 0.0354 25);
-    --pp-palette-danger-on-solid: oklch(20% 0.076 25);
-    --pp-palette-danger-focus: oklch(51.28% 0.1615 25);
+      --pp-palette-danger-1: oklch(17.8% 0.0057 25);
+      --pp-palette-danger-2: oklch(21.3% 0.0114 25);
+      --pp-palette-danger-3: oklch(25.5% 0.0209 25);
+      --pp-palette-danger-4: oklch(28.8% 0.0304 25);
+      --pp-palette-danger-5: oklch(32% 0.0399 25);
+      --pp-palette-danger-6: oklch(36.2% 0.0494 25);
+      --pp-palette-danger-7: oklch(42.5% 0.0627 25);
+      --pp-palette-danger-8: oklch(51% 0.0912 25);
+      --pp-palette-danger-9: oklch(68% 0.19 25);
+      --pp-palette-danger-10: oklch(72.5% 0.1702 25);
+      --pp-palette-danger-11: oklch(64.89% 0.1368 25);
+      --pp-palette-danger-12: oklch(93% 0.0354 25);
+      --pp-palette-danger-on-solid: oklch(20% 0.076 25);
+      --pp-palette-danger-focus: oklch(51.28% 0.1615 25);
 
-    --pp-palette-success-1: oklch(17.8% 0.0045 150);
-    --pp-palette-success-2: oklch(21.3% 0.009 150);
-    --pp-palette-success-3: oklch(25.5% 0.0165 150);
-    --pp-palette-success-4: oklch(28.8% 0.024 150);
-    --pp-palette-success-5: oklch(32% 0.0315 150);
-    --pp-palette-success-6: oklch(36.2% 0.039 150);
-    --pp-palette-success-7: oklch(42.5% 0.0495 150);
-    --pp-palette-success-8: oklch(51% 0.072 150);
-    --pp-palette-success-9: oklch(72% 0.15 150);
-    --pp-palette-success-10: oklch(76.5% 0.1455 150);
-    --pp-palette-success-11: oklch(62.41% 0.108 150);
-    --pp-palette-success-12: oklch(93% 0.048 150);
-    --pp-palette-success-on-solid: oklch(20% 0.0558 150);
-    --pp-palette-success-focus: oklch(48% 0.1275 150);
+      --pp-palette-success-1: oklch(17.8% 0.0045 150);
+      --pp-palette-success-2: oklch(21.3% 0.009 150);
+      --pp-palette-success-3: oklch(25.5% 0.0165 150);
+      --pp-palette-success-4: oklch(28.8% 0.024 150);
+      --pp-palette-success-5: oklch(32% 0.0315 150);
+      --pp-palette-success-6: oklch(36.2% 0.039 150);
+      --pp-palette-success-7: oklch(42.5% 0.0495 150);
+      --pp-palette-success-8: oklch(51% 0.072 150);
+      --pp-palette-success-9: oklch(72% 0.15 150);
+      --pp-palette-success-10: oklch(76.5% 0.1455 150);
+      --pp-palette-success-11: oklch(62.41% 0.108 150);
+      --pp-palette-success-12: oklch(93% 0.048 150);
+      --pp-palette-success-on-solid: oklch(20% 0.0558 150);
+      --pp-palette-success-focus: oklch(48% 0.1275 150);
 
-    --pp-palette-warning-1: oklch(17.8% 0.0048 80);
-    --pp-palette-warning-2: oklch(21.3% 0.0096 80);
-    --pp-palette-warning-3: oklch(25.5% 0.0176 80);
-    --pp-palette-warning-4: oklch(28.8% 0.0256 80);
-    --pp-palette-warning-5: oklch(32% 0.0336 80);
-    --pp-palette-warning-6: oklch(36.2% 0.0416 80);
-    --pp-palette-warning-7: oklch(42.5% 0.0528 80);
-    --pp-palette-warning-8: oklch(51% 0.0768 80);
-    --pp-palette-warning-9: oklch(82% 0.16 80);
-    --pp-palette-warning-10: oklch(86.5% 0.1291 80);
-    --pp-palette-warning-11: oklch(63.77% 0.1152 80);
-    --pp-palette-warning-12: oklch(93% 0.0512 80);
-    --pp-palette-warning-on-solid: oklch(20% 0.0422 80);
-    --pp-palette-warning-focus: oklch(49.68% 0.103 80);
+      --pp-palette-warning-1: oklch(17.8% 0.0048 80);
+      --pp-palette-warning-2: oklch(21.3% 0.0096 80);
+      --pp-palette-warning-3: oklch(25.5% 0.0176 80);
+      --pp-palette-warning-4: oklch(28.8% 0.0256 80);
+      --pp-palette-warning-5: oklch(32% 0.0336 80);
+      --pp-palette-warning-6: oklch(36.2% 0.0416 80);
+      --pp-palette-warning-7: oklch(42.5% 0.0528 80);
+      --pp-palette-warning-8: oklch(51% 0.0768 80);
+      --pp-palette-warning-9: oklch(82% 0.16 80);
+      --pp-palette-warning-10: oklch(86.5% 0.1291 80);
+      --pp-palette-warning-11: oklch(63.77% 0.1152 80);
+      --pp-palette-warning-12: oklch(93% 0.0512 80);
+      --pp-palette-warning-on-solid: oklch(20% 0.0422 80);
+      --pp-palette-warning-focus: oklch(49.68% 0.103 80);
 
       --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4);
       --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.32), 0 4px 12px oklch(0% 0 0 / 0.44);
@@ -260,7 +348,7 @@
     }
   }
 
-  :root[data-pp-theme="dark"] {
+  [data-pp-theme="dark"] {
     --pp-palette-neutral-1: oklch(17.8% 0.0002 258);
     --pp-palette-neutral-2: oklch(21.3% 0.0005 258);
     --pp-palette-neutral-3: oklch(25.5% 0.0009 258);

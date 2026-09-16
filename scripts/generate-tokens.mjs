@@ -184,12 +184,12 @@ function rampCss(name, ramp, indent) {
   return lines.join('\n');
 }
 
-function build(themeName) {
+function build(themeName, indent = '    ') {
   const out = [];
   const report = [];
   for (const [name, spec] of Object.entries(HUES)) {
     const ramp = buildRamp(name, spec, themeName);
-    out.push(rampCss(name, ramp, '    '));
+    out.push(rampCss(name, ramp, indent));
     report.push({
       hue: name,
       theme: themeName,
@@ -205,6 +205,8 @@ function build(themeName) {
 
 const light = build('light');
 const dark = build('dark');
+const lightNested = build('light', '    ');
+const darkNested = build('dark', '      ');
 
 const header = `/*
  * PRIMITIVE TOKENS — GENERATED FILE, DO NOT EDIT BY HAND.
@@ -312,11 +314,26 @@ ${light.css}
     --pp-z-tooltip: 1400;
   }
 
-  /* Dark theme. Applied by \`prefers-color-scheme\` unless an explicit
-     data-pp-theme is set, and always by data-pp-theme="dark". */
+  /*
+   * Themes bind to [data-pp-theme] on ANY element, not just :root. Custom
+   * properties inherit, so the nearest ancestor carrying the attribute wins.
+   * That is what makes a dark sidebar inside a light app — or both themes
+   * rendered side by side in the playground — possible at all.
+   *
+   * Light is re-declared explicitly so a light subtree can sit inside a dark
+   * one; without it, nesting only works in one direction.
+   */
+  [data-pp-theme="light"] {
+${lightNested.css}
+
+    --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.06), 0 1px 3px oklch(0% 0 0 / 0.08);
+    --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.06), 0 4px 12px oklch(0% 0 0 / 0.1);
+    --pp-shadow-3: 0 8px 16px oklch(0% 0 0 / 0.08), 0 16px 40px oklch(0% 0 0 / 0.14);
+  }
+
   @media (prefers-color-scheme: dark) {
-    :root:not([data-pp-theme="light"]) {
-${dark.css}
+    :root:not([data-pp-theme]) {
+${darkNested.css}
 
       --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4);
       --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.32), 0 4px 12px oklch(0% 0 0 / 0.44);
@@ -324,7 +341,7 @@ ${dark.css}
     }
   }
 
-  :root[data-pp-theme="dark"] {
+  [data-pp-theme="dark"] {
 ${dark.css}
 
     --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4);

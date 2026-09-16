@@ -66,8 +66,15 @@
    * lighter, because shadows are invisible on dark backgrounds. This is the
    * only place a semantic token needs to know which theme it is in.
    */
+  [data-pp-theme="light"] {
+    --pp-color-bg-surface: var(--pp-palette-neutral-1);
+    --pp-color-bg-raised: var(--pp-palette-neutral-1);
+    --pp-color-bg-sunken: var(--pp-palette-neutral-3);
+    --pp-color-bg-scrim: oklch(15% 0.01 258 / 0.55);
+  }
+
   @media (prefers-color-scheme: dark) {
-    :root:not([data-pp-theme="light"]) {
+    :root:not([data-pp-theme]) {
       --pp-color-bg-surface: var(--pp-palette-neutral-2);
       --pp-color-bg-raised: var(--pp-palette-neutral-3);
       --pp-color-bg-sunken: var(--pp-palette-neutral-1);
@@ -75,7 +82,7 @@
     }
   }
 
-  :root[data-pp-theme="dark"] {
+  [data-pp-theme="dark"] {
     --pp-color-bg-surface: var(--pp-palette-neutral-2);
     --pp-color-bg-raised: var(--pp-palette-neutral-3);
     --pp-color-bg-sunken: var(--pp-palette-neutral-1);

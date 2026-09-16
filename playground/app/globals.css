@@ -1,0 +1,116 @@
+body {
+  margin: 0;
+  padding: var(--pp-space-6);
+  background-color: var(--pp-color-bg-page);
+  color: var(--pp-color-text);
+  font-family: var(--pp-font-family-sans);
+  font-size: var(--pp-font-size-3);
+  line-height: var(--pp-line-height-normal);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-6);
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.page h1 {
+  margin: 0;
+  font-size: var(--pp-font-size-7);
+  letter-spacing: var(--pp-letter-spacing-tight);
+}
+
+.page h2 {
+  margin: 0;
+  font-size: var(--pp-font-size-5);
+}
+
+.page p {
+  margin: 0;
+  color: var(--pp-color-text-muted);
+  max-width: 68ch;
+}
+
+.nav {
+  display: flex;
+  gap: var(--pp-space-3);
+  flex-wrap: wrap;
+}
+
+.nav a {
+  padding-inline: var(--pp-space-3);
+  padding-block: var(--pp-space-2);
+  border: 1px solid var(--pp-color-border);
+  border-radius: var(--pp-radius-2);
+  color: var(--pp-color-text);
+  text-decoration: none;
+}
+
+.nav a:hover {
+  background-color: var(--pp-tone-bg-hover);
+}
+
+.ramp {
+  display: grid;
+  grid-template-columns: 7rem repeat(12, 1fr) 1.5fr;
+  gap: 2px;
+  align-items: stretch;
+}
+
+.ramp__name {
+  display: flex;
+  align-items: center;
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-1);
+  color: var(--pp-color-text-muted);
+}
+
+.ramp__step {
+  aspect-ratio: 1;
+  border-radius: var(--pp-radius-1);
+  display: grid;
+  place-items: center;
+  font-family: var(--pp-font-family-mono);
+  font-size: 10px;
+  color: var(--pp-color-text-muted);
+}
+
+.ramp__solid {
+  display: grid;
+  place-items: center;
+  border-radius: var(--pp-radius-1);
+  font-size: var(--pp-font-size-1);
+  font-weight: var(--pp-font-weight-semibold);
+}
+
+.scale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-2);
+}
+
+.scale__row {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: var(--pp-space-3);
+  align-items: center;
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-1);
+  color: var(--pp-color-text-muted);
+}
+
+.scale__bar {
+  height: var(--pp-space-4);
+  border-radius: var(--pp-radius-1);
+  background-color: var(--pp-tone-solid);
+}
+
+.demo-box {
+  padding: var(--pp-space-3);
+  border-radius: var(--pp-radius-2);
+  background-color: var(--pp-tone-bg);
+  color: var(--pp-tone-text-strong);
+  border: 1px solid var(--pp-tone-border);
+}
