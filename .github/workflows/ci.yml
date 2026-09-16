@@ -93,6 +93,12 @@ jobs:
         if: steps.baselines.outputs.present == 'false'
         run: npm run test:visual:update
 
+      # A push made with GITHUB_TOKEN does not trigger another workflow run, by
+      # design, so this commit lands with no checks of its own. The baselines
+      # are therefore authored but not yet COMPARED; the next real push
+      # verifies them. That is the intended shape — it is what stops an
+      # authoring run from looping forever — but it does mean an
+      # authoring commit should never be the final head of a PR.
       - name: Commit authored baselines
         if: steps.baselines.outputs.present == 'false'
         run: |

@@ -258,6 +258,13 @@ allowed to define truth, and the answer is the one that gates the merge.
 tolerance wide enough to pass. They still run and still block. Only the
 authority for the baseline moved.
 
+**One wrinkle to know about.** A push made with `GITHUB_TOKEN` does not trigger
+another workflow run, so the authoring commit lands with no checks of its own.
+The baselines are authored but not yet compared; the next real push verifies
+them. That suppression is what stops the authoring run from looping, so it is
+worth keeping — but an authoring commit should never be left as a PR's final
+head.
+
 **`harness.spec.ts` is unaffected** and stayed green throughout — it asserts
 behaviour (overflow detection, theme distinctness) rather than pixels, which is
 also what caught the D-011 token bug. That is the split worth keeping: assert
