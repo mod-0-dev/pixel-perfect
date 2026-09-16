@@ -61,3 +61,36 @@ element, use Radix-style `asChild` render delegation.
 `Box` with style props is the mechanism by which sizing and spacing rules
 erode. `Spacer` is redundant with `gap`. Space between elements is expressed by
 layout primitives; space inside an element is that element's padding.
+
+## D-005 — Standalone package, `tsc` + lightningcss, no bundler
+
+**Date:** 2026-09-16 · **Status:** accepted
+
+The library ships as a standalone package (`pixel-perfect`) rather than a
+workspace package inside the consuming app. A standalone package can be vendored
+into a workspace later with a one-line move; extracting a workspace package into
+a standalone one is considerably worse.
+
+Build is plain `tsc` (ESM + declarations, no bundling) plus `lightningcss` to
+bundle the stylesheet.
+
+**Rationale:** `tsc` preserves `'use client'` directives at the top of emitted
+files, which bundlers routinely hoist or strip — a silent, painful failure mode
+in Next.js. Not bundling also preserves per-module tree-shaking for consumers,
+who bundle anyway. The cost is two build steps instead of one; the benefit is no
+bundler between us and RSC correctness.
+
+## D-006 — Gate C is relaxed for Tier 0 foundations
+
+**Date:** 2026-09-16 · **Status:** accepted
+
+The `/component` skill's Gate C (write the spec, stop, get API approval before
+implementation) applies in full to components. For Tier 0 foundations it is
+applied in relaxed form: implement, then present for review.
+
+**Rationale:** there are zero consumers. Renaming a token today is a `sed`; the
+same rename after thirty components is a migration. The gate exists to make
+expensive mistakes cheap, and at Tier 0 they are already cheap.
+
+**This expires when Tier 0 does.** Token names reviewed and accepted here are
+treated as a stable API from Tier 1 onward.

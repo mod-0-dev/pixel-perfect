@@ -24,9 +24,9 @@ column is `done`.
 
 ### Current state
 
-- **In flight:** _none_
-- **Next up:** Tier 0 — Foundations
-- **Done:** 0 / 75 tracked items (8 foundations + 67 components)
+- **In flight:** 0.2 Token layer (`build`)
+- **Next up:** 0.3 Cascade layers + reset
+- **Done:** 1 / 75 tracked items (8 foundations + 67 components)
 
 ---
 
@@ -36,8 +36,8 @@ Not components. Nothing else may start until this tier is `done`.
 
 | # | Item | Status | Deps | Notes |
 | --- | --- | --- | --- | --- |
-| 0.1 | Package scaffold (TS, build, exports, peer deps) | `planned` | — | Library layout; decide standalone pkg vs. workspace once the app repo is attached |
-| 0.2 | Token layer — primitives + semantics, light + dark | `planned` | 0.1 | Two-tier custom properties; contrast verified here, once |
+| 0.1 | Package scaffold (TS, build, exports, peer deps) | `done` | — | Standalone package (D-005). `tsc` for JS+types, lightningcss for CSS |
+| 0.2 | Token layer — primitives + semantics, light + dark | `build` | 0.1 | Two-tier custom properties; contrast verified here, once |
 | 0.3 | Cascade layers + minimal reset | `planned` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides` |
 | 0.4 | Playground app (Next.js, container-width harness) | `planned` | 0.1 | Must render any component at 3 container widths × 2 themes |
 | 0.5 | Test harness — Vitest + Testing Library + axe | `planned` | 0.1 | |
