@@ -24,9 +24,9 @@ column is `done`.
 
 ### Current state
 
-- **In flight:** 0.3 Cascade layers + reset (`build`)
-- **Next up:** 0.7 Rule lint
-- **Done:** 2 / 75 tracked items (8 foundations + 67 components)
+- **In flight:** 0.7 Rule lint (`build`)
+- **Next up:** 0.4 Playground
+- **Done:** 3 / 75 tracked items (8 foundations + 67 components)
 
 ---
 
@@ -38,11 +38,11 @@ Not components. Nothing else may start until this tier is `done`.
 | --- | --- | --- | --- | --- |
 | 0.1 | Package scaffold (TS, build, exports, peer deps) | `done` | — | Standalone package (D-005). `tsc` for JS+types, lightningcss for CSS |
 | 0.2 | Token layer — primitives + semantics, light + dark | `done` | 0.1 | OKLCH ramps with contrast solved, not eyeballed. `--pp-tone-*` rewired by `[data-pp-tone]` (D-007). 160 assertions in `npm run lint:contrast` |
-| 0.3 | Cascade layers + minimal reset | `build` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides` |
+| 0.3 | Cascade layers + minimal reset | `done` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides`. Reset uses `:where()` so the app always wins |
 | 0.4 | Playground app (Next.js, container-width harness) | `planned` | 0.1 | Must render any component at 3 container widths × 2 themes |
 | 0.5 | Test harness — Vitest + Testing Library + axe | `planned` | 0.1 | |
 | 0.6 | Visual regression (Playwright screenshots) | `planned` | 0.4 | |
-| 0.7 | **Rule lint** — fail on banned CSS/props | `planned` | 0.3 | Blocks `width`/`max-width`/`margin` in component CSS, hardcoded values, banned prop names. The rules are only real if CI enforces them |
+| 0.7 | **Rule lint** — fail on banned CSS/props | `build` | 0.3 | Blocks `width`/`max-width`/`margin` in component CSS, hardcoded values, banned prop names. The rules are only real if CI enforces them |
 | 0.8 | Docs site + changesets + release pipeline | `planned` | 0.1 | |
 
 ---

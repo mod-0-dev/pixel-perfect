@@ -1,0 +1,26 @@
+/*
+ * Base layer. Theme plumbing that is not a component and not a token.
+ */
+
+@layer pp.base {
+  /*
+   * color-scheme drives native UI — scrollbars, form control chrome, the
+   * default canvas. Without it a dark theme has light scrollbars.
+   */
+  :root {
+    color-scheme: light dark;
+  }
+
+  :root[data-pp-theme="light"] {
+    color-scheme: light;
+  }
+
+  :root[data-pp-theme="dark"] {
+    color-scheme: dark;
+  }
+
+  ::selection {
+    background-color: var(--pp-color-selection-bg);
+    color: var(--pp-color-selection-text);
+  }
+}
