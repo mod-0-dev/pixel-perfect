@@ -15,11 +15,14 @@ const launchOptions = existsSync(SYSTEM_CHROMIUM)
 /**
  * Visual regression against the playground's production build.
  *
- * Screenshots are inherently platform-specific — font rasterisation differs
- * between Linux, macOS and Windows. Baselines here are generated on Linux and
- * CI runs on Linux, so they match. A developer on macOS will see diffs; that is
- * expected, and the answer is to trust CI rather than to regenerate baselines
- * locally.
+ * The playground pins its fonts from npm rather than using the library's system
+ * stack, because "same OS" is not the same as "same fonts": a system stack
+ * resolved differently between the dev container and ubuntu-latest, and the
+ * full-page screenshot came out 2px taller in CI.
+ *
+ * Rasterisation still differs across operating systems. Baselines are Linux;
+ * a developer on macOS will see small diffs and should trust CI rather than
+ * regenerate baselines locally.
  */
 export default defineConfig({
   testDir: './tests/visual',

@@ -1,3 +1,14 @@
+/*
+ * Playground overrides the library's system font stack with pinned webfonts so
+ * screenshots are reproducible across machines. Unlayered CSS beats everything
+ * inside @layer, so no !important and no specificity games are needed — which
+ * is itself a demonstration that the cascade strategy works.
+ */
+:root {
+  --pp-font-family-sans: "Inter", sans-serif;
+  --pp-font-family-mono: "JetBrains Mono", monospace;
+}
+
 body {
   margin: 0;
   padding: var(--pp-space-6);
