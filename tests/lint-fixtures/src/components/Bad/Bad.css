@@ -1,0 +1,5 @@
+/* Deliberate violations for the rule-lint self-test. */
+.pp-bad {
+  color: var(--pp-palette-accent-9);
+  background-color: var(--pp-palette-neutral-3);
+}

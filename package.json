@@ -23,10 +23,11 @@
     "build:css": "lightningcss --bundle --targets 'defaults' src/styles/index.css -o dist/pixel-perfect.css",
     "tokens": "node scripts/generate-tokens.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "npm run lint:css && npm run lint:rules && npm run lint:contrast",
+    "lint": "npm run lint:css && npm run lint:rules && npm run lint:contrast && npm run lint:self-test",
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:rules": "node scripts/lint-rules.mjs",
-    "lint:contrast": "node scripts/check-contrast.mjs"
+    "lint:contrast": "node scripts/check-contrast.mjs",
+    "lint:self-test": "node scripts/test-lint.mjs"
   },
   "peerDependencies": {
     "react": ">=18",

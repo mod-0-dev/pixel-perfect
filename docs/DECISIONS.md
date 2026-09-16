@@ -131,3 +131,19 @@ Three findings from building it, kept as standing rules:
 
 Body text uses a fixed lightness with an asserted floor rather than a solve:
 solving it to exactly 7:1 produced a mid-grey that passes and reads as disabled.
+
+## D-009 — The linter has its own test suite
+
+**Date:** 2026-09-16 · **Status:** accepted
+
+`tests/lint-fixtures/` holds one deliberate violation per rule, and
+`npm run lint:self-test` asserts every rule still fires. It also asserts that
+`tone` is *not* flagged, so the banned-prop list cannot quietly swallow approved
+vocabulary.
+
+**Rationale:** both linters passed cleanly the first time they were run — one
+against a components directory that did not exist yet, the other against a
+stylesheet with no components in it. A linter that has never been observed
+failing provides no evidence about anything. Rules that are not tested decay
+into rules that are not enforced, which is how "no component sets its own
+width" becomes a comment in a README.
