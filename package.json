@@ -27,6 +27,8 @@
     "prepare": "npm run build",
     "tokens": "node scripts/generate-tokens.mjs",
     "typecheck": "tsc --noEmit",
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
     "lint": "npm run lint:css && npm run lint:rules && npm run lint:contrast && npm run lint:self-test",
     "lint:css": "stylelint \"src/**/*.css\"",
     "lint:rules": "node scripts/lint-rules.mjs",
@@ -39,6 +41,7 @@
     "react-dom": ">=18"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "lightningcss-cli": "^1.30.1",

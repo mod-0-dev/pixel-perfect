@@ -1,50 +1,44 @@
 /*
- * SEMANTIC TOKENS — the styling API.
+ * SEMANTIC TOKENS — GENERATED FILE, DO NOT EDIT BY HAND.
+ * Regenerate with `npm run tokens`. Source: scripts/semantic-tokens.mjs
  *
- * Components reference these and nothing else. A component that names a
- * --pp-palette-* token directly has hardcoded a colour decision. (RULES §3)
+ * This is the styling API. Components reference these and nothing else; a
+ * component that names a --pp-palette-* token has hardcoded a colour decision,
+ * and `npm run lint:rules` rejects it. (RULES §3)
  *
- * Two groups:
- *
- *   1. Fixed tokens  (--pp-color-*, --pp-focus-*)  — surfaces, body text,
- *      borders. Same meaning everywhere.
- *
- *   2. Tone tokens   (--pp-tone-*)  — rewired by [data-pp-tone]. A component
- *      writes var(--pp-tone-solid) once and inherits the right colour for
- *      whichever tone its consumer asked for. Adding a tone is one block here,
- *      not an edit in every component.
+ * The complete set is repeated in every theme scope on purpose. `var()` is
+ * substituted where the declaration sits, so a semantic token declared only on
+ * :root computes to a light value there and inherits into dark subtrees AS
+ * THAT LIGHT VALUE. Repetition here is what makes a dark sidebar inside a
+ * light page work.
  */
 
 @layer pp.tokens {
   :root {
-    /* ---- Surfaces ---- */
+    /* Surfaces */
     --pp-color-bg-page: var(--pp-palette-neutral-1);
-    --pp-color-bg-surface: var(--pp-palette-neutral-1);
-    --pp-color-bg-raised: var(--pp-palette-neutral-1);
-    --pp-color-bg-sunken: var(--pp-palette-neutral-3);
-    --pp-color-bg-scrim: oklch(15% 0.01 258 / 0.55);
 
-    /* ---- Text ---- */
+    /* Text */
     --pp-color-text: var(--pp-palette-neutral-12);
     --pp-color-text-muted: var(--pp-palette-neutral-11);
     --pp-color-text-disabled: var(--pp-palette-neutral-8);
     --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
 
-    /* ---- Borders ---- */
+    /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);
     --pp-color-border: var(--pp-palette-neutral-7);
     --pp-color-border-strong: var(--pp-palette-neutral-8);
 
-    /* ---- Focus ---- */
+    /* Focus */
     --pp-color-focus-ring: var(--pp-palette-accent-focus);
     --pp-focus-ring-width: var(--pp-border-width-2);
     --pp-focus-ring-offset: var(--pp-border-width-2);
 
-    /* ---- Selection ---- */
+    /* Selection */
     --pp-color-selection-bg: var(--pp-palette-accent-5);
     --pp-color-selection-text: var(--pp-palette-accent-12);
 
-    /* ---- Default tone ---- */
+    /* Default tone (neutral) */
     --pp-tone-surface: var(--pp-palette-neutral-2);
     --pp-tone-bg: var(--pp-palette-neutral-3);
     --pp-tone-bg-hover: var(--pp-palette-neutral-4);
@@ -58,15 +52,54 @@
     --pp-tone-text: var(--pp-palette-neutral-11);
     --pp-tone-text-strong: var(--pp-palette-neutral-12);
     --pp-tone-focus: var(--pp-palette-neutral-focus);
+
+    /* Elevation — inverts between themes */
+    --pp-color-bg-surface: var(--pp-palette-neutral-1);
+    --pp-color-bg-raised: var(--pp-palette-neutral-1);
+    --pp-color-bg-sunken: var(--pp-palette-neutral-3);
+    --pp-color-bg-scrim: oklch(15% 0.01 258 / 0.55);
   }
 
-  /*
-   * Elevation inverts between themes: a light UI raises a surface by making it
-   * whiter than the page and adding a shadow; a dark UI raises it by making it
-   * lighter, because shadows are invisible on dark backgrounds. This is the
-   * only place a semantic token needs to know which theme it is in.
-   */
   [data-pp-theme="light"] {
+    /* Surfaces */
+    --pp-color-bg-page: var(--pp-palette-neutral-1);
+
+    /* Text */
+    --pp-color-text: var(--pp-palette-neutral-12);
+    --pp-color-text-muted: var(--pp-palette-neutral-11);
+    --pp-color-text-disabled: var(--pp-palette-neutral-8);
+    --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+
+    /* Borders */
+    --pp-color-border-subtle: var(--pp-palette-neutral-6);
+    --pp-color-border: var(--pp-palette-neutral-7);
+    --pp-color-border-strong: var(--pp-palette-neutral-8);
+
+    /* Focus */
+    --pp-color-focus-ring: var(--pp-palette-accent-focus);
+    --pp-focus-ring-width: var(--pp-border-width-2);
+    --pp-focus-ring-offset: var(--pp-border-width-2);
+
+    /* Selection */
+    --pp-color-selection-bg: var(--pp-palette-accent-5);
+    --pp-color-selection-text: var(--pp-palette-accent-12);
+
+    /* Default tone (neutral) */
+    --pp-tone-surface: var(--pp-palette-neutral-2);
+    --pp-tone-bg: var(--pp-palette-neutral-3);
+    --pp-tone-bg-hover: var(--pp-palette-neutral-4);
+    --pp-tone-bg-active: var(--pp-palette-neutral-5);
+    --pp-tone-border-subtle: var(--pp-palette-neutral-6);
+    --pp-tone-border: var(--pp-palette-neutral-7);
+    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-solid: var(--pp-palette-neutral-9);
+    --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-tone-text: var(--pp-palette-neutral-11);
+    --pp-tone-text-strong: var(--pp-palette-neutral-12);
+    --pp-tone-focus: var(--pp-palette-neutral-focus);
+
+    /* Elevation — inverts between themes */
     --pp-color-bg-surface: var(--pp-palette-neutral-1);
     --pp-color-bg-raised: var(--pp-palette-neutral-1);
     --pp-color-bg-sunken: var(--pp-palette-neutral-3);
@@ -75,6 +108,45 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-pp-theme]) {
+      /* Surfaces */
+      --pp-color-bg-page: var(--pp-palette-neutral-1);
+
+      /* Text */
+      --pp-color-text: var(--pp-palette-neutral-12);
+      --pp-color-text-muted: var(--pp-palette-neutral-11);
+      --pp-color-text-disabled: var(--pp-palette-neutral-8);
+      --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+
+      /* Borders */
+      --pp-color-border-subtle: var(--pp-palette-neutral-6);
+      --pp-color-border: var(--pp-palette-neutral-7);
+      --pp-color-border-strong: var(--pp-palette-neutral-8);
+
+      /* Focus */
+      --pp-color-focus-ring: var(--pp-palette-accent-focus);
+      --pp-focus-ring-width: var(--pp-border-width-2);
+      --pp-focus-ring-offset: var(--pp-border-width-2);
+
+      /* Selection */
+      --pp-color-selection-bg: var(--pp-palette-accent-5);
+      --pp-color-selection-text: var(--pp-palette-accent-12);
+
+      /* Default tone (neutral) */
+      --pp-tone-surface: var(--pp-palette-neutral-2);
+      --pp-tone-bg: var(--pp-palette-neutral-3);
+      --pp-tone-bg-hover: var(--pp-palette-neutral-4);
+      --pp-tone-bg-active: var(--pp-palette-neutral-5);
+      --pp-tone-border-subtle: var(--pp-palette-neutral-6);
+      --pp-tone-border: var(--pp-palette-neutral-7);
+      --pp-tone-border-strong: var(--pp-palette-neutral-8);
+      --pp-tone-solid: var(--pp-palette-neutral-9);
+      --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+      --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
+      --pp-tone-text: var(--pp-palette-neutral-11);
+      --pp-tone-text-strong: var(--pp-palette-neutral-12);
+      --pp-tone-focus: var(--pp-palette-neutral-focus);
+
+      /* Elevation — inverts between themes */
       --pp-color-bg-surface: var(--pp-palette-neutral-2);
       --pp-color-bg-raised: var(--pp-palette-neutral-3);
       --pp-color-bg-sunken: var(--pp-palette-neutral-1);
@@ -83,6 +155,45 @@
   }
 
   [data-pp-theme="dark"] {
+    /* Surfaces */
+    --pp-color-bg-page: var(--pp-palette-neutral-1);
+
+    /* Text */
+    --pp-color-text: var(--pp-palette-neutral-12);
+    --pp-color-text-muted: var(--pp-palette-neutral-11);
+    --pp-color-text-disabled: var(--pp-palette-neutral-8);
+    --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+
+    /* Borders */
+    --pp-color-border-subtle: var(--pp-palette-neutral-6);
+    --pp-color-border: var(--pp-palette-neutral-7);
+    --pp-color-border-strong: var(--pp-palette-neutral-8);
+
+    /* Focus */
+    --pp-color-focus-ring: var(--pp-palette-accent-focus);
+    --pp-focus-ring-width: var(--pp-border-width-2);
+    --pp-focus-ring-offset: var(--pp-border-width-2);
+
+    /* Selection */
+    --pp-color-selection-bg: var(--pp-palette-accent-5);
+    --pp-color-selection-text: var(--pp-palette-accent-12);
+
+    /* Default tone (neutral) */
+    --pp-tone-surface: var(--pp-palette-neutral-2);
+    --pp-tone-bg: var(--pp-palette-neutral-3);
+    --pp-tone-bg-hover: var(--pp-palette-neutral-4);
+    --pp-tone-bg-active: var(--pp-palette-neutral-5);
+    --pp-tone-border-subtle: var(--pp-palette-neutral-6);
+    --pp-tone-border: var(--pp-palette-neutral-7);
+    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-solid: var(--pp-palette-neutral-9);
+    --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-tone-text: var(--pp-palette-neutral-11);
+    --pp-tone-text-strong: var(--pp-palette-neutral-12);
+    --pp-tone-focus: var(--pp-palette-neutral-focus);
+
+    /* Elevation — inverts between themes */
     --pp-color-bg-surface: var(--pp-palette-neutral-2);
     --pp-color-bg-raised: var(--pp-palette-neutral-3);
     --pp-color-bg-sunken: var(--pp-palette-neutral-1);

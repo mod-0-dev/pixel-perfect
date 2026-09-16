@@ -61,7 +61,8 @@
  */
 .matrix__viewport {
   container-type: inline-size;
-  max-width: 100%;
+  /* No max-width: the declared width is the point. The theme column scrolls
+     instead, so a 960px cell really is 960px. */
   padding: var(--pp-space-3);
   border: 1px dashed var(--pp-color-border);
   border-radius: var(--pp-radius-2);

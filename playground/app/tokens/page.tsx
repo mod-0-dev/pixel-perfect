@@ -7,12 +7,8 @@ const FONT_SIZE = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 
 function Ramps({ theme }: { theme: 'light' | 'dark' }) {
   return (
-    <div
-      className="matrix__theme"
-      data-pp-theme={theme}
-      style={{ gap: 'var(--pp-space-3)' }}
-    >
-      <h3 className="matrix__theme-name">{theme}</h3>
+    <div className="panel" data-pp-theme={theme}>
+      <h3 className="panel__name">{theme}</h3>
       {HUES.map((hue) => (
         <div className="ramp" key={hue}>
           <div className="ramp__name">{hue}</div>
@@ -53,7 +49,7 @@ export default function TokensPage() {
 
       <section>
         <h2>Palette</h2>
-        <div className="matrix">
+        <div className="stack">
           <Ramps theme="light" />
           <Ramps theme="dark" />
         </div>
@@ -65,10 +61,10 @@ export default function TokensPage() {
           Each block below sets only <code>data-pp-tone</code>. Nothing else changes —
           the component CSS is identical.
         </p>
-        <div className="matrix">
+        <div className="scales">
           {(['light', 'dark'] as const).map((theme) => (
-            <div className="matrix__theme" key={theme} data-pp-theme={theme}>
-              <h3 className="matrix__theme-name">{theme}</h3>
+            <div className="panel" key={theme} data-pp-theme={theme}>
+              <h3 className="panel__name">{theme}</h3>
               {(['neutral', 'accent', 'danger', 'success', 'warning'] as const).map((tone) => (
                 <div className="demo-box" data-pp-tone={tone} key={tone}>
                   <strong>{tone}</strong> — muted text on a tone background, plus a solid
@@ -93,9 +89,9 @@ export default function TokensPage() {
 
       <section>
         <h2>Scales</h2>
-        <div className="matrix">
-          <div className="matrix__theme">
-            <h3 className="matrix__theme-name">space</h3>
+        <div className="scales">
+          <div className="panel">
+            <h3 className="panel__name">space</h3>
             <div className="scale">
               {SPACE.map((s) => (
                 <div className="scale__row" key={s}>
@@ -106,8 +102,8 @@ export default function TokensPage() {
             </div>
           </div>
 
-          <div className="matrix__theme">
-            <h3 className="matrix__theme-name">radius</h3>
+          <div className="panel">
+            <h3 className="panel__name">radius</h3>
             <div className="scale">
               {RADIUS.map((r) => (
                 <div className="scale__row" key={r}>
@@ -125,14 +121,14 @@ export default function TokensPage() {
             </div>
           </div>
 
-          <div className="matrix__theme">
-            <h3 className="matrix__theme-name">type</h3>
+          <div className="panel">
+            <h3 className="panel__name">type</h3>
             <div className="scale">
               {FONT_SIZE.map((f) => (
                 <div className="scale__row" key={f}>
                   <span>--pp-font-size-{f}</span>
-                  <span style={{ fontSize: `var(--pp-font-size-${f})`, color: 'var(--pp-color-text)' }}>
-                    Pixel perfect
+                  <span className="scale__sample" style={{ fontSize: `var(--pp-font-size-${f})` }}>
+                    Pixel
                   </span>
                 </div>
               ))}

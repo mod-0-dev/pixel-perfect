@@ -24,9 +24,9 @@ column is `done`.
 
 ### Current state
 
-- **In flight:** 0.4 Playground (`review`) → 0.6 Visual regression (`build`)
-- **Next up:** 0.5 Test harness
-- **Done:** 4 / 75 tracked items (8 foundations + 67 components)
+- **In flight:** 0.5 Test harness (`build`)
+- **Next up:** 0.8 Release pipeline
+- **Done:** 7 / 75 tracked items (8 foundations + 67 components)
 
 ---
 
@@ -39,9 +39,9 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.1 | Package scaffold (TS, build, exports, peer deps) | `done` | — | Standalone package (D-005). `tsc` for JS+types, lightningcss for CSS |
 | 0.2 | Token layer — primitives + semantics, light + dark | `done` | 0.1 | OKLCH ramps with contrast solved, not eyeballed. `--pp-tone-*` rewired by `[data-pp-tone]` (D-007). 160 assertions in `npm run lint:contrast` |
 | 0.3 | Cascade layers + minimal reset | `done` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides`. Reset uses `:where()` so the app always wins |
-| 0.4 | Playground app (Next.js, container-width harness) | `review` | 0.1 | Builds; `Matrix` renders 3 widths × 2 themes and flags overflow. Verification needs a browser, so it closes with 0.6 |
-| 0.5 | Test harness — Vitest + Testing Library + axe | `planned` | 0.1 | |
-| 0.6 | Visual regression (Playwright screenshots) | `build` | 0.4 | |
+| 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths × 2 themes, each cell a query container, overflow flagged at runtime. `/tokens` gallery, `/harness` self-check |
+| 0.5 | Test harness — Vitest + Testing Library + axe | `build` | 0.1 | |
+| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines are Linux-only by design; CI is the arbiter. Includes harness self-check assertions |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
 | 0.8 | Docs site + changesets + release pipeline | `planned` | 0.1 | |
 

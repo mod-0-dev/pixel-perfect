@@ -17,6 +17,7 @@
 // verifies the committed file independently of this generator.
 
 import { writeFileSync } from 'node:fs';
+import { BASE, THEME_SPECIFIC, TONES, toneMap } from './semantic-tokens.mjs';
 import {
   clampChroma,
   contrastOklch,
@@ -370,3 +371,65 @@ for (const r of rows) {
       r.step12Vs3.toFixed(2),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Semantic layer
+// ---------------------------------------------------------------------------
+
+function decls(map, indent) {
+  return Object.entries(map)
+    .map(([k, v]) => `${indent}${k}: ${v};`)
+    .join('\n');
+}
+
+function semanticBlock(theme, indent) {
+  const parts = [];
+  for (const [group, map] of Object.entries(BASE)) {
+    parts.push(`${indent}/* ${group} */\n${decls(map, indent)}`);
+  }
+  parts.push(`${indent}/* Elevation — inverts between themes */\n${decls(THEME_SPECIFIC[theme], indent)}`);
+  return parts.join('\n\n');
+}
+
+const semanticCss = `/*
+ * SEMANTIC TOKENS — GENERATED FILE, DO NOT EDIT BY HAND.
+ * Regenerate with \`npm run tokens\`. Source: scripts/semantic-tokens.mjs
+ *
+ * This is the styling API. Components reference these and nothing else; a
+ * component that names a --pp-palette-* token has hardcoded a colour decision,
+ * and \`npm run lint:rules\` rejects it. (RULES §3)
+ *
+ * The complete set is repeated in every theme scope on purpose. \`var()\` is
+ * substituted where the declaration sits, so a semantic token declared only on
+ * :root computes to a light value there and inherits into dark subtrees AS
+ * THAT LIGHT VALUE. Repetition here is what makes a dark sidebar inside a
+ * light page work.
+ */
+
+@layer pp.tokens {
+  :root {
+${semanticBlock('light', '    ')}
+  }
+
+  [data-pp-theme="light"] {
+${semanticBlock('light', '    ')}
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-pp-theme]) {
+${semanticBlock('dark', '      ')}
+    }
+  }
+
+  [data-pp-theme="dark"] {
+${semanticBlock('dark', '    ')}
+  }
+
+${TONES.map(
+  (tone) => `  [data-pp-tone="${tone}"] {\n${decls(toneMap(tone), '    ')}\n  }`,
+).join('\n\n')}
+}
+`;
+
+writeFileSync(new URL('../src/styles/tokens/semantic.css', import.meta.url), semanticCss);
+console.log('Generated src/styles/tokens/semantic.css');

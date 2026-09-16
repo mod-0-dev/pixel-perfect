@@ -168,3 +168,35 @@ a dark subtree inside a light page, never the reverse.
 
 **This is why the playground exists.** The flaw was invisible in the token files
 and obvious within minutes of trying to render both themes at once.
+
+## D-011 — Every theme scope carries the complete semantic set
+
+**Date:** 2026-09-16 · **Status:** accepted · **Amends:** D-010
+
+D-010 re-declared the *palette* per theme scope and was verified by reading the
+CSS. A Playwright assertion then showed both themes computing the same
+background: the dark subtree was rendering light colours.
+
+`var()` is substituted where the declaration sits, not where the token is used.
+So:
+
+```css
+:root { --pp-color-bg-page: var(--pp-palette-neutral-1); }
+```
+
+computes to a concrete light colour at `:root` and inherits into dark subtrees
+**as that light colour**. Re-declaring `--pp-palette-neutral-1` on a dark
+descendant changes nothing, because the semantic token was already resolved.
+
+Every theme scope therefore carries the complete semantic set, not just its
+differences. `semantic.css` is generated from `scripts/semantic-tokens.mjs` for
+that reason — the repetition is required, and hand-maintaining four copies of
+seventy tokens would not survive a month.
+
+Tone blocks are unaffected: `[data-pp-tone]` sits on a descendant of the theme
+element, so the palette resolves correctly where those declarations appear.
+
+**The lesson generalises.** Any token defined as an indirection to another token
+must be re-declared at every scope where the target changes. Reading the CSS
+would never have caught this; only a computed-style assertion in a real browser
+did.
