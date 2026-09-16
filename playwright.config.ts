@@ -36,14 +36,21 @@ const launchOptions = {
 /**
  * Visual regression against the playground's production build.
  *
- * The playground pins its fonts from npm rather than using the library's system
- * stack, because "same OS" is not the same as "same fonts": a system stack
- * resolved differently between the dev container and ubuntu-latest, and the
- * full-page screenshot came out 2px taller in CI.
+ * BASELINES ARE AUTHORED BY CI. Never run `test:visual:update` locally and
+ * commit the result — a screenshot depends on the exact Chromium build, and
+ * your machine almost certainly has a different one than the runner image.
+ * To rebaseline, delete tests/visual/__screenshots__ and push; CI regenerates
+ * and commits them. See D-013.
  *
- * Rasterisation still differs across operating systems. Baselines are Linux;
- * a developer on macOS will see small diffs and should trust CI rather than
- * regenerate baselines locally.
+ * Two variables are pinned here rather than left to the host, because both
+ * were caught producing cross-machine diffs:
+ *   - the playground loads its fonts from npm instead of the system stack
+ *   - Chromium renders with hinting and subpixel positioning disabled
+ * Those got the pixel delta down but could not close it; the browser build
+ * itself was the remainder, and that is not something a config can fix.
+ *
+ * `harness.spec.ts` is NOT affected by any of this — it asserts behaviour
+ * rather than pixels, and runs identically everywhere.
  */
 export default defineConfig({
   testDir: './tests/visual',

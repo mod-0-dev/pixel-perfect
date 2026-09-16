@@ -227,3 +227,38 @@ neither of which affects anything shipped.
 **Revisit if** the app and library end up in one repo anyway, or a second
 publishable package appears. At that point a workspace is right and the git
 dependency route no longer matters.
+
+## D-013 — Screenshot baselines are authored by CI, never locally
+
+**Date:** 2026-09-16 · **Status:** accepted · **Amends:** D-006 (Tier 0.6)
+
+`tests/visual/__screenshots__` is generated and committed by the CI job. Running
+`npm run test:visual:update` locally and committing the result is wrong and will
+fail CI. To rebaseline, delete the directory and push; CI regenerates it.
+
+**Why.** Three rounds of narrowing, each fixing a real variable and each
+insufficient:
+
+1. The library ships a system font stack. The dev container and `ubuntu-latest`
+   resolve it to different fonts, so text metrics differed. Fixed by pinning
+   Inter and JetBrains Mono from npm in the playground. Page height changed,
+   proving the fix landed — the delta did not close.
+2. Selecting the same font file is not rasterising it the same way. Hinting and
+   subpixel positioning come from the host's freetype and fontconfig. Disabling
+   both halved the pixel diff (43,950 → 23,717) — the delta did not close.
+3. The remainder was the browser itself. CI runs Chromium build 1243; this
+   container pins 1194 in its image, and the Playwright CDN is blocked by egress
+   policy, so the matching build cannot be installed. **No baseline produced
+   here can ever match CI.**
+
+That is not a threshold to loosen. It is a statement about which environment is
+allowed to define truth, and the answer is the one that gates the merge.
+
+**What was NOT done:** the failing tests were not deleted, skipped, or given a
+tolerance wide enough to pass. They still run and still block. Only the
+authority for the baseline moved.
+
+**`harness.spec.ts` is unaffected** and stayed green throughout — it asserts
+behaviour (overflow detection, theme distinctness) rather than pixels, which is
+also what caught the D-011 token bug. That is the split worth keeping: assert
+behaviour where you can, and reserve pixels for what only pixels can catch.

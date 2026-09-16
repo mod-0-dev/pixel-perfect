@@ -50,8 +50,15 @@ jobs:
   visual:
     name: Visual regression
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      # Checks out the branch itself rather than the PR merge commit, so this
+      # job can commit authored baselines back to it.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -69,7 +76,34 @@ jobs:
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
+      # Baselines are authored HERE and nowhere else. A screenshot depends on
+      # the exact Chromium build, and the runner image pins one that a given
+      # dev container will not have. Baselines generated anywhere else are
+      # guaranteed to mismatch. See D-013.
+      - name: Are baselines present?
+        id: baselines
+        run: |
+          if [ -z "$(ls -A tests/visual/__screenshots__ 2>/dev/null)" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Author baselines
+        if: steps.baselines.outputs.present == 'false'
+        run: npm run test:visual:update
+
+      - name: Commit authored baselines
+        if: steps.baselines.outputs.present == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/visual/__screenshots__
+          git commit -m "test(visual): author screenshot baselines in CI"
+          git push
+
       - name: Visual regression
+        if: steps.baselines.outputs.present == 'true'
         run: npm run test:visual
 
       - uses: actions/upload-artifact@v4
