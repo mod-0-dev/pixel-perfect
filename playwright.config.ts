@@ -8,9 +8,30 @@ import { defineConfig, devices } from '@playwright/test';
  * nothing is pinned to a path that only exists on one machine.
  */
 const SYSTEM_CHROMIUM = process.env.PP_CHROMIUM_PATH ?? '/opt/pw-browsers/chromium';
-const launchOptions = existsSync(SYSTEM_CHROMIUM)
-  ? { executablePath: SYSTEM_CHROMIUM }
-  : {};
+
+/*
+ * Pinning the webfont was necessary but not sufficient: CI still rendered the
+ * page 2px taller. Glyph rasterisation depends on the host's freetype and
+ * fontconfig, and hinting nudges each line box by a fraction that accumulates
+ * down a long page.
+ *
+ * These flags take the platform out of it — metrics come from the font's own
+ * tables rather than from hinted, subpixel-positioned rasterisation. Text is
+ * marginally less crisp in screenshots, which costs nothing, because nobody
+ * reads the baselines.
+ */
+const DETERMINISTIC_RENDERING = [
+  '--font-render-hinting=none',
+  '--disable-font-subpixel-positioning',
+  '--disable-lcd-text',
+  '--force-color-profile=srgb',
+  '--disable-skia-runtime-opts',
+];
+
+const launchOptions = {
+  args: DETERMINISTIC_RENDERING,
+  ...(existsSync(SYSTEM_CHROMIUM) ? { executablePath: SYSTEM_CHROMIUM } : {}),
+};
 
 /**
  * Visual regression against the playground's production build.
