@@ -94,3 +94,40 @@ expensive mistakes cheap, and at Tier 0 they are already cheap.
 
 **This expires when Tier 0 does.** Token names reviewed and accepted here are
 treated as a stable API from Tier 1 onward.
+
+## D-007 — Tone is a CSS custom-property context, not a prop-to-class mapping
+
+**Date:** 2026-09-16 · **Status:** accepted
+
+Components set `data-pp-tone="danger"` on their root and style themselves with
+`var(--pp-tone-solid)`, `var(--pp-tone-text)`, and friends. `semantic.css`
+rewires the whole `--pp-tone-*` set per tone in one block.
+
+**Rationale:** the alternative is every component shipping five near-identical
+CSS blocks, one per tone, and every new tone touching every component. Here,
+adding a tone is a single block in `semantic.css` and zero component changes.
+Consumers can also scope a tone to a subtree, or define their own, without us
+knowing about it.
+
+## D-008 — Token contrast is solved numerically and verified independently
+
+**Date:** 2026-09-16 · **Status:** accepted
+
+`scripts/generate-tokens.mjs` builds twelve-step OKLCH ramps in which the steps
+carrying an accessibility obligation are solved for their contrast target:
+focus ring ≥ 3:1 on step 1, solid fill ≥ 4.5:1 on its on-solid text, muted text
+≥ 4.5:1 on step 3, body text ≥ 7:1 on step 3. `scripts/check-contrast.mjs`
+re-derives every ratio from the committed CSS and fails the build on a
+violation, so the guarantee does not depend on the generator being correct.
+
+Three findings from building it, kept as standing rules:
+
+- **Per-hue solid lightness.** One global lightness for the solid fill makes
+  amber brown. Perceived lightness is not uniform across hues.
+- **Never generate exactly to a threshold.** Solving to precisely 4.5:1 fails an
+  independent check at 4.4999:1. The generator targets the threshold × 1.02.
+- **Muted text is solved against step 3, not step 2.** It appears on component
+  backgrounds as often as on the page, and step 3 is the harder target.
+
+Body text uses a fixed lightness with an asserted floor rather than a solve:
+solving it to exactly 7:1 produced a mid-grey that passes and reads as disabled.

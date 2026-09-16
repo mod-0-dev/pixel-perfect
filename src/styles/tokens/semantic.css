@@ -1,0 +1,164 @@
+/*
+ * SEMANTIC TOKENS — the styling API.
+ *
+ * Components reference these and nothing else. A component that names a
+ * --pp-palette-* token directly has hardcoded a colour decision. (RULES §3)
+ *
+ * Two groups:
+ *
+ *   1. Fixed tokens  (--pp-color-*, --pp-focus-*)  — surfaces, body text,
+ *      borders. Same meaning everywhere.
+ *
+ *   2. Tone tokens   (--pp-tone-*)  — rewired by [data-pp-tone]. A component
+ *      writes var(--pp-tone-solid) once and inherits the right colour for
+ *      whichever tone its consumer asked for. Adding a tone is one block here,
+ *      not an edit in every component.
+ */
+
+@layer pp.tokens {
+  :root {
+    /* ---- Surfaces ---- */
+    --pp-color-bg-page: var(--pp-palette-neutral-1);
+    --pp-color-bg-surface: var(--pp-palette-neutral-1);
+    --pp-color-bg-raised: var(--pp-palette-neutral-1);
+    --pp-color-bg-sunken: var(--pp-palette-neutral-3);
+    --pp-color-bg-scrim: oklch(15% 0.01 258 / 0.55);
+
+    /* ---- Text ---- */
+    --pp-color-text: var(--pp-palette-neutral-12);
+    --pp-color-text-muted: var(--pp-palette-neutral-11);
+    --pp-color-text-disabled: var(--pp-palette-neutral-8);
+    --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+
+    /* ---- Borders ---- */
+    --pp-color-border-subtle: var(--pp-palette-neutral-6);
+    --pp-color-border: var(--pp-palette-neutral-7);
+    --pp-color-border-strong: var(--pp-palette-neutral-8);
+
+    /* ---- Focus ---- */
+    --pp-color-focus-ring: var(--pp-palette-accent-focus);
+    --pp-focus-ring-width: var(--pp-border-width-2);
+    --pp-focus-ring-offset: var(--pp-border-width-2);
+
+    /* ---- Selection ---- */
+    --pp-color-selection-bg: var(--pp-palette-accent-5);
+    --pp-color-selection-text: var(--pp-palette-accent-12);
+
+    /* ---- Default tone ---- */
+    --pp-tone-surface: var(--pp-palette-neutral-2);
+    --pp-tone-bg: var(--pp-palette-neutral-3);
+    --pp-tone-bg-hover: var(--pp-palette-neutral-4);
+    --pp-tone-bg-active: var(--pp-palette-neutral-5);
+    --pp-tone-border-subtle: var(--pp-palette-neutral-6);
+    --pp-tone-border: var(--pp-palette-neutral-7);
+    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-solid: var(--pp-palette-neutral-9);
+    --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-tone-text: var(--pp-palette-neutral-11);
+    --pp-tone-text-strong: var(--pp-palette-neutral-12);
+    --pp-tone-focus: var(--pp-palette-neutral-focus);
+  }
+
+  /*
+   * Elevation inverts between themes: a light UI raises a surface by making it
+   * whiter than the page and adding a shadow; a dark UI raises it by making it
+   * lighter, because shadows are invisible on dark backgrounds. This is the
+   * only place a semantic token needs to know which theme it is in.
+   */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-pp-theme="light"]) {
+      --pp-color-bg-surface: var(--pp-palette-neutral-2);
+      --pp-color-bg-raised: var(--pp-palette-neutral-3);
+      --pp-color-bg-sunken: var(--pp-palette-neutral-1);
+      --pp-color-bg-scrim: oklch(8% 0.01 258 / 0.7);
+    }
+  }
+
+  :root[data-pp-theme="dark"] {
+    --pp-color-bg-surface: var(--pp-palette-neutral-2);
+    --pp-color-bg-raised: var(--pp-palette-neutral-3);
+    --pp-color-bg-sunken: var(--pp-palette-neutral-1);
+    --pp-color-bg-scrim: oklch(8% 0.01 258 / 0.7);
+  }
+
+  [data-pp-tone="neutral"] {
+    --pp-tone-surface: var(--pp-palette-neutral-2);
+    --pp-tone-bg: var(--pp-palette-neutral-3);
+    --pp-tone-bg-hover: var(--pp-palette-neutral-4);
+    --pp-tone-bg-active: var(--pp-palette-neutral-5);
+    --pp-tone-border-subtle: var(--pp-palette-neutral-6);
+    --pp-tone-border: var(--pp-palette-neutral-7);
+    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-solid: var(--pp-palette-neutral-9);
+    --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-tone-text: var(--pp-palette-neutral-11);
+    --pp-tone-text-strong: var(--pp-palette-neutral-12);
+    --pp-tone-focus: var(--pp-palette-neutral-focus);
+  }
+
+  [data-pp-tone="accent"] {
+    --pp-tone-surface: var(--pp-palette-accent-2);
+    --pp-tone-bg: var(--pp-palette-accent-3);
+    --pp-tone-bg-hover: var(--pp-palette-accent-4);
+    --pp-tone-bg-active: var(--pp-palette-accent-5);
+    --pp-tone-border-subtle: var(--pp-palette-accent-6);
+    --pp-tone-border: var(--pp-palette-accent-7);
+    --pp-tone-border-strong: var(--pp-palette-accent-8);
+    --pp-tone-solid: var(--pp-palette-accent-9);
+    --pp-tone-solid-hover: var(--pp-palette-accent-10);
+    --pp-tone-on-solid: var(--pp-palette-accent-on-solid);
+    --pp-tone-text: var(--pp-palette-accent-11);
+    --pp-tone-text-strong: var(--pp-palette-accent-12);
+    --pp-tone-focus: var(--pp-palette-accent-focus);
+  }
+
+  [data-pp-tone="danger"] {
+    --pp-tone-surface: var(--pp-palette-danger-2);
+    --pp-tone-bg: var(--pp-palette-danger-3);
+    --pp-tone-bg-hover: var(--pp-palette-danger-4);
+    --pp-tone-bg-active: var(--pp-palette-danger-5);
+    --pp-tone-border-subtle: var(--pp-palette-danger-6);
+    --pp-tone-border: var(--pp-palette-danger-7);
+    --pp-tone-border-strong: var(--pp-palette-danger-8);
+    --pp-tone-solid: var(--pp-palette-danger-9);
+    --pp-tone-solid-hover: var(--pp-palette-danger-10);
+    --pp-tone-on-solid: var(--pp-palette-danger-on-solid);
+    --pp-tone-text: var(--pp-palette-danger-11);
+    --pp-tone-text-strong: var(--pp-palette-danger-12);
+    --pp-tone-focus: var(--pp-palette-danger-focus);
+  }
+
+  [data-pp-tone="success"] {
+    --pp-tone-surface: var(--pp-palette-success-2);
+    --pp-tone-bg: var(--pp-palette-success-3);
+    --pp-tone-bg-hover: var(--pp-palette-success-4);
+    --pp-tone-bg-active: var(--pp-palette-success-5);
+    --pp-tone-border-subtle: var(--pp-palette-success-6);
+    --pp-tone-border: var(--pp-palette-success-7);
+    --pp-tone-border-strong: var(--pp-palette-success-8);
+    --pp-tone-solid: var(--pp-palette-success-9);
+    --pp-tone-solid-hover: var(--pp-palette-success-10);
+    --pp-tone-on-solid: var(--pp-palette-success-on-solid);
+    --pp-tone-text: var(--pp-palette-success-11);
+    --pp-tone-text-strong: var(--pp-palette-success-12);
+    --pp-tone-focus: var(--pp-palette-success-focus);
+  }
+
+  [data-pp-tone="warning"] {
+    --pp-tone-surface: var(--pp-palette-warning-2);
+    --pp-tone-bg: var(--pp-palette-warning-3);
+    --pp-tone-bg-hover: var(--pp-palette-warning-4);
+    --pp-tone-bg-active: var(--pp-palette-warning-5);
+    --pp-tone-border-subtle: var(--pp-palette-warning-6);
+    --pp-tone-border: var(--pp-palette-warning-7);
+    --pp-tone-border-strong: var(--pp-palette-warning-8);
+    --pp-tone-solid: var(--pp-palette-warning-9);
+    --pp-tone-solid-hover: var(--pp-palette-warning-10);
+    --pp-tone-on-solid: var(--pp-palette-warning-on-solid);
+    --pp-tone-text: var(--pp-palette-warning-11);
+    --pp-tone-text-strong: var(--pp-palette-warning-12);
+    --pp-tone-focus: var(--pp-palette-warning-focus);
+  }
+}

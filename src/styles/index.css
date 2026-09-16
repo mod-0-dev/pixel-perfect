@@ -1,1 +1,7 @@
-/* entry: layer declaration and imports land in Tier 0.3 */
+/*
+ * pixel-perfect — single stylesheet entry point.
+ * Consumers: import "pixel-perfect/styles.css" once, at the app root.
+ */
+
+@import "./tokens/primitives.css";
+@import "./tokens/semantic.css";
