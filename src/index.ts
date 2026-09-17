@@ -15,6 +15,13 @@ export {
   type HeadingProps,
   type HeadingSize,
 } from './components/Heading/Heading';
+export {
+  Grid,
+  gridTracks,
+  type GridAlign,
+  type GridMode,
+  type GridProps,
+} from './components/Grid/Grid';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
 export {

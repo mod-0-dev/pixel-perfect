@@ -26,13 +26,13 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023). **2.1
-  `Stack` and 2.2 `Cluster` are `done`**, which is 45 of launchpad's
-  hand-rolled layout classes answered
-- **Next up:** 2.3 `Grid`
-- **Remaining in tier:** `Grid` → `Container` → `Center` → `Split` →
-  `AspectRatio` → `Scroller`, one at a time
-- **Done:** 23 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023). **`Stack`,
+  `Cluster` and `Grid` are `done`** — every layout class launchpad hand-rolls
+  except the page container
+- **Next up:** 2.4 `Container`, which completes the set the consuming app needs
+- **Remaining in tier:** `Container` → `Center` → `Split` → `AspectRatio` →
+  `Scroller`, one at a time
+- **Done:** 24 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -86,7 +86,7 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 | --- | --- | --- | --- | --- | --- | --- |
 | 2.1 | `Stack` | `done` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale (D-020) |
 | 2.2 | `Cluster` | `done` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify`. Wrapping needs no query |
-| 2.3 | `Grid` | `spec` | fill | server | 2.1 | Explicit columns + `auto-fit` mode |
+| 2.3 | `Grid` | `done` | fill | server | 2.1 | Fixed columns, `auto-fit`, or a raw template (D-022 §4). Tracks are always `minmax(0, 1fr)` |
 | 2.4 | `Container` | `spec` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`** |
 | 2.5 | `Center` | `spec` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure |
 | 2.6 | `Split` | `spec` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint |

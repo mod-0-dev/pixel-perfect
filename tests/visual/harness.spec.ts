@@ -142,5 +142,51 @@ test.describe('layout primitives', () => {
     // they do not get a second. That is a bug the component was told to have.
     await expect(section.locator('.matrix__viewport[data-overflowing]').first()).toBeVisible();
   });
+
+  test('an auto-fit Grid reflows across container widths with no query', async ({ page }) => {
+    await page.goto('/components/grid');
+
+    const section = page.locator('section', { hasText: 'auto-fit is the container-native mode' });
+    const columnCount = (cellIndex: number) =>
+      section
+        .locator('.matrix__viewport')
+        .nth(cellIndex)
+        .locator('.pp-grid')
+        .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+
+    // 12rem minimum in 240px / 480px / 960px content boxes, minus the cell's
+    // own padding. Nothing here consulted the viewport.
+    expect(await columnCount(0)).toBe(1);
+    expect(await columnCount(1)).toBe(2);
+    expect(await columnCount(2)).toBeGreaterThan(2);
+  });
+
+  test('a nested Grid does not inherit its parent tracks', async ({ page }) => {
+    await page.goto('/components/grid');
+
+    const section = page.locator('section', { hasText: 'Nested grids do not inherit' });
+    const outer = section.locator('.pp-grid[data-mode="fixed"]').first();
+    // Structurally, not by data-mode — see the note on the nested-Stack test.
+    const inner = outer.locator('.pp-grid').first();
+
+    const cols = (el: typeof outer) =>
+      el.evaluate((node) => getComputedStyle(node).gridTemplateColumns.split(' ').length);
+
+    expect(await cols(outer)).toBe(3);
+    expect(await cols(inner)).toBe(1);
+  });
+
+  test('--pp-grid-template-columns set on an ANCESTOR beats the prop', async ({ page }) => {
+    await page.goto('/components/grid');
+
+    // D-024. Had Grid written the public property into its own inline style,
+    // this would read three columns and the documented escape hatch would be
+    // decorative. The private-property indirection is what makes it real.
+    const section = page.locator('section', { hasText: 'Styling API' });
+    const grid = section.locator('.pp-grid').first();
+
+    const tracks = await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+    expect(tracks.split(' ')).toHaveLength(2);
+  });
 });
 

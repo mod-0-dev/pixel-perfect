@@ -667,3 +667,44 @@ reached RULES §3, found the compliant vocabulary did not contain the thing it
 needed, and the gap was invisible until something tried to use it. The general
 lesson is already in D-015 — the prose and the enforced rule drift apart, and
 only building against them finds out which is wrong.
+
+## D-024 — A component never writes its own public override property inline
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §3
+
+RULES §3 requires every component to expose component-scoped custom properties
+(`--pp-grid-template-columns`) as its override API, and D-007's whole mechanism
+depends on a consumer being able to set one on an ancestor.
+
+`Grid` is the first component whose props produce a *computed value* rather than
+a fixed enum, so it is the first that has to write a custom property from
+JavaScript. Written naively:
+
+```tsx
+style={{ ...style, '--pp-grid-template-columns': template }}
+```
+
+That is an inline declaration. Nothing on an ancestor can outrank an inline
+style, so **the documented escape hatch is dead for every `Grid` that takes a
+prop** — which is every `Grid`. The property would still exist, still be
+documented, and never once take effect.
+
+**The rule.** A component writes a *private* property (`--_pp-grid-tracks`), and
+the stylesheet reads the public one first:
+
+```css
+grid-template-columns: var(--pp-grid-template-columns, var(--_pp-grid-tracks, none));
+```
+
+The consumer's override then wins from anywhere, including an ancestor, and the
+prop remains the default. This matches how `--pp-stack-gap` already behaves —
+`Stack` writes an attribute and the stylesheet maps it, so the question never
+arose there.
+
+**Consequence: the private property must always be written, never conditionally.**
+Custom properties inherit, so a propless `Grid` nested inside a three-column one
+would lay itself out in three columns. `Grid` writes `none` in that case. This is
+the same hazard as D-020's gap scale and has the same answer — *always emit* —
+which is now twice, and therefore a pattern rather than a coincidence.
+
+Found by a unit test written to assert the opposite behaviour, not by review.

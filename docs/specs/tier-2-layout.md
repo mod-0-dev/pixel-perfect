@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | 2.1 `Stack` | `done` | 2.5 `Center` | `spec` |
 | 2.2 `Cluster` | `done` | 2.6 `Split` | `spec` |
-| 2.3 `Grid` | `spec` | 2.7 `AspectRatio` | `spec` |
+| 2.3 `Grid` | `done` | 2.7 `AspectRatio` | `spec` |
 | 2.4 `Container` | `spec` | 2.8 `Scroller` | `spec` |
 
 This is the tier the whole library has been waiting on. RULES §1 took sizing and

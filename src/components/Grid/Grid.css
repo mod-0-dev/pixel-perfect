@@ -1,0 +1,33 @@
+/*
+ * Grid — spec §2.3
+ *
+ * `display: grid` and a track list. This is NOT role="grid" — the ARIA grid
+ * pattern is a data widget with its own keyboard contract, and it belongs to
+ * Table (5.4).
+ *
+ * Two properties, deliberately:
+ *
+ *   --_pp-grid-tracks            private, written inline from the props
+ *   --pp-grid-template-columns   public, the documented override
+ *
+ * The public one is read FIRST, so a consumer setting it on an ancestor beats
+ * the prop. Had the component written the public name inline instead, nothing
+ * on an ancestor could ever outrank it and the escape hatch would be decorative.
+ *
+ * `none` is the no-props case: a single implicit column, which is what CSS does
+ * anyway and is a legitimate thing to want with a gap.
+ */
+
+@layer pp.components {
+  .pp-grid {
+    display: grid;
+    min-inline-size: 0;
+    gap: var(--pp-grid-gap, var(--_pp-gap));
+    grid-template-columns: var(--pp-grid-template-columns, var(--_pp-grid-tracks, none));
+  }
+
+  .pp-grid[data-align="start"] { align-items: start; }
+  .pp-grid[data-align="center"] { align-items: center; }
+  .pp-grid[data-align="end"] { align-items: end; }
+  .pp-grid[data-align="stretch"] { align-items: stretch; }
+}
