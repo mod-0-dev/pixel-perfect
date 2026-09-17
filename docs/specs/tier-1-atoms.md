@@ -17,7 +17,7 @@
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
 | 1.5 `Separator` | `done` | 1.11 `Code` | `done` |
-| 1.6 `Spinner` | `build` | | |
+| 1.6 `Spinner` | `done` | | |
 
 Eleven components with no internal state (bar one), no keyboard interaction, and
 no ARIA surface beyond correct semantics. They are specified together because
