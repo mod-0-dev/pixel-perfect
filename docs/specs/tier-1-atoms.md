@@ -12,7 +12,7 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 1.1 `Text` | `build` | 1.7 `Skeleton` | `spec` |
+| 1.1 `Text` | `done` | 1.7 `Skeleton` | `spec` |
 | 1.2 `Heading` | `spec` | 1.8 `Badge` | `spec` |
 | 1.3 `Icon` | `spec` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `spec` |
@@ -177,6 +177,11 @@ so it shrinks correctly inside a flex or grid parent instead of forcing overflow
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | root | `pp-text` | `<p>` | `<span>` etc. via `asChild` |
+
+The stylesheet declares no `display`: the `<p>` is block-level natively, and an
+`asChild` child keeps its own. Consequence: single-line `truncate` needs a
+block box, so it does not clip on an inline `asChild` element. Multi-line
+clamping sets its own display and works on either.
 
 ### Props
 

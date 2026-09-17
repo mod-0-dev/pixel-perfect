@@ -27,11 +27,11 @@ is `done`.
 ### Current state
 
 - **In flight:** Tier 1 — Gate C **approved** (D-015, D-016). Implementing in
-  dependency order, one at a time: ~~`VisuallyHidden`~~ → `Text` → `Heading` →
+  dependency order, one at a time: ~~`VisuallyHidden`~~ → ~~`Text`~~ → `Heading` →
   `Icon` → `Separator` → `Badge` → `Kbd` → `Code` → `Spinner` → `Skeleton` →
   `Avatar`
 - **Next up:** Tier 2 — Layout primitives. 0.10 docs site is deferred, not blocking
-- **Done:** 11 / 78 tracked items (10 foundations + 68 components)
+- **Done:** 12 / 78 tracked items (10 foundations + 68 components)
 
 ---
 
@@ -61,7 +61,7 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1.1 | `Text` | `build` | fill | server | T0 | Typography scale, `tone`, truncation |
+| 1.1 | `Text` | `done` | fill | server | T0 | Typography scale, `tone`, truncation |
 | 1.2 | `Heading` | `spec` | fill | server | 1.1 | Visual level decoupled from semantic level |
 | 1.3 | `Icon` | `spec` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
 | 1.4 | `VisuallyHidden` | `done` | n/a | server | T0 | |

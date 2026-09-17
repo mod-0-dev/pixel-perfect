@@ -18,7 +18,10 @@
     --_weight: var(--pp-font-weight-regular);
     --_color: var(--pp-color-text);
 
-    display: block;
+    /* No `display` declaration. The <p> is block-level natively, which is the
+       fill contract; an `asChild` <span> keeps its own inline display, which
+       is the point of asChild. Declaring `display: block` here turned every
+       inline usage into a stack of lines — seen in the playground. */
     min-inline-size: 0;
     /* A <p> carries UA margin. Removing it is the rule, not a breach of it (D-018). */
     margin: 0;

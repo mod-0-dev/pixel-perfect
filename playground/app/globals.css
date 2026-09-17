@@ -38,7 +38,15 @@ body {
   font-size: var(--pp-font-size-5);
 }
 
-.page p {
+/*
+ * Description paragraphs only — direct children of the page or a section.
+ * An unscoped `.page p` would also hit every <p class="pp-text"> inside the
+ * matrix, and because this file is unlayered it would WIN, silently overriding
+ * the component under test. That is the cascade doing exactly what RULES §3
+ * promises consumers; it just must not happen to the harness by accident.
+ */
+.page > p,
+.page section > p {
   margin: 0;
   color: var(--pp-color-text-muted);
   max-width: 68ch;

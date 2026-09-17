@@ -37,6 +37,10 @@ Owner: <Text asChild weight="semibold"><span>Samuel Okafor</span></Text>
 
 Plus every `<p>` attribute. `ref` goes to the root element.
 
+`asChild` keeps the child's own display, so an inline `<span>` stays inline.
+Single-line `truncate` needs a block box and will not clip on an inline child;
+multi-line clamping works on either.
+
 Every prop is mirrored on the DOM as `data-size`, `data-tone`, `data-weight`,
 `data-align`, `data-truncate`, so you can style against state without knowing
 the internals. The four context tones also set `data-pp-tone`.
