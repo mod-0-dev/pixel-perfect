@@ -168,3 +168,16 @@ body {
   color: var(--pp-color-text);
   overflow-wrap: anywhere;
 }
+
+/* A neutral button for harness pages, until Button (3.1) exists. */
+.demo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pp-space-2);
+  border: 1px solid var(--pp-color-border);
+  border-radius: var(--pp-radius-2);
+  background-color: var(--pp-color-bg-surface);
+  color: var(--pp-color-text);
+  cursor: pointer;
+}

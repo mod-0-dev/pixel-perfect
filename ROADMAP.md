@@ -64,7 +64,7 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 | 1.1 | `Text` | `spec` | fill | server | T0 | Typography scale, `tone`, truncation |
 | 1.2 | `Heading` | `spec` | fill | server | 1.1 | Visual level decoupled from semantic level |
 | 1.3 | `Icon` | `spec` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
-| 1.4 | `VisuallyHidden` | `spec` | n/a | server | T0 | |
+| 1.4 | `VisuallyHidden` | `build` | n/a | server | T0 | |
 | 1.5 | `Separator` | `spec` | fill | server | T0 | Horizontal + vertical, `role="separator"` |
 | 1.6 | `Spinner` | `spec` | hug | server | T0 | `prefers-reduced-motion` |
 | 1.7 | `Skeleton` | `spec` | fill | server | T0 | |
