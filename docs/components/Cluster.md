@@ -79,7 +79,24 @@ correctly, not a bug — but it is worth seeing before you ship
 //   A bordered row of things is a Card (5.1) containing a Cluster.
 <Cluster style={{ padding: 16, border: '1px solid' }}>…</Cluster>
 
-// ✗ One child that should fill the row. Cluster distributes; it does not
-//   grow a child for you. Use Split (2.6), or style={{ flex: 1 }}.
-<Cluster justify="between"><Text truncate>{title}</Text></Cluster>
+// ✗ A `fill` component with no intrinsic content, as a direct child.
+//   It renders ZERO WIDE: no width declaration (that is the contract), no
+//   content to size it, and nothing telling it to grow. The failure is
+//   silent — a zero-width box looks like nothing, not like an error.
+<Cluster gap="3"><Progress value={60} /></Cluster>
 ```
+
+Cluster distributes; it does not grow a child for you. When one child should
+take the remaining space, say so:
+
+```tsx
+<Grid columns="minmax(0, 1fr) auto" gap="3">…</Grid>   {/* or */}
+<Split gap="3">…</Split>                               {/* or, at the call site */}
+<Cluster gap="3"><div style={{ inlineSize: '12rem' }}><Progress /></div></Cluster>
+```
+
+The last one is not a rules violation. [RULES §1](../RULES.md) binds this
+library, not its consumers — sizing belongs to the parent, and in an app the
+parent is the app. Found in
+[launchpad](https://github.com/mod-0-dev/launchpad), where a readiness meter had
+been an invisible hairline since its first commit.
