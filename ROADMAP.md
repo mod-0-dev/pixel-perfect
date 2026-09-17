@@ -18,14 +18,23 @@ Definition of Done: [`.claude/skills/component/references/definition-of-done.md`
 | **Contract** | `fill`, `hug`, `n/a` (providers, layout-only, non-visual) |
 | **RSC** | `server` (no `'use client'`) / `client` |
 
-**WIP limit: 1.** At most one component may be in `spec`, `build`, or `review`
-at any time. A component may not enter `spec` until every entry in its **Deps**
-column is `done`.
+**WIP limit: 1**, applying to `build` and `review` only. Specs are approved a
+group at a time, so any number of components in a group may sit in `spec`
+together ([D-014](docs/DECISIONS.md)). Implementation remains strictly one at a
+time. A component may not enter `spec` until every entry in its **Deps** column
+is `done`.
 
 ### Current state
 
-- **In flight:** _none_
-- **Next up:** Tier 1 — Atoms (1.1 `Text`). 0.10 docs site is deferred, not blocking
+- **In flight:** Tier 1 — all 11 atoms in `spec`, batched into
+  [`docs/specs/tier-1-atoms.md`](docs/specs/tier-1-atoms.md), **awaiting Gate C
+  approval**
+- **Blocked on:** [D-015](docs/DECISIONS.md) (`proposed`). RULES §3 as written
+  leaves no compliant way to declare padding, radius or font size, because the
+  semantic layer is colour-only. No Tier 1 component can be implemented until it
+  is resolved
+- **Next up:** on approval, implement in dependency order starting with
+  `VisuallyHidden`. 0.10 docs site is deferred, not blocking
 - **Done:** 10 / 77 tracked items (10 foundations + 67 components)
 
 ---
@@ -51,21 +60,22 @@ Not components. Nothing else may start until this tier is `done`.
 
 ## Tier 1 — Atoms
 
-No internal state, no a11y surface beyond semantics.
+No internal state, no a11y surface beyond semantics. Specified as one batch in
+[`docs/specs/tier-1-atoms.md`](docs/specs/tier-1-atoms.md).
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1.1 | `Text` | `planned` | fill | server | T0 | Typography scale, `tone`, truncation |
-| 1.2 | `Heading` | `planned` | fill | server | 1.1 | Visual level decoupled from semantic level |
-| 1.3 | `Icon` | `planned` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
-| 1.4 | `VisuallyHidden` | `planned` | n/a | server | T0 | |
-| 1.5 | `Separator` | `planned` | fill | server | T0 | Horizontal + vertical, `role="separator"` |
-| 1.6 | `Spinner` | `planned` | hug | server | T0 | `prefers-reduced-motion` |
-| 1.7 | `Skeleton` | `planned` | fill | server | T0 | |
-| 1.8 | `Badge` | `planned` | hug | server | T0 | The canonical `hug` case |
-| 1.9 | `Avatar` | `planned` | hug | client | 1.3 | Image fallback needs state |
-| 1.10 | `Kbd` | `planned` | hug | server | T0 | |
-| 1.11 | `Code` | `planned` | hug | server | T0 | Inline only; block code is Tier 5 |
+| 1.1 | `Text` | `spec` | fill | server | T0 | Typography scale, `tone`, truncation |
+| 1.2 | `Heading` | `spec` | fill | server | 1.1 | Visual level decoupled from semantic level |
+| 1.3 | `Icon` | `spec` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
+| 1.4 | `VisuallyHidden` | `spec` | n/a | server | T0 | |
+| 1.5 | `Separator` | `spec` | fill | server | T0 | Horizontal + vertical, `role="separator"` |
+| 1.6 | `Spinner` | `spec` | hug | server | T0 | `prefers-reduced-motion` |
+| 1.7 | `Skeleton` | `spec` | fill | server | T0 | |
+| 1.8 | `Badge` | `spec` | hug | server | T0 | The canonical `hug` case |
+| 1.9 | `Avatar` | `spec` | hug | client | 1.3 | Image fallback needs state |
+| 1.10 | `Kbd` | `spec` | hug | server | T0 | |
+| 1.11 | `Code` | `spec` | hug | server | T0 | Inline only; block code is Tier 5 |
 
 ---
 

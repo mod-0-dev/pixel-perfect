@@ -269,3 +269,89 @@ head.
 behaviour (overflow detection, theme distinctness) rather than pixels, which is
 also what caught the D-011 token bug. That is the split worth keeping: assert
 behaviour where you can, and reserve pixels for what only pixels can catch.
+
+## D-014 — Gate C approves a group of specs, not one component at a time
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Gate A, Gate C, Definition of Done
+
+The `/component` skill stops for API approval after every individual spec. For
+the eleven Tier 1 atoms that is eleven round trips to approve eleven components
+whose entire surface is a handful of presentational props.
+
+Gate C now applies **per group**: one spec document covering a coherent set of
+components, one approval. The groups are the roadmap tiers, subdivided where a
+tier is large.
+
+**Gate A is amended accordingly.** The WIP limit of 1 now applies to `build` and
+`review` only. Any number of components in a group may sit in `spec` at once,
+because a spec is a document and there is no such thing as a half-written
+component in a document. Implementation remains strictly one at a time — that
+is the limit that was actually protecting anything.
+
+**The Definition of Done is amended.** Its first box, "`docs/specs/<Name>.md`
+exists", is satisfied by a dedicated section in a group spec
+(`docs/specs/tier-<n>-<group>.md`). Eleven files that each exist to hold two
+tables is worse than one document that can be read end to end, and reviewing a
+group together is the only way to catch the inconsistencies between components
+that matter most — a `size` that means one thing in `Badge` and another in
+`Text`.
+
+**What is not relaxed.** Every section of the template is still filled in for
+every component. The gate is still a hard stop: no implementation lands in the
+same turn as the spec it implements.
+
+**This does not extend to Tiers 3 and 4.** `Field` and the overlay foundation
+are where API mistakes get expensive, and they are approved individually.
+Revisit this entry before spec'ing Tier 3.
+
+## D-015 — "Semantic tokens only" governs colour; dimensional primitives are consumed directly
+
+**Date:** 2026-09-17 · **Status:** proposed · **Amends:** RULES §3
+
+RULES §3 says components consume semantic tokens only, and names `--pp-space-3`
+as a primitive. The semantic layer defines colour and focus-ring tokens and
+nothing else. There is therefore **no compliant way for a component to declare
+padding, radius, font size, line height, duration or z-index** — which every
+Tier 1 atom needs on its first line of CSS.
+
+This was found by trying to spec `Badge`, not by reading the rules.
+
+**Resolution.** The "semantic tokens only" requirement governs **colour**.
+Dimensional primitives — `--pp-space-*`, `--pp-radius-*`, `--pp-font-size-*`,
+`--pp-line-height-*`, `--pp-font-weight-*`, `--pp-letter-spacing-*`,
+`--pp-border-width-*`, `--pp-duration-*`, `--pp-easing-*`, `--pp-shadow-*`,
+`--pp-z-*` — are consumed directly by components. `--pp-palette-*` remains
+banned outright.
+
+**Why colour is the special case.** A colour token must resolve differently per
+theme and per tone: that is the entire point of the semantic layer, and the
+reason D-011 exists. `--pp-space-3` is `0.75rem` in light mode, in dark mode,
+and under every tone. Interposing `--pp-space-inset-md: var(--pp-space-3)`
+between the component and the scale adds a name to learn and changes nothing.
+
+**The linter already worked this way.** `scripts/lint-rules.mjs` bans
+`--pp-palette-*` and nothing else; stylelint bans raw units in dimensional
+properties, which any `var()` satisfies. The enforced rule has always been this
+one. The prose was aspirational and the code was right — this entry makes the
+prose match, rather than writing a linter to enforce a rule that would have made
+the library unbuildable.
+
+**What this does not license.** A hardcoded `12px`, `0.75rem` or `#fff` in
+component CSS remains a bug. Every value still comes from a token.
+
+**Two follow-ons, deliberately not done now:**
+
+- **Control sizing is a genuine semantic need, and arrives with Tier 3.** What
+  makes a `Button`, an `Input` and a `Select` line up at `size="md"` is not that
+  they each picked `--pp-space-2`; it is that they share one definition of how
+  tall a medium control is. A `--pp-control-height-*` / `-padding-inline-*` /
+  `-font-size-*` set will be added when the first two components that must agree
+  exist. Adding it now, with nothing to align, would be guessing.
+- **Density, if it ever ships, is a context and not a token rename.** The
+  mechanism is `[data-pp-density]` rewiring a small set of custom properties,
+  exactly as `[data-pp-tone]` does in D-007 — not a parallel semantic scale.
+
+Per-component tuning already has an answer that predates this entry: RULES §3
+requires every component to expose component-scoped custom properties
+(`--pp-badge-padding-inline`) as its override API. That covers the case a
+dimensional semantic layer would have served, without a second global vocabulary.

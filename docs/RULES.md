@@ -71,6 +71,13 @@ There is no `Spacer` component. `gap` exists.
   raw values. Semantics (`--pp-color-accent-bg`, `--pp-color-border-subtle`) map
   primitives to meaning. **Components consume semantic tokens only.** A hardcoded
   hex, px, or rem in component CSS is a bug.
+
+  > ⚠️ **This bullet is under revision — see [D-015](DECISIONS.md) (`proposed`).**
+  > The semantic layer defines colour and focus-ring tokens and nothing else, so
+  > as written there is no compliant way for a component to declare padding,
+  > radius or font size. The proposal scopes "semantic tokens only" to colour and
+  > lets components consume dimensional primitives directly, which is what the
+  > linter has enforced since Tier 0. Tier 1 is blocked until this is resolved.
 - **Theming is redefining custom properties.** Dark mode is a token layer, not a
   `dark:` variant sprinkled through components, and it exists from day one — not
   bolted on at Tier 5.
