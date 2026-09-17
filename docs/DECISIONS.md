@@ -708,3 +708,48 @@ the same hazard as D-020's gap scale and has the same answer — *always emit* �
 which is now twice, and therefore a pattern rather than a coincidence.
 
 Found by a unit test written to assert the opposite behaviour, not by review.
+
+## D-025 — `--pp-measure-*`, and token enforcement for length-valued layout properties
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens, Tier 0.7 lint; D-016 §5
+
+Two findings from building `Container`.
+
+**A third dimensional scale.** The measures `Container` constrains to — `40rem`,
+`64rem`, `80rem` — exist on no scale in the library. Space is the rhythm
+*between* boxes and tops out at `6rem`; size is how big a box is, indexed in
+quarter-rems, and `40rem` there would be `--pp-size-160`. Measure answers a third
+question: **how wide may content run before it stops being readable.**
+
+So `--pp-measure-sm` / `-md` / `-lg`. Only `Container` may consume them
+(RULES §1, D-001), but they are exported so a consuming app can align a
+full-bleed section to the same measure without hardcoding it.
+
+Rejected: leaving the three values raw in `Container.css`. RULES §3 says every
+value comes from a token, and the one component allowed to break the sizing
+rule is the last place to start making exceptions to the token rule.
+
+**The linter never checked length-valued layout properties.** `max-inline-size`,
+`block-size`, `min-block-size`, `max-block-size` and `flex-basis` all take a
+length and none was in the raw-unit ban. It went unnoticed because
+`max-inline-size` was banned outright as a *property*, so no file could reach
+it — until `Container`, which is exempt from that ban and would therefore have
+been free to hardcode `40rem` with nothing objecting.
+
+They are now in the ban, with fixtures in `violations.css` so the self-test
+observes the rule firing on each (D-009). Two pre-existing declarations were
+caught, both legitimate, both exempted per-file rather than by weakening the
+rule:
+
+- **`VisuallyHidden`'s `block-size: 1px`.** D-016 §5 exempted this file's
+  `inline-size: 1px` as part of a fixed technique. It named only the inline
+  axis because only the inline axis was checked; the block half is the same
+  declaration in the same technique. The exemption is extended, not widened.
+- **`Skeleton`'s `block-size: 1em`.** One line of whatever type the skeleton
+  sits in — a relative unit derived from an inherited token, not a magic
+  number. Same family as `Icon`'s `1em` sizing (D-019).
+
+**The general shape, which has now happened twice:** a ban expressed at the
+property level hides the absence of a ban at the value level, and the gap only
+becomes reachable when some component earns an exemption. Worth checking the
+value rules whenever a property exemption is granted.

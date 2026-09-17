@@ -16,6 +16,11 @@ export {
   type HeadingSize,
 } from './components/Heading/Heading';
 export {
+  Container,
+  type ContainerProps,
+  type ContainerSize,
+} from './components/Container/Container';
+export {
   Grid,
   gridTracks,
   type GridAlign,

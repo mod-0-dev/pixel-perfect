@@ -27,6 +27,12 @@
     min-inline-size: 320px;
     font-family: Inter, sans-serif;
     border-width: 2px;
+    /* Length-valued layout properties. Only Container may declare
+       max-inline-size at all, and nothing checked it used a token until
+       Container was built. */
+    max-inline-size: 40rem;
+    block-size: 32px;
+    flex-basis: 16rem;
   }
 
   .badClassName {

@@ -188,5 +188,42 @@ test.describe('layout primitives', () => {
     const tracks = await grid.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
     expect(tracks.split(' ')).toHaveLength(2);
   });
+
+  test('Container constrains its measure and centres what is left', async ({ page }) => {
+    await page.goto('/components/container');
+
+    const section = page.locator('section', { hasText: 'Styling API' });
+    // The 960px cell is wider than the 20rem pin, so the constraint applies.
+    const cell = section.locator('.matrix__viewport').nth(2);
+    const container = cell.locator('.pp-container');
+
+    const { width, marginStart, marginEnd } = await container.evaluate((el) => {
+      const parent = el.parentElement!.getBoundingClientRect();
+      const own = el.getBoundingClientRect();
+      return {
+        width: own.width,
+        marginStart: own.left - parent.left,
+        marginEnd: parent.right - own.right,
+      };
+    });
+
+    expect(width).toBeCloseTo(320, 0); // 20rem at a 16px root
+    // Centred: margin-inline: auto, which is Container's other exemption (D-018).
+    expect(marginStart).toBeCloseTo(marginEnd, 0);
+    expect(marginStart).toBeGreaterThan(0);
+  });
+
+  test('Container establishes a query container for everything below it', async ({ page }) => {
+    await page.goto('/components/container');
+
+    // Not incidental: without one near the top of the tree, a component's
+    // @container rules resolve against whatever ancestor happens to have one,
+    // which in a page with none is the viewport — quietly reintroducing the
+    // thing RULES §1 removed. Split (2.6) is the first to depend on it.
+    const container = page.locator('.pp-container').first();
+    expect(await container.evaluate((el) => getComputedStyle(el).containerType)).toBe(
+      'inline-size',
+    );
+  });
 });
 

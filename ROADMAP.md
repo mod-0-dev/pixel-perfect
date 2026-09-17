@@ -27,12 +27,13 @@ is `done`.
 ### Current state
 
 - **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023). **`Stack`,
-  `Cluster` and `Grid` are `done`** — every layout class launchpad hand-rolls
-  except the page container
-- **Next up:** 2.4 `Container`, which completes the set the consuming app needs
-- **Remaining in tier:** `Container` → `Center` → `Split` → `AspectRatio` →
-  `Scroller`, one at a time
-- **Done:** 24 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+  `Cluster`, `Grid` and `Container` are `done`.** That is every layout class the
+  consuming app hand-rolls, so launchpad can migrate now
+- **Next up:** 2.5 `Center`
+- **Remaining in tier:** `Center` → `Split` → `AspectRatio` → `Scroller`, one
+  at a time. `Split` is the one that removes launchpad's last viewport media
+  query
+- **Done:** 25 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -87,7 +88,7 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 | 2.1 | `Stack` | `done` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale (D-020) |
 | 2.2 | `Cluster` | `done` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify`. Wrapping needs no query |
 | 2.3 | `Grid` | `done` | fill | server | 2.1 | Fixed columns, `auto-fit`, or a raw template (D-022 §4). Tracks are always `minmax(0, 1fr)` |
-| 2.4 | `Container` | `spec` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`** |
+| 2.4 | `Container` | `done` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`.** Also the tree's query-container anchor. `--pp-measure-*` (D-025) |
 | 2.5 | `Center` | `spec` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure |
 | 2.6 | `Split` | `spec` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint |
 | 2.7 | `AspectRatio` | `spec` | fill | server | T0 | |

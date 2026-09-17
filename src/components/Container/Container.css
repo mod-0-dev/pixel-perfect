@@ -1,0 +1,48 @@
+/*
+ * Container — spec §2.4
+ *
+ * The library's one sanctioned max-inline-size, and its one sanctioned
+ * margin-inline: auto. `.stylelintrc.json` carries an override for this
+ * directory and nowhere else; D-018 carved `auto` out of the margin ban for
+ * exactly this file, months before the component existed.
+ *
+ * `container-type: inline-size` is the anchor for the whole @container
+ * strategy. Without a query container near the top of the tree, a component's
+ * @container rules resolve against whatever ancestor happens to have one —
+ * which in a page with none is the viewport, quietly reintroducing the thing
+ * RULES §1 removed.
+ */
+
+@layer pp.components {
+  .pp-container {
+    display: block;
+    container-type: inline-size;
+    min-inline-size: 0;
+    max-inline-size: var(--pp-container-max-inline-size, var(--_pp-measure));
+    margin-inline: auto;
+    padding-inline: var(--pp-container-gutter, var(--_pp-gutter));
+  }
+
+  /* A reading measure, an app page, a dashboard. Anything else is the custom
+     property — three steps is a scale, seven is a lookup table.
+
+     Written to a PRIVATE property with the public one read first (D-024), so a
+     consumer's --pp-container-max-inline-size still wins from an ancestor. */
+  .pp-container[data-size="sm"] { --_pp-measure: var(--pp-measure-sm); }
+  .pp-container[data-size="md"] { --_pp-measure: var(--pp-measure-md); }
+  .pp-container[data-size="lg"] { --_pp-measure: var(--pp-measure-lg); }
+
+  /* Its own ramp, not the shared --_pp-gap: this is padding rather than the
+     distance between children, and a Container that took `gap` would be a
+     Stack. Always emitted, so it cannot inherit — the D-020 hazard again. */
+  .pp-container[data-pp-gutter="0"] { --_pp-gutter: var(--pp-space-0); }
+  .pp-container[data-pp-gutter="1"] { --_pp-gutter: var(--pp-space-1); }
+  .pp-container[data-pp-gutter="2"] { --_pp-gutter: var(--pp-space-2); }
+  .pp-container[data-pp-gutter="3"] { --_pp-gutter: var(--pp-space-3); }
+  .pp-container[data-pp-gutter="4"] { --_pp-gutter: var(--pp-space-4); }
+  .pp-container[data-pp-gutter="5"] { --_pp-gutter: var(--pp-space-5); }
+  .pp-container[data-pp-gutter="6"] { --_pp-gutter: var(--pp-space-6); }
+  .pp-container[data-pp-gutter="7"] { --_pp-gutter: var(--pp-space-7); }
+  .pp-container[data-pp-gutter="8"] { --_pp-gutter: var(--pp-space-8); }
+  .pp-container[data-pp-gutter="9"] { --_pp-gutter: var(--pp-space-9); }
+}
