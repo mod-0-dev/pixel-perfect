@@ -14,5 +14,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'text', name: 'Text', tier: '1.1' },
   { slug: 'heading', name: 'Heading', tier: '1.2' },
   { slug: 'icon', name: 'Icon', tier: '1.3' },
+  { slug: 'separator', name: 'Separator', tier: '1.5' },
   { slug: 'visually-hidden', name: 'VisuallyHidden', tier: '1.4' },
 ];

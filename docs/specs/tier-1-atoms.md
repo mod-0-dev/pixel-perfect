@@ -16,7 +16,7 @@
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `spec` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `spec` |
-| 1.5 `Separator` | `spec` | 1.11 `Code` | `spec` |
+| 1.5 `Separator` | `build` | 1.11 `Code` | `spec` |
 | 1.6 `Spinner` | `spec` | | |
 
 Eleven components with no internal state (bar one), no keyboard interaction, and
@@ -566,7 +566,13 @@ Neither declares a width.
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
-| root | `pp-separator` | `<hr>` or `<div>` | `<hr>` when decorative, `<div role="separator">` when not |
+| root | `pp-separator` | `<hr>` | Always. `<hr>` *is* a separator natively; `decorative` adds `aria-hidden`, and vertical non-decorative adds `aria-orientation` |
+
+**Implementation note.** The original draft rendered `<div role="separator">`
+for the non-decorative case. Dropped at build: `<hr>` already carries the
+separator role, so the div added a role to replace one the browser gives for
+free. The line is drawn with a single logical border, not `inline-size`, so a
+vertical separator needs no width declaration at all.
 
 ### Props
 

@@ -1,0 +1,32 @@
+/*
+ * Separator — spec §1.5
+ *
+ * The line is one logical border. A horizontal rule is a block with zero
+ * height and a top border; a vertical one is a zero-width flex item with a
+ * start border that stretches to its row. Neither declares a width, and
+ * neither needs to.
+ */
+
+@layer pp.components {
+  .pp-separator {
+    --_color: var(--pp-separator-color, var(--pp-color-border-subtle));
+    --_thickness: var(--pp-separator-thickness, var(--pp-border-width-1));
+
+    /* Strip the UA <hr>: inset border, margins, overflow. */
+    border: 0;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .pp-separator[data-orientation="horizontal"] {
+    block-size: 0;
+    border-block-start: var(--_thickness) solid var(--_color);
+  }
+
+  .pp-separator[data-orientation="vertical"] {
+    /* Stretch to the row even when the parent centres its items; a vertical
+       rule that collapses to zero in a centred Cluster is not a rule. */
+    align-self: stretch;
+    border-inline-start: var(--_thickness) solid var(--_color);
+  }
+}

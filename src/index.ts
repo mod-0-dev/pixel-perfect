@@ -8,6 +8,11 @@ export {
 } from './components/Heading/Heading';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export {
+  Separator,
+  type SeparatorOrientation,
+  type SeparatorProps,
+} from './components/Separator/Separator';
+export {
   Text,
   type TextAlign,
   type TextProps,
