@@ -26,11 +26,10 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 3A — the action core. 3.1 `Button`, 3.2 `IconButton` and
-  3.3 `Link` are `done`; 3.4 and 3.5 remain in `spec` under one approved gate
-  ([D-027](docs/DECISIONS.md)). Nothing else is in `build`
-- **Next up:** 3.5 `Toggle`, then 3.4 `ButtonGroup` last, because it styles the
-  other four
+- **In flight:** Tier 3A — the action core. Four of five `done`; only 3.4
+  `ButtonGroup` remains, and it is last on purpose because it styles the other
+  four
+- **Next up:** 3.4 `ButtonGroup`, which finishes the group
 - **The library can now be focused, and that settled three things once:**
   `--pp-control-*` (32 / 40 / 48, so every Tier 3 control agrees by
   construction), the focus ring (an `outline` in `--pp-color-focus-ring` on
@@ -52,8 +51,12 @@ is `done`.
   spread the rest into `Button`, which delegated to the `<Icon>` element and
   rendered a `<span>` with a button's classes and no button semantics. Caught
   by a test written to assert the *type* error (D-031)
-- **Verified, not asserted:** 30 computed-style assertions in
-  `tests/visual/harness.spec.ts`, eight of them new. Five Tier 3A claims have
+- **RULES §5.5 now has one implementation.** `useControllableState` (D-032) is
+  the shared controlled/uncontrolled hook every stateful component from here on
+  uses, including a development warning for the silent mode-switch bug. Eleven
+  components in Tiers 3 and 4 need it
+- **Verified, not asserted:** 31 computed-style assertions in
+  `tests/visual/harness.spec.ts`, nine of them new. Five Tier 3A claims have
   been checked by deliberately breaking the component and watching the test
   fail on the right symptom; one of those breaks exposed a focus test that
   could not fail at all and it was rewritten (D-009)
@@ -61,7 +64,7 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 32 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **Done:** 33 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -145,7 +148,7 @@ to the component it was written about — see
 | 3.2 | `IconButton` | `done` | hug | client | 3.1, 1.3 | `label` is a required `string`. Square, on the control scale. No `asChild` (D-031) |
 | 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
 | 3.4 | `ButtonGroup` | `spec` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. Deps corrected per D-030 §7 |
-| 3.5 | `Toggle` | `spec` | hug | client | 3.1 | Pressed state |
+| 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `planned` | fill | server | 1.1 | |
 | 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |

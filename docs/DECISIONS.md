@@ -1060,3 +1060,48 @@ halves: that it does not typecheck, and that the runtime drops it.
 **The standing rule:** when a component narrows an inherited props type, every
 prop it removes must also be removed from what it forwards. A type is a claim
 about callers who typecheck, and a component library has callers who do not.
+
+## D-032 — One `useControllableState`, and the `'use client'` rule is scoped to what ships
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.7 lint
+
+Two rulings from `Toggle`, the library's first component with state of its own.
+
+**`src/internal/useControllableState.ts`.** RULES §5.5 requires controlled *and*
+uncontrolled support from every stateful component — "Both, always. No
+exceptions." — which means `Toggle`, `Checkbox`, `Switch`, `Select`,
+`NumberInput`, `Slider`, `Tabs`, `Accordion`, `Combobox` and `Dialog` all need
+the same logic. Written ten times it will be ten subtly different ideas of what
+`undefined` means.
+
+The contract it fixes: `value !== undefined` is controlled and the component
+stores nothing; otherwise uncontrolled, seeded from `defaultValue`; and
+`onChange` fires in **both** modes, because a controlled consumer needs it to
+update and an uncontrolled one needs it to observe.
+
+It also warns, in development, when a component changes mode mid-life — usually
+from `value={maybeUndefined}`. That failure is completely silent otherwise: the
+component simply stops responding and nothing says why. React warns for its own
+inputs; a library reimplementing the behaviour should too. The warning lives in
+an effect rather than in render, so StrictMode's double render does not double
+it.
+
+`process.env.NODE_ENV` is declared locally and guarded with `typeof`. The
+package builds with `types: []`, and the library may be loaded unbundled where
+`process` genuinely does not exist — the same class of hazard RULES §7 addresses
+for `window`.
+
+**The `'use client'` rule now skips files the package build excludes.** A test
+for a controlled component needs an owner with `useState`, and RULES §5.5 makes
+controlled support compulsory, so every Tier 3 test file would otherwise carry a
+`'use client'` directive that means nothing and protects nothing. The rule is
+about RSC correctness of what ships, and `tsconfig.build.json` already says what
+ships; the linter now uses the same boundary.
+
+**The narrowing is asserted in both directions**, because scoping a rule too
+widely looks exactly like a passing lint. `tests/lint-fixtures/` gained a
+colocated test file using client-only React, and `test-lint.mjs` asserts the
+rule fires **exactly once** across the fixture tree — for the shipped component
+beside it. Widening the scope makes it fire twice; over-narrowing makes it fire
+zero times; both were run and both fail. This is D-009's rule applied to a
+change in a rule rather than to a new one.

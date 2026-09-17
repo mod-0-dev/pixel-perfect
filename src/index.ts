@@ -63,6 +63,7 @@ export {
   type SplitSlotProps,
 } from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
+export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
 export {
   Text,
   type TextAlign,

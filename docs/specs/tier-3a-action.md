@@ -14,7 +14,7 @@
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
 | 3.1 `Button` | `done` | 3.4 `ButtonGroup` | `spec` |
-| 3.2 `IconButton` | `done` | 3.5 `Toggle` | `spec` |
+| 3.2 `IconButton` | `done` | 3.5 `Toggle` | `done` |
 | 3.3 `Link` | `done` | | |
 
 This is the first tier with a keyboard, a focus ring, a disabled state, or a
@@ -1003,13 +1003,16 @@ applies.
 | `defaultPressed` | `boolean` | `false` | Uncontrolled |
 | `onPressedChange` | `(pressed: boolean) => void` | — | Fires on activation in both modes |
 | `variant` | `'solid' \| 'outline' \| 'ghost' \| 'plain'` | `'ghost'` | Off is quiet; on fills in |
-| `tone`, `size`, `disabled`, `asChild` | as `Button` | as `Button` | |
+| `tone`, `size`, `disabled`, `asChild`, `type` | as `Button` | as `Button` | |
 
-No `loading` — a toggle's effect is immediate by definition. If it needs a
+No `loading` — a toggle's effect is immediate by definition. Omitted from the
+type *and* dropped before forwarding, per D-031. If it needs a
 spinner, it is an action and belongs in `Button`. Exported as `ToggleProps`.
 
 **`pressed` / `defaultPressed` / `onPressedChange`** is RULES §5.5's shape with
-the noun that matches `aria-pressed`. Both modes are supported, per §5.5's "Both,
+the noun that matches `aria-pressed`. Implemented on the shared
+`useControllableState` hook (D-032), which every stateful component from here on
+uses so that `undefined` cannot come to mean ten different things. Both modes are supported, per §5.5's "Both,
 always. No exceptions." The controlled/uncontrolled switch is decided once at
 mount from whether `pressed` is `undefined`, and a component that changes modes
 mid-life warns in development — the React convention, and the thing every

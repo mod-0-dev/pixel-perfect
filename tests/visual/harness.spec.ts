@@ -574,3 +574,34 @@ test.describe('IconButton', () => {
     }
   });
 });
+
+test.describe('Toggle', () => {
+  test('pressed is visibly distinct, and does not lighten on hover', async ({ page }) => {
+    await page.goto('/components/toggle');
+
+    const cell = page
+      .locator('section', { hasText: 'Off and on, across variants' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+    const off = cell.getByRole('button', { name: 'ghost off' }).first();
+    const on = cell.getByRole('button', { name: 'ghost on' }).first();
+
+    const bg = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => getComputedStyle(node).backgroundColor);
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => getComputedStyle(node).borderTopColor);
+
+    const offBg = await bg(off);
+    const onBg = await bg(on);
+    expect(onBg).not.toBe(offBg);
+
+    // Pressed is already the filled end of the ramp. Hovering must not walk it
+    // back toward the resting colour — that reads as releasing the button.
+    const onBorderRest = await border(on);
+    await on.hover();
+    expect(await bg(on)).toBe(onBg);
+    expect(await border(on)).not.toBe(onBorderRest);
+  });
+});
