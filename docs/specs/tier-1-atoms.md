@@ -12,7 +12,7 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 1.1 `Text` | `done` | 1.7 `Skeleton` | `spec` |
+| 1.1 `Text` | `done` | 1.7 `Skeleton` | `build` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
@@ -772,7 +772,12 @@ the real content's size is the parent that should state it.
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
-| root | `pp-skeleton` | `<div>` | |
+| root | `pp-skeleton` | `<div>` | Carries the shimmer for `block` and `circle` |
+| line | `pp-skeleton__line` | `<span>` | `text` only: one per `lines`. **Build note:** a single box N line-heights tall reads as a block, not as text. Lines are laid out with grid, and the last of several is shortened by column placement — the parent deciding a child's width, which is the sizing model, not a width declaration |
+
+A `circle` defaults to `--pp-size-10` (40px) tall: a circle with no size is
+meaningless, and the token is the parent-overridable default the styling API
+already promises. `block` still defaults to `auto` — the parent sizes it.
 
 ### Props
 

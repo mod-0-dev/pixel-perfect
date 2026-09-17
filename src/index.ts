@@ -15,6 +15,12 @@ export {
   type SeparatorOrientation,
   type SeparatorProps,
 } from './components/Separator/Separator';
+export {
+  Skeleton,
+  type SkeletonProps,
+  type SkeletonRadius,
+  type SkeletonShape,
+} from './components/Skeleton/Skeleton';
 export { Spinner, type SpinnerProps } from './components/Spinner/Spinner';
 export {
   Text,
