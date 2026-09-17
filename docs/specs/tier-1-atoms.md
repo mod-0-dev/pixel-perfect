@@ -15,7 +15,7 @@
 | 1.1 `Text` | `done` | 1.7 `Skeleton` | `spec` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
-| 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `spec` |
+| 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `build` |
 | 1.5 `Separator` | `done` | 1.11 `Code` | `spec` |
 | 1.6 `Spinner` | `spec` | | |
 
@@ -1147,8 +1147,9 @@ are ambiguous to a screen reader; where the meaning matters, pair the symbol wit
 enforced — the component cannot know whether the surrounding sentence already
 says "Command".
 
-Minimum block size is `1.25rem` even at `sm`, so a single-character key stays
-square rather than collapsing to a sliver.
+A single-character key reads as square because its inline padding is set to
+match its height minus one glyph — `min-inline-size` is banned and would have
+been the lazy way. A thicker bottom border gives the keycap its depth.
 
 ### Usage
 

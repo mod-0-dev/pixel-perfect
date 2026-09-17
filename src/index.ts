@@ -8,6 +8,7 @@ export {
   type HeadingSize,
 } from './components/Heading/Heading';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
+export { Kbd, type KbdProps } from './components/Kbd/Kbd';
 export {
   Separator,
   type SeparatorOrientation,

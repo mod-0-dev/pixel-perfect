@@ -72,7 +72,7 @@
         "right"
       ],
       "/^(font-family)$/": [
-        "/[a-z]/"
+        "/^(?!var\\(--pp-font-family-)/"
       ],
       "/^(outline)$/": [
         "none",
