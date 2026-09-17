@@ -1,0 +1,39 @@
+/*
+ * IconButton — spec docs/specs/tier-3a-action.md §3.2
+ *
+ * Everything visual comes from Button; this file makes the box square and takes
+ * the inline padding away. The root carries BOTH `pp-button` and
+ * `pp-icon-button`, so every --pp-button-* override still applies.
+ *
+ * `inline-size` IS DECLARED HERE, under the D-019 exemption. That ruling
+ * permitted it in Icon, Spinner and Avatar — "explicit and narrow: three files,
+ * all hug, all square" — and this is a fourth of exactly the same kind. The
+ * inline size is not a decision about how much of the parent to occupy, which
+ * is what RULES §1 reserves for the parent; it is a restatement of the block
+ * size, because the box is square.
+ *
+ * Rejected: `aspect-ratio: 1` with no inline-size, which passes the lint
+ * untouched. D-019 already refused that trade for Icon — it satisfies the
+ * letter of the rule while saying the same thing less clearly — and taking it
+ * here would make the exemption look narrower than it is rather than actually
+ * narrowing it.
+ */
+
+@layer pp.components {
+  .pp-icon-button {
+    --_size: var(--pp-control-height-md);
+
+    inline-size: var(--pp-icon-button-size, var(--_size));
+    /* The icon is centred by Button's own flex centring; padding would only
+       shrink the target. */
+    padding-inline: 0;
+  }
+
+  .pp-icon-button[data-size="sm"] {
+    --_size: var(--pp-control-height-sm);
+  }
+
+  .pp-icon-button[data-size="lg"] {
+    --_size: var(--pp-control-height-lg);
+  }
+}

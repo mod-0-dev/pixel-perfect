@@ -34,6 +34,7 @@ export {
   type GridProps,
 } from './components/Grid/Grid';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
+export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
 export { Link, type LinkProps, type LinkUnderline } from './components/Link/Link';
 export {

@@ -196,7 +196,8 @@
       "files": [
         "src/components/Icon/**/*.css",
         "src/components/Spinner/**/*.css",
-        "src/components/Avatar/**/*.css"
+        "src/components/Avatar/**/*.css",
+        "src/components/IconButton/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [

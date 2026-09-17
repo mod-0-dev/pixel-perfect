@@ -542,3 +542,35 @@ test.describe('Link', () => {
     expect(danger).not.toBe(accent);
   });
 });
+
+test.describe('IconButton', () => {
+  test('is square at every size, on the same scale as Button', async ({ page }) => {
+    await page.goto('/components/icon-button');
+
+    const cell = page
+      .locator('section', { hasText: 'Square at every size' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+    for (const [size, expected] of [
+      ['sm', 32],
+      ['md', 40],
+      ['lg', 48],
+    ] as const) {
+      const box = await cell
+        .locator(`.pp-icon-button[data-size="${size}"]`)
+        .first()
+        .evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          return { w: rect.width, h: rect.height };
+        });
+
+      // Square, and square at the SHARED control height — not at some scale of
+      // its own. A row of Buttons and IconButtons only lines up if both read
+      // --pp-control-height-*.
+      expect(Math.round(box.w)).toBe(expected);
+      expect(Math.round(box.h)).toBe(expected);
+    }
+  });
+});

@@ -26,11 +26,11 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 3A — the action core. 3.1 `Button` and 3.3 `Link` are
-  `done`; 3.2, 3.4 and 3.5 remain in `spec` under one approved gate
+- **In flight:** Tier 3A — the action core. 3.1 `Button`, 3.2 `IconButton` and
+  3.3 `Link` are `done`; 3.4 and 3.5 remain in `spec` under one approved gate
   ([D-027](docs/DECISIONS.md)). Nothing else is in `build`
-- **Next up:** 3.2 `IconButton`, then 3.5 `Toggle`, then 3.4 `ButtonGroup`
-  last, because it styles the other four
+- **Next up:** 3.5 `Toggle`, then 3.4 `ButtonGroup` last, because it styles the
+  other four
 - **The library can now be focused, and that settled three things once:**
   `--pp-control-*` (32 / 40 / 48, so every Tier 3 control agrees by
   construction), the focus ring (an `outline` in `--pp-color-focus-ring` on
@@ -47,8 +47,13 @@ is `done`.
   `inline-flex`. It does not make the composition safe (both set `color`), so
   `<Button asChild>` takes a plain `<a>` or `next/link` and both docs pages say
   so
-- **Verified, not asserted:** 29 computed-style assertions in
-  `tests/visual/harness.spec.ts`, seven of them new. Five Tier 3A claims have
+- **A type is a claim about callers who typecheck, and a library has callers
+  who do not.** `IconButton` omitted `asChild` from its props type and then
+  spread the rest into `Button`, which delegated to the `<Icon>` element and
+  rendered a `<span>` with a button's classes and no button semantics. Caught
+  by a test written to assert the *type* error (D-031)
+- **Verified, not asserted:** 30 computed-style assertions in
+  `tests/visual/harness.spec.ts`, eight of them new. Five Tier 3A claims have
   been checked by deliberately breaking the component and watching the test
   fail on the right symptom; one of those breaks exposed a focus test that
   could not fail at all and it was rewritten (D-009)
@@ -56,7 +61,7 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 31 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **Done:** 32 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -137,7 +142,7 @@ to the component it was written about — see
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 3.1 | `Button` | `done` | hug | client | T2 | `variant` × `tone` × `size`, `loading`, `asChild`. Ships `--pp-control-*` and the focus ring (D-028, D-029) |
-| 3.2 | `IconButton` | `spec` | hug | client | 3.1, 1.3 | Accessible name required by types |
+| 3.2 | `IconButton` | `done` | hug | client | 3.1, 1.3 | `label` is a required `string`. Square, on the control scale. No `asChild` (D-031) |
 | 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
 | 3.4 | `ButtonGroup` | `spec` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. Deps corrected per D-030 §7 |
 | 3.5 | `Toggle` | `spec` | hug | client | 3.1 | Pressed state |

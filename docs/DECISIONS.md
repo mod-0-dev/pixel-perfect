@@ -1024,3 +1024,39 @@ view*, which is enforceable by eye precisely because the default is not accent.
 `IconButton` and `Toggle` default to `ghost`, being overwhelmingly secondary
 affordances; those are the batch's two deliberate inconsistencies and they are
 named here so they stay decisions rather than drift.
+
+## D-031 — `IconButton` build findings: the D-019 exemption, and props that outlive their types
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-019
+
+**The `inline-size` exemption extends to a fourth file.** D-019 permitted
+`inline-size` in `Icon`, `Spinner` and `Avatar` — "explicit and narrow: three
+files, all `hug`, all square" — on the grounds that an intrinsically square
+box's inline size is a restatement of its block size, not the "how much of my
+parent do I take" decision RULES §1 reserves for the parent. `IconButton` is a
+fourth of exactly that kind: both axes are `--pp-control-height-<size>`.
+
+Rejected: `aspect-ratio: 1` with no `inline-size`, which passes the lint
+untouched. D-019 already refused that trade for `Icon` — it satisfies the letter
+of the rule while saying the same thing less clearly — and taking it here would
+make the exemption *look* narrower without actually narrowing it. An exemption
+that is visible in `.stylelintrc.json` is reviewable; one that is routed around
+is not.
+
+**`Omit<Props, 'asChild'>` removes a prop from the type and not from the
+object.** `IconButton` omits `asChild` because `children` is already spoken for
+— it is the SVG, so there is no slot left for a delegate element. The first
+implementation omitted it from `IconButtonProps` and then spread `...props` into
+`Button`, so a JS caller, or a spread of a wider props object, still reached
+`Button`'s `asChild`. `Button` then delegated to the `<Icon>` element and
+rendered a `<span>` carrying a button's class list, a button's `aria-label` and
+none of a button's semantics.
+
+Found by a test written to assert the *type* error, which rendered the broken
+markup instead of the expected button and failed on `role="button"` not
+existing. The prop is now destructured off explicitly, and the test asserts both
+halves: that it does not typecheck, and that the runtime drops it.
+
+**The standing rule:** when a component narrows an inherited props type, every
+prop it removes must also be removed from what it forwards. A type is a claim
+about callers who typecheck, and a component library has callers who do not.

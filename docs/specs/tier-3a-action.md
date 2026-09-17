@@ -14,7 +14,7 @@
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
 | 3.1 `Button` | `done` | 3.4 `ButtonGroup` | `spec` |
-| 3.2 `IconButton` | `spec` | 3.5 `Toggle` | `spec` |
+| 3.2 `IconButton` | `done` | 3.5 `Toggle` | `spec` |
 | 3.3 `Link` | `done` | | |
 
 This is the first tier with a keyboard, a focus ring, a disabled state, or a
@@ -619,7 +619,13 @@ It is not a decision about how much of the parent to occupy.
 | `label` | `string` | — | **Required.** Becomes `aria-label` on the root |
 | `children` | `ReactNode` | — | **Required.** The raw SVG. Wrapped in `<Icon decorative>` |
 | `variant` | `'solid' \| 'outline' \| 'ghost' \| 'plain'` | `'ghost'` | Diverges from `Button` — see below |
-| `tone`, `size`, `loading`, `disabled`, `asChild` | as `Button` | as `Button` | |
+| `tone`, `size`, `loading`, `disabled`, `type` | as `Button` | as `Button` | |
+
+**Refined at build time: no `asChild`.** The table above listed it as inherited.
+It cannot be: `Button`'s `asChild` delegates to the element passed as
+`children`, and here `children` is the SVG, so there is no slot left for a
+delegate. Omitted from the type *and* destructured off before forwarding —
+`Omit` removes a prop from a type, not from an object (D-031).
 
 `aria-label` and `children` are `Omit`ted from the inherited `ButtonProps` and
 redeclared, so `label` is the only way to name the control and it is not
