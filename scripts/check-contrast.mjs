@@ -41,6 +41,7 @@ const THEMES = {
 const CHECKS = [
   { name: 'solid vs on-solid text', a: '9', b: 'on-solid', min: 4.5 },
   { name: 'solid-hover vs on-solid', a: '10', b: 'on-solid', min: 4.5 },
+  { name: 'solid-active vs on-solid', a: 'solid-active', b: 'on-solid', min: 4.5 },
   { name: 'focus ring vs page bg', a: 'focus', b: '1', min: 3.0 },
   { name: 'muted text vs subtle bg', a: '11', b: '2', min: 4.5 },
   { name: 'muted text vs page bg', a: '11', b: '1', min: 4.5 },

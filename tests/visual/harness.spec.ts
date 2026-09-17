@@ -367,3 +367,111 @@ test.describe('layout primitives', () => {
   });
 });
 
+
+/**
+ * Computed-style assertions for Tier 3A. The whole point of `--pp-control-*`
+ * is that a chain of var() references resolves to one number in five
+ * components; jsdom resolves none of that chain, so it is checked here or it
+ * is not checked at all.
+ */
+test.describe('action core', () => {
+  /** The 960px column of a Matrix section, located by its own label. */
+  const wideCell = (page: import('@playwright/test').Page, section: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+  test('the control scale resolves to 32 / 40 / 48', async ({ page }) => {
+    await page.goto('/components/button');
+    const cell = wideCell(page, 'Size — the shared control scale');
+
+    for (const [size, expected] of [
+      ['sm', 32],
+      ['md', 40],
+      ['lg', 48],
+    ] as const) {
+      const height = await cell
+        .locator(`.pp-button[data-size="${size}"]`)
+        .first()
+        .evaluate((el) => el.getBoundingClientRect().height);
+      // Not "roughly": --pp-control-height-* is an alias onto --pp-size-8/10/12
+      // and a border does not change the box, because the reset is border-box.
+      expect(Math.round(height)).toBe(expected);
+    }
+  });
+
+  test('a Button hugs, and only its parent can stretch it', async ({ page }) => {
+    await page.goto('/components/button');
+    const cell = wideCell(page, 'hug means hug');
+
+    const ratio = (name: string) =>
+      cell
+        .getByRole('button', { name })
+        .evaluate((el) => el.getBoundingClientRect().width / el.parentElement!.clientWidth);
+
+    // RULES §1: no width declaration, so an inline-flex button is its label
+    // wide even when handed 960px.
+    expect(await ratio('Default — hugs its label')).toBeLessThan(0.5);
+
+    // ...and the escape hatch is the parent making a layout decision, which is
+    // exactly where the rule says the decision belongs. If this ever reads < 1,
+    // `hug` has become "cannot be stretched", which is a different contract.
+    expect(await ratio('The parent stretched this one')).toBeCloseTo(1, 1);
+  });
+
+  test('a loading Button keeps its box and hides the label without losing its name', async ({ page }) => {
+    await page.goto('/components/button');
+    const button = wideCell(page, 'Loading — aria-disabled, not disabled')
+      .getByRole('button', { name: 'solid' })
+      .first();
+    const content = button.locator('.pp-button__content');
+
+    // THE REGRESSION GUARD. `visibility: hidden` and `display: none` both look
+    // identical here and both remove the label from the accessibility tree, so
+    // a button announced as "solid" becomes a button announced as nothing at
+    // the moment it starts working. Only opacity hides it visually and keeps
+    // the name. This is how the bug was found; jsdom's name computation does
+    // not consult layout and reported the name either way.
+    await expect(button).toHaveAccessibleName('solid');
+    expect(await content.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+
+    // ...and it still occupies its space, so the box does not shrink under the
+    // cursor when the button starts working.
+    const labelWidth = await content.evaluate((el) => el.getBoundingClientRect().width);
+    const boxWidth = await button.evaluate((el) => el.getBoundingClientRect().width);
+    expect(labelWidth).toBeGreaterThan(0);
+    expect(boxWidth).toBeGreaterThanOrEqual(labelWidth);
+
+    // The spinner sits in an overlay, so it contributes nothing to the box.
+    await expect(button.locator('.pp-button__spinner .pp-spinner')).toHaveCount(1);
+  });
+
+  test('the focus ring is one colour for every tone', async ({ page }) => {
+    await page.goto('/components/button');
+    const cell = wideCell(page, 'Variant × tone');
+
+    const ringOf = async (tone: string) => {
+      const button = cell.locator(`.pp-button[data-variant="solid"][data-pp-tone="${tone}"]`).first();
+      await button.focus();
+      return button.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { color: style.outlineColor, width: parseFloat(style.outlineWidth) };
+      });
+    };
+
+    const accent = await ringOf('accent');
+    const danger = await ringOf('danger');
+    const warning = await ringOf('warning');
+
+    // Spec §2: --pp-color-focus-ring, not --pp-tone-focus. `lint:contrast`
+    // asserts one ring pairing and only one; if these ever differ, four of the
+    // five ring colours in the library are unverified.
+    expect(danger.color).toBe(accent.color);
+    expect(warning.color).toBe(accent.color);
+
+    // RULES §6: focus is always visible.
+    expect(accent.width).toBeGreaterThan(0);
+  });
+});

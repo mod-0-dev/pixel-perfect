@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3A |
-| **Status** | `spec` — awaiting Gate C |
+| **Status** | approved 2026-09-17 · 3.1 `Button` `done`, the rest in `build` order |
 | **Components** | 3.1 `Button` · 3.2 `IconButton` · 3.3 `Link` · 3.4 `ButtonGroup` · 3.5 `Toggle` |
 | **Depends on** | Tier 0 (`done`), Tier 1 (`done`), Tier 2 (`done`) |
 | **Approval** | One gate for the group — see §0 below, which revisits [D-014](../DECISIONS.md#d-014) as that entry instructed |
@@ -13,7 +13,7 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 3.1 `Button` | `spec` | 3.4 `ButtonGroup` | `spec` |
+| 3.1 `Button` | `done` | 3.4 `ButtonGroup` | `spec` |
 | 3.2 `IconButton` | `spec` | 3.5 `Toggle` | `spec` |
 | 3.3 `Link` | `spec` | | |
 
@@ -258,10 +258,20 @@ activation itself.
 `disabled` (the prop) remains the real native `disabled` attribute, because a
 permanently unavailable control genuinely should not be in the tab order.
 
-**The label stays put.** The spinner renders in an absolutely-positioned overlay
-and the content span goes `visibility: hidden`. The button therefore does not
-change size when it starts loading — a button that shrinks under the cursor
-mid-click is how a mis-click happens.
+**The label stays put, and it stays named.** The spinner renders in an
+absolutely-positioned overlay and the content span goes `opacity: 0`. The button
+therefore does not change size when it starts loading — a button that shrinks
+under the cursor mid-click is how a mis-click happens.
+
+`opacity`, specifically, and not `visibility: hidden`. This shipped as
+`visibility: hidden` and was caught by the browser assertion in
+`tests/visual/harness.spec.ts`: `visibility: hidden` and `display: none` both
+remove the label from the **accessibility tree**, so a button announced as
+"Save" becomes a button announced as nothing at the exact moment it starts
+working — which is the moment `loading` exists to protect. Only `opacity` hides
+it visually and keeps the name. The jsdom test asserting the accessible name
+passed against the broken version, because name computation there does not
+consult layout.
 
 **Announcement is the app's job, not the button's.** The spinner is
 `decorative`; a `role="status"` inside a button is read inconsistently and
@@ -426,7 +436,7 @@ there will not be one.
 
 ```
 <button class="pp-button" data-variant data-pp-tone data-size [data-loading] [data-disabled]>
-  ├── <span class="pp-button__content">   ← children; visibility:hidden while loading
+  ├── <span class="pp-button__content">   ← children; opacity:0 while loading
   └── <span class="pp-button__spinner">   ← only while loading; absolutely centred
         └── <Spinner decorative>
 ```
@@ -462,7 +472,7 @@ Plus every `<button>` attribute. `ref` goes to the root. Exported as
 | Hover | `:hover` | `--pp-tone-solid-hover` (solid) / `--pp-tone-bg-hover` (others) |
 | Active | `:active` | `--pp-tone-bg-active`; solid keeps `--pp-tone-solid-hover` (§ open question 2) |
 | Focused | `:focus-visible` | The library ring (§2) |
-| Loading | `data-loading` + `aria-disabled="true"` | Content hidden, spinner centred, cursor `progress` |
+| Loading | `data-loading` + `aria-disabled="true"` | Content at `opacity: 0` (§5), spinner centred, cursor `progress` |
 | Disabled | `data-disabled` + native `disabled` | `--pp-color-text-disabled`, `cursor: not-allowed`, no hover response |
 
 `pointer-events: none` is **not** used for either disabled state — it kills
@@ -1057,7 +1067,8 @@ Matches the APG toggle-button pattern.
 
 ## Open questions
 
-Resolve at Gate C.
+**Resolved at Gate C on 2026-09-17 — all four approved as recommended.**
+Recorded as [D-027](../DECISIONS.md#d-027) … [D-030](../DECISIONS.md#d-030).
 
 1. **`--pp-control-height-lg` at 48px** — generous, and correct for touch. On a
    dense desktop form it may read as oversized next to a 40px `md`. The

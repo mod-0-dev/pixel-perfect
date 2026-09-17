@@ -26,30 +26,35 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 3A — the action core (3.1 `Button` · 3.2 `IconButton` ·
-  3.3 `Link` · 3.4 `ButtonGroup` · 3.5 `Toggle`), all five in `spec`, **stopped
-  at Gate C**. Nothing is in `build`, so the WIP limit is intact
-- **Awaiting you:** approve
-  [`docs/specs/tier-3a-action.md`](docs/specs/tier-3a-action.md) — eleven
-  rulings and four open questions. The load-bearing ones are `--pp-control-*`
-  (how tall a control is, settled once for the library), the focus ring
-  (`--pp-color-focus-ring` globally, not per tone — it is the only ring colour
-  `lint:contrast` actually asserts), and `loading` using `aria-disabled` rather
-  than `disabled` so focus is not stolen mid-submit
-- **D-014 revisited, as it asked to be:** its Tier 3 carve-out named `Field` and
-  the overlay foundation, then applied to all sixteen Tier 3 components. It now
-  narrows to 3B. 3A / 3C / 3D are group gates
-- **Flagged, not fixed:** 3.4 `ButtonGroup` lists Deps `3.1, 2.2`, but it cannot
-  compose `Cluster` — `Cluster` is `fill` and `ButtonGroup` is `hug`. Correction
-  to `3.1` is open question 3 in the spec, awaiting the same approval
-- **Next after approval:** `--pp-control-*` tokens and the focus-ring pattern
-  ship with 3.1 `Button`; then `Link`, `IconButton`, `Toggle`, `ButtonGroup`,
-  one at a time
+- **In flight:** Tier 3A — the action core. 3.1 `Button` is `done`; 3.2–3.5
+  remain in `spec` under one approved gate ([D-027](docs/DECISIONS.md)).
+  Nothing else is in `build`
+- **Next up:** 3.3 `Link` — independent of `Button`, the cheapest of the five,
+  and it gives the `asChild` plumbing a second consumer before `IconButton`
+  (3.2), `Toggle` (3.5) and `ButtonGroup` (3.4) build on it
+- **The library can now be focused, and that settled three things once:**
+  `--pp-control-*` (32 / 40 / 48, so every Tier 3 control agrees by
+  construction), the focus ring (an `outline` in `--pp-color-focus-ring` on
+  every tone — the only ring pairing `lint:contrast` verifies), and
+  `--pp-tone-solid-active`, which took `lint:contrast` from 160 assertions to
+  170
+- **Found by the browser, not by jsdom:** `Button`'s loading state shipped with
+  `visibility: hidden` on its label, which removes it from the accessibility
+  tree — a button announced as "Save" became a button announced as nothing at
+  the moment it started working. The jsdom test asserting the accessible name
+  passed against the defect. `opacity: 0` is the fix; the browser assertion has
+  been re-run against the defect to confirm it fails on the right symptom
+  (D-030 §2). Anything about what a screen reader perceives has to be asserted
+  where layout exists
+- **Verified, not asserted:** 26 computed-style assertions in
+  `tests/visual/harness.spec.ts`, four of them new. Three of `Button`'s jsdom
+  tests were also checked by deliberately breaking the component; one of those
+  breaks exposed a focus test that could not fail and it was rewritten (D-009)
 - **Still open from Tier 2:** consume the layout primitives in
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 29 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **Done:** 30 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -122,17 +127,17 @@ to the component it was written about — see
 
 | Group | Components | Spec |
 | --- | --- | --- |
-| **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — `spec`, at Gate C |
+| **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — approved 2026-09-17 (D-027 … D-030) |
 | **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
 | **3C — Native inputs** | 3.8–3.13 | one gate, after 3B is `done` |
 | **3D — Composite inputs** | 3.14–3.16 | one gate |
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3.1 | `Button` | `spec` | hug | client | T2 | `variant` × `tone` × `size`, loading state |
+| 3.1 | `Button` | `done` | hug | client | T2 | `variant` × `tone` × `size`, `loading`, `asChild`. Ships `--pp-control-*` and the focus ring (D-028, D-029) |
 | 3.2 | `IconButton` | `spec` | hug | client | 3.1, 1.3 | Accessible name required by types |
 | 3.3 | `Link` | `spec` | hug | server | 1.1 | `asChild` for `next/link` |
-| 3.4 | `ButtonGroup` | `spec` | hug | server | 3.1, 2.2 | |
+| 3.4 | `ButtonGroup` | `spec` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. Deps corrected per D-030 §7 |
 | 3.5 | `Toggle` | `spec` | hug | client | 3.1 | Pressed state |
 | 3.6 | `Label` | `planned` | fill | server | 1.1 | |
 | 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |

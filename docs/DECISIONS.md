@@ -819,3 +819,208 @@ fonts and rasterisation as variables; round 3 concluded the browser build itself
 was the remainder and moved the authority for baselines to CI. This round says
 the same thing about *time*: a screenshot taken before the page stops moving is
 not a measurement, and waiting for it is not the same as tolerating a difference.
+
+## D-027 — Tier 3 is approved in four groups; D-014's carve-out narrows to `Field`
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-014
+
+D-014 relaxed Gate C to approve a group of specs at a time, then excluded
+Tier 3 on the grounds that "`Field` and the overlay foundation are where API
+mistakes get expensive," and instructed a revisit before Tier 3 was spec'd.
+
+Revisited. The reason names two components; Tier 3 has sixteen. The exclusion
+now covers the components the reason is actually about.
+
+| Group | Components | Gate C |
+| --- | --- | --- |
+| 3A — Action core | 3.1–3.5 | one gate for the group |
+| 3B — Field foundation | 3.6 `Label`, 3.7 `Field` | **individually** |
+| 3C — Native inputs | 3.8–3.13 | one gate, after 3B is `done` |
+| 3D — Composite inputs | 3.14–3.16 | one gate |
+
+Tier 4 is untouched: 4.1 the overlay foundation is still approved on its own.
+
+D-014's strongest argument applies here with more force than it did in Tier 1:
+reviewing a group together "is the only way to catch the inconsistencies between
+components that matter most." 3A's five components share a height scale, a focus
+ring, a disabled semantic and a pressed semantic. Approving `Button` alone and
+`Toggle` three sessions later is how `Toggle` ends up with `checked` where
+`Button` has `pressed`.
+
+Gate A is unaffected. Implementation remains one component at a time.
+
+## D-028 — `--pp-control-*`, and `--pp-tone-solid-active`
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §3, D-015; Tier 0.2 tokens
+
+Two token-layer additions Tier 3 could not start without.
+
+**`--pp-control-*`, in a new hand-written `src/styles/tokens/control.css`.**
+RULES §3 promised this set "when Tier 3 lands": height, inline padding, gap,
+font size and radius, at `sm` / `md` / `lg`. A `Button`, an `Input` and a
+`Select` in one row must be the same height or every form in every consuming app
+is a pixel crooked, and nothing made that true — `Badge` picked `--pp-size-6`
+for `md` and wrote it into its own stylesheet, which is fine for a chip that
+answers to nobody.
+
+Heights are 32 / 40 / 48, aliased onto `--pp-size-8` / `-10` / `-12`. All three
+clear WCAG 2.2 SC 2.5.8 (24×24 CSS px) with no hit-area hack. `sm` and `md`
+share a font size deliberately: a 12px control label is a readability problem,
+not a size step.
+
+**This is not the aliasing D-015 rejected.** D-015's argument was that a name
+over `--pp-space-3` "would add a name and change nothing," because a space step
+is identical in every theme and tone. `--pp-control-height-md` changes
+something: it is the single definition five stylesheets read, and moving it
+moves all five. RULES §3 carved this out in the same paragraph D-015 amends.
+
+Rejected: `primitives.css` (a primitive defined in terms of another primitive is
+how a two-tier token layer stops being two-tier) and `_shared/` (D-020 put the
+`gap` scale there because it maps an *attribute*; these are named values a
+consuming app retunes globally, which is the token layer's job).
+
+**`--pp-tone-solid-active`.** The tone set shipped `--pp-tone-solid` and
+`-solid-hover` and nothing for the pressed state, so the loudest control in the
+library could not darken under the finger. Generated as a second step in the
+same direction as hover, so rest → hover → pressed reads as one progression.
+
+It is **not** a ramp step. Steps 11 and 12 are text solved against step 3;
+reusing one as a fill would make the pressed state of a button and the colour of
+muted text the same value by accident. It carries step 9's guarantee — 4.5:1
+against its on-solid text — asserted in the generator *and* independently in
+`check-contrast.mjs`, which is now 170 assertions rather than 160. A pressed
+button that loses its label is visible for 120ms and is therefore exactly the
+kind of failure nobody catches by looking.
+
+## D-029 — The focus ring is an outline, in one colour, declared in `pp.components`
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §6 (implementation)
+
+`--pp-color-focus-ring` has existed since Tier 0.2 and nothing used it, because
+nothing before `Button` could be focused. Settled once, for every interactive
+component that follows.
+
+**`outline`, not `box-shadow`.** Outline follows `border-radius`, costs no
+layout, and survives an ancestor's `overflow: hidden` — which matters the moment
+a button sits inside `Scroller` (2.8) or a Tier 4 popover. Tier 0.7 banning
+`outline: none` and `outline: 0` was the same decision made in advance.
+
+**Declared in `pp.components` even though `reset.css` already declares it.**
+The reset's rule is `:where(:focus-visible)` in `pp.reset` — zero specificity,
+lowest layer — so a consuming app's `button { outline: none }` takes it away.
+Repeating it on `.pp-button` puts it in a layer the app's unlayered CSS still
+beats deliberately, but not by accident.
+
+**One colour library-wide: `--pp-color-focus-ring`, not `--pp-tone-focus`.**
+The checkable reason: `check-contrast.mjs` asserts exactly one ring pairing —
+focus ring vs page background, ≥ 3:1 — against `--pp-color-focus-ring`. The five
+`--pp-tone-focus` values are asserted against nothing, and an unverified colour
+on the one affordance RULES §6 names by hand is not a trade this library makes,
+least of all when D-008 is the reason anyone should trust its palette. The
+design reason: a ring answers "where am I", and the same answer every time is
+easier to find.
+
+`--pp-tone-focus` keeps a job — the tone-shifted *border* on a focused form
+control in 3B/3C, which is inside the control where the ring is outside it. Any
+future use of it as a ring colour ships with five new assertions, not without
+them.
+
+Guarded by a browser assertion in `tests/visual/harness.spec.ts`: the outline
+colour of a focused `danger` button equals that of a focused `accent` one.
+
+## D-030 — Tier 3A rulings, approved as a batch
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §4, §5
+
+Everything Gate C approved for the action core that is not D-027, D-028 or
+D-029.
+
+**1. `loading` sets `aria-disabled`, not `disabled`.** A browser blurs a focused
+element the instant it becomes disabled, so the conventional "disable while
+submitting" pattern takes focus away from a keyboard or screen-reader user at
+the exact moment they pressed Save and drops them at the top of the document.
+`loading` keeps the button focusable and the component swallows click and
+Enter/Space itself. `disabled` remains the native attribute, because a
+permanently unavailable control genuinely should leave the tab order.
+
+**2. The loading label is hidden with `opacity`, and this was found the hard
+way.** It shipped as `visibility: hidden`, which looks identical and is wrong:
+`visibility: hidden` and `display: none` both remove the label from the
+**accessibility tree**, so a button announced as "Save" becomes a button
+announced as nothing at the moment it starts working — defeating ruling 1
+entirely. Only `opacity` hides it visually and keeps the name.
+
+The jsdom test asserting `toHaveAccessibleName('Save')` **passed against the
+broken version**, because name computation in jsdom does not consult layout. It
+was caught by the browser assertion in `tests/visual/harness.spec.ts`, and that
+assertion has since been re-run against the defect to confirm it fails on the
+right symptom (element not found / no accessible name) rather than incidentally.
+
+The general shape, which D-025 also named: a check expressed in the wrong
+environment hides the absence of a check. Anything about what a screen reader
+perceives — names, roles, hidden-ness — has to be asserted where layout exists.
+
+**3. `type` defaults to `"button"`, not HTML's `"submit"`.** RULES §5 forbids
+inventing a `type` prop; passing the native attribute through is not that, and
+its default is a real decision. HTML's default silently submits the nearest form
+from every "add a row", "cancel" and disclosure toggle placed inside one.
+Submitting is opted into.
+
+**4. No `iconStart` / `iconEnd`. Children compose.** The root is a flex
+container with `--pp-control-gap-*` applied, and `Icon` defaults to `1em`, so an
+icon in children is spaced and sized with no API at all. A button that takes
+icons as props grows `iconSize` and `iconTone` within a year (RULES §5.6). This
+continues the convention `Badge`'s docs already used.
+
+**5. `data-state="on" | "off"` joins the RULES §4 vocabulary**, scoped to
+`aria-pressed` controls. `checked` / `unchecked` stays scoped to `aria-checked`
+ones. The two words then track the two ARIA properties exactly, which is what
+makes the boundary between `Toggle` (3.5) and `Switch` (3.12) visible in the DOM
+without reading our source.
+
+**6. `Link` takes `underline`, not `variant`.** None of `solid | outline |
+ghost | plain` describes anything a text link does, and redefining the word for
+one component is the failure D-014 says group review exists to catch.
+`underline?: 'always' | 'hover' | 'none'` names something the vocabulary has no
+word for — the same ground `gap` was admitted on in D-020. Default `'always'`,
+because colour alone fails WCAG 1.4.1. `Link` takes no `size` either: it is
+inline text and takes the size of the text around it.
+
+**7. `ButtonGroup` is always attached, and its Deps cell was wrong.** A group
+that merely spaces buttons *is* `<Cluster gap="2">`, and D-004 rejected `Box`
+for exactly that. So `ButtonGroup` is the attached case only — collapsed
+borders, end radii, one visual unit — and there is no `attached` prop.
+
+It therefore cannot compose `Cluster` (`Cluster` is `fill`, `ButtonGroup` is
+`hug`), and `ROADMAP.md` listed Deps `3.1, 2.2`. Corrected to `3.1`.
+
+It uses `role="group"` with every button its own tab stop, **not** the APG
+Toolbar pattern's roving tabindex. Roving is right for a dense toolbar of twenty
+controls and wrong for three attached buttons, where it costs a keyboard user an
+arrow-key discovery step to reach what one Tab would have reached. `Toolbar`
+(6.6) is the roving component, and this is why it is a separate entry.
+
+**8. `asChild` with `disabled` is best-effort.** An `<a>` has no `disabled`
+attribute, so the combination emits `aria-disabled`, `data-disabled`,
+`tabIndex={-1}` and swallows activation. Genuinely weaker than native
+`disabled`, and documented as such. Making it a type error was rejected: it
+turns a documented soft edge into a hard wall in the one case real apps hit
+constantly, and the workaround people reach for is worse than the thing
+prevented.
+
+**9. `Button` is a client component because of its click handler.** It uses no
+hooks. `npm run lint:rules` decides `'use client'` by scanning for hooks, so it
+would not have caught the directive's absence — and a Server Component may not
+hand a function to a DOM element's event handler, which `loading` requires.
+Recorded because the next person to tidy up the unused-looking directive needs
+the reason. `Link` (3.3) and `ButtonGroup` (3.4) have no handler of their own
+and stay `server`.
+
+**10. Defaults.** `Button` is `variant="solid" tone="neutral"` — a button that
+does not look pressable is a button nobody clicks, which is why this diverges
+from `Badge`'s `ghost`: a badge is decoration and may recede. Hierarchy comes
+from `tone`, so the rule an app ends up following is *one accent button per
+view*, which is enforceable by eye precisely because the default is not accent.
+`IconButton` and `Toggle` default to `ghost`, being overwhelmingly secondary
+affordances; those are the batch's two deliberate inconsistencies and they are
+named here so they stay decisions rather than drift.

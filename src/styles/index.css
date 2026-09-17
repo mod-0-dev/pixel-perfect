@@ -22,6 +22,7 @@
 @import "./reset.css";
 @import "./tokens/primitives.css";
 @import "./tokens/semantic.css";
+@import "./tokens/control.css";
 @import "./base.css";
 
 /* Components, in roadmap order. Every file below sits inside @layer pp.components. */
@@ -49,3 +50,6 @@
 @import "../components/Split/Split.css";
 @import "../components/AspectRatio/AspectRatio.css";
 @import "../components/Scroller/Scroller.css";
+
+/* Tier 3A — action core. */
+@import "../components/Button/Button.css";

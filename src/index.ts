@@ -6,6 +6,7 @@ export {
 } from './components/AspectRatio/AspectRatio';
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
+export { Button, type ButtonProps } from './components/Button/Button';
 export {
   Cluster,
   type ClusterAlign,

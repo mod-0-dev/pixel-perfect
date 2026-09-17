@@ -76,6 +76,7 @@ export function toneMap(hue) {
     '--pp-tone-border-strong': `var(--pp-palette-${hue}-8)`,
     '--pp-tone-solid': `var(--pp-palette-${hue}-9)`,
     '--pp-tone-solid-hover': `var(--pp-palette-${hue}-10)`,
+    '--pp-tone-solid-active': `var(--pp-palette-${hue}-solid-active)`,
     '--pp-tone-on-solid': `var(--pp-palette-${hue}-on-solid)`,
     '--pp-tone-text': `var(--pp-palette-${hue}-11)`,
     '--pp-tone-text-strong': `var(--pp-palette-${hue}-12)`,

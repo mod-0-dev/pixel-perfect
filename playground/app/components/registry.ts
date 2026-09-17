@@ -30,4 +30,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'split', name: 'Split', tier: '2.6' },
   { slug: 'aspect-ratio', name: 'AspectRatio', tier: '2.7' },
   { slug: 'scroller', name: 'Scroller', tier: '2.8' },
+  { slug: 'button', name: 'Button', tier: '3.1' },
 ];
