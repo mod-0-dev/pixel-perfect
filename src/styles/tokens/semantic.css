@@ -58,6 +58,7 @@
     --pp-color-bg-raised: var(--pp-palette-neutral-1);
     --pp-color-bg-sunken: var(--pp-palette-neutral-3);
     --pp-color-bg-scrim: oklch(15% 0.01 258 / 0.55);
+    --pp-color-shadow-edge: oklch(15% 0.01 258 / 0.14);
   }
 
   [data-pp-theme="light"] {
@@ -104,6 +105,7 @@
     --pp-color-bg-raised: var(--pp-palette-neutral-1);
     --pp-color-bg-sunken: var(--pp-palette-neutral-3);
     --pp-color-bg-scrim: oklch(15% 0.01 258 / 0.55);
+    --pp-color-shadow-edge: oklch(15% 0.01 258 / 0.14);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -151,6 +153,7 @@
       --pp-color-bg-raised: var(--pp-palette-neutral-3);
       --pp-color-bg-sunken: var(--pp-palette-neutral-1);
       --pp-color-bg-scrim: oklch(8% 0.01 258 / 0.7);
+      --pp-color-shadow-edge: oklch(0% 0 0 / 0.5);
     }
   }
 
@@ -198,6 +201,7 @@
     --pp-color-bg-raised: var(--pp-palette-neutral-3);
     --pp-color-bg-sunken: var(--pp-palette-neutral-1);
     --pp-color-bg-scrim: oklch(8% 0.01 258 / 0.7);
+    --pp-color-shadow-edge: oklch(0% 0 0 / 0.5);
   }
 
   [data-pp-tone="neutral"] {

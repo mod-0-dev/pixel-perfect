@@ -1,0 +1,33 @@
+/*
+ * Shared layout plumbing — spec docs/specs/tier-2-layout.md, D-020.
+ *
+ * The `gap` prop is an index into the space scale, and five components take it.
+ * Mapping the scale here rather than in each stylesheet is ten rules instead of
+ * fifty, and it means a new step is added in one place.
+ *
+ * THE INHERITANCE HAZARD, and why the default matters:
+ *
+ *   Custom properties inherit. A <Stack gap="6"> containing a <Cluster> would
+ *   therefore hand the Cluster a --_pp-gap of 2rem it never asked for.
+ *
+ * It cannot happen, because `gap` defaults to '0' rather than to undefined, so
+ * every gap-taking component ALWAYS emits data-pp-gap and always redeclares the
+ * property on its own root. Make `gap` optional-with-no-attribute and every
+ * nested layout silently inherits its parent's rhythm.
+ *
+ * Stack.test.tsx asserts the attribute is always present, for exactly this
+ * reason.
+ */
+
+@layer pp.components {
+  [data-pp-gap="0"] { --_pp-gap: var(--pp-space-0); }
+  [data-pp-gap="1"] { --_pp-gap: var(--pp-space-1); }
+  [data-pp-gap="2"] { --_pp-gap: var(--pp-space-2); }
+  [data-pp-gap="3"] { --_pp-gap: var(--pp-space-3); }
+  [data-pp-gap="4"] { --_pp-gap: var(--pp-space-4); }
+  [data-pp-gap="5"] { --_pp-gap: var(--pp-space-5); }
+  [data-pp-gap="6"] { --_pp-gap: var(--pp-space-6); }
+  [data-pp-gap="7"] { --_pp-gap: var(--pp-space-7); }
+  [data-pp-gap="8"] { --_pp-gap: var(--pp-space-8); }
+  [data-pp-gap="9"] { --_pp-gap: var(--pp-space-9); }
+}

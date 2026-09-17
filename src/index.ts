@@ -1,4 +1,4 @@
-export type { Size, Tone, Variant } from './types';
+export type { Align, Justify, Size, Space, Tone, Variant } from './types';
 
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
@@ -23,6 +23,7 @@ export {
   type SkeletonShape,
 } from './components/Skeleton/Skeleton';
 export { Spinner, type SpinnerProps } from './components/Spinner/Spinner';
+export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
 export {
   Text,
   type TextAlign,

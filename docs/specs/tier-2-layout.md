@@ -3,16 +3,16 @@
 | | |
 | --- | --- |
 | **Tier** | 2 |
-| **Status** | `spec` — awaiting Gate C approval |
+| **Status** | **approved** 2026-09-17 — all rulings accepted as proposed (D-020 … D-023) |
 | **Components** | 2.1 `Stack` · 2.2 `Cluster` · 2.3 `Grid` · 2.4 `Container` · 2.5 `Center` · 2.6 `Split` · 2.7 `AspectRatio` · 2.8 `Scroller` |
 | **Depends on** | Tier 0 (`done`), Tier 1 (`done`) |
-| **Approval** | One gate for the group — see [D-014](../DECISIONS.md) |
+| **Approval** | One gate for the group — see [D-014](../DECISIONS.md). Cleared 2026-09-17 |
 
 ### Progress
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 2.1 `Stack` | `spec` | 2.5 `Center` | `spec` |
+| 2.1 `Stack` | `done` | 2.5 `Center` | `spec` |
 | 2.2 `Cluster` | `spec` | 2.6 `Split` | `spec` |
 | 2.3 `Grid` | `spec` | 2.7 `AspectRatio` | `spec` |
 | 2.4 `Container` | `spec` | 2.8 `Scroller` | `spec` |
@@ -128,7 +128,7 @@ sidebar's width to the container's, so "collapse at 45rem" becomes "set the
 sidebar to 16rem and the main pane's minimum to 50% and work out what that
 implies". Three named breakpoints say what happens.
 
-### 5. `Split` does not reorder its children — **open**
+### 5. `Split` does not reorder its children — accepted, [D-022 §3](../DECISIONS.md)
 
 The roadmap describes `Split` as "sidebar + main". The obvious prop is
 `side="start" | "end"`.
@@ -142,7 +142,7 @@ screen. That divergence is a real accessibility defect, it is the standard
 example of one, and adding a prop whose only function is to create it is not a
 trade worth making for an ordering the caller can express by swapping two lines.
 
-### 6. `Grid` accepts a raw track template — **open, and the one I am least sure of**
+### 6. `Grid` accepts a raw track template — accepted, [D-022 §4](../DECISIONS.md)
 
 `Grid` needs two modes that are not in dispute:
 
@@ -169,8 +169,8 @@ hand-roll a `.lp-row` class with the same `grid-template-columns` in it", which
 is what they do today and what this tier exists to stop. A prop we can see
 beats a stylesheet we cannot.
 
-If you would rather not, the fallback is to ship `columns: number` and
-`minItemInlineSize` only, and revisit when `Table` (5.4) forces the issue.
+**Ruled:** accepted as proposed. The fallback — `columns: number` and
+`minItemInlineSize` only, revisited when `Table` (5.4) forces it — was declined.
 
 ### 7. `Scroller` requires an accessible name
 
@@ -199,7 +199,7 @@ be a `<main>`.
 behaviour that a substituted root would break — and per the Tier 1 precedent,
 `asChild` where composition does not require it is an invitation to misuse.
 
-### 10. `Scroller` needs one new semantic colour token
+### 10. `Scroller` needs one new semantic colour token — accepted, [D-023](../DECISIONS.md)
 
 A scroll shadow is a gradient from a translucent dark to transparent, and the
 semantic layer has nothing that fits. `--pp-color-bg-scrim` is a modal overlay at
@@ -1171,18 +1171,22 @@ Dependency order, and the order each becomes useful to the consuming app:
 WIP limit 1 on `build` (D-014). Each ships its own commit: component, CSS,
 tests, playground entry, docs page, changeset, roadmap transition.
 
-## Open questions
+## Rulings
 
-Resolve before Gate C closes.
+Gate C cleared 2026-09-17. All four open items were accepted as recommended.
 
-1. **Decision 6** — does `Grid` accept a raw `grid-template-columns` string?
-   Recommended yes; the fallback is `columns: number` + `minItemInlineSize`
-   only.
-2. **Decision 5** — confirm there is no `side` prop on `Split`.
-3. **`Container` measures** — `40rem` / `64rem` / `80rem`. The consuming app
-   currently uses `72rem`, which would become `lg` at `80rem` or a
-   `--pp-container-max-inline-size` override. Worth a look before it is
-   80 files instead of 10.
-4. **Decision 10** — approve `--pp-color-shadow-edge` as a Tier 0 token
-   amendment. Nothing else in the tier is blocked on it; `Scroller` is last in
-   the build order for other reasons, so there is time.
+| # | Question | Ruling |
+| --- | --- | --- |
+| 6 | Does `Grid` accept a raw `grid-template-columns` string? | **Yes.** `columns?: number \| string`. [D-022 §4](../DECISIONS.md) |
+| — | `Container` measures | **`40rem` / `64rem` / `80rem`.** The app's `72rem` becomes `lg` at `80rem`. [D-022 §5](../DECISIONS.md) |
+| 10 | A new `--pp-color-shadow-edge` token | **Added**, light and dark, no contrast assertion. [D-023](../DECISIONS.md) |
+| 5 | Does `Split` get a `side` prop? | **No.** Put `Split.Main` first. [D-022 §3](../DECISIONS.md) |
+
+The remaining decisions in this document were accepted as written: `gap` as the
+fourth vocabulary term ([D-020](../DECISIONS.md)), layout primitives sizing their
+children ([D-021](../DECISIONS.md)), and the rest as
+[D-022](../DECISIONS.md) §§1–2, 6–10.
+
+One item is deliberately left unresolved rather than ruled on: **`Grid` spans**
+(§2.3, Open question). `style={{ gridColumn }}` covers it until something in the
+library needs it. Revisit at `Table` (5.4).

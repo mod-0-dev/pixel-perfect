@@ -1,0 +1,30 @@
+/*
+ * Stack — spec §2.1
+ *
+ * A flex column and a gap. That is the whole component, and the restraint is
+ * the point: the moment a layout primitive grows a background or a padding
+ * prop it has become `Box`, which D-004 rejected.
+ *
+ * `min-inline-size: 0` is what makes the sizing contract hold one level down.
+ * Without it a flex item's floor is its min-content size, so a long unbroken
+ * string inside a Stack inside a Cluster pushes the whole row wider than its
+ * container instead of wrapping or truncating.
+ */
+
+@layer pp.components {
+  .pp-stack {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    gap: var(--pp-stack-gap, var(--_pp-gap));
+  }
+
+  /* Logical keywords, so RTL needs no second thought. `start` and `end` are
+     the flexbox-aware aliases of flex-start/flex-end and resolve correctly in
+     both writing modes. */
+  .pp-stack[data-align="start"] { align-items: start; }
+  .pp-stack[data-align="center"] { align-items: center; }
+  .pp-stack[data-align="end"] { align-items: end; }
+  .pp-stack[data-align="stretch"] { align-items: stretch; }
+  .pp-stack[data-align="baseline"] { align-items: baseline; }
+}

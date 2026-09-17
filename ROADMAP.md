@@ -26,16 +26,14 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 2 — Layout primitives. All eight in `spec`, one batch,
-  **stopped at Gate C awaiting approval**
-  ([`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md)). Nothing is in
-  `build`, so the WIP limit is intact
-- **The spec asks for ten rulings**, three of them open: whether `Grid` takes a
-  raw track template, that `Split` has no `side` prop, the `Container` measures,
-  and a new `--pp-color-shadow-edge` token for `Scroller`
-- **Build order on approval:** `Stack` → `Cluster` → `Grid` → `Container` →
-  `Center` → `Split` → `AspectRatio` → `Scroller`, one at a time
-- **Done:** 21 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023) and **2.1
+  `Stack` is `done`**. The shared `gap` scale shipped with it, so the rest of
+  the tier is unblocked
+- **Next up:** 2.2 `Cluster`. 24 hand-rolled uses waiting in launchpad, more
+  than any other component in the library
+- **Remaining in tier:** `Cluster` → `Grid` → `Container` → `Center` → `Split`
+  → `AspectRatio` → `Scroller`, one at a time
+- **Done:** 22 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -87,7 +85,7 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2.1 | `Stack` | `spec` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale |
+| 2.1 | `Stack` | `done` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale (D-020) |
 | 2.2 | `Cluster` | `spec` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify` |
 | 2.3 | `Grid` | `spec` | fill | server | 2.1 | Explicit columns + `auto-fit` mode |
 | 2.4 | `Container` | `spec` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`** |

@@ -25,6 +25,11 @@
 @import "./base.css";
 
 /* Components, in roadmap order. Every file below sits inside @layer pp.components. */
+
+/* Tier 2 shared plumbing. First, because the gap scale it defines is read by
+   every layout primitive below it. */
+@import "../components/_shared/layout.css";
+
 @import "../components/Text/Text.css";
 @import "../components/Heading/Heading.css";
 @import "../components/Icon/Icon.css";
@@ -36,3 +41,4 @@
 @import "../components/Skeleton/Skeleton.css";
 @import "../components/Avatar/Avatar.css";
 @import "../components/VisuallyHidden/VisuallyHidden.css";
+@import "../components/Stack/Stack.css";

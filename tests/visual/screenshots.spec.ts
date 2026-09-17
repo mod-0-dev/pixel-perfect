@@ -23,6 +23,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'skeleton', path: '/components/skeleton' },
   { name: 'avatar', path: '/components/avatar' },
   { name: 'visually-hidden', path: '/components/visually-hidden' },
+  { name: 'stack', path: '/components/stack' },
 ];
 
 /**
