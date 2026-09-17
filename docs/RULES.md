@@ -69,8 +69,21 @@ There is no `Spacer` component. `gap` exists.
   stylesheet that consumers import once.
 - **Two-tier tokens.** Primitives (`--pp-palette-blue-600`, `--pp-space-3`) are
   raw values. Semantics (`--pp-color-accent-bg`, `--pp-color-border-subtle`) map
-  primitives to meaning. **Components consume semantic tokens only.** A hardcoded
-  hex, px, or rem in component CSS is a bug.
+  primitives to meaning.
+- **Colour is consumed through semantic tokens only.** A component never
+  references `--pp-palette-*`; it reads `--pp-color-*` or, inside a tone
+  context, `--pp-tone-*`. A colour must resolve differently per theme and per
+  tone, and the semantic layer is what makes that true (D-011).
+- **Dimensions are consumed from the primitive scales directly.**
+  `--pp-space-*`, `--pp-radius-*`, `--pp-font-size-*`, `--pp-line-height-*`,
+  `--pp-font-weight-*`, `--pp-letter-spacing-*`, `--pp-border-width-*`,
+  `--pp-duration-*`, `--pp-easing-*`, `--pp-shadow-*` and `--pp-z-*` are the
+  vocabulary. A spacing step is the same value in every theme and every tone,
+  so a semantic alias over it would add a name and change nothing (D-015).
+  Cross-component agreement that genuinely needs a shared definition — how tall
+  a medium control is — gets a `--pp-control-*` set when Tier 3 lands.
+- **A hardcoded hex, px, rem, ms or z-index in component CSS is a bug.** Every
+  value comes from a token. The two rules above say *which* token, not whether.
 - **Theming is redefining custom properties.** Dark mode is a token layer, not a
   `dark:` variant sprinkled through components, and it exists from day one — not
   bolted on at Tier 5.

@@ -1,0 +1,53 @@
+/*
+ * Avatar — spec §1.9
+ *
+ * A square (D-019: inline-size is intrinsic here), round by default, showing
+ * the image once it has loaded and initials on a tone until then or on error.
+ */
+
+@layer pp.components {
+  .pp-avatar {
+    --_size: var(--pp-size-8);
+    --_font-size: var(--pp-font-size-2);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    inline-size: var(--pp-avatar-size, var(--_size));
+    block-size: var(--pp-avatar-size, var(--_size));
+    overflow: hidden;
+    border-radius: var(--pp-avatar-radius, var(--pp-radius-full));
+    background-color: var(--pp-avatar-bg, var(--pp-tone-solid));
+    color: var(--pp-avatar-color, var(--pp-tone-on-solid));
+    font-size: var(--_font-size);
+    font-weight: var(--pp-font-weight-semibold);
+    letter-spacing: var(--pp-letter-spacing-wide);
+    line-height: 1;
+    user-select: none;
+    vertical-align: middle;
+  }
+
+  .pp-avatar[data-size="sm"] {
+    --_size: var(--pp-size-6);
+    --_font-size: var(--pp-font-size-1);
+  }
+
+  .pp-avatar[data-size="lg"] {
+    --_size: var(--pp-size-10);
+    --_font-size: var(--pp-font-size-3);
+  }
+
+  .pp-avatar__image {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .pp-avatar__fallback {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

@@ -80,18 +80,28 @@ jobs:
       # the exact Chromium build, and the runner image pins one that a given
       # dev container will not have. Baselines generated anywhere else are
       # guaranteed to mismatch. See D-013.
-      - name: Are baselines present?
-        id: baselines
-        run: |
-          if [ -z "$(ls -A tests/visual/__screenshots__ 2>/dev/null)" ]; then
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          fi
+      #
+      # Compare first. Playwright writes the actual image for any test whose
+      # baseline is missing and fails that test, so a run that fails ONLY
+      # because new files appeared under __screenshots__ is a new test asking
+      # for a baseline, not a regression. A run in which an existing baseline
+      # differs is a regression and stays red. See D-017.
+      - name: Visual regression
+        id: visual
+        run: npm run test:visual
+        continue-on-error: true
 
-      - name: Author baselines
-        if: steps.baselines.outputs.present == 'false'
-        run: npm run test:visual:update
+      - name: Classify the result
+        id: classify
+        run: |
+          changed=$(git status --porcelain -- tests/visual/__screenshots__ | grep -v '^??' || true)
+          new=$(git status --porcelain -- tests/visual/__screenshots__ | grep '^??' || true)
+          echo "changed=$([ -n "$changed" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "new=$([ -n "$new" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          if [ -n "$changed" ]; then
+            echo "::error::Existing screenshot baselines differ — this is a visual regression."
+            echo "$changed"
+          fi
 
       # A push made with GITHUB_TOKEN does not trigger another workflow run, by
       # design, so this commit lands with no checks of its own. The baselines
@@ -100,7 +110,7 @@ jobs:
       # authoring run from looping forever — but it does mean an
       # authoring commit should never be the final head of a PR.
       - name: Commit authored baselines
-        if: steps.baselines.outputs.present == 'false'
+        if: steps.classify.outputs.new == 'true' && steps.classify.outputs.changed == 'false'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -108,9 +118,9 @@ jobs:
           git commit -m "test(visual): author screenshot baselines in CI"
           git push
 
-      - name: Visual regression
-        if: steps.baselines.outputs.present == 'true'
-        run: npm run test:visual
+      - name: Fail on regression
+        if: steps.visual.outcome == 'failure' && (steps.classify.outputs.changed == 'true' || steps.classify.outputs.new == 'false')
+        run: exit 1
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}

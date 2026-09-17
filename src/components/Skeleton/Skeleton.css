@@ -1,0 +1,89 @@
+/*
+ * Skeleton — spec §1.7
+ *
+ * The shimmer is a wide gradient swept across by moving background-position.
+ * Under prefers-reduced-motion the sweep is removed and the base tint stays:
+ * unlike Spinner, a static placeholder is fully legible, so this one can stop.
+ */
+
+@layer pp.components {
+  .pp-skeleton {
+    --_radius: var(--pp-skeleton-radius, var(--pp-radius-2));
+    /* Base is a border step, not a background step: bg-sunken on a surface
+       was barely visible in light mode. The highlight must be lighter than the
+       base in BOTH themes, and the ramp runs the other way in dark, so no
+       single token pair can say "one step lighter" — light-dark() can, and the
+       library already sets color-scheme per theme scope (base.css). */
+    --_color: var(--pp-skeleton-color, var(--pp-color-border-subtle));
+    --_highlight: var(--pp-skeleton-highlight, light-dark(var(--pp-color-bg-sunken), var(--pp-color-border)));
+
+    display: block;
+    min-inline-size: 0;
+  }
+
+  /* The shimmer surface: the root for block and circle, each line for text. */
+  .pp-skeleton[data-shape="block"],
+  .pp-skeleton[data-shape="circle"],
+  .pp-skeleton__line {
+    border-radius: var(--_radius);
+    background-color: var(--_color);
+    background-image: linear-gradient(90deg, var(--_color) 25%, var(--_highlight) 37%, var(--_color) 63%);
+    background-size: 400% 100%;
+    animation: pp-skeleton-sweep calc(var(--pp-duration-slow) * 4) ease-in-out infinite;
+  }
+
+  /* block: the parent sizes it, or the custom property does. */
+  .pp-skeleton[data-shape="block"] {
+    block-size: var(--pp-skeleton-block-size, auto);
+  }
+
+  /* circle: a square from its block size. A circle with no size is nothing,
+     so it has a token default the parent can override. */
+  .pp-skeleton[data-shape="circle"] {
+    block-size: var(--pp-skeleton-block-size, var(--pp-size-10));
+    aspect-ratio: 1;
+  }
+
+  /* text: one line per `lines`, each a cap-height stripe, spaced to the type
+     scale's leading. Two columns so the last of several lines can be shorter
+     by placement rather than by a width declaration. */
+  .pp-skeleton[data-shape="text"] {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    row-gap: calc((var(--pp-line-height-normal) - 1) * 1em);
+  }
+
+  .pp-skeleton__line {
+    display: block;
+    grid-column: 1 / -1;
+    block-size: 1em;
+  }
+
+  .pp-skeleton__line:last-child:not(:only-child) {
+    grid-column: 1;
+  }
+
+  /* radius */
+  .pp-skeleton[data-radius="sm"] { --_radius: var(--pp-skeleton-radius, var(--pp-radius-1)); }
+  .pp-skeleton[data-radius="lg"] { --_radius: var(--pp-skeleton-radius, var(--pp-radius-3)); }
+  .pp-skeleton[data-radius="full"] { --_radius: var(--pp-skeleton-radius, var(--pp-radius-full)); }
+
+  @keyframes pp-skeleton-sweep {
+    from {
+      background-position: 100% 50%;
+    }
+
+    to {
+      background-position: 0% 50%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-skeleton[data-shape="block"],
+    .pp-skeleton[data-shape="circle"],
+    .pp-skeleton__line {
+      animation: none;
+      background-image: none;
+    }
+  }
+}

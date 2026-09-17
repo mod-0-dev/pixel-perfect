@@ -1,0 +1,69 @@
+/*
+ * Text — spec §1.1
+ *
+ * Each axis (size, tone, weight) sets a private custom property from its data
+ * attribute, and the real declaration reads the public override first:
+ *
+ *   font-size: var(--pp-text-size, var(--_size));
+ *
+ * So `--pp-text-size` set by a consumer on any ancestor wins over `data-size`,
+ * which is what "component-scoped custom properties are the override API"
+ * (RULES §3) has to mean in practice. The private property is re-declared on
+ * every .pp-text, so a nested Text does not inherit its parent's.
+ */
+
+@layer pp.components {
+  .pp-text {
+    --_size: var(--pp-font-size-3);
+    --_weight: var(--pp-font-weight-regular);
+    --_color: var(--pp-color-text);
+
+    /* No `display` declaration. The <p> is block-level natively, which is the
+       fill contract; an `asChild` <span> keeps its own inline display, which
+       is the point of asChild. Declaring `display: block` here turned every
+       inline usage into a stack of lines — seen in the playground. */
+    min-inline-size: 0;
+    /* A <p> carries UA margin. Removing it is the rule, not a breach of it (D-018). */
+    margin: 0;
+    font-size: var(--pp-text-size, var(--_size));
+    font-weight: var(--pp-text-weight, var(--_weight));
+    line-height: var(--pp-text-line-height, var(--pp-line-height-normal));
+    color: var(--pp-text-color, var(--_color));
+    /* A fill component must never be the reason its parent scrolls. `anywhere`
+       also lets min-content shrink, which is what keeps this honest inside flex. */
+    overflow-wrap: anywhere;
+  }
+
+  /* size */
+  .pp-text[data-size="xs"] { --_size: var(--pp-font-size-1); }
+  .pp-text[data-size="sm"] { --_size: var(--pp-font-size-2); }
+  .pp-text[data-size="lg"] { --_size: var(--pp-font-size-4); }
+
+  /* weight */
+  .pp-text[data-weight="medium"] { --_weight: var(--pp-font-weight-medium); }
+  .pp-text[data-weight="semibold"] { --_weight: var(--pp-font-weight-semibold); }
+  .pp-text[data-weight="bold"] { --_weight: var(--pp-font-weight-bold); }
+
+  /* tone: neutral and muted read the page palette; the rest come from the tone context (D-007) */
+  .pp-text[data-tone="muted"] { --_color: var(--pp-color-text-muted); }
+  .pp-text[data-pp-tone] { --_color: var(--pp-tone-text); }
+
+  /* align — logical values only */
+  .pp-text[data-align="start"] { text-align: start; }
+  .pp-text[data-align="center"] { text-align: center; }
+  .pp-text[data-align="end"] { text-align: end; }
+
+  /* truncate: one line is the ellipsis technique; more is line-clamp */
+  .pp-text[data-truncate="1"] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pp-text[data-truncate]:not([data-truncate="1"]) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--pp-text-lines, 2);
+    overflow: hidden;
+  }
+}

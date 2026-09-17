@@ -1,0 +1,65 @@
+/*
+ * Badge — spec §1.8
+ *
+ * Tone comes entirely from the --pp-tone-* context (D-007): the four variants
+ * are four ways of combining that context's background, border and text, and
+ * adding a tone touches nothing here. The border is always present — transparent
+ * for solid and plain — so switching variant never moves anything.
+ */
+
+@layer pp.components {
+  .pp-badge {
+    --_bg: var(--pp-tone-bg);
+    --_color: var(--pp-tone-text-strong);
+    --_border: var(--pp-tone-border-subtle);
+    --_block-size: var(--pp-size-6);
+    --_font-size: var(--pp-font-size-1);
+    --_padding-inline: var(--pp-space-2);
+
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pp-space-1);
+    block-size: var(--_block-size);
+    padding-inline: var(--pp-badge-padding-inline, var(--_padding-inline));
+    border: var(--pp-border-width-1) solid var(--pp-badge-border-color, var(--_border));
+    border-radius: var(--pp-badge-radius, var(--pp-radius-full));
+    background-color: var(--pp-badge-bg, var(--_bg));
+    color: var(--pp-badge-color, var(--_color));
+    font-size: var(--_font-size);
+    font-weight: var(--pp-font-weight-medium);
+    line-height: 1;
+    /* A badge fits or overflows visibly; it never becomes two lines of one word. */
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  /* variant — see the table in the spec */
+  .pp-badge[data-variant="solid"] {
+    --_bg: var(--pp-tone-solid);
+    --_color: var(--pp-tone-on-solid);
+    --_border: transparent;
+  }
+
+  .pp-badge[data-variant="outline"] {
+    --_bg: transparent;
+    --_color: var(--pp-tone-text);
+    --_border: var(--pp-tone-border);
+  }
+
+  .pp-badge[data-variant="plain"] {
+    --_bg: transparent;
+    --_color: var(--pp-tone-text);
+    --_border: transparent;
+  }
+
+  /* size — the shared chip scale */
+  .pp-badge[data-size="sm"] {
+    --_block-size: var(--pp-size-5);
+    --_padding-inline: var(--pp-space-1);
+  }
+
+  .pp-badge[data-size="lg"] {
+    --_block-size: var(--pp-size-7);
+    --_font-size: var(--pp-font-size-2);
+  }
+}

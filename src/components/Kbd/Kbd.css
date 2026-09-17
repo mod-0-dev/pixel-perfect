@@ -1,0 +1,42 @@
+/*
+ * Kbd — spec §1.10
+ *
+ * A keycap: sunken background, a hairline border with a thicker bottom edge for
+ * depth, the mono face. Sized on the shared chip scale.
+ */
+
+@layer pp.components {
+  .pp-kbd {
+    --_block-size: var(--pp-size-6);
+    --_font-size: var(--pp-font-size-1);
+    --_padding-inline: var(--pp-space-2);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    block-size: var(--_block-size);
+    padding-inline: var(--pp-kbd-padding-inline, var(--_padding-inline));
+    border: var(--pp-border-width-1) solid var(--pp-kbd-border-color, var(--pp-color-border));
+    border-block-end-width: var(--pp-border-width-2);
+    border-radius: var(--pp-kbd-radius, var(--pp-radius-1));
+    background-color: var(--pp-kbd-bg, var(--pp-color-bg-sunken));
+    color: var(--pp-kbd-color, var(--pp-color-text));
+    font-family: var(--pp-font-family-mono);
+    font-size: var(--_font-size);
+    font-weight: var(--pp-font-weight-medium);
+    line-height: 1;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+
+  .pp-kbd[data-size="sm"] {
+    --_block-size: var(--pp-size-5);
+    --_padding-inline: var(--pp-space-1);
+  }
+
+  .pp-kbd[data-size="lg"] {
+    --_block-size: var(--pp-size-7);
+    --_font-size: var(--pp-font-size-2);
+    --_padding-inline: var(--pp-space-3);
+  }
+}

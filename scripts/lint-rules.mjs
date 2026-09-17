@@ -87,15 +87,41 @@ for (const file of walk(SRC, ['.ts', '.tsx'])) {
   };
   visit(source);
 
-  // Module-scope browser globals break SSR. Only top-level statements matter;
-  // inside a function body they run in the browser, which is fine.
+  // Module-scope browser globals break SSR. Only code that RUNS at module
+  // evaluation matters: an identifier inside a function body runs later, in
+  // the browser, and a word inside a comment, a string or a type never runs
+  // at all. So this walks the AST for identifier nodes rather than grepping
+  // text — the text version flagged the word "document" in a JSDoc.
+  const BROWSER_GLOBALS = new Set(['window', 'document', 'localStorage', 'sessionStorage', 'matchMedia']);
+  const isDeferred = (node) =>
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isClassDeclaration(node) ||
+    ts.isInterfaceDeclaration(node) ||
+    ts.isTypeAliasDeclaration(node) ||
+    ts.isTypeNode(node);
+
+  const findModuleScopeGlobal = (node) => {
+    if (isDeferred(node)) return null;
+    if (ts.isIdentifier(node) && BROWSER_GLOBALS.has(node.text)) {
+      // `foo.document` is a property, not the global.
+      const isPropertyName = ts.isPropertyAccessExpression(node.parent) && node.parent.name === node;
+      if (!isPropertyName) return node;
+    }
+    let found = null;
+    ts.forEachChild(node, (child) => {
+      if (!found) found = findModuleScopeGlobal(child);
+    });
+    return found;
+  };
+
   for (const statement of source.statements) {
-    if (ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) continue;
-    const text = statement.getText(source);
-    const m = /\b(window|document|localStorage|sessionStorage|matchMedia)\b/.exec(text);
-    if (m && !/=>|function\s*\(/.test(text)) {
-      const { line } = source.getLineAndCharacterOfPosition(statement.getStart(source));
-      fail(rel, `\`${m[1]}\` is accessed at module scope (line ${line + 1}) — breaks SSR (RULES §7)`);
+    const hit = findModuleScopeGlobal(statement);
+    if (hit) {
+      const { line } = source.getLineAndCharacterOfPosition(hit.getStart(source));
+      fail(rel, `\`${hit.text}\` is accessed at module scope (line ${line + 1}) — breaks SSR (RULES §7)`);
     }
   }
 }

@@ -18,15 +18,20 @@ Definition of Done: [`.claude/skills/component/references/definition-of-done.md`
 | **Contract** | `fill`, `hug`, `n/a` (providers, layout-only, non-visual) |
 | **RSC** | `server` (no `'use client'`) / `client` |
 
-**WIP limit: 1.** At most one component may be in `spec`, `build`, or `review`
-at any time. A component may not enter `spec` until every entry in its **Deps**
-column is `done`.
+**WIP limit: 1**, applying to `build` and `review` only. Specs are approved a
+group at a time, so any number of components in a group may sit in `spec`
+together ([D-014](docs/DECISIONS.md)). Implementation remains strictly one at a
+time. A component may not enter `spec` until every entry in its **Deps** column
+is `done`.
 
 ### Current state
 
-- **In flight:** _none_
-- **Next up:** Tier 1 — Atoms (1.1 `Text`). 0.10 docs site is deferred, not blocking
-- **Done:** 10 / 77 tracked items (10 foundations + 67 components)
+- **In flight:** _none_ — **Tier 1 is complete** (11 / 11 atoms `done`)
+- **Next up:** Tier 2 — Layout primitives, specified as one batch per D-014
+  (Gate C). launchpad fakes `Stack` and `Cluster` on every screen, so the
+  demand is not hypothetical. `Stack` first; `Container` is the only component permitted
+  `max-width`. 0.10 docs site is deferred, not blocking
+- **Done:** 21 / 78 tracked items (10 foundations + 68 components)
 
 ---
 
@@ -51,21 +56,22 @@ Not components. Nothing else may start until this tier is `done`.
 
 ## Tier 1 — Atoms
 
-No internal state, no a11y surface beyond semantics.
+No internal state, no a11y surface beyond semantics. Specified as one batch in
+[`docs/specs/tier-1-atoms.md`](docs/specs/tier-1-atoms.md).
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1.1 | `Text` | `planned` | fill | server | T0 | Typography scale, `tone`, truncation |
-| 1.2 | `Heading` | `planned` | fill | server | 1.1 | Visual level decoupled from semantic level |
-| 1.3 | `Icon` | `planned` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
-| 1.4 | `VisuallyHidden` | `planned` | n/a | server | T0 | |
-| 1.5 | `Separator` | `planned` | fill | server | T0 | Horizontal + vertical, `role="separator"` |
-| 1.6 | `Spinner` | `planned` | hug | server | T0 | `prefers-reduced-motion` |
-| 1.7 | `Skeleton` | `planned` | fill | server | T0 | |
-| 1.8 | `Badge` | `planned` | hug | server | T0 | The canonical `hug` case |
-| 1.9 | `Avatar` | `planned` | hug | client | 1.3 | Image fallback needs state |
-| 1.10 | `Kbd` | `planned` | hug | server | T0 | |
-| 1.11 | `Code` | `planned` | hug | server | T0 | Inline only; block code is Tier 5 |
+| 1.1 | `Text` | `done` | fill | server | T0 | Typography scale, `tone`, truncation |
+| 1.2 | `Heading` | `done` | fill | server | 1.1 | Visual level decoupled from semantic level |
+| 1.3 | `Icon` | `done` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
+| 1.4 | `VisuallyHidden` | `done` | n/a | server | T0 | |
+| 1.5 | `Separator` | `done` | fill | server | T0 | Horizontal + vertical, `role="separator"` |
+| 1.6 | `Spinner` | `done` | hug | server | T0 | `prefers-reduced-motion` |
+| 1.7 | `Skeleton` | `done` | fill | server | T0 | |
+| 1.8 | `Badge` | `done` | hug | server | T0 | The canonical `hug` case |
+| 1.9 | `Avatar` | `done` | hug | client | 1.3 | Image fallback needs state |
+| 1.10 | `Kbd` | `done` | hug | server | T0 | |
+| 1.11 | `Code` | `done` | hug | server | T0 | Inline only; block code is Tier 5 |
 
 ---
 
@@ -150,6 +156,7 @@ Behavior from Radix / Base UI. We own every DOM node and every pixel.
 | 5.10 | `FileUpload` | `planned` | fill | client | 3.7 | Drag/drop, progress |
 | 5.11 | `Tree` | `planned` | fill | client | T3 | |
 | 5.12 | `CodeBlock` | `planned` | fill | client | 1.11 | Highlighting is a peer dep |
+| 5.13 | `AvatarGroup` | `planned` | hug | server | 1.9, 2.2 | Overlapping stack with overflow count. Added per D-016 |
 
 ---
 

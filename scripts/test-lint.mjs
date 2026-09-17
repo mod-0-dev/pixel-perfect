@@ -8,15 +8,17 @@ import stylelint from 'stylelint';
 
 const EXPECTED = {
   'property-disallowed-list': [
-    'width', 'max-width', 'min-width', 'inline-size', 'margin',
-    'margin-block-start', 'float', 'left', 'padding-left', 'border-left',
+    'width', 'max-width', 'min-width', 'inline-size', 'margin-top',
+    'float', 'left', 'padding-left', 'border-left',
   ],
   'declaration-property-value-disallowed-list': [
     'color', 'background-color', 'box-shadow', 'padding', 'gap',
     'border-radius', 'font-size', 'transition', 'z-index', 'text-align',
     'outline', 'font-family', 'border-width',
   ],
-  'declaration-property-value-allowed-list': ['min-inline-size'],
+  // Non-zero margins are value violations, not property violations (D-018):
+  // `margin: 0` is how a component removes UA margin, which is the rule's aim.
+  'declaration-property-value-allowed-list': ['min-inline-size', 'margin', 'margin-block-start'],
   'selector-class-pattern': ['Class names must be pp-'],
   'media-feature-name-disallowed-list': ['min-width'],
 };
@@ -85,6 +87,15 @@ for (const expected of EXPECTED_RULE_LINT) {
     console.error(`✗ rule lint did not catch: ${expected}`);
     failures++;
   }
+}
+
+// A browser global inside a comment, a string, a type or a function body is
+// not a module-scope access and must NOT be flagged. Exactly one `window`
+// access (the real one) may fire, and `document` must not fire at all.
+const globalHits = found.filter((m) => m.includes('is accessed at module scope'));
+if (globalHits.length !== 1 || globalHits.some((m) => m.includes('`document`'))) {
+  console.error(`✗ module-scope global rule fired ${globalHits.length}× — expected exactly one, for window:\n  ${globalHits.join('\n  ')}`);
+  failures++;
 }
 
 // `tone` is a legal prop name and must NOT be flagged.

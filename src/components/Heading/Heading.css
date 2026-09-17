@@ -1,0 +1,67 @@
+/*
+ * Heading — spec §1.2
+ *
+ * Same override pattern as Text: each data attribute sets a private custom
+ * property, and the declaration reads the public `--pp-heading-*` first.
+ * No `display`: h1–h6 are block-level natively, and asChild keeps its own.
+ */
+
+@layer pp.components {
+  .pp-heading {
+    --_size: var(--pp-font-size-6);
+    --_weight: var(--pp-font-weight-semibold);
+    --_color: var(--pp-color-text);
+
+    min-inline-size: 0;
+    /* Headings carry UA margin the minimal reset leaves alone (D-018). */
+    margin: 0;
+    font-size: var(--pp-heading-size, var(--_size));
+    font-weight: var(--pp-heading-weight, var(--_weight));
+    line-height: var(--pp-heading-line-height, var(--pp-line-height-tight));
+    letter-spacing: var(--pp-heading-letter-spacing, var(--pp-letter-spacing-tight));
+    color: var(--pp-heading-color, var(--_color));
+    overflow-wrap: anywhere;
+    /* Balanced wrapping keeps a two-line heading from orphaning one word. */
+    text-wrap: balance;
+  }
+
+  /* size — six steps onto the top of the type scale */
+  .pp-heading[data-size="sm"] { --_size: var(--pp-font-size-4); }
+  .pp-heading[data-size="md"] { --_size: var(--pp-font-size-5); }
+  .pp-heading[data-size="lg"] { --_size: var(--pp-font-size-6); }
+  .pp-heading[data-size="xl"] { --_size: var(--pp-font-size-7); }
+  .pp-heading[data-size="2xl"] { --_size: var(--pp-font-size-8); }
+  .pp-heading[data-size="3xl"] { --_size: var(--pp-font-size-9); }
+
+  /* weight */
+  .pp-heading[data-weight="regular"] { --_weight: var(--pp-font-weight-regular); }
+  .pp-heading[data-weight="medium"] { --_weight: var(--pp-font-weight-medium); }
+  .pp-heading[data-weight="bold"] { --_weight: var(--pp-font-weight-bold); }
+
+  /* tone */
+  .pp-heading[data-tone="muted"] { --_color: var(--pp-color-text-muted); }
+  .pp-heading[data-pp-tone] { --_color: var(--pp-tone-text); }
+
+  /* align */
+  .pp-heading[data-align="start"] { text-align: start; }
+  .pp-heading[data-align="center"] { text-align: center; }
+  .pp-heading[data-align="end"] { text-align: end; }
+
+  /* truncate — balancing and clamping are mutually exclusive */
+  .pp-heading[data-truncate] {
+    text-wrap: initial;
+  }
+
+  .pp-heading[data-truncate="1"] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pp-heading[data-truncate]:not([data-truncate="1"]) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--pp-heading-lines, 2);
+    overflow: hidden;
+  }
+}

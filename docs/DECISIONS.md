@@ -269,3 +269,194 @@ head.
 behaviour (overflow detection, theme distinctness) rather than pixels, which is
 also what caught the D-011 token bug. That is the split worth keeping: assert
 behaviour where you can, and reserve pixels for what only pixels can catch.
+
+## D-014 — Gate C approves a group of specs, not one component at a time
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Gate A, Gate C, Definition of Done
+
+The `/component` skill stops for API approval after every individual spec. For
+the eleven Tier 1 atoms that is eleven round trips to approve eleven components
+whose entire surface is a handful of presentational props.
+
+Gate C now applies **per group**: one spec document covering a coherent set of
+components, one approval. The groups are the roadmap tiers, subdivided where a
+tier is large.
+
+**Gate A is amended accordingly.** The WIP limit of 1 now applies to `build` and
+`review` only. Any number of components in a group may sit in `spec` at once,
+because a spec is a document and there is no such thing as a half-written
+component in a document. Implementation remains strictly one at a time — that
+is the limit that was actually protecting anything.
+
+**The Definition of Done is amended.** Its first box, "`docs/specs/<Name>.md`
+exists", is satisfied by a dedicated section in a group spec
+(`docs/specs/tier-<n>-<group>.md`). Eleven files that each exist to hold two
+tables is worse than one document that can be read end to end, and reviewing a
+group together is the only way to catch the inconsistencies between components
+that matter most — a `size` that means one thing in `Badge` and another in
+`Text`.
+
+**What is not relaxed.** Every section of the template is still filled in for
+every component. The gate is still a hard stop: no implementation lands in the
+same turn as the spec it implements.
+
+**This does not extend to Tiers 3 and 4.** `Field` and the overlay foundation
+are where API mistakes get expensive, and they are approved individually.
+Revisit this entry before spec'ing Tier 3.
+
+## D-015 — "Semantic tokens only" governs colour; dimensional primitives are consumed directly
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §3
+
+RULES §3 says components consume semantic tokens only, and names `--pp-space-3`
+as a primitive. The semantic layer defines colour and focus-ring tokens and
+nothing else. There is therefore **no compliant way for a component to declare
+padding, radius, font size, line height, duration or z-index** — which every
+Tier 1 atom needs on its first line of CSS.
+
+This was found by trying to spec `Badge`, not by reading the rules.
+
+**Resolution.** The "semantic tokens only" requirement governs **colour**.
+Dimensional primitives — `--pp-space-*`, `--pp-radius-*`, `--pp-font-size-*`,
+`--pp-line-height-*`, `--pp-font-weight-*`, `--pp-letter-spacing-*`,
+`--pp-border-width-*`, `--pp-duration-*`, `--pp-easing-*`, `--pp-shadow-*`,
+`--pp-z-*` — are consumed directly by components. `--pp-palette-*` remains
+banned outright.
+
+**Why colour is the special case.** A colour token must resolve differently per
+theme and per tone: that is the entire point of the semantic layer, and the
+reason D-011 exists. `--pp-space-3` is `0.75rem` in light mode, in dark mode,
+and under every tone. Interposing `--pp-space-inset-md: var(--pp-space-3)`
+between the component and the scale adds a name to learn and changes nothing.
+
+**The linter already worked this way.** `scripts/lint-rules.mjs` bans
+`--pp-palette-*` and nothing else; stylelint bans raw units in dimensional
+properties, which any `var()` satisfies. The enforced rule has always been this
+one. The prose was aspirational and the code was right — this entry makes the
+prose match, rather than writing a linter to enforce a rule that would have made
+the library unbuildable.
+
+**What this does not license.** A hardcoded `12px`, `0.75rem` or `#fff` in
+component CSS remains a bug. Every value still comes from a token.
+
+**Two follow-ons, deliberately not done now:**
+
+- **Control sizing is a genuine semantic need, and arrives with Tier 3.** What
+  makes a `Button`, an `Input` and a `Select` line up at `size="md"` is not that
+  they each picked `--pp-space-2`; it is that they share one definition of how
+  tall a medium control is. A `--pp-control-height-*` / `-padding-inline-*` /
+  `-font-size-*` set will be added when the first two components that must agree
+  exist. Adding it now, with nothing to align, would be guessing.
+- **Density, if it ever ships, is a context and not a token rename.** The
+  mechanism is `[data-pp-density]` rewiring a small set of custom properties,
+  exactly as `[data-pp-tone]` does in D-007 — not a parallel semantic scale.
+
+Per-component tuning already has an answer that predates this entry: RULES §3
+requires every component to expose component-scoped custom properties
+(`--pp-badge-padding-inline`) as its override API. That covers the case a
+dimensional semantic layer would have served, without a second global vocabulary.
+
+## D-016 — Tier 1 vocabulary exceptions, approved as a batch
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §1, §5
+
+The Tier 1 spec (`docs/specs/tier-1-atoms.md`) asked for seven rulings at Gate
+C. All were accepted as proposed. Recorded here so each is a precedent rather
+than a line in a spec nobody re-reads.
+
+1. **Typography gets more than three sizes.** `Text` takes
+   `size: xs | sm | md | lg`; `Heading` takes `size: sm | md | lg | xl | 2xl | 3xl`,
+   defaulting from its semantic `level`. Every other component keeps
+   `sm | md | lg` exactly. A type scale cannot live in three steps; a `Caption`
+   component to avoid a fourth enum member multiplies components instead.
+2. **`Text` and `Heading` accept `tone="muted"`.** It maps to
+   `--pp-color-text-muted` and is local to those two components. It is not added
+   to the global tone set, because a tone whose solid fill is meaningless is not
+   a tone.
+3. **`Skeleton` uses `shape`, not `variant`.** `solid | outline | ghost | plain`
+   are visual treatments of a tone, and none of them describes a circle.
+   Reusing the word for a different axis of meaning is worse than a new prop.
+4. **`Skeleton` has no height prop.** Block size comes from `lines`, from the
+   parent's layout, or from `--pp-skeleton-block-size`. The sizing contract
+   wins over the one component with the strongest case against it.
+5. **`VisuallyHidden` declares `inline-size: 1px`.** It renders no visual box;
+   the value is part of a fixed technique, not a design decision. Exempted from
+   the stylelint `inline-size` ban for that one file, and nowhere else.
+6. **`Avatar` load status is uncontrolled only.** RULES §5.5 governs state a
+   user can change. Whether an image loaded is the browser's fact, and an app
+   overriding it produces an avatar that lies.
+7. **`AvatarGroup` is added to the roadmap as 5.13.** Wanted by the consuming
+   app; a Tier 5 composition, not an atom.
+
+## D-017 — CI authors baselines for new screenshot tests, not only for an empty directory
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-013
+
+D-013 authored baselines only when `tests/visual/__screenshots__` was empty. Every
+component adds a screenshot test, so under that rule each one would require
+deleting the directory and re-authoring every baseline — including ones that
+were verifying fine — and would leave the PR with an authoring commit as its
+head after every component.
+
+The visual job now runs the comparison first. If it fails **and** the only
+change is new, previously untracked files under `__screenshots__` (Playwright
+writes the actual for a missing baseline), those are authored baselines: commit
+and push them. If any *existing* baseline differs, that is a regression and the
+job fails as before.
+
+The invariant from D-013 is intact: no baseline is ever produced anywhere but
+CI. What changed is that "new test" and "changed pixels" are distinguished
+instead of both being treated as "delete everything and start over".
+
+The `GITHUB_TOKEN` push still triggers no run, so an authoring commit is still
+authored-but-unverified until the next real push. That next push now happens
+naturally — it is the next component.
+
+## D-018 — `margin: 0` is permitted; non-zero margin is not
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §2 (enforcement only)
+
+The stylelint config banned the `margin` properties outright. `Text` renders a
+`<p>`, which carries a user-agent margin of `1em 0` that the deliberately
+minimal reset does not touch. Left alone, two `Text` elements in a `Stack`
+would be spaced by the parent's `gap` *plus* the browser's margin — precisely
+the double-spacing bug RULES §2 exists to prevent.
+
+The rule was always "a component adds no outer margin". Removing a margin the
+browser added is not adding one; it is the only way to honour the rule for
+elements the UA styles. So `margin` and the logical margin properties are now
+gated on **value**: `0` is allowed, anything else is a violation. Physical
+`margin-top/right/bottom/left` remain banned outright, because the logical
+property is always the correct one. `Container` additionally allows `auto`,
+which is how it centres and is the reason it exists.
+
+Rejected: resetting `p` and heading margins globally in `reset.css`. That
+would restyle every paragraph in the consuming app, which is what a library
+reset must never do. The fix belongs on the class, not the element.
+
+The lint self-test moves `margin` from the property-ban expectations to the
+value-ban expectations, so the rule is still observed firing.
+
+## D-019 — An element-size scale, and `inline-size` for intrinsically square components
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens; RULES §1 enforcement
+
+Two things `Icon` needed on its first line of CSS, and `Spinner`, `Avatar`
+and `Badge` need right after it.
+
+**`--pp-size-3` … `--pp-size-12`.** The space scale is a curated ramp for the
+gaps *between* boxes; it has no 1.25rem or 1.75rem, and it should not — those
+are not spacing steps. Boxes need their own scale. Sizes are indexed in
+quarter-rems so the number reads as a length (`--pp-size-8` is 2rem), which is
+a different indexing philosophy from space on purpose: a size is a dimension
+you reason about numerically, a space step is a rhythm you pick from a ramp.
+Tier 3's `--pp-control-height-*` will alias into this scale.
+
+**`inline-size` is permitted in `Icon`, `Spinner` and `Avatar`.** RULES §1 bans
+components from deciding how much of the parent to occupy. A 20px icon is not
+deciding that — its inline size is intrinsic, like a glyph's, and equals its
+block size. Declaring it as `block-size` plus `aspect-ratio: 1` would satisfy
+the letter of the lint while saying the same thing less clearly, and the child
+SVG still needs `inline-size: 100%` to fit its box. So the exemption is
+explicit and narrow: three files, all `hug`, all square. `Badge` is `hug` but
+not square and gets no exemption — it is sized by its content.

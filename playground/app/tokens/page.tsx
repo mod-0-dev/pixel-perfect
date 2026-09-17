@@ -2,6 +2,7 @@ const HUES = ['neutral', 'accent', 'danger', 'success', 'warning'] as const;
 const STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 const SPACE = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
+const SIZE = ['3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] as const;
 const RADIUS = ['1', '2', '3', '4', '5', 'full'] as const;
 const FONT_SIZE = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 
@@ -97,6 +98,13 @@ export default function TokensPage() {
                 <div className="scale__row" key={s}>
                   <span>--pp-space-{s}</span>
                   <div className="scale__bar" style={{ width: `var(--pp-space-${s})` }} />
+                </div>
+              ))}
+
+              {SIZE.map((s) => (
+                <div className="scale__row" key={s}>
+                  <span>--pp-size-{s}</span>
+                  <div className="scale__bar" style={{ width: `var(--pp-size-${s})` }} />
                 </div>
               ))}
             </div>
