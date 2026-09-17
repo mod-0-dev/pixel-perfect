@@ -436,3 +436,27 @@ reset must never do. The fix belongs on the class, not the element.
 
 The lint self-test moves `margin` from the property-ban expectations to the
 value-ban expectations, so the rule is still observed firing.
+
+## D-019 — An element-size scale, and `inline-size` for intrinsically square components
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens; RULES §1 enforcement
+
+Two things `Icon` needed on its first line of CSS, and `Spinner`, `Avatar`
+and `Badge` need right after it.
+
+**`--pp-size-3` … `--pp-size-12`.** The space scale is a curated ramp for the
+gaps *between* boxes; it has no 1.25rem or 1.75rem, and it should not — those
+are not spacing steps. Boxes need their own scale. Sizes are indexed in
+quarter-rems so the number reads as a length (`--pp-size-8` is 2rem), which is
+a different indexing philosophy from space on purpose: a size is a dimension
+you reason about numerically, a space step is a rhythm you pick from a ramp.
+Tier 3's `--pp-control-height-*` will alias into this scale.
+
+**`inline-size` is permitted in `Icon`, `Spinner` and `Avatar`.** RULES §1 bans
+components from deciding how much of the parent to occupy. A 20px icon is not
+deciding that — its inline size is intrinsic, like a glyph's, and equals its
+block size. Declaring it as `block-size` plus `aspect-ratio: 1` would satisfy
+the letter of the lint while saying the same thing less clearly, and the child
+SVG still needs `inline-size: 100%` to fit its box. So the exemption is
+explicit and narrow: three files, all `hug`, all square. `Badge` is `hug` but
+not square and gets no exemption — it is sized by its content.

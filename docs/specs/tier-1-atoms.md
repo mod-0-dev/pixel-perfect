@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | 1.1 `Text` | `done` | 1.7 `Skeleton` | `spec` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `spec` |
-| 1.3 `Icon` | `spec` | 1.9 `Avatar` | `spec` |
+| 1.3 `Icon` | `build` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `spec` |
 | 1.5 `Separator` | `spec` | 1.11 `Code` | `spec` |
 | 1.6 `Spinner` | `spec` | | |
@@ -421,8 +421,12 @@ None.
 
 | Custom property | Default | Affects |
 | --- | --- | --- |
-| `--pp-icon-size` | `1em` or per `size` | Inline and block size |
-| `--pp-icon-color` | `currentColor` | `fill` / `stroke` of the child SVG |
+| `--pp-icon-size` | `1em`, or `--pp-size-4/5/6` for `sm/md/lg` (16/20/24px) | Inline and block size |
+| `--pp-icon-color` | `currentColor` | Sets `color` on the wrapper; an SVG drawn with `currentColor` picks it up. `fill`/`stroke` are never forced — that would break stroke icons |
+
+The wrapper sits at `vertical-align: -0.125em`, the conventional optical
+offset that centres a square glyph on the x-height of adjacent text. A fixed
+technique value, like VisuallyHidden's 1px.
 
 ### Keyboard interaction
 

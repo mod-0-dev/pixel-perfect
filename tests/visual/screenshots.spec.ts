@@ -14,6 +14,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'harness', path: '/harness' },
   { name: 'text', path: '/components/text' },
   { name: 'heading', path: '/components/heading' },
+  { name: 'icon', path: '/components/icon' },
   { name: 'visually-hidden', path: '/components/visually-hidden' },
 ];
 

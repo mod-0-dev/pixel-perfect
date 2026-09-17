@@ -203,3 +203,11 @@ body {
   gap: var(--pp-space-2);
   min-width: 0;
 }
+
+/* Horizontal rhythm for harness pages, until Cluster (2.2) exists. */
+.row-tight {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pp-space-2);
+  min-width: 0;
+}

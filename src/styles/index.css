@@ -27,4 +27,5 @@
 /* Components, in roadmap order. Every file below sits inside @layer pp.components. */
 @import "../components/Text/Text.css";
 @import "../components/Heading/Heading.css";
+@import "../components/Icon/Icon.css";
 @import "../components/VisuallyHidden/VisuallyHidden.css";

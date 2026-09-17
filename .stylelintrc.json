@@ -158,6 +158,39 @@
           "border-right"
         ]
       }
+    },
+    {
+      "files": [
+        "src/components/Icon/**/*.css",
+        "src/components/Spinner/**/*.css",
+        "src/components/Avatar/**/*.css"
+      ],
+      "rules": {
+        "property-disallowed-list": [
+          "width",
+          "min-width",
+          "max-width",
+          "max-inline-size",
+          "float",
+          "clear",
+          "left",
+          "right",
+          "padding-left",
+          "padding-right",
+          "border-left",
+          "border-right",
+          "border-left-width",
+          "border-right-width",
+          "border-left-color",
+          "border-right-color",
+          "border-left-style",
+          "border-right-style",
+          "margin-top",
+          "margin-right",
+          "margin-bottom",
+          "margin-left"
+        ]
+      }
     }
   ]
 }

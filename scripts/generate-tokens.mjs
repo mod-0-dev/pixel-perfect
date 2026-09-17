@@ -248,6 +248,21 @@ ${light.css}
     --pp-space-8: 4rem;
     --pp-space-9: 6rem;
 
+    /* Size — for boxes, as space is for the gaps between them. Indexed in
+       quarter-rems so the number reads as a length: size-8 is 2rem. Icons,
+       avatars, chips and (from Tier 3) controls take their fixed dimensions
+       from here. Never for padding or gap — that is the space scale. */
+    --pp-size-3: 0.75rem;
+    --pp-size-4: 1rem;
+    --pp-size-5: 1.25rem;
+    --pp-size-6: 1.5rem;
+    --pp-size-7: 1.75rem;
+    --pp-size-8: 2rem;
+    --pp-size-9: 2.25rem;
+    --pp-size-10: 2.5rem;
+    --pp-size-11: 2.75rem;
+    --pp-size-12: 3rem;
+
     /* Radius */
     --pp-radius-0: 0;
     --pp-radius-1: 0.25rem;

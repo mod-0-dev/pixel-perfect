@@ -6,6 +6,7 @@ export {
   type HeadingProps,
   type HeadingSize,
 } from './components/Heading/Heading';
+export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export {
   Text,
   type TextAlign,
