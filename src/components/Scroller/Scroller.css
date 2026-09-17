@@ -1,0 +1,99 @@
+/*
+ * Scroller — spec §2.8
+ *
+ * Shadows are background-image gradients on the root, shown and hidden by
+ * data-overflow. No extra DOM node, and no pseudo-element that would collide
+ * with a consumer's own ::before.
+ *
+ * The gradient fades --pp-color-shadow-edge to `transparent`. That is safe in
+ * every modern browser because gradient interpolation is premultiplied, so
+ * `transparent` is the same colour at alpha 0 rather than the grey haze that
+ * used to make people write the colour out twice (D-023).
+ *
+ * NOT background-attachment: local. With `local` the background scrolls with
+ * the content, so the shadow slides away from the edge it is meant to mark.
+ * The default (`scroll`) pins it to the element, which is the whole point.
+ *
+ * RTL: background-position takes no logical keywords, so the four physical
+ * values are held in custom properties and swapped once by :dir(rtl). The
+ * block axis needs no swap — it does not flip between LTR and RTL.
+ */
+
+@layer pp.components {
+  .pp-scroller {
+    --_pp-scroller-shadow: var(--pp-scroller-shadow-size, var(--pp-space-4));
+    --_pp-scroller-color: var(--pp-scroller-shadow-color, var(--pp-color-shadow-edge));
+    --_pp-scroller-start-pos: left;
+    --_pp-scroller-end-pos: right;
+    --_pp-scroller-start-dir: to right;
+    --_pp-scroller-end-dir: to left;
+
+    display: block;
+    min-inline-size: 0;
+    max-block-size: var(--pp-scroller-max-block-size, none);
+    background-repeat: no-repeat;
+  }
+
+  .pp-scroller:dir(rtl) {
+    --_pp-scroller-start-pos: right;
+    --_pp-scroller-end-pos: left;
+    --_pp-scroller-start-dir: to left;
+    --_pp-scroller-end-dir: to right;
+  }
+
+  .pp-scroller[data-orientation="vertical"] { overflow-y: auto; overflow-x: hidden; }
+  .pp-scroller[data-orientation="horizontal"] { overflow-x: auto; overflow-y: hidden; }
+  .pp-scroller[data-orientation="both"] { overflow: auto; }
+
+  /* ---- inline axis (horizontal) ---- */
+
+  .pp-scroller[data-orientation="horizontal"]:not([data-overflow="none"]) {
+    background-size: var(--_pp-scroller-shadow) 100%;
+  }
+
+  .pp-scroller[data-orientation="horizontal"][data-overflow="start"] {
+    background-image: linear-gradient(var(--_pp-scroller-start-dir), var(--_pp-scroller-color), transparent);
+    background-position: var(--_pp-scroller-start-pos) center;
+  }
+
+  .pp-scroller[data-orientation="horizontal"][data-overflow="end"] {
+    background-image: linear-gradient(var(--_pp-scroller-end-dir), var(--_pp-scroller-color), transparent);
+    background-position: var(--_pp-scroller-end-pos) center;
+  }
+
+  .pp-scroller[data-orientation="horizontal"][data-overflow="both"] {
+    background-image:
+      linear-gradient(var(--_pp-scroller-start-dir), var(--_pp-scroller-color), transparent),
+      linear-gradient(var(--_pp-scroller-end-dir), var(--_pp-scroller-color), transparent);
+    background-position: var(--_pp-scroller-start-pos) center, var(--_pp-scroller-end-pos) center;
+  }
+
+  /* ---- block axis (vertical and both) ---- */
+
+  .pp-scroller:not([data-orientation="horizontal"]):not([data-overflow="none"]) {
+    background-size: 100% var(--_pp-scroller-shadow);
+  }
+
+  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="start"] {
+    background-image: linear-gradient(to bottom, var(--_pp-scroller-color), transparent);
+    background-position: center top;
+  }
+
+  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="end"] {
+    background-image: linear-gradient(to top, var(--_pp-scroller-color), transparent);
+    background-position: center bottom;
+  }
+
+  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="both"] {
+    background-image:
+      linear-gradient(to bottom, var(--_pp-scroller-color), transparent),
+      linear-gradient(to top, var(--_pp-scroller-color), transparent);
+    background-position: center top, center bottom;
+  }
+
+  /* RULES §6: never outline: none without a replacement. */
+  .pp-scroller:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+}

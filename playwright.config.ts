@@ -66,6 +66,14 @@ export default defineConfig({
       // more than this.
       maxDiffPixelRatio: 0.01,
       animations: 'disabled',
+      // The default 5s covers both settling AND comparison. A 12,000px page
+      // can spend all of it settling and never reach the comparison, which
+      // reports as "failed to take two consecutive stable screenshots" — an
+      // outcome indistinguishable from a page that genuinely never settles.
+      // Raising the budget separates the two: a page that converges is now
+      // compared, and one that does not still fails. This is how long we wait,
+      // not what we accept — maxDiffPixelRatio above is unchanged. See D-026.
+      timeout: 20_000,
     },
   },
 

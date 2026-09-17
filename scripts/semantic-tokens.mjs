@@ -47,12 +47,18 @@ export const THEME_SPECIFIC = {
     '--pp-color-bg-raised': 'var(--pp-palette-neutral-1)',
     '--pp-color-bg-sunken': 'var(--pp-palette-neutral-3)',
     '--pp-color-bg-scrim': 'oklch(15% 0.01 258 / 0.55)',
+    // The soft edge a scroll shadow fades from (D-023). Translucent, so it
+    // works over any surface; far lighter than the scrim, which is a modal
+    // overlay. Dark needs roughly 3.5x the alpha to read at all against a
+    // near-black surface — the same asymmetry --pp-shadow-* already has.
+    '--pp-color-shadow-edge': 'oklch(15% 0.01 258 / 0.14)',
   },
   dark: {
     '--pp-color-bg-surface': 'var(--pp-palette-neutral-2)',
     '--pp-color-bg-raised': 'var(--pp-palette-neutral-3)',
     '--pp-color-bg-sunken': 'var(--pp-palette-neutral-1)',
     '--pp-color-bg-scrim': 'oklch(8% 0.01 258 / 0.7)',
+    '--pp-color-shadow-edge': 'oklch(0% 0 0 / 0.5)',
   },
 };
 

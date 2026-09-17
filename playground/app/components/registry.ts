@@ -22,4 +22,12 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'skeleton', name: 'Skeleton', tier: '1.7' },
   { slug: 'avatar', name: 'Avatar', tier: '1.9' },
   { slug: 'visually-hidden', name: 'VisuallyHidden', tier: '1.4' },
+  { slug: 'stack', name: 'Stack', tier: '2.1' },
+  { slug: 'cluster', name: 'Cluster', tier: '2.2' },
+  { slug: 'grid', name: 'Grid', tier: '2.3' },
+  { slug: 'container', name: 'Container', tier: '2.4' },
+  { slug: 'center', name: 'Center', tier: '2.5' },
+  { slug: 'split', name: 'Split', tier: '2.6' },
+  { slug: 'aspect-ratio', name: 'AspectRatio', tier: '2.7' },
+  { slug: 'scroller', name: 'Scroller', tier: '2.8' },
 ];

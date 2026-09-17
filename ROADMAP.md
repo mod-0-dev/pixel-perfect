@@ -26,12 +26,18 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 1 is complete** (11 / 11 atoms `done`)
-- **Next up:** Tier 2 — Layout primitives, specified as one batch per D-014
-  (Gate C). launchpad fakes `Stack` and `Cluster` on every screen, so the
-  demand is not hypothetical. `Stack` first; `Container` is the only component permitted
-  `max-width`. 0.10 docs site is deferred, not blocking
-- **Done:** 21 / 78 tracked items (10 foundations + 68 components)
+- **In flight:** _none_ — **Tier 2 is complete** (8 / 8 layout primitives
+  `done`). The sizing contract now has the components it was written for
+- **Next up:** consume Tier 2 in [launchpad](https://github.com/mod-0-dev/launchpad),
+  which should delete `.lp-stack`, `.lp-cluster`, `.lp-grid`, `.lp-page`,
+  `.lp-shell` and its one remaining viewport media query. Then Tier 3, whose
+  Gate C is approved individually — D-014 says to revisit that entry first
+- **Verified, not asserted:** 22 computed-style assertions in
+  `tests/visual/harness.spec.ts`. Four were checked by deliberately breaking the
+  component and watching the test fail on the right symptom (D-009); swapping
+  `Split`'s `@container` rule for a viewport media query is the sharpest of them
+- **Done:** 29 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+  site is deferred, not blocking
 
 ---
 
@@ -77,18 +83,19 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 
 ## Tier 2 — Layout Primitives
 
-Load-bearing. The sizing contract is unusable without these.
+Load-bearing. The sizing contract is unusable without these. Specified as one
+batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2.1 | `Stack` | `planned` | fill | server | T0 | Vertical flow, `gap`, `align` |
-| 2.2 | `Cluster` | `planned` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify` |
-| 2.3 | `Grid` | `planned` | fill | server | 2.1 | Explicit columns + `auto-fit` mode |
-| 2.4 | `Container` | `planned` | fill | server | 2.1 | **The only component allowed to set `max-width`** |
-| 2.5 | `Center` | `planned` | fill | server | 2.1 | |
-| 2.6 | `Split` | `planned` | fill | server | 2.3 | Sidebar + main; container-query driven collapse |
-| 2.7 | `AspectRatio` | `planned` | fill | server | T0 | |
-| 2.8 | `Scroller` | `planned` | fill | client | T0 | Overflow container, scroll shadows |
+| 2.1 | `Stack` | `done` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale (D-020) |
+| 2.2 | `Cluster` | `done` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify`. Wrapping needs no query |
+| 2.3 | `Grid` | `done` | fill | server | 2.1 | Fixed columns, `auto-fit`, or a raw template (D-022 §4). Tracks are always `minmax(0, 1fr)` |
+| 2.4 | `Container` | `done` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`.** Also the tree's query-container anchor. `--pp-measure-*` (D-025) |
+| 2.5 | `Center` | `done` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure. No height prop |
+| 2.6 | `Split` | `done` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint. No `side` prop (D-022 §3) |
+| 2.7 | `AspectRatio` | `done` | fill | server | T0 | A grid, so the child stretches on both axes without an `inline-size` |
+| 2.8 | `Scroller` | `done` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component and only a11y surface |
 
 ---
 

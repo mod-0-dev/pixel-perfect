@@ -57,9 +57,6 @@
         "/\\blch\\(/",
         "/\\bcolor-mix\\(/"
       ],
-      "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset)$/": [
-        "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
-      ],
       "/^(transition|transition-duration|animation|animation-duration|transition-timing-function|animation-timing-function)$/": [
         "/(^|\\s)[0-9]*\\.?[0-9]+m?s(\\s|$)/",
         "/\\bcubic-bezier\\(/"
@@ -77,6 +74,9 @@
       "/^(outline)$/": [
         "none",
         "0"
+      ],
+      "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset|max-inline-size|block-size|min-block-size|max-block-size|flex-basis)$/": [
+        "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
       ]
     }
   },
@@ -156,7 +156,40 @@
           "padding-right",
           "border-left",
           "border-right"
-        ]
+        ],
+        "declaration-property-value-disallowed-list": {
+          "/^(color|background|background-color|background-image|border|border-color|border-block|border-inline|border-block-color|border-inline-color|fill|stroke|outline|outline-color|box-shadow|text-decoration-color|caret-color|accent-color|text-shadow)$/": [
+            "/#[0-9a-fA-F]{3,8}\\b/",
+            "/\\brgba?\\(/",
+            "/\\bhsla?\\(/",
+            "/\\boklch\\(/",
+            "/\\boklab\\(/",
+            "/\\blab\\(/",
+            "/\\blch\\(/",
+            "/\\bcolor-mix\\(/"
+          ],
+          "/^(transition|transition-duration|animation|animation-duration|transition-timing-function|animation-timing-function)$/": [
+            "/(^|\\s)[0-9]*\\.?[0-9]+m?s(\\s|$)/",
+            "/\\bcubic-bezier\\(/"
+          ],
+          "/^(z-index)$/": [
+            "/^-?[0-9]+$/"
+          ],
+          "/^(text-align)$/": [
+            "left",
+            "right"
+          ],
+          "/^(font-family)$/": [
+            "/^(?!var\\(--pp-font-family-)/"
+          ],
+          "/^(outline)$/": [
+            "none",
+            "0"
+          ],
+          "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset|max-inline-size|flex-basis)$/": [
+            "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
+          ]
+        }
       }
     },
     {
@@ -190,6 +223,46 @@
           "margin-bottom",
           "margin-left"
         ]
+      }
+    },
+    {
+      "files": [
+        "src/components/Skeleton/**/*.css"
+      ],
+      "rules": {
+        "declaration-property-value-disallowed-list": {
+          "/^(color|background|background-color|background-image|border|border-color|border-block|border-inline|border-block-color|border-inline-color|fill|stroke|outline|outline-color|box-shadow|text-decoration-color|caret-color|accent-color|text-shadow)$/": [
+            "/#[0-9a-fA-F]{3,8}\\b/",
+            "/\\brgba?\\(/",
+            "/\\bhsla?\\(/",
+            "/\\boklch\\(/",
+            "/\\boklab\\(/",
+            "/\\blab\\(/",
+            "/\\blch\\(/",
+            "/\\bcolor-mix\\(/"
+          ],
+          "/^(transition|transition-duration|animation|animation-duration|transition-timing-function|animation-timing-function)$/": [
+            "/(^|\\s)[0-9]*\\.?[0-9]+m?s(\\s|$)/",
+            "/\\bcubic-bezier\\(/"
+          ],
+          "/^(z-index)$/": [
+            "/^-?[0-9]+$/"
+          ],
+          "/^(text-align)$/": [
+            "left",
+            "right"
+          ],
+          "/^(font-family)$/": [
+            "/^(?!var\\(--pp-font-family-)/"
+          ],
+          "/^(outline)$/": [
+            "none",
+            "0"
+          ],
+          "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset|max-inline-size|flex-basis)$/": [
+            "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
+          ]
+        }
       }
     }
   ]

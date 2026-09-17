@@ -123,6 +123,19 @@
     --pp-size-11: 2.75rem;
     --pp-size-12: 3rem;
 
+    /* Measure — how wide a column of content is allowed to get. A third
+       dimensional scale, because it answers a different question from the
+       other two: space is the rhythm BETWEEN boxes, size is how big a box is,
+       measure is how wide content may run before it stops being readable.
+       Expressing 40rem on the size scale would make it --pp-size-160.
+
+       Only Container may consume these (RULES §1, D-001). They are exported
+       so a consuming app can align its own full-bleed sections to the same
+       measures without hardcoding them. */
+    --pp-measure-sm: 40rem;
+    --pp-measure-md: 64rem;
+    --pp-measure-lg: 80rem;
+
     /* Radius */
     --pp-radius-0: 0;
     --pp-radius-1: 0.25rem;

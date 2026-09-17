@@ -460,3 +460,362 @@ the letter of the lint while saying the same thing less clearly, and the child
 SVG still needs `inline-size: 100%` to fit its box. So the exemption is
 explicit and narrow: three files, all `hug`, all square. `Badge` is `hug` but
 not square and gets no exemption — it is sized by its content.
+
+## D-020 — `gap` is the fourth fixed-vocabulary prop, valued as a space-scale index
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §5
+
+RULES §5 fixes the prop vocabulary at `variant` / `tone` / `size` and forbids
+synonyms per component. Tier 2 needs a way to say how far apart a layout
+primitive holds its children, and none of the three could carry it: `size`
+already means chip-scale in Tier 1 and means max-width scale in `Container`, so
+a third meaning was not available, and `spacing` is on the linter's banned list.
+
+`gap` joins the vocabulary as the fourth term. It is taken **only by layout
+primitives**, it means *the distance between this component's children*, and it
+takes a step of the space scale as a string:
+
+```tsx
+<Stack gap="4">   /* var(--pp-space-4) */
+```
+
+`type Space = '0' | '1' | … | '9'` lives in `src/types.ts` beside `Tone`, `Size`
+and `Variant`.
+
+**Why a string.** `gap={4}` reads like a length, and the first question anyone
+asks is whether it is 4px or step 4. `gap="4"` reads like an index because it is
+one, and the prop value is spelled identically to the token, so the mapping
+needs no documentation. The Tier 1 docs already wrote it this way in every usage
+example, months before the component existed.
+
+Rejected: a t-shirt alias set (`gap="md"`), which layers a second vocabulary
+over a scale that already has names; and a free length (`gap="12px"`), which
+puts an untokenised value in the API.
+
+**Default `"0"`, and the default is load-bearing.** The scale is mapped once in
+`src/components/_shared/layout.css` as `[data-pp-gap="n"] { --_pp-gap: … }`,
+rather than ten rules in each of five stylesheets. Custom properties inherit, so
+a nested layout primitive would pick up its parent's gap — except that `gap`
+defaults to `"0"`, so every gap-taking component always emits `data-pp-gap` and
+always redeclares the property on its own root. A unit test asserts the nesting
+case directly, because the day someone makes `gap` optional-with-no-attribute is
+the day every nested `Stack` silently inherits.
+
+A zero default is also the honest one: a `Stack` with no rhythm is a legitimate
+thing, and CSS's own default is `0`. Silently inserting space would be the layout
+equivalent of the UA margin D-018 exists to strip.
+
+## D-021 — A layout primitive sizes the boxes it creates; it still may not size itself
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §1 (clarification)
+
+RULES §1 says sizing and placement belong to **the parent**. Tier 2 is the
+parent. So `gap`, `grid-template-columns`, `flex-basis` on a named slot, and
+`min-inline-size: 0` on a child are this tier doing the job the rule assigned
+it — not eight exceptions to the rule.
+
+The line, stated precisely so the `Split` and `Grid` stylesheets are not read as
+violations later:
+
+> A layout primitive may size the boxes it creates for its children. It may not
+> size itself.
+
+All eight Tier 2 components are `fill`. None declares `inline-size`. `Container`
+is the only one that touches `max-inline-size`, which is its entire reason to
+exist and was already carved out in `.stylelintrc.json` and D-018 before the
+component was specified.
+
+**A corollary worth naming:** no Tier 2 component takes `tone` or `variant`, and
+none declares a background, border, colour or shadow. A layout primitive has no
+visual treatment. If you want a bordered box, that is `Card` (5.1), and it will
+compose a `Stack` inside itself rather than becoming one.
+
+## D-022 — Tier 2 rulings, approved as a batch
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §1, §5, §6
+
+The Tier 2 spec (`docs/specs/tier-2-layout.md`) asked for rulings at Gate C
+under D-014. `gap` and the sizing clarification were substantial enough for
+their own entries (D-020, D-021); the token addition has D-023. The rest were
+accepted as proposed and are recorded here so each is a precedent.
+
+1. **`align` and `justify` are fixed across the tier.**
+   `align: start | center | end | stretch | baseline` → `align-items`;
+   `justify: start | center | end | between | around | evenly` →
+   `justify-content`. The logical keywords, so RTL needs no extra work —
+   `flex-start` and `flex-end` appear in neither the API nor the CSS. The
+   `space-` prefix is dropped because `between` is the only value in the set
+   that would carry it.
+
+2. **`Split` collapses at a named container breakpoint, not a free length.**
+   `collapseBelow: 'sm' | 'md' | 'lg' | 'never'` → `30rem` / `45rem` / `60rem`,
+   compiled to three static `@container` blocks selected by
+   `[data-collapse-below]`.
+
+   This is a CSS limit, not a preference: **a container query condition cannot
+   read a custom property.** `@container (max-inline-size: var(--x))` is not
+   valid and cannot be made so, which makes `collapseBelow="42rem"`
+   unimplementable rather than merely awkward.
+
+   The every-layout `flex-basis: 0; flex-grow: 999; min-inline-size: 50%`
+   sidebar pattern was considered. It is genuinely continuous and needs no query
+   at all, but its threshold is a ratio of the sidebar's width to the
+   container's, so "collapse at 45rem" becomes arithmetic performed by the
+   caller. Three named breakpoints say what happens.
+
+   The rule targets the slots, never the root: an element cannot query its own
+   container, so the collapse is expressed as "make the children full width"
+   rather than "change my own flex-direction".
+
+3. **`Split` has no `side` prop.** `Split.Sidebar` and `Split.Main` render in
+   DOM order; a right-hand sidebar is written by putting `Split.Main` first. The
+   alternative is `order`, which desynchronises reading order from visual order
+   — the textbook accessibility defect — and a prop whose only function is to
+   create one is not worth the two lines it saves. The `@container` rule changes
+   `flex-basis` only, so reading order is DOM order in both layouts.
+
+4. **`Grid` accepts a raw track template.** `columns?: number | string`: a
+   number is `repeat(n, minmax(0, 1fr))`, a string goes to
+   `grid-template-columns` unchanged. Mutually exclusive with
+   `minItemInlineSize`, enforced in the type rather than by precedence.
+
+   The case against was real — a raw passthrough is an untokenised value in a
+   public API, invisible to the linter because it is a prop and not a
+   stylesheet, and it is the crack through which `Box` returns. It was accepted
+   because the alternative is not "callers use tokens", it is callers
+   hand-rolling the same `grid-template-columns` in their own stylesheet, which
+   is what the consuming app does today in two places and what this tier exists
+   to stop. **A prop we can see beats a stylesheet we cannot.**
+
+   Every generated track is `minmax(0, 1fr)`, never `1fr`: `1fr` has a
+   `min-content` floor, so one long unbreakable string in one cell blows the
+   whole grid out of its container.
+
+5. **`Container` measures are `40rem` / `64rem` / `80rem`.** A reading measure,
+   an app page, a dashboard. The consuming app's current `72rem` becomes `lg` at
+   `80rem` — settled now at ten call sites rather than later at eighty. Anything
+   else is `--pp-container-max-inline-size`.
+
+   `Container` also declares `container-type: inline-size`. It is the anchor for
+   the whole `@container` strategy: without a query container near the top of
+   the tree, a component's `@container` rules resolve against whatever ancestor
+   happens to have one.
+
+6. **`Container`'s `gutter` defaults to `"5"`, where `gap` defaults to `"0"`.**
+   The asymmetry is deliberate. A zero gap is a legitimate design; a zero page
+   gutter is text against the edge of a phone screen, which is a bug every time.
+
+7. **`Scroller` requires `label`.** It renders `role="region"`, `aria-label` and
+   an unconditional `tabIndex={0}`. A scrollable region a keyboard user can
+   reach is WCAG 2.1.1; a focusable region with no accessible name is a 4.1.2
+   failure. RULES §6 says the type system should make an accessible name
+   impossible to omit, so there is no unlabelled form.
+
+   `tabIndex={0}` is unconditional rather than conditional on the region having
+   no focusable children: deciding that at runtime means inspecting children on
+   every render, and the extra stop is harmless where the shadow is correct and
+   essential where it is not.
+
+8. **`asChild` on five of the eight.** `Stack`, `Cluster`, `Grid`, `Container`
+   and `Center` — a single element wrapping children, where the element
+   genuinely varies (a `Stack` of nav links wants to be a `<ul>`, a `Container`
+   around a page a `<main>`). Not `Split`, `AspectRatio` or `Scroller`, each of
+   which owns structure or behaviour a substituted root would break.
+
+9. **`Stack` has no `justify`.** Distributing children along the block axis
+   needs a block size, and a `fill` component does not have one. Whoever owns
+   the height owns the distribution.
+
+10. **`Grid` ships without span support.** `style={{ gridColumn }}` covers it at
+    the call site until something in the library needs it. Revisit at `Table`
+    (5.4).
+
+## D-023 — `--pp-color-shadow-edge`, a semantic token for fading gradients
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens
+
+`Scroller` (2.8) draws scroll shadows: a gradient from a translucent dark to
+transparent, shown at whichever edge has content beyond it. The semantic layer
+had nothing that fits, and no compliant way to derive one.
+
+- `--pp-color-bg-scrim` is a modal overlay at 0.55 alpha — an order of magnitude
+  too heavy.
+- `--pp-color-border-strong` is opaque, so the gradient would be a hard grey bar.
+- `--pp-shadow-1..3` are complete `box-shadow` values, not colours.
+- `color-mix()` is on the stylelint banned-value list for every colour property,
+  and a raw `oklch()` in component CSS is a hardcoded colour. There is no third
+  option.
+
+So: one token, per theme, in `scripts/semantic-tokens.mjs`.
+
+| Theme | Value |
+| --- | --- |
+| light | `oklch(15% 0.01 258 / 0.14)` |
+| dark | `oklch(0% 0 0 / 0.5)` |
+
+Dark carries roughly 3.5× the alpha, because a soft edge is nearly invisible
+against a near-black surface. That is the same asymmetry `--pp-shadow-*` already
+encodes, and the same reason D-011 gave for elevation inverting between themes.
+
+**It carries no contrast obligation and `check-contrast.mjs` gains no assertion
+for it.** A decorative gradient is neither text nor a UI boundary, so there is no
+threshold to meet. Worth saying out loud, because every other colour token in the
+library has one and a future reader will wonder whether this one was missed.
+
+**This is the second Tier 0 amendment, and it has D-015's shape:** a component
+reached RULES §3, found the compliant vocabulary did not contain the thing it
+needed, and the gap was invisible until something tried to use it. The general
+lesson is already in D-015 — the prose and the enforced rule drift apart, and
+only building against them finds out which is wrong.
+
+## D-024 — A component never writes its own public override property inline
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §3
+
+RULES §3 requires every component to expose component-scoped custom properties
+(`--pp-grid-template-columns`) as its override API, and D-007's whole mechanism
+depends on a consumer being able to set one on an ancestor.
+
+`Grid` is the first component whose props produce a *computed value* rather than
+a fixed enum, so it is the first that has to write a custom property from
+JavaScript. Written naively:
+
+```tsx
+style={{ ...style, '--pp-grid-template-columns': template }}
+```
+
+That is an inline declaration. Nothing on an ancestor can outrank an inline
+style, so **the documented escape hatch is dead for every `Grid` that takes a
+prop** — which is every `Grid`. The property would still exist, still be
+documented, and never once take effect.
+
+**The rule.** A component writes a *private* property (`--_pp-grid-tracks`), and
+the stylesheet reads the public one first:
+
+```css
+grid-template-columns: var(--pp-grid-template-columns, var(--_pp-grid-tracks, none));
+```
+
+The consumer's override then wins from anywhere, including an ancestor, and the
+prop remains the default. This matches how `--pp-stack-gap` already behaves —
+`Stack` writes an attribute and the stylesheet maps it, so the question never
+arose there.
+
+**Consequence: the private property must always be written, never conditionally.**
+Custom properties inherit, so a propless `Grid` nested inside a three-column one
+would lay itself out in three columns. `Grid` writes `none` in that case. This is
+the same hazard as D-020's gap scale and has the same answer — *always emit* —
+which is now twice, and therefore a pattern rather than a coincidence.
+
+Found by a unit test written to assert the opposite behaviour, not by review.
+
+## D-025 — `--pp-measure-*`, and token enforcement for length-valued layout properties
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens, Tier 0.7 lint; D-016 §5
+
+Two findings from building `Container`.
+
+**A third dimensional scale.** The measures `Container` constrains to — `40rem`,
+`64rem`, `80rem` — exist on no scale in the library. Space is the rhythm
+*between* boxes and tops out at `6rem`; size is how big a box is, indexed in
+quarter-rems, and `40rem` there would be `--pp-size-160`. Measure answers a third
+question: **how wide may content run before it stops being readable.**
+
+So `--pp-measure-sm` / `-md` / `-lg`. Only `Container` may consume them
+(RULES §1, D-001), but they are exported so a consuming app can align a
+full-bleed section to the same measure without hardcoding it.
+
+Rejected: leaving the three values raw in `Container.css`. RULES §3 says every
+value comes from a token, and the one component allowed to break the sizing
+rule is the last place to start making exceptions to the token rule.
+
+**The linter never checked length-valued layout properties.** `max-inline-size`,
+`block-size`, `min-block-size`, `max-block-size` and `flex-basis` all take a
+length and none was in the raw-unit ban. It went unnoticed because
+`max-inline-size` was banned outright as a *property*, so no file could reach
+it — until `Container`, which is exempt from that ban and would therefore have
+been free to hardcode `40rem` with nothing objecting.
+
+They are now in the ban, with fixtures in `violations.css` so the self-test
+observes the rule firing on each (D-009). Two pre-existing declarations were
+caught, both legitimate, both exempted per-file rather than by weakening the
+rule:
+
+- **`VisuallyHidden`'s `block-size: 1px`.** D-016 §5 exempted this file's
+  `inline-size: 1px` as part of a fixed technique. It named only the inline
+  axis because only the inline axis was checked; the block half is the same
+  declaration in the same technique. The exemption is extended, not widened.
+- **`Skeleton`'s `block-size: 1em`.** One line of whatever type the skeleton
+  sits in — a relative unit derived from an inherited token, not a magic
+  number. Same family as `Icon`'s `1em` sizing (D-019).
+
+**The general shape, which has now happened twice:** a ban expressed at the
+property level hides the absence of a ban at the value level, and the gap only
+becomes reachable when some component earns an exemption. Worth checking the
+value rules whenever a property exemption is granted.
+
+## D-026 — Settling is waited for before the screenshot budget, not inside it
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-013, D-017
+
+The first CI run in the Tier 2 PR that actually *compared* baselines failed three
+of twenty-one: `tokens`, `container` and `aspect-ratio`. Two distinct causes, and
+neither was a visual regression.
+
+### 1. `tokens.png` had been stale since Tier 1
+
+It was authored in the Tier 0 commit and never re-authored. Tier 1 added eight
+lines to `playground/app/tokens/page.tsx` and fifty-seven to the playground's
+`globals.css`, growing the page by 92px — and the Tier 1 PR's final head was its
+own authoring commit, which by design triggers no verifying run. So a stale
+baseline merged to `main` and nothing compared it until now.
+
+Verified rather than assumed: the tokens page renders **2413px on `origin/main`
+(Tier 1) and 2413px on this branch**, against a committed baseline of 2321px.
+Tier 2 did not touch it.
+
+**This is D-013's documented wrinkle biting for real.** D-017 already says an
+authoring commit should never be a PR's final head; that line was written as a
+caution and is now a post-mortem. It is the rule that matters most in this
+workflow and the easiest one to lose track of, because the PR looks green when
+the authoring run stops failing.
+
+### 2. Two pages could not capture a stable screenshot at all
+
+`container` (~12,100px) and `aspect-ratio` (~11,500px) — the two tallest pages in
+the playground — spent the whole of `toHaveScreenshot`'s 5-second budget in CI
+alternating between two heights 14px and 8px apart, and never converged. The
+error is "Failed to take two consecutive stable screenshots", which is not a
+pixel diff: the comparison never ran.
+
+It does not reproduce here. Six consecutive full-page captures of each page are
+byte-identical, there is no `ResizeObserver` feedback loop (one initial callback
+each, then silence), and the heights this container produces are exactly the
+*lower* of each alternating pair. Per D-013 §3 the runner's Chromium build cannot
+be installed here, so this environment cannot adjudicate it — the same conclusion,
+reached again, about a different symptom.
+
+**The fix is to settle before the budget rather than inside it.** `ready()` in
+`screenshots.spec.ts` waited for network idle and `document.fonts.ready`, and
+nothing waited for layout to stop moving after hydration. It now polls
+`scrollHeight` until five consecutive animation frames agree, bounded at ~3s.
+`toHaveScreenshot`'s timeout moves from 5s to 20s so that settling and comparison
+are no longer competing for one budget.
+
+**Both are waits, not tolerances.** `maxDiffPixelRatio` is untouched at 0.01 and
+every pixel is still compared. A page that genuinely never settles still fails,
+and fails as instability rather than as a diff against whichever of two heights
+happened to be committed. With the settle step in place all three pages now
+report "captured a stable screenshot" locally, leaving only the dimension
+mismatch against their stale baselines.
+
+`tokens.png`, `container.png` and `aspect-ratio.png` are deleted so CI authors
+them. The two Tier 2 baselines were authored at the *other* height of their
+alternating pair — 12115 against a settled 12101, 11530 against a settled 11522 —
+so they could never have matched a settled capture.
+
+**The lesson, which is D-013's lesson a third time.** Rounds 1 and 2 removed
+fonts and rasterisation as variables; round 3 concluded the browser build itself
+was the remainder and moved the authority for baselines to CI. This round says
+the same thing about *time*: a screenshot taken before the page stops moving is
+not a measurement, and waiting for it is not the same as tolerating a difference.

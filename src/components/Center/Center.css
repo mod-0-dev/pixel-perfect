@@ -1,0 +1,31 @@
+/*
+ * Center — spec §2.5
+ *
+ * Block-axis centring needs a block size, and RULES §1 has nothing to say about
+ * block size — but a `fill` component still should not invent one. So the block
+ * size comes from the parent (a grid row, a flex parent with a height) or from
+ * --pp-center-min-block-size, exactly as Skeleton handles the same problem
+ * (D-016 §4). There is no minHeight prop and there is not going to be one.
+ *
+ * A column rather than a row, because the overwhelming case is a stack of
+ * things centred together: a spinner above a line of text, an icon above a
+ * heading above a button.
+ */
+
+@layer pp.components {
+  .pp-center {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    min-block-size: var(--pp-center-min-block-size, auto);
+    gap: var(--pp-center-gap, var(--_pp-gap));
+  }
+
+  .pp-center[data-axis="inline"] { align-items: center; }
+  .pp-center[data-axis="block"] { justify-content: center; }
+
+  .pp-center[data-axis="both"] {
+    align-items: center;
+    justify-content: center;
+  }
+}
