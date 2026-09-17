@@ -475,3 +475,70 @@ test.describe('action core', () => {
     expect(accent.width).toBeGreaterThan(0);
   });
 });
+
+test.describe('Link', () => {
+  test('wraps across lines, because it declares no display of its own', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const narrow = page
+      .locator('section', { hasText: 'In running text, it wraps' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'narrow · 240px' })
+      .first();
+    const link = narrow.getByRole('link').first();
+
+    // An inline box that breaks across two lines produces two client rects.
+    // An `inline-flex` link — which is what several libraries ship — produces
+    // one, and overflows or truncates instead. This is the whole reason
+    // Link.css declares no `display`.
+    const rects = await link.evaluate((el) => el.getClientRects().length);
+    expect(rects).toBeGreaterThan(1);
+  });
+
+  test('underline follows the prop, and `hover` only underlines on hover', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const cell = page
+      .locator('section', { hasText: 'underline' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+    const decoration = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => getComputedStyle(node).textDecorationLine);
+
+    const always = cell.locator('.pp-link[data-underline="always"]').first();
+    const onHover = cell.locator('.pp-link[data-underline="hover"]').first();
+    const never = cell.locator('.pp-link[data-underline="none"]').first();
+
+    expect(await decoration(always)).toBe('underline');
+    expect(await decoration(never)).toBe('none');
+
+    expect(await decoration(onHover)).toBe('none');
+    await onHover.hover();
+    expect(await decoration(onHover)).toBe('underline');
+  });
+
+  test('every tone resolves to a different colour, neutral included', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const cell = page
+      .locator('section', { hasText: 'tone' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+    const colourOf = (tone: string) =>
+      cell.locator(`.pp-link[data-pp-tone="${tone}"]`).first().evaluate((el) => getComputedStyle(el).color);
+
+    const [neutral, accent, danger] = await Promise.all([
+      colourOf('neutral'),
+      colourOf('accent'),
+      colourOf('danger'),
+    ]);
+
+    // If these are equal, the tone context is not reaching the component and
+    // every link in the library is the same colour — the D-011 failure mode.
+    expect(accent).not.toBe(neutral);
+    expect(danger).not.toBe(accent);
+  });
+});

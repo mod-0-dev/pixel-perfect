@@ -26,35 +26,37 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 3A — the action core. 3.1 `Button` is `done`; 3.2–3.5
-  remain in `spec` under one approved gate ([D-027](docs/DECISIONS.md)).
-  Nothing else is in `build`
-- **Next up:** 3.3 `Link` — independent of `Button`, the cheapest of the five,
-  and it gives the `asChild` plumbing a second consumer before `IconButton`
-  (3.2), `Toggle` (3.5) and `ButtonGroup` (3.4) build on it
+- **In flight:** Tier 3A — the action core. 3.1 `Button` and 3.3 `Link` are
+  `done`; 3.2, 3.4 and 3.5 remain in `spec` under one approved gate
+  ([D-027](docs/DECISIONS.md)). Nothing else is in `build`
+- **Next up:** 3.2 `IconButton`, then 3.5 `Toggle`, then 3.4 `ButtonGroup`
+  last, because it styles the other four
 - **The library can now be focused, and that settled three things once:**
   `--pp-control-*` (32 / 40 / 48, so every Tier 3 control agrees by
   construction), the focus ring (an `outline` in `--pp-color-focus-ring` on
   every tone — the only ring pairing `lint:contrast` verifies), and
-  `--pp-tone-solid-active`, which took `lint:contrast` from 160 assertions to
-  170
+  `--pp-tone-solid-active`, which took `lint:contrast` to 170 assertions
 - **Found by the browser, not by jsdom:** `Button`'s loading state shipped with
   `visibility: hidden` on its label, which removes it from the accessibility
   tree — a button announced as "Save" became a button announced as nothing at
   the moment it started working. The jsdom test asserting the accessible name
-  passed against the defect. `opacity: 0` is the fix; the browser assertion has
-  been re-run against the defect to confirm it fails on the right symptom
-  (D-030 §2). Anything about what a screen reader perceives has to be asserted
-  where layout exists
-- **Verified, not asserted:** 26 computed-style assertions in
-  `tests/visual/harness.spec.ts`, four of them new. Three of `Button`'s jsdom
-  tests were also checked by deliberately breaking the component; one of those
-  breaks exposed a focus test that could not fail and it was rewritten (D-009)
+  passed against the defect (D-030 §2). Anything about what a screen reader
+  perceives has to be asserted where layout exists
+- **`asChild` puts two stylesheets on one element.** `Link` declares no
+  `display` for that reason — `inline` would have beaten `Button`'s
+  `inline-flex`. It does not make the composition safe (both set `color`), so
+  `<Button asChild>` takes a plain `<a>` or `next/link` and both docs pages say
+  so
+- **Verified, not asserted:** 29 computed-style assertions in
+  `tests/visual/harness.spec.ts`, seven of them new. Five Tier 3A claims have
+  been checked by deliberately breaking the component and watching the test
+  fail on the right symptom; one of those breaks exposed a focus test that
+  could not fail at all and it was rewritten (D-009)
 - **Still open from Tier 2:** consume the layout primitives in
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 30 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **Done:** 31 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -136,7 +138,7 @@ to the component it was written about — see
 | --- | --- | --- | --- | --- | --- | --- |
 | 3.1 | `Button` | `done` | hug | client | T2 | `variant` × `tone` × `size`, `loading`, `asChild`. Ships `--pp-control-*` and the focus ring (D-028, D-029) |
 | 3.2 | `IconButton` | `spec` | hug | client | 3.1, 1.3 | Accessible name required by types |
-| 3.3 | `Link` | `spec` | hug | server | 1.1 | `asChild` for `next/link` |
+| 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
 | 3.4 | `ButtonGroup` | `spec` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. Deps corrected per D-030 §7 |
 | 3.5 | `Toggle` | `spec` | hug | client | 3.1 | Pressed state |
 | 3.6 | `Label` | `planned` | fill | server | 1.1 | |

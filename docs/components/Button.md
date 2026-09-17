@@ -145,8 +145,9 @@ decides by default.
 // ✗ a button that navigates loses middle-click, open-in-new-tab, and the
 //   status bar preview of where it goes.
 <Button onClick={() => router.push('/settings')}>Settings</Button>
-// ✓
-<Button asChild><Link href="/settings">Settings</Link></Button>
+// ✓ delegate to an anchor or next/link — NOT to pixel-perfect's own Link,
+//   which is a second styled component fighting for the same element.
+<Button asChild><NextLink href="/settings">Settings</NextLink></Button>
 
 // ✗ every button is the primary button, so none of them is.
 <Button tone="accent">Cancel</Button>

@@ -15,7 +15,7 @@
 | --- | --- | --- | --- |
 | 3.1 `Button` | `done` | 3.4 `ButtonGroup` | `spec` |
 | 3.2 `IconButton` | `spec` | 3.5 `Toggle` | `spec` |
-| 3.3 `Link` | `spec` | | |
+| 3.3 `Link` | `done` | | |
 
 This is the first tier with a keyboard, a focus ring, a disabled state, or a
 pointer. Everything Tiers 1 and 2 built was inert: `Badge` has a tone but
@@ -541,7 +541,7 @@ label needs wrapping needs a shorter label.
 </Button>
 
 <Button asChild>
-  <Link href="/settings">Settings</Link>
+  <NextLink href="/settings">Settings</NextLink>
 </Button>
 
 <Cluster gap="2" justify="end">
@@ -711,9 +711,20 @@ and composing it that way means the button styling lives in exactly one place.
 ### Sizing contract justification
 
 `hug`. A link is inline text; it is sized by its content and flows with the
-sentence around it. `display: inline` — not `inline-flex`, which would break it
-across a line wrap and is the reason links in several well-known libraries
-cannot be used mid-paragraph.
+sentence around it. Never `inline-flex`, which would break it across a line wrap
+and is the reason links in several well-known libraries cannot be used
+mid-paragraph.
+
+**Refined at build time: it declares no `display` at all**, rather than
+declaring `inline`. An `<a>` is already inline, so the declaration would change
+nothing on its own — and `asChild` can put two of this library's components on
+the same element, where the later import in `@layer pp.components` simply wins.
+A `display: inline` here would beat `Button`'s `inline-flex`. Declaring nothing
+achieves the same rule and collides with nothing.
+
+That is one collision avoided, not all of them: `Button` and `Link` both set
+`color`, so composing them is still a mistake and both docs pages say so.
+`<Button asChild>` takes a plain `<a>` or `next/link`.
 
 ### Anatomy
 

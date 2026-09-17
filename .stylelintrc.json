@@ -75,7 +75,7 @@
         "none",
         "0"
       ],
-      "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset|max-inline-size|block-size|min-block-size|max-block-size|flex-basis)$/": [
+      "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset|max-inline-size|block-size|min-block-size|max-block-size|flex-basis|text-underline-offset|text-decoration-thickness)$/": [
         "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
       ]
     }

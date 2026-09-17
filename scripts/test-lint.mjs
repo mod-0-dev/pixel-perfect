@@ -16,6 +16,7 @@ const EXPECTED = {
     'border-radius', 'font-size', 'transition', 'z-index', 'text-align',
     'outline', 'font-family', 'border-width',
     'max-inline-size', 'block-size', 'flex-basis',
+    'text-underline-offset', 'text-decoration-thickness',
   ],
   // Non-zero margins are value violations, not property violations (D-018):
   // `margin: 0` is how a component removes UA margin, which is the rule's aim.
