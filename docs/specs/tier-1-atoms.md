@@ -15,7 +15,7 @@
 | 1.1 `Text` | `done` | 1.7 `Skeleton` | `spec` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
-| 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `build` |
+| 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
 | 1.5 `Separator` | `done` | 1.11 `Code` | `spec` |
 | 1.6 `Spinner` | `spec` | | |
 
