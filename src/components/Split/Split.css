@@ -1,0 +1,50 @@
+/*
+ * Split — spec §2.6
+ *
+ * This is the component that makes RULES §1's container-query claim real: the
+ * same Split collapses inside a 480px modal that it would at a 480px viewport,
+ * and it has never heard of the viewport.
+ *
+ * THE COLLAPSE RULE TARGETS THE SLOTS, NEVER THE ROOT. An element cannot query
+ * its own container, so "change my own flex-direction" is not expressible. The
+ * collapse is therefore written as "make the children full-width", which wraps
+ * them onto their own lines and reaches the same layout.
+ *
+ * The thresholds are three static blocks because a container query condition
+ * cannot read a custom property — @container (max-inline-size: var(--x)) is not
+ * valid CSS (D-022 §2). That is a limit, not a preference.
+ */
+
+@layer pp.components {
+  .pp-split {
+    container-type: inline-size;
+    display: flex;
+    flex-wrap: wrap;
+    min-inline-size: 0;
+    gap: var(--pp-split-gap, var(--_pp-gap));
+  }
+
+  .pp-split__sidebar {
+    /* The parent sizing a box it created, which is D-021 exactly. */
+    flex: 0 0 var(--pp-split-sidebar-inline-size, var(--_pp-split-sidebar));
+  }
+
+  .pp-split__main {
+    flex: 1 1 0;
+    /* Without this the main pane's floor is its min-content size, so one wide
+       table pushes the sidebar off the layout instead of scrolling. */
+    min-inline-size: 0;
+  }
+
+  @container (max-inline-size: 30rem) {
+    .pp-split[data-collapse-below="sm"] > * { flex-basis: 100%; }
+  }
+
+  @container (max-inline-size: 45rem) {
+    .pp-split[data-collapse-below="md"] > * { flex-basis: 100%; }
+  }
+
+  @container (max-inline-size: 60rem) {
+    .pp-split[data-collapse-below="lg"] > * { flex-basis: 100%; }
+  }
+}

@@ -26,14 +26,14 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023). **`Stack`,
-  `Cluster`, `Grid` and `Container` are `done`.** That is every layout class the
-  consuming app hand-rolls, so launchpad can migrate now
-- **Next up:** 2.5 `Center`
-- **Remaining in tier:** `Center` → `Split` → `AspectRatio` → `Scroller`, one
-  at a time. `Split` is the one that removes launchpad's last viewport media
-  query
-- **Done:** 25 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **In flight:** _none_ — six of eight Tier 2 primitives are `done`:
+  `Stack`, `Cluster`, `Grid`, `Container`, `Center`, `Split`
+- **Next up:** 2.7 `AspectRatio`, then 2.8 `Scroller` — the tier's only client
+  component and its only a11y surface
+- **Verified, not asserted:** `Split` collapses on its own inline size. Swapping
+  its `@container` rule for a viewport media query fails
+  `harness.spec.ts`, which is RULES §1 held to account rather than described
+- **Done:** 27 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -89,8 +89,8 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 | 2.2 | `Cluster` | `done` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify`. Wrapping needs no query |
 | 2.3 | `Grid` | `done` | fill | server | 2.1 | Fixed columns, `auto-fit`, or a raw template (D-022 §4). Tracks are always `minmax(0, 1fr)` |
 | 2.4 | `Container` | `done` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`.** Also the tree's query-container anchor. `--pp-measure-*` (D-025) |
-| 2.5 | `Center` | `spec` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure |
-| 2.6 | `Split` | `spec` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint |
+| 2.5 | `Center` | `done` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure. No height prop |
+| 2.6 | `Split` | `done` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint. No `side` prop (D-022 §3) |
 | 2.7 | `AspectRatio` | `spec` | fill | server | T0 | |
 | 2.8 | `Scroller` | `spec` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component |
 

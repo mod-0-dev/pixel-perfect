@@ -225,5 +225,70 @@ test.describe('layout primitives', () => {
       'inline-size',
     );
   });
+
+  test('Split collapses on its OWN inline size, not the viewport', async ({ page }) => {
+    await page.goto('/components/split');
+
+    const section = page.locator('section', { hasText: 'the default, 45rem' });
+    // Same page, same window, same markup. Three cells, two layouts. If this
+    // ever reads the same in all three, something reintroduced a media query.
+    const stacked = (cellIndex: number) =>
+      section
+        .locator('.matrix__viewport')
+        .nth(cellIndex)
+        .locator('.pp-split')
+        .evaluate((el) => {
+          const [a, b] = Array.from(el.children).map((c) => c.getBoundingClientRect());
+          return Math.round(a.top) !== Math.round(b.top);
+        });
+
+    expect(await stacked(0)).toBe(true); // 240px content box — collapsed
+    expect(await stacked(1)).toBe(true); // 480px minus the cell's padding — still under 45rem
+    expect(await stacked(2)).toBe(false); // 960px — side by side
+  });
+
+  test('Split never reorders its slots, in either layout', async ({ page }) => {
+    await page.goto('/components/split');
+
+    // D-022 §3. `order` would desynchronise reading order from visual order;
+    // this asserts the collapse rule only ever touches flex-basis.
+    const section = page.locator('section', { hasText: 'There is no side prop' });
+    for (const cellIndex of [0, 2]) {
+      const orders = await section
+        .locator('.matrix__viewport')
+        .nth(cellIndex)
+        .locator('.pp-split')
+        .evaluate((el) => Array.from(el.children).map((c) => getComputedStyle(c).order));
+      expect(orders).toEqual(['0', '0']);
+    }
+  });
+
+  test('Split.Main shrinks rather than pushing the sidebar away', async ({ page }) => {
+    await page.goto('/components/split');
+
+    const section = page.locator('section', { hasText: 'so a wide child does not push' });
+    const cell = section.locator('.matrix__viewport').first();
+
+    // min-inline-size: 0 on the main pane. Without it the pane's floor is its
+    // min-content size and one long token relocates the whole layout.
+    const sidebarWidth = await cell
+      .locator('.pp-split__sidebar')
+      .evaluate((el) => el.getBoundingClientRect().width);
+    expect(sidebarWidth).toBeCloseTo(96, 0); // 6rem
+    await expect(cell).not.toHaveAttribute('data-overflowing', /.*/);
+  });
+
+  test('Center gives itself no block size, and takes one from the custom property', async ({
+    page,
+  }) => {
+    await page.goto('/components/center');
+
+    const section = page.locator('section', { hasText: 'There is no height prop' });
+    const center = section.locator('.pp-center').first();
+
+    // --pp-space-8 is 4rem. D-016 §4 applied a second time: the parent or the
+    // custom property supplies the height, never a prop.
+    expect(await center.evaluate((el) => getComputedStyle(el).minBlockSize)).toBe('64px');
+  });
 });
 

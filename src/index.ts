@@ -8,6 +8,7 @@ export {
   type ClusterJustify,
   type ClusterProps,
 } from './components/Cluster/Cluster';
+export { Center, type CenterAxis, type CenterProps } from './components/Center/Center';
 export { Code, type CodeProps } from './components/Code/Code';
 export {
   Heading,
@@ -41,6 +42,12 @@ export {
   type SkeletonShape,
 } from './components/Skeleton/Skeleton';
 export { Spinner, type SpinnerProps } from './components/Spinner/Spinner';
+export {
+  Split,
+  type SplitCollapse,
+  type SplitProps,
+  type SplitSlotProps,
+} from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
 export {
   Text,

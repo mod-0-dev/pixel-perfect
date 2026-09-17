@@ -26,4 +26,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'cluster', name: 'Cluster', tier: '2.2' },
   { slug: 'grid', name: 'Grid', tier: '2.3' },
   { slug: 'container', name: 'Container', tier: '2.4' },
+  { slug: 'center', name: 'Center', tier: '2.5' },
+  { slug: 'split', name: 'Split', tier: '2.6' },
 ];

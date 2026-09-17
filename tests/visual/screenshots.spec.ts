@@ -27,6 +27,8 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'cluster', path: '/components/cluster' },
   { name: 'grid', path: '/components/grid' },
   { name: 'container', path: '/components/container' },
+  { name: 'center', path: '/components/center' },
+  { name: 'split', path: '/components/split' },
 ];
 
 /**

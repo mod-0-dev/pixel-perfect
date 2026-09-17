@@ -12,8 +12,8 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 2.1 `Stack` | `done` | 2.5 `Center` | `spec` |
-| 2.2 `Cluster` | `done` | 2.6 `Split` | `spec` |
+| 2.1 `Stack` | `done` | 2.5 `Center` | `done` |
+| 2.2 `Cluster` | `done` | 2.6 `Split` | `done` |
 | 2.3 `Grid` | `done` | 2.7 `AspectRatio` | `spec` |
 | 2.4 `Container` | `done` | 2.8 `Scroller` | `spec` |
 

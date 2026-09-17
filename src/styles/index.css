@@ -45,3 +45,5 @@
 @import "../components/Cluster/Cluster.css";
 @import "../components/Grid/Grid.css";
 @import "../components/Container/Container.css";
+@import "../components/Center/Center.css";
+@import "../components/Split/Split.css";
