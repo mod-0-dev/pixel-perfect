@@ -753,3 +753,69 @@ rule:
 property level hides the absence of a ban at the value level, and the gap only
 becomes reachable when some component earns an exemption. Worth checking the
 value rules whenever a property exemption is granted.
+
+## D-026 — Settling is waited for before the screenshot budget, not inside it
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-013, D-017
+
+The first CI run in the Tier 2 PR that actually *compared* baselines failed three
+of twenty-one: `tokens`, `container` and `aspect-ratio`. Two distinct causes, and
+neither was a visual regression.
+
+### 1. `tokens.png` had been stale since Tier 1
+
+It was authored in the Tier 0 commit and never re-authored. Tier 1 added eight
+lines to `playground/app/tokens/page.tsx` and fifty-seven to the playground's
+`globals.css`, growing the page by 92px — and the Tier 1 PR's final head was its
+own authoring commit, which by design triggers no verifying run. So a stale
+baseline merged to `main` and nothing compared it until now.
+
+Verified rather than assumed: the tokens page renders **2413px on `origin/main`
+(Tier 1) and 2413px on this branch**, against a committed baseline of 2321px.
+Tier 2 did not touch it.
+
+**This is D-013's documented wrinkle biting for real.** D-017 already says an
+authoring commit should never be a PR's final head; that line was written as a
+caution and is now a post-mortem. It is the rule that matters most in this
+workflow and the easiest one to lose track of, because the PR looks green when
+the authoring run stops failing.
+
+### 2. Two pages could not capture a stable screenshot at all
+
+`container` (~12,100px) and `aspect-ratio` (~11,500px) — the two tallest pages in
+the playground — spent the whole of `toHaveScreenshot`'s 5-second budget in CI
+alternating between two heights 14px and 8px apart, and never converged. The
+error is "Failed to take two consecutive stable screenshots", which is not a
+pixel diff: the comparison never ran.
+
+It does not reproduce here. Six consecutive full-page captures of each page are
+byte-identical, there is no `ResizeObserver` feedback loop (one initial callback
+each, then silence), and the heights this container produces are exactly the
+*lower* of each alternating pair. Per D-013 §3 the runner's Chromium build cannot
+be installed here, so this environment cannot adjudicate it — the same conclusion,
+reached again, about a different symptom.
+
+**The fix is to settle before the budget rather than inside it.** `ready()` in
+`screenshots.spec.ts` waited for network idle and `document.fonts.ready`, and
+nothing waited for layout to stop moving after hydration. It now polls
+`scrollHeight` until five consecutive animation frames agree, bounded at ~3s.
+`toHaveScreenshot`'s timeout moves from 5s to 20s so that settling and comparison
+are no longer competing for one budget.
+
+**Both are waits, not tolerances.** `maxDiffPixelRatio` is untouched at 0.01 and
+every pixel is still compared. A page that genuinely never settles still fails,
+and fails as instability rather than as a diff against whichever of two heights
+happened to be committed. With the settle step in place all three pages now
+report "captured a stable screenshot" locally, leaving only the dimension
+mismatch against their stale baselines.
+
+`tokens.png`, `container.png` and `aspect-ratio.png` are deleted so CI authors
+them. The two Tier 2 baselines were authored at the *other* height of their
+alternating pair — 12115 against a settled 12101, 11530 against a settled 11522 —
+so they could never have matched a settled capture.
+
+**The lesson, which is D-013's lesson a third time.** Rounds 1 and 2 removed
+fonts and rasterisation as variables; round 3 concluded the browser build itself
+was the remainder and moved the authority for baselines to CI. This round says
+the same thing about *time*: a screenshot taken before the page stops moving is
+not a measurement, and waiting for it is not the same as tolerating a difference.
