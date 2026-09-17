@@ -1,5 +1,6 @@
 export type { Size, Tone, Variant } from './types';
 
+export { Badge, type BadgeProps } from './components/Badge/Badge';
 export {
   Heading,
   type HeadingLevel,

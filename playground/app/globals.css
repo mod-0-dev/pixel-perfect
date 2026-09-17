@@ -211,3 +211,11 @@ body {
   gap: var(--pp-space-2);
   min-width: 0;
 }
+
+/* Wrapping row for harness pages, until Cluster (2.2) exists. */
+.row-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pp-space-2);
+  min-width: 0;
+}
