@@ -55,12 +55,18 @@ describe('Avatar', () => {
     expect(el).toHaveAttribute('data-state', 'loading');
     expect(el.querySelector('.pp-avatar__fallback')).toHaveTextContent('ME');
 
-    await waitFor(() => expect(el).toHaveAttribute('data-state', 'loaded'));
+    // Wait on the CALLBACK, not on data-state. The attribute is in the DOM as
+    // soon as the render commits, while `onLoadingStatusChange` fires from a
+    // passive effect afterwards — so waiting on the attribute and then
+    // asserting the callback is a race, and it lost once in CI under load.
+    // Waiting for the thing under assertion cannot race with itself.
+    await waitFor(() => expect(statuses).toEqual(['loading', 'loaded']));
+
+    expect(el).toHaveAttribute('data-state', 'loaded');
     const img = el.querySelector('img')!;
     expect(img).toHaveAttribute('src', '/mara.jpg');
     expect(img).toHaveAttribute('alt', '');
     expect(el.querySelector('.pp-avatar__fallback')).toBeNull();
-    expect(statuses).toEqual(['loading', 'loaded']);
   });
 
   it('falls back permanently when the image fails', async () => {
