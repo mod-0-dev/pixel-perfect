@@ -1,0 +1,36 @@
+/*
+ * Cluster — spec §2.2
+ *
+ * A wrapping flex row. Wrapping IS the container behaviour and it needs no
+ * query: flex resolves it continuously against the space actually available,
+ * which is strictly better than a breakpoint would be.
+ *
+ * `align: center` by default, where Stack's is `stretch`. A row of mixed-height
+ * things — a badge, a line of text, an avatar — reads correctly centred, and
+ * that is nearly every row. A column of mixed-width things does not want to be
+ * centred; it wants to fill.
+ */
+
+@layer pp.components {
+  .pp-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    min-inline-size: 0;
+    gap: var(--pp-cluster-gap, var(--_pp-gap));
+  }
+
+  .pp-cluster[data-wrap="false"] { flex-wrap: nowrap; }
+
+  .pp-cluster[data-align="start"] { align-items: start; }
+  .pp-cluster[data-align="center"] { align-items: center; }
+  .pp-cluster[data-align="end"] { align-items: end; }
+  .pp-cluster[data-align="stretch"] { align-items: stretch; }
+  .pp-cluster[data-align="baseline"] { align-items: baseline; }
+
+  .pp-cluster[data-justify="start"] { justify-content: start; }
+  .pp-cluster[data-justify="center"] { justify-content: center; }
+  .pp-cluster[data-justify="end"] { justify-content: end; }
+  .pp-cluster[data-justify="between"] { justify-content: space-between; }
+  .pp-cluster[data-justify="around"] { justify-content: space-around; }
+  .pp-cluster[data-justify="evenly"] { justify-content: space-evenly; }
+}

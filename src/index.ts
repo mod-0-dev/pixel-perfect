@@ -2,6 +2,12 @@ export type { Align, Justify, Size, Space, Tone, Variant } from './types';
 
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
+export {
+  Cluster,
+  type ClusterAlign,
+  type ClusterJustify,
+  type ClusterProps,
+} from './components/Cluster/Cluster';
 export { Code, type CodeProps } from './components/Code/Code';
 export {
   Heading,

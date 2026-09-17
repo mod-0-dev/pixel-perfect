@@ -104,5 +104,43 @@ test.describe('layout primitives', () => {
     const stackBox = await stack.boundingBox();
     expect(stackBox!.width).toBeCloseTo(available, 0);
   });
+
+  test('a Cluster wraps in a narrow container and does not in a wide one', async ({ page }) => {
+    await page.goto('/components/cluster');
+
+    const section = page.locator('section', { hasText: 'Wrapping is the container behaviour' });
+
+    // Distinct line-box counts, measured rather than asserted from CSS. This is
+    // the payoff of RULES §1 stated as a number: the same markup, the same
+    // component, two different layouts, and nothing measured the viewport.
+    const lineCount = (cellIndex: number) =>
+      section
+        .locator('.matrix__viewport')
+        .nth(cellIndex)
+        .locator('.pp-cluster')
+        .evaluate((el) => {
+          const tops = new Set<number>();
+          for (const child of Array.from(el.children)) {
+            tops.add(Math.round(child.getBoundingClientRect().top));
+          }
+          return tops.size;
+        });
+
+    // Matrix order is light[narrow, medium, wide], dark[narrow, medium, wide].
+    const narrow = await lineCount(0);
+    const wide = await lineCount(2);
+
+    expect(narrow).toBeGreaterThan(1);
+    expect(wide).toBe(1);
+  });
+
+  test('wrap={false} is caught by the harness as an overflow', async ({ page }) => {
+    await page.goto('/components/cluster');
+
+    const section = page.locator('section', { hasText: 'is the overflow you asked for' });
+    // The 240px cells cannot hold four badges on one line, and nowrap means
+    // they do not get a second. That is a bug the component was told to have.
+    await expect(section.locator('.matrix__viewport[data-overflowing]').first()).toBeVisible();
+  });
 });
 

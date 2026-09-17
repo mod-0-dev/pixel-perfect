@@ -26,14 +26,13 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023) and **2.1
-  `Stack` is `done`**. The shared `gap` scale shipped with it, so the rest of
-  the tier is unblocked
-- **Next up:** 2.2 `Cluster`. 24 hand-rolled uses waiting in launchpad, more
-  than any other component in the library
-- **Remaining in tier:** `Cluster` → `Grid` → `Container` → `Center` → `Split`
-  → `AspectRatio` → `Scroller`, one at a time
-- **Done:** 22 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **In flight:** _none_ — Tier 2 approved at Gate C (D-020 … D-023). **2.1
+  `Stack` and 2.2 `Cluster` are `done`**, which is 45 of launchpad's
+  hand-rolled layout classes answered
+- **Next up:** 2.3 `Grid`
+- **Remaining in tier:** `Grid` → `Container` → `Center` → `Split` →
+  `AspectRatio` → `Scroller`, one at a time
+- **Done:** 23 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -86,7 +85,7 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2.1 | `Stack` | `done` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale (D-020) |
-| 2.2 | `Cluster` | `spec` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify` |
+| 2.2 | `Cluster` | `done` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify`. Wrapping needs no query |
 | 2.3 | `Grid` | `spec` | fill | server | 2.1 | Explicit columns + `auto-fit` mode |
 | 2.4 | `Container` | `spec` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`** |
 | 2.5 | `Center` | `spec` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure |
