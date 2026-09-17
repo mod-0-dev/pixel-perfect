@@ -26,16 +26,29 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 2 is complete** (8 / 8 layout primitives
-  `done`). The sizing contract now has the components it was written for
-- **Next up:** consume Tier 2 in [launchpad](https://github.com/mod-0-dev/launchpad),
-  which should delete `.lp-stack`, `.lp-cluster`, `.lp-grid`, `.lp-page`,
-  `.lp-shell` and its one remaining viewport media query. Then Tier 3, whose
-  Gate C is approved individually — D-014 says to revisit that entry first
-- **Verified, not asserted:** 22 computed-style assertions in
-  `tests/visual/harness.spec.ts`. Four were checked by deliberately breaking the
-  component and watching the test fail on the right symptom (D-009); swapping
-  `Split`'s `@container` rule for a viewport media query is the sharpest of them
+- **In flight:** Tier 3A — the action core (3.1 `Button` · 3.2 `IconButton` ·
+  3.3 `Link` · 3.4 `ButtonGroup` · 3.5 `Toggle`), all five in `spec`, **stopped
+  at Gate C**. Nothing is in `build`, so the WIP limit is intact
+- **Awaiting you:** approve
+  [`docs/specs/tier-3a-action.md`](docs/specs/tier-3a-action.md) — eleven
+  rulings and four open questions. The load-bearing ones are `--pp-control-*`
+  (how tall a control is, settled once for the library), the focus ring
+  (`--pp-color-focus-ring` globally, not per tone — it is the only ring colour
+  `lint:contrast` actually asserts), and `loading` using `aria-disabled` rather
+  than `disabled` so focus is not stolen mid-submit
+- **D-014 revisited, as it asked to be:** its Tier 3 carve-out named `Field` and
+  the overlay foundation, then applied to all sixteen Tier 3 components. It now
+  narrows to 3B. 3A / 3C / 3D are group gates
+- **Flagged, not fixed:** 3.4 `ButtonGroup` lists Deps `3.1, 2.2`, but it cannot
+  compose `Cluster` — `Cluster` is `fill` and `ButtonGroup` is `hug`. Correction
+  to `3.1` is open question 3 in the spec, awaiting the same approval
+- **Next after approval:** `--pp-control-*` tokens and the focus-ring pattern
+  ship with 3.1 `Button`; then `Link`, `IconButton`, `Toggle`, `ButtonGroup`,
+  one at a time
+- **Still open from Tier 2:** consume the layout primitives in
+  [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
+  `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
+  media query
 - **Done:** 29 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
@@ -103,13 +116,24 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 
 The heart of the library. `Field` is the workhorse — build it before the inputs.
 
+Approved in four groups rather than sixteen gates, narrowing D-014's carve-out
+to the component it was written about — see
+[`docs/specs/tier-3a-action.md`](docs/specs/tier-3a-action.md) §0.
+
+| Group | Components | Spec |
+| --- | --- | --- |
+| **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — `spec`, at Gate C |
+| **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
+| **3C — Native inputs** | 3.8–3.13 | one gate, after 3B is `done` |
+| **3D — Composite inputs** | 3.14–3.16 | one gate |
+
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3.1 | `Button` | `planned` | hug | client | T2 | `variant` × `tone` × `size`, loading state |
-| 3.2 | `IconButton` | `planned` | hug | client | 3.1, 1.3 | Accessible name required by types |
-| 3.3 | `Link` | `planned` | hug | server | 1.1 | `asChild` for `next/link` |
-| 3.4 | `ButtonGroup` | `planned` | hug | server | 3.1, 2.2 | |
-| 3.5 | `Toggle` | `planned` | hug | client | 3.1 | Pressed state |
+| 3.1 | `Button` | `spec` | hug | client | T2 | `variant` × `tone` × `size`, loading state |
+| 3.2 | `IconButton` | `spec` | hug | client | 3.1, 1.3 | Accessible name required by types |
+| 3.3 | `Link` | `spec` | hug | server | 1.1 | `asChild` for `next/link` |
+| 3.4 | `ButtonGroup` | `spec` | hug | server | 3.1, 2.2 | |
+| 3.5 | `Toggle` | `spec` | hug | client | 3.1 | Pressed state |
 | 3.6 | `Label` | `planned` | fill | server | 1.1 | |
 | 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |
