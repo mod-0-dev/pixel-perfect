@@ -17,7 +17,7 @@
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
 | 1.5 `Separator` | `done` | 1.11 `Code` | `done` |
-| 1.6 `Spinner` | `spec` | | |
+| 1.6 `Spinner` | `build` | | |
 
 Eleven components with no internal state (bar one), no keyboard interaction, and
 no ARIA surface beyond correct semantics. They are specified together because
@@ -697,7 +697,7 @@ says "Saving…" is `decorative`; a spinner alone on a page needs a `label`.
 
 | Custom property | Default | Affects |
 | --- | --- | --- |
-| `--pp-spinner-size` | per `size` | Box size |
+| `--pp-spinner-size` | `--pp-size-4/5/6` (16/20/24px) | Box size. **Build note:** the icon scale, not the chip scale — a spinner occupies an icon's slot, inside a button or beside text, and 24px at `md` was visibly too large there |
 | `--pp-spinner-color` | `--pp-tone-solid` | Arc colour |
 | `--pp-spinner-track-color` | `--pp-tone-border` | Ring behind the arc |
 | `--pp-spinner-duration` | `--pp-duration-slow` × 2 | Rotation period |

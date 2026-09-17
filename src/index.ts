@@ -15,6 +15,7 @@ export {
   type SeparatorOrientation,
   type SeparatorProps,
 } from './components/Separator/Separator';
+export { Spinner, type SpinnerProps } from './components/Spinner/Spinner';
 export {
   Text,
   type TextAlign,

@@ -19,6 +19,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'badge', path: '/components/badge' },
   { name: 'kbd', path: '/components/kbd' },
   { name: 'code', path: '/components/code' },
+  { name: 'spinner', path: '/components/spinner' },
   { name: 'visually-hidden', path: '/components/visually-hidden' },
 ];
 

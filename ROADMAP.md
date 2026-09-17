@@ -66,7 +66,7 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 | 1.3 | `Icon` | `done` | hug | server | T0 | `1em` sizing, `currentColor`, required label or `aria-hidden` |
 | 1.4 | `VisuallyHidden` | `done` | n/a | server | T0 | |
 | 1.5 | `Separator` | `done` | fill | server | T0 | Horizontal + vertical, `role="separator"` |
-| 1.6 | `Spinner` | `spec` | hug | server | T0 | `prefers-reduced-motion` |
+| 1.6 | `Spinner` | `build` | hug | server | T0 | `prefers-reduced-motion` |
 | 1.7 | `Skeleton` | `spec` | fill | server | T0 | |
 | 1.8 | `Badge` | `done` | hug | server | T0 | The canonical `hug` case |
 | 1.9 | `Avatar` | `spec` | hug | client | 1.3 | Image fallback needs state |

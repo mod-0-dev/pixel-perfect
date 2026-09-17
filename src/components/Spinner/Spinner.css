@@ -1,0 +1,77 @@
+/*
+ * Spinner — spec §1.6
+ *
+ * A ring with a quarter arc, rotated. `inline-size` is declared under the
+ * D-019 exemption (square, intrinsic).
+ *
+ * MOTION. The Tier 0 reset crushes animation-duration under
+ * prefers-reduced-motion, but this file sits in a higher layer and its own
+ * duration wins — which is the mechanism reset.css documents for essential
+ * motion. So the component must handle reduced motion itself: a frozen arc
+ * reads as a hung page, so it swaps rotation for a slow opacity pulse — still
+ * a signal that something is happening, with nothing rotating.
+ */
+
+@layer pp.components {
+  .pp-spinner {
+    --_size: var(--pp-size-5);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    inline-size: var(--pp-spinner-size, var(--_size));
+    block-size: var(--pp-spinner-size, var(--_size));
+    color: var(--pp-spinner-color, var(--pp-tone-solid));
+    vertical-align: -0.125em;
+  }
+
+  .pp-spinner[data-size="sm"] { --_size: var(--pp-size-4); }
+  .pp-spinner[data-size="lg"] { --_size: var(--pp-size-6); }
+
+  .pp-spinner__track {
+    inline-size: 100%;
+    block-size: 100%;
+    animation: pp-spinner-rotate var(--pp-spinner-duration, calc(var(--pp-duration-slow) * 2)) linear infinite;
+  }
+
+  .pp-spinner__ring {
+    stroke: var(--pp-spinner-track-color, var(--pp-tone-border));
+    stroke-width: 3;
+  }
+
+  .pp-spinner__arc {
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linecap: round;
+    /* r=10 → circumference ≈ 62.8; show a quarter. */
+    stroke-dasharray: 15.7 47.1;
+  }
+
+  @keyframes pp-spinner-rotate {
+    to {
+      transform: rotate(1turn);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-spinner__track {
+      animation: pp-spinner-pulse calc(var(--pp-duration-slow) * 5) ease-in-out infinite alternate;
+    }
+
+    .pp-spinner__arc {
+      /* No rotation, so the arc alone is a static wedge; show the whole ring pulsing. */
+      stroke-dasharray: none;
+    }
+  }
+
+  @keyframes pp-spinner-pulse {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0.4;
+    }
+  }
+}
