@@ -26,12 +26,17 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 1 is complete** (11 / 11 atoms `done`)
-- **Next up:** Tier 2 — Layout primitives, specified as one batch per D-014
-  (Gate C). launchpad fakes `Stack` and `Cluster` on every screen, so the
-  demand is not hypothetical. `Stack` first; `Container` is the only component permitted
-  `max-width`. 0.10 docs site is deferred, not blocking
-- **Done:** 21 / 78 tracked items (10 foundations + 68 components)
+- **In flight:** Tier 2 — Layout primitives. All eight in `spec`, one batch,
+  **stopped at Gate C awaiting approval**
+  ([`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md)). Nothing is in
+  `build`, so the WIP limit is intact
+- **The spec asks for ten rulings**, three of them open: whether `Grid` takes a
+  raw track template, that `Split` has no `side` prop, the `Container` measures,
+  and a new `--pp-color-shadow-edge` token for `Scroller`
+- **Build order on approval:** `Stack` → `Cluster` → `Grid` → `Container` →
+  `Center` → `Split` → `AspectRatio` → `Scroller`, one at a time
+- **Done:** 21 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+  site is deferred, not blocking
 
 ---
 
@@ -77,18 +82,19 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 
 ## Tier 2 — Layout Primitives
 
-Load-bearing. The sizing contract is unusable without these.
+Load-bearing. The sizing contract is unusable without these. Specified as one
+batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 2.1 | `Stack` | `planned` | fill | server | T0 | Vertical flow, `gap`, `align` |
-| 2.2 | `Cluster` | `planned` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify` |
-| 2.3 | `Grid` | `planned` | fill | server | 2.1 | Explicit columns + `auto-fit` mode |
-| 2.4 | `Container` | `planned` | fill | server | 2.1 | **The only component allowed to set `max-width`** |
-| 2.5 | `Center` | `planned` | fill | server | 2.1 | |
-| 2.6 | `Split` | `planned` | fill | server | 2.3 | Sidebar + main; container-query driven collapse |
-| 2.7 | `AspectRatio` | `planned` | fill | server | T0 | |
-| 2.8 | `Scroller` | `planned` | fill | client | T0 | Overflow container, scroll shadows |
+| 2.1 | `Stack` | `spec` | fill | server | T0 | Vertical flow, `gap`, `align`. Ships the shared `gap` scale |
+| 2.2 | `Cluster` | `spec` | fill | server | 2.1 | Horizontal, wrapping, `gap`, `justify` |
+| 2.3 | `Grid` | `spec` | fill | server | 2.1 | Explicit columns + `auto-fit` mode |
+| 2.4 | `Container` | `spec` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`** |
+| 2.5 | `Center` | `spec` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure |
+| 2.6 | `Split` | `spec` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint |
+| 2.7 | `AspectRatio` | `spec` | fill | server | T0 | |
+| 2.8 | `Scroller` | `spec` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component |
 
 ---
 
