@@ -16,7 +16,7 @@
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
-| 1.5 `Separator` | `done` | 1.11 `Code` | `build` |
+| 1.5 `Separator` | `done` | 1.11 `Code` | `done` |
 | 1.6 `Spinner` | `spec` | | |
 
 Eleven components with no internal state (bar one), no keyboard interaction, and
