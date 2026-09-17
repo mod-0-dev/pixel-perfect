@@ -290,5 +290,80 @@ test.describe('layout primitives', () => {
     // custom property supplies the height, never a prop.
     expect(await center.evaluate((el) => getComputedStyle(el).minBlockSize)).toBe('64px');
   });
+
+  test('AspectRatio holds its shape at every container width', async ({ page }) => {
+    await page.goto('/components/aspect-ratio');
+
+    const section = page.locator('section', { hasText: 'The shape holds at every width' });
+    const ratios = await section
+      .locator('.pp-aspect-ratio')
+      .evaluateAll((els) => els.map((el) => el.clientWidth / el.clientHeight));
+
+    // Six cells: 3 widths x 2 themes, all 21/9. Different sizes, one shape,
+    // which is the component choosing a shape and never a size.
+    expect(ratios).toHaveLength(6);
+    for (const r of ratios) expect(r).toBeCloseTo(21 / 9, 1);
+  });
+
+  test('AspectRatio stretches its child on both axes without declaring inline-size', async ({
+    page,
+  }) => {
+    await page.goto('/components/aspect-ratio');
+
+    const box = page.locator('.pp-aspect-ratio').first();
+    const fit = await box.evaluate((el) => {
+      const child = el.firstElementChild!.getBoundingClientRect();
+      const own = el.getBoundingClientRect();
+      return { dw: Math.abs(child.width - own.width), dh: Math.abs(child.height - own.height) };
+    });
+    // Grid stretch on the inline axis, block-size: 100% on the block axis.
+    expect(fit.dw).toBeLessThan(1);
+    expect(fit.dh).toBeLessThan(1);
+  });
+
+  test('Scroller reports the overflowing edge, and reports none when content fits', async ({
+    page,
+  }) => {
+    await page.goto('/components/scroller');
+
+    const overflowing = page
+      .locator('section', { hasText: 'Vertical, with a max block size' })
+      .locator('.pp-scroller')
+      .first();
+    const fits = page
+      .locator('section', { hasText: 'Content that fits gets no shadow' })
+      .locator('.pp-scroller')
+      .first();
+
+    // At rest, scrolled to the top: content lies past the END edge only.
+    await expect(overflowing).toHaveAttribute('data-overflow', 'end');
+    await expect(fits).toHaveAttribute('data-overflow', 'none');
+
+    // Scrolled to the bottom: past the START edge only. A shadow left showing
+    // on a fully scrolled region is the bug the rounding in overflowState
+    // exists to prevent.
+    await overflowing.evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+    await expect(overflowing).toHaveAttribute('data-overflow', 'start');
+
+    // And in the middle, both.
+    await overflowing.evaluate((el) => el.scrollTo({ top: el.scrollHeight / 2 }));
+    await expect(overflowing).toHaveAttribute('data-overflow', 'both');
+  });
+
+  test('Scroller is a focusable region with an accessible name', async ({ page }) => {
+    await page.goto('/components/scroller');
+
+    // .first(): the harness renders the same subtree in six cells.
+    const scroller = page.getByRole('region', { name: 'Assets' }).first();
+    await scroller.focus();
+    await expect(scroller).toBeFocused();
+
+    // RULES §6: focus is always visible. An outline of 0 here would mean the
+    // focus ring was removed without a replacement.
+    const outlineWidth = await scroller.evaluate((el) =>
+      parseFloat(getComputedStyle(el).outlineWidth),
+    );
+    expect(outlineWidth).toBeGreaterThan(0);
+  });
 });
 

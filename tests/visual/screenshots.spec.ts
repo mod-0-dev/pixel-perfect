@@ -29,6 +29,8 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'container', path: '/components/container' },
   { name: 'center', path: '/components/center' },
   { name: 'split', path: '/components/split' },
+  { name: 'aspect-ratio', path: '/components/aspect-ratio' },
+  { name: 'scroller', path: '/components/scroller' },
 ];
 
 /**

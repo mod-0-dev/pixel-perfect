@@ -1,0 +1,34 @@
+/*
+ * AspectRatio — spec §2.7
+ *
+ * A grid, not a block, and that is the whole trick: a single grid item is
+ * stretched on BOTH axes by default, so the child fills its box without the
+ * component ever declaring inline-size — which it is not allowed to do and,
+ * unlike Icon (D-019), has no case for.
+ *
+ * Children are placed at 1 / 1 rather than absolutely positioned, so the box
+ * still participates in normal flow and needs no positioning context.
+ */
+
+@layer pp.components {
+  .pp-aspect-ratio {
+    display: grid;
+    min-inline-size: 0;
+    aspect-ratio: var(--pp-aspect-ratio, var(--_pp-aspect-ratio));
+    overflow: hidden;
+    border-radius: var(--pp-aspect-ratio-radius, var(--pp-radius-0));
+  }
+
+  .pp-aspect-ratio > * {
+    grid-area: 1 / 1;
+    block-size: 100%;
+  }
+
+  /* The common payload. `cover` is the only sane default for a box whose shape
+     was chosen deliberately — `fill` would distort and `contain` would letterbox
+     inside the very box that exists to avoid letterboxing. */
+  .pp-aspect-ratio > :where(img, video, iframe, canvas, svg) {
+    object-fit: cover;
+    display: block;
+  }
+}

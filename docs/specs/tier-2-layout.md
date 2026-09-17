@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 2 |
-| **Status** | **approved** 2026-09-17 — all rulings accepted as proposed (D-020 … D-023) |
+| **Status** | `done` — all eight implemented 2026-09-17 (D-020 … D-025) |
 | **Components** | 2.1 `Stack` · 2.2 `Cluster` · 2.3 `Grid` · 2.4 `Container` · 2.5 `Center` · 2.6 `Split` · 2.7 `AspectRatio` · 2.8 `Scroller` |
 | **Depends on** | Tier 0 (`done`), Tier 1 (`done`) |
 | **Approval** | One gate for the group — see [D-014](../DECISIONS.md). Cleared 2026-09-17 |
@@ -14,8 +14,8 @@
 | --- | --- | --- | --- |
 | 2.1 `Stack` | `done` | 2.5 `Center` | `done` |
 | 2.2 `Cluster` | `done` | 2.6 `Split` | `done` |
-| 2.3 `Grid` | `done` | 2.7 `AspectRatio` | `spec` |
-| 2.4 `Container` | `done` | 2.8 `Scroller` | `spec` |
+| 2.3 `Grid` | `done` | 2.7 `AspectRatio` | `done` |
+| 2.4 `Container` | `done` | 2.8 `Scroller` | `done` |
 
 This is the tier the whole library has been waiting on. RULES §1 took sizing and
 spacing away from every component; these eight are what it was given to. Until

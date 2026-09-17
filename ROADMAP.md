@@ -26,14 +26,17 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — six of eight Tier 2 primitives are `done`:
-  `Stack`, `Cluster`, `Grid`, `Container`, `Center`, `Split`
-- **Next up:** 2.7 `AspectRatio`, then 2.8 `Scroller` — the tier's only client
-  component and its only a11y surface
-- **Verified, not asserted:** `Split` collapses on its own inline size. Swapping
-  its `@container` rule for a viewport media query fails
-  `harness.spec.ts`, which is RULES §1 held to account rather than described
-- **Done:** 27 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **In flight:** _none_ — **Tier 2 is complete** (8 / 8 layout primitives
+  `done`). The sizing contract now has the components it was written for
+- **Next up:** consume Tier 2 in [launchpad](https://github.com/mod-0-dev/launchpad),
+  which should delete `.lp-stack`, `.lp-cluster`, `.lp-grid`, `.lp-page`,
+  `.lp-shell` and its one remaining viewport media query. Then Tier 3, whose
+  Gate C is approved individually — D-014 says to revisit that entry first
+- **Verified, not asserted:** 22 computed-style assertions in
+  `tests/visual/harness.spec.ts`. Four were checked by deliberately breaking the
+  component and watching the test fail on the right symptom (D-009); swapping
+  `Split`'s `@container` rule for a viewport media query is the sharpest of them
+- **Done:** 29 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -91,8 +94,8 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 | 2.4 | `Container` | `done` | fill | server | 2.1 | **The only component allowed to set `max-inline-size`.** Also the tree's query-container anchor. `--pp-measure-*` (D-025) |
 | 2.5 | `Center` | `done` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure. No height prop |
 | 2.6 | `Split` | `done` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint. No `side` prop (D-022 §3) |
-| 2.7 | `AspectRatio` | `spec` | fill | server | T0 | |
-| 2.8 | `Scroller` | `spec` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component |
+| 2.7 | `AspectRatio` | `done` | fill | server | T0 | A grid, so the child stretches on both axes without an `inline-size` |
+| 2.8 | `Scroller` | `done` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component and only a11y surface |
 
 ---
 

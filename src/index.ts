@@ -1,5 +1,9 @@
 export type { Align, Justify, Size, Space, Tone, Variant } from './types';
 
+export {
+  AspectRatio,
+  type AspectRatioProps,
+} from './components/AspectRatio/AspectRatio';
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
 export {
@@ -30,6 +34,13 @@ export {
 } from './components/Grid/Grid';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
+export {
+  Scroller,
+  overflowState,
+  type ScrollerOrientation,
+  type ScrollerOverflow,
+  type ScrollerProps,
+} from './components/Scroller/Scroller';
 export {
   Separator,
   type SeparatorOrientation,
