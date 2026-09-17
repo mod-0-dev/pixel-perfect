@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | 1.1 `Text` | `done` | 1.7 `Skeleton` | `done` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
-| 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
+| 1.3 `Icon` | `done` | 1.9 `Avatar` | `build` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
 | 1.5 `Separator` | `done` | 1.11 `Code` | `done` |
 | 1.6 `Spinner` | `done` | | |
@@ -994,7 +994,7 @@ avatar.
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | root | `pp-avatar` | `<span>` | Carries the accessible name |
-| image | `pp-avatar__image` | `<img>` | `alt=""`; the root names it |
+| image | `pp-avatar__image` | `<img>` | `alt=""`; the root names it. **Build note:** mounted only once the image has loaded, so a broken URL never paints the browser's broken-image glyph. Loading is observed on a detached `Image()` so a cached image cannot fire `load` before React attaches a handler |
 | fallback | `pp-avatar__fallback` | `<span>` | Initials or an `Icon` |
 
 ### Props
@@ -1029,7 +1029,7 @@ which governs *user*-controllable state — load status is not that.
 
 | Custom property | Default | Affects |
 | --- | --- | --- |
-| `--pp-avatar-size` | per `size` | Box size |
+| `--pp-avatar-size` | `--pp-size-6/8/10` (24/32/40px) | Box size. **Build note:** not the chip scale — a 20px avatar cannot hold two initials legibly |
 | `--pp-avatar-radius` | `--pp-radius-full` | Corner radius (square avatars: set to `--pp-radius-2`) |
 | `--pp-avatar-bg` | `--pp-tone-solid` | Fallback background |
 | `--pp-avatar-color` | `--pp-tone-on-solid` | Fallback text |
