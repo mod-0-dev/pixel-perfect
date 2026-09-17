@@ -8,15 +8,17 @@ import stylelint from 'stylelint';
 
 const EXPECTED = {
   'property-disallowed-list': [
-    'width', 'max-width', 'min-width', 'inline-size', 'margin',
-    'margin-block-start', 'float', 'left', 'padding-left', 'border-left',
+    'width', 'max-width', 'min-width', 'inline-size', 'margin-top',
+    'float', 'left', 'padding-left', 'border-left',
   ],
   'declaration-property-value-disallowed-list': [
     'color', 'background-color', 'box-shadow', 'padding', 'gap',
     'border-radius', 'font-size', 'transition', 'z-index', 'text-align',
     'outline', 'font-family', 'border-width',
   ],
-  'declaration-property-value-allowed-list': ['min-inline-size'],
+  // Non-zero margins are value violations, not property violations (D-018):
+  // `margin: 0` is how a component removes UA margin, which is the rule's aim.
+  'declaration-property-value-allowed-list': ['min-inline-size', 'margin', 'margin-block-start'],
   'selector-class-pattern': ['Class names must be pp-'],
   'media-feature-name-disallowed-list': ['min-width'],
 };

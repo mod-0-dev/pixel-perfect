@@ -12,6 +12,7 @@ import { expect, test } from '@playwright/test';
 const PAGES: Array<{ name: string; path: string }> = [
   { name: 'tokens', path: '/tokens' },
   { name: 'harness', path: '/harness' },
+  { name: 'text', path: '/components/text' },
   { name: 'visually-hidden', path: '/components/visually-hidden' },
 ];
 

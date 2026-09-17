@@ -181,3 +181,11 @@ body {
   color: var(--pp-color-text);
   cursor: pointer;
 }
+
+/* Vertical rhythm for harness pages, until Stack (2.1) exists. */
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-2);
+  min-width: 0;
+}

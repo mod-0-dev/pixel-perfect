@@ -7,17 +7,6 @@
       "max-width",
       "inline-size",
       "max-inline-size",
-      "margin",
-      "margin-top",
-      "margin-right",
-      "margin-bottom",
-      "margin-left",
-      "margin-inline",
-      "margin-inline-start",
-      "margin-inline-end",
-      "margin-block",
-      "margin-block-start",
-      "margin-block-end",
       "float",
       "clear",
       "left",
@@ -31,10 +20,17 @@
       "border-left-color",
       "border-right-color",
       "border-left-style",
-      "border-right-style"
+      "border-right-style",
+      "margin-top",
+      "margin-right",
+      "margin-bottom",
+      "margin-left"
     ],
     "declaration-property-value-allowed-list": {
       "min-inline-size": [
+        "0"
+      ],
+      "/^margin(-(inline|block)(-(start|end))?)?$/": [
         "0"
       ]
     },
@@ -118,9 +114,6 @@
           "margin-right",
           "margin-bottom",
           "margin-left",
-          "margin-block",
-          "margin-block-start",
-          "margin-block-end",
           "float",
           "clear",
           "left",
@@ -129,7 +122,16 @@
           "padding-right",
           "border-left",
           "border-right"
-        ]
+        ],
+        "declaration-property-value-allowed-list": {
+          "min-inline-size": [
+            "0"
+          ],
+          "/^margin(-(inline|block)(-(start|end))?)?$/": [
+            "0",
+            "auto"
+          ]
+        }
       }
     },
     {
@@ -142,17 +144,10 @@
           "min-width",
           "max-width",
           "max-inline-size",
-          "margin",
           "margin-top",
           "margin-right",
           "margin-bottom",
           "margin-left",
-          "margin-inline",
-          "margin-inline-start",
-          "margin-inline-end",
-          "margin-block",
-          "margin-block-start",
-          "margin-block-end",
           "float",
           "clear",
           "left",

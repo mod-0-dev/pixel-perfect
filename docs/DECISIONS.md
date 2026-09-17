@@ -411,3 +411,28 @@ instead of both being treated as "delete everything and start over".
 The `GITHUB_TOKEN` push still triggers no run, so an authoring commit is still
 authored-but-unverified until the next real push. That next push now happens
 naturally — it is the next component.
+
+## D-018 — `margin: 0` is permitted; non-zero margin is not
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §2 (enforcement only)
+
+The stylelint config banned the `margin` properties outright. `Text` renders a
+`<p>`, which carries a user-agent margin of `1em 0` that the deliberately
+minimal reset does not touch. Left alone, two `Text` elements in a `Stack`
+would be spaced by the parent's `gap` *plus* the browser's margin — precisely
+the double-spacing bug RULES §2 exists to prevent.
+
+The rule was always "a component adds no outer margin". Removing a margin the
+browser added is not adding one; it is the only way to honour the rule for
+elements the UA styles. So `margin` and the logical margin properties are now
+gated on **value**: `0` is allowed, anything else is a violation. Physical
+`margin-top/right/bottom/left` remain banned outright, because the logical
+property is always the correct one. `Container` additionally allows `auto`,
+which is how it centres and is the reason it exists.
+
+Rejected: resetting `p` and heading margins globally in `reset.css`. That
+would restyle every paragraph in the consuming app, which is what a library
+reset must never do. The fix belongs on the class, not the element.
+
+The lint self-test moves `margin` from the property-ban expectations to the
+value-ban expectations, so the rule is still observed firing.
