@@ -12,7 +12,7 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 1.1 `Text` | `done` | 1.7 `Skeleton` | `build` |
+| 1.1 `Text` | `done` | 1.7 `Skeleton` | `done` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
@@ -805,8 +805,8 @@ skeleton has no tone and none of those four words describe a circle. Reusing
 | Custom property | Default | Affects |
 | --- | --- | --- |
 | `--pp-skeleton-block-size` | per `shape`/`lines` | Height. **The documented way to size a `block` skeleton** |
-| `--pp-skeleton-color` | `--pp-color-bg-sunken` | Base tint |
-| `--pp-skeleton-highlight` | `--pp-color-bg-raised` | Sweep colour |
+| `--pp-skeleton-color` | `--pp-color-border-subtle` | Base tint. **Build note:** bg-sunken was barely visible on a light surface |
+| `--pp-skeleton-highlight` | `light-dark(bg-sunken, border)` | Sweep colour — one step lighter than the base in both themes |
 | `--pp-skeleton-radius` | per `radius` | Corner radius |
 
 ### Accessibility notes

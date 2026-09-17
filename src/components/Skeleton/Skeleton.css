@@ -9,8 +9,13 @@
 @layer pp.components {
   .pp-skeleton {
     --_radius: var(--pp-skeleton-radius, var(--pp-radius-2));
-    --_color: var(--pp-skeleton-color, var(--pp-color-bg-sunken));
-    --_highlight: var(--pp-skeleton-highlight, var(--pp-color-bg-raised));
+    /* Base is a border step, not a background step: bg-sunken on a surface
+       was barely visible in light mode. The highlight must be lighter than the
+       base in BOTH themes, and the ramp runs the other way in dark, so no
+       single token pair can say "one step lighter" — light-dark() can, and the
+       library already sets color-scheme per theme scope (base.css). */
+    --_color: var(--pp-skeleton-color, var(--pp-color-border-subtle));
+    --_highlight: var(--pp-skeleton-highlight, light-dark(var(--pp-color-bg-sunken), var(--pp-color-border)));
 
     display: block;
     min-inline-size: 0;

@@ -57,8 +57,8 @@ the base tint stays — a static placeholder is fully legible.
 | Custom property | Default | Affects |
 | --- | --- | --- |
 | `--pp-skeleton-block-size` | by shape | Height of `block` and `circle` |
-| `--pp-skeleton-color` | `--pp-color-bg-sunken` | Base tint |
-| `--pp-skeleton-highlight` | `--pp-color-bg-raised` | Sweep colour |
+| `--pp-skeleton-color` | `--pp-color-border-subtle` | Base tint |
+| `--pp-skeleton-highlight` | one step lighter than the base, per theme | Sweep colour |
 | `--pp-skeleton-radius` | by `radius` | Corners |
 
 ## Don't
