@@ -33,7 +33,7 @@
     "lint:rules": "node scripts/lint-rules.mjs",
     "lint:contrast": "node scripts/check-contrast.mjs",
     "lint:self-test": "node scripts/test-lint.mjs",
-    "dev": "npm run build:css && npm --prefix playground run dev",
+    "dev": "npm run build && npm --prefix playground run dev",
     "playground:install": "npm --prefix playground install",
     "playground:build": "npm --prefix playground run build"
   },

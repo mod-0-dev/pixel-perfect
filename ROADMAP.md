@@ -26,16 +26,12 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 1 — all 11 atoms in `spec`, batched into
-  [`docs/specs/tier-1-atoms.md`](docs/specs/tier-1-atoms.md), **awaiting Gate C
-  approval**
-- **Blocked on:** [D-015](docs/DECISIONS.md) (`proposed`). RULES §3 as written
-  leaves no compliant way to declare padding, radius or font size, because the
-  semantic layer is colour-only. No Tier 1 component can be implemented until it
-  is resolved
-- **Next up:** on approval, implement in dependency order starting with
-  `VisuallyHidden`. 0.10 docs site is deferred, not blocking
-- **Done:** 10 / 77 tracked items (10 foundations + 67 components)
+- **In flight:** Tier 1 — Gate C **approved** (D-015, D-016). Implementing in
+  dependency order, one at a time: `VisuallyHidden` → `Text` → `Heading` →
+  `Icon` → `Separator` → `Badge` → `Kbd` → `Code` → `Spinner` → `Skeleton` →
+  `Avatar`
+- **Next up:** Tier 2 — Layout primitives. 0.10 docs site is deferred, not blocking
+- **Done:** 10 / 78 tracked items (10 foundations + 68 components)
 
 ---
 
@@ -160,6 +156,7 @@ Behavior from Radix / Base UI. We own every DOM node and every pixel.
 | 5.10 | `FileUpload` | `planned` | fill | client | 3.7 | Drag/drop, progress |
 | 5.11 | `Tree` | `planned` | fill | client | T3 | |
 | 5.12 | `CodeBlock` | `planned` | fill | client | 1.11 | Highlighting is a peer dep |
+| 5.13 | `AvatarGroup` | `planned` | hug | server | 1.9, 2.2 | Overlapping stack with overflow count. Added per D-016 |
 
 ---
 

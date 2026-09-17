@@ -306,7 +306,7 @@ Revisit this entry before spec'ing Tier 3.
 
 ## D-015 — "Semantic tokens only" governs colour; dimensional primitives are consumed directly
 
-**Date:** 2026-09-17 · **Status:** proposed · **Amends:** RULES §3
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §3
 
 RULES §3 says components consume semantic tokens only, and names `--pp-space-3`
 as a primitive. The semantic layer defines colour and focus-ring tokens and
@@ -355,3 +355,59 @@ Per-component tuning already has an answer that predates this entry: RULES §3
 requires every component to expose component-scoped custom properties
 (`--pp-badge-padding-inline`) as its override API. That covers the case a
 dimensional semantic layer would have served, without a second global vocabulary.
+
+## D-016 — Tier 1 vocabulary exceptions, approved as a batch
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §1, §5
+
+The Tier 1 spec (`docs/specs/tier-1-atoms.md`) asked for seven rulings at Gate
+C. All were accepted as proposed. Recorded here so each is a precedent rather
+than a line in a spec nobody re-reads.
+
+1. **Typography gets more than three sizes.** `Text` takes
+   `size: xs | sm | md | lg`; `Heading` takes `size: sm | md | lg | xl | 2xl | 3xl`,
+   defaulting from its semantic `level`. Every other component keeps
+   `sm | md | lg` exactly. A type scale cannot live in three steps; a `Caption`
+   component to avoid a fourth enum member multiplies components instead.
+2. **`Text` and `Heading` accept `tone="muted"`.** It maps to
+   `--pp-color-text-muted` and is local to those two components. It is not added
+   to the global tone set, because a tone whose solid fill is meaningless is not
+   a tone.
+3. **`Skeleton` uses `shape`, not `variant`.** `solid | outline | ghost | plain`
+   are visual treatments of a tone, and none of them describes a circle.
+   Reusing the word for a different axis of meaning is worse than a new prop.
+4. **`Skeleton` has no height prop.** Block size comes from `lines`, from the
+   parent's layout, or from `--pp-skeleton-block-size`. The sizing contract
+   wins over the one component with the strongest case against it.
+5. **`VisuallyHidden` declares `inline-size: 1px`.** It renders no visual box;
+   the value is part of a fixed technique, not a design decision. Exempted from
+   the stylelint `inline-size` ban for that one file, and nowhere else.
+6. **`Avatar` load status is uncontrolled only.** RULES §5.5 governs state a
+   user can change. Whether an image loaded is the browser's fact, and an app
+   overriding it produces an avatar that lies.
+7. **`AvatarGroup` is added to the roadmap as 5.13.** Wanted by the consuming
+   app; a Tier 5 composition, not an atom.
+
+## D-017 — CI authors baselines for new screenshot tests, not only for an empty directory
+
+**Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-013
+
+D-013 authored baselines only when `tests/visual/__screenshots__` was empty. Every
+component adds a screenshot test, so under that rule each one would require
+deleting the directory and re-authoring every baseline — including ones that
+were verifying fine — and would leave the PR with an authoring commit as its
+head after every component.
+
+The visual job now runs the comparison first. If it fails **and** the only
+change is new, previously untracked files under `__screenshots__` (Playwright
+writes the actual for a missing baseline), those are authored baselines: commit
+and push them. If any *existing* baseline differs, that is a regression and the
+job fails as before.
+
+The invariant from D-013 is intact: no baseline is ever produced anywhere but
+CI. What changed is that "new test" and "changed pixels" are distinguished
+instead of both being treated as "delete everything and start over".
+
+The `GITHUB_TOKEN` push still triggers no run, so an authoring commit is still
+authored-but-unverified until the next real push. That next push now happens
+naturally — it is the next component.

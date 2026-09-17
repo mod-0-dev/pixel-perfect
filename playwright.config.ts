@@ -92,7 +92,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run build:css && npm --prefix playground run build && npm --prefix playground run start',
+    command: 'npm run build && npm --prefix playground run build && npm --prefix playground run start',
     url: 'http://127.0.0.1:4000',
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

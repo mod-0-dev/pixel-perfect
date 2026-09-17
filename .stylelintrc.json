@@ -1,33 +1,55 @@
 {
   "rules": {
     "declaration-no-important": true,
-
     "property-disallowed-list": [
-      "width", "min-width", "max-width",
-      "inline-size", "max-inline-size",
-      "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
-      "margin-inline", "margin-inline-start", "margin-inline-end",
-      "margin-block", "margin-block-start", "margin-block-end",
-      "float", "clear",
-      "left", "right",
-      "padding-left", "padding-right",
-      "border-left", "border-right",
-      "border-left-width", "border-right-width",
-      "border-left-color", "border-right-color",
-      "border-left-style", "border-right-style"
+      "width",
+      "min-width",
+      "max-width",
+      "inline-size",
+      "max-inline-size",
+      "margin",
+      "margin-top",
+      "margin-right",
+      "margin-bottom",
+      "margin-left",
+      "margin-inline",
+      "margin-inline-start",
+      "margin-inline-end",
+      "margin-block",
+      "margin-block-start",
+      "margin-block-end",
+      "float",
+      "clear",
+      "left",
+      "right",
+      "padding-left",
+      "padding-right",
+      "border-left",
+      "border-right",
+      "border-left-width",
+      "border-right-width",
+      "border-left-color",
+      "border-right-color",
+      "border-left-style",
+      "border-right-style"
     ],
-
     "declaration-property-value-allowed-list": {
-      "min-inline-size": ["0"]
+      "min-inline-size": [
+        "0"
+      ]
     },
-
-    "media-feature-name-disallowed-list": ["width", "min-width", "max-width", "device-width"],
-
+    "media-feature-name-disallowed-list": [
+      "width",
+      "min-width",
+      "max-width",
+      "device-width"
+    ],
     "selector-class-pattern": [
       "^pp-[a-z0-9]+(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
-      { "message": "Class names must be pp-<component>__<part>--<modifier> (RULES §3)" }
+      {
+        "message": "Class names must be pp-<component>__<part>--<modifier> (RULES \u00a73)"
+      }
     ],
-
     "declaration-property-value-disallowed-list": {
       "/^(color|background|background-color|background-image|border|border-color|border-block|border-inline|border-block-color|border-inline-color|fill|stroke|outline|outline-color|box-shadow|text-decoration-color|caret-color|accent-color|text-shadow)$/": [
         "/#[0-9a-fA-F]{3,8}\\b/",
@@ -46,16 +68,27 @@
         "/(^|\\s)[0-9]*\\.?[0-9]+m?s(\\s|$)/",
         "/\\bcubic-bezier\\(/"
       ],
-      "/^(z-index)$/": ["/^-?[0-9]+$/"],
-      "/^(text-align)$/": ["left", "right"],
-      "/^(font-family)$/": ["/[a-z]/"],
-      "/^(outline)$/": ["none", "0"]
+      "/^(z-index)$/": [
+        "/^-?[0-9]+$/"
+      ],
+      "/^(text-align)$/": [
+        "left",
+        "right"
+      ],
+      "/^(font-family)$/": [
+        "/[a-z]/"
+      ],
+      "/^(outline)$/": [
+        "none",
+        "0"
+      ]
     }
   },
-
   "overrides": [
     {
-      "files": ["src/styles/tokens/*.css"],
+      "files": [
+        "src/styles/tokens/*.css"
+      ],
       "rules": {
         "declaration-property-value-disallowed-list": null,
         "selector-class-pattern": null,
@@ -63,23 +96,71 @@
       }
     },
     {
-      "files": ["src/styles/reset.css", "src/styles/base.css"],
+      "files": [
+        "src/styles/reset.css",
+        "src/styles/base.css"
+      ],
       "rules": {
         "declaration-property-value-disallowed-list": null,
         "selector-class-pattern": null
       }
     },
     {
-      "files": ["src/components/Container/**/*.css"],
+      "files": [
+        "src/components/Container/**/*.css"
+      ],
       "rules": {
         "property-disallowed-list": [
-          "width", "min-width",
+          "width",
+          "min-width",
           "inline-size",
-          "margin-top", "margin-right", "margin-bottom", "margin-left",
-          "margin-block", "margin-block-start", "margin-block-end",
-          "float", "clear", "left", "right",
-          "padding-left", "padding-right",
-          "border-left", "border-right"
+          "margin-top",
+          "margin-right",
+          "margin-bottom",
+          "margin-left",
+          "margin-block",
+          "margin-block-start",
+          "margin-block-end",
+          "float",
+          "clear",
+          "left",
+          "right",
+          "padding-left",
+          "padding-right",
+          "border-left",
+          "border-right"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/components/VisuallyHidden/**/*.css"
+      ],
+      "rules": {
+        "property-disallowed-list": [
+          "width",
+          "min-width",
+          "max-width",
+          "max-inline-size",
+          "margin",
+          "margin-top",
+          "margin-right",
+          "margin-bottom",
+          "margin-left",
+          "margin-inline",
+          "margin-inline-start",
+          "margin-inline-end",
+          "margin-block",
+          "margin-block-start",
+          "margin-block-end",
+          "float",
+          "clear",
+          "left",
+          "right",
+          "padding-left",
+          "padding-right",
+          "border-left",
+          "border-right"
         ]
       }
     }
