@@ -605,3 +605,96 @@ test.describe('Toggle', () => {
     expect(await border(on)).not.toBe(onBorderRest);
   });
 });
+
+test.describe('ButtonGroup', () => {
+  const wide = (page: import('@playwright/test').Page, section: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+  test('ends are rounded, the middle is square, and the seam is one border', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Horizontal — end radii on the ends');
+
+    const corners = (name: string) =>
+      cell.getByRole('button', { name }).evaluate((el) => {
+        const s = getComputedStyle(el);
+        return {
+          startStart: s.borderStartStartRadius,
+          startEnd: s.borderStartEndRadius,
+          leadingBorder: s.borderInlineStartWidth,
+        };
+      });
+
+    const first = await corners('CSV');
+    const middle = await corners('JSON');
+    const last = await corners('Parquet');
+
+    expect(first.startStart).not.toBe('0px');
+    expect(first.startEnd).toBe('0px');
+    expect(middle.startStart).toBe('0px');
+    expect(middle.startEnd).toBe('0px');
+    expect(last.startEnd).not.toBe('0px');
+
+    // The seam: every button after the first drops its leading border, so the
+    // edge between two buttons is drawn exactly once. RULES §2 forbids the
+    // usual `margin-inline-start: -1px`, so there is no overlap to collapse.
+    expect(first.leadingBorder).not.toBe('0px');
+    expect(middle.leadingBorder).toBe('0px');
+    expect(last.leadingBorder).toBe('0px');
+  });
+
+  test('buttons sit edge to edge with no gap', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Horizontal — end radii on the ends');
+
+    const boxes = await cell
+      .locator('.pp-button-group > .pp-button')
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).map((r) => [r.left, r.right]));
+
+    expect(boxes).toHaveLength(3);
+    for (let i = 1; i < boxes.length; i++) {
+      // Attached means attached. A gap here means someone gave the group a
+      // `gap`, at which point it should have been a Cluster.
+      expect(Math.abs(boxes[i]![0] - boxes[i - 1]![1])).toBeLessThan(0.5);
+    }
+  });
+
+  test('a focused button is raised above its neighbours so its ring is not clipped', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Horizontal — end radii on the ends');
+    const middle = cell.getByRole('button', { name: 'JSON' });
+
+    expect(await middle.evaluate((el) => getComputedStyle(el).zIndex)).toBe('auto');
+    await middle.focus();
+    // Edge-to-edge buttons paint in source order, so an un-raised ring on the
+    // middle button is drawn underneath the one after it.
+    expect(Number(await middle.evaluate((el) => getComputedStyle(el).zIndex))).toBeGreaterThan(0);
+  });
+
+  test('vertical collapses the block-start border instead, and equalises widths', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Vertical');
+
+    const widths = await cell
+      .locator('.pp-button-group > .pp-button')
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+    expect(new Set(widths).size).toBe(1);
+
+    const borders = await cell
+      .locator('.pp-button-group > .pp-button')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const s = getComputedStyle(el);
+          return { block: s.borderBlockStartWidth, inline: s.borderInlineStartWidth };
+        }),
+      );
+    expect(borders[0]!.block).not.toBe('0px');
+    expect(borders[1]!.block).toBe('0px');
+    // The inline border is untouched on the vertical axis — the rules are
+    // per-axis, not a blanket "drop the leading border".
+    expect(borders[1]!.inline).not.toBe('0px');
+  });
+});

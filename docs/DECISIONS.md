@@ -1105,3 +1105,43 @@ rule fires **exactly once** across the fixture tree — for the shipped componen
 beside it. Widening the scope makes it fire twice; over-narrowing makes it fire
 zero times; both were run and both fail. This is D-009's rule applied to a
 change in a rule rather than to a new one.
+
+## D-033 — An attached group collapses borders by dropping one, not by negative margin
+
+**Date:** 2026-09-17 · **Status:** accepted
+
+The standard way to build a segmented control is `margin-inline-start: -1px` on
+every child after the first, so adjacent borders overlap into one. RULES §2
+forbids a component applying margin, D-018 permits `margin: 0` and nothing else,
+and the linter refuses the declaration outright.
+
+`ButtonGroup` does not need an exemption, because the overlap was never the
+point — a single edge was. Every child but the first drops its **leading border
+on the group's own axis** (`border-inline-start-width: 0` when horizontal,
+`border-block-start-width: 0` when vertical), so the seam is its neighbour's
+trailing border and there was never a doubled edge to collapse.
+
+Two things fall out of it, both asserted in the browser:
+
+**The rules are per-axis, not a blanket "drop the leading border".** A vertical
+group that also dropped the inline-start border would lose its left edge
+entirely. Breaking the vertical rule to use the inline axis fails the assertion
+on the right symptom, which is how it was checked.
+
+**Solid children keep their border.** A solid button's border is
+`transparent`, so dropping it merges two adjacent fills into one shape with no
+seam at all. They keep the border and tint it with `--pp-tone-solid-active`
+(D-028) — the pressed step, which is the one colour in the tone set guaranteed
+to read against the fill on either side of it.
+
+**And a stacking rule.** Buttons sit edge to edge, so a focus ring drawn at
+`outline-offset` is painted underneath whichever neighbour comes after it in
+source order. The focused child is raised with `--pp-z-raised`. It is the only
+reason this component touches `z-index`, and it uses the token per RULES §3.
+
+**Not the APG Toolbar pattern.** `role="group"` with every button its own tab
+stop, rather than roving tabindex. Roving is right for a dense, persistent
+toolbar of twenty controls and wrong for three attached buttons, where it costs
+a keyboard user an arrow-key discovery step to reach what one Tab would have
+reached. `Toolbar` (6.6) is the roving component; that is why it is a separate
+roadmap entry, and this divergence is recorded per RULES §6.

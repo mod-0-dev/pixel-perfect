@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3A |
-| **Status** | approved 2026-09-17 · 3.1 `Button` `done`, the rest in `build` order |
+| **Status** | `done` — all five implemented 2026-09-17 (D-027 … D-033) |
 | **Components** | 3.1 `Button` · 3.2 `IconButton` · 3.3 `Link` · 3.4 `ButtonGroup` · 3.5 `Toggle` |
 | **Depends on** | Tier 0 (`done`), Tier 1 (`done`), Tier 2 (`done`) |
 | **Approval** | One gate for the group — see §0 below, which revisits [D-014](../DECISIONS.md#d-014) as that entry instructed |
@@ -13,7 +13,7 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 3.1 `Button` | `done` | 3.4 `ButtonGroup` | `spec` |
+| 3.1 `Button` | `done` | 3.4 `ButtonGroup` | `done` |
 | 3.2 `IconButton` | `done` | 3.5 `Toggle` | `done` |
 | 3.3 `Link` | `done` | | |
 
@@ -912,10 +912,16 @@ they are usually all the same and the repetition is honest.
 
 A deliberate divergence from the APG Toolbar pattern, argued in §8.
 
-**The focus ring wins the stacking order.** Collapsed borders mean adjacent
-buttons overlap by a border width; a focused button gets `z-index:
-var(--pp-z-raised)` so its ring is not clipped by its neighbour. This is the
-only reason the group touches `z-index` and it uses the token, per RULES §3.
+**The focus ring wins the stacking order.** Buttons sit edge to edge, so a
+focused button gets `z-index: var(--pp-z-raised)` and its ring is not painted
+under the neighbour after it. This is the only reason the group touches
+`z-index` and it uses the token, per RULES §3.
+
+**Refined at build time: the seam is one border, not two overlapped.** The
+standard `margin-inline-start: -1px` is forbidden by RULES §2 and refused by the
+linter, and it turned out not to be needed — every child but the first drops its
+leading border *on the group's own axis*, so there was never a doubled edge.
+Solid children are the exception, since their border is transparent (D-033).
 
 ### Accessibility notes
 

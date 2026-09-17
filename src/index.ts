@@ -8,6 +8,11 @@ export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from '
 export { Badge, type BadgeProps } from './components/Badge/Badge';
 export { Button, type ButtonProps } from './components/Button/Button';
 export {
+  ButtonGroup,
+  type ButtonGroupOrientation,
+  type ButtonGroupProps,
+} from './components/ButtonGroup/ButtonGroup';
+export {
   Cluster,
   type ClusterAlign,
   type ClusterJustify,
