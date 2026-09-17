@@ -27,13 +27,19 @@ body {
   margin-inline: auto;
 }
 
-.page h1 {
+/*
+ * Page chrome only: the page title and section titles. Scoped to direct
+ * children for the same reason as the paragraph rule below — unlayered
+ * `.page h1` would restyle every <h1 class="pp-heading"> in the matrix.
+ */
+.page > h1 {
   margin: 0;
   font-size: var(--pp-font-size-7);
   letter-spacing: var(--pp-letter-spacing-tight);
 }
 
-.page h2 {
+.page > h2,
+.page section > h2 {
   margin: 0;
   font-size: var(--pp-font-size-5);
 }

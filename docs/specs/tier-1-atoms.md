@@ -13,7 +13,7 @@
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
 | 1.1 `Text` | `done` | 1.7 `Skeleton` | `spec` |
-| 1.2 `Heading` | `build` | 1.8 `Badge` | `spec` |
+| 1.2 `Heading` | `done` | 1.8 `Badge` | `spec` |
 | 1.3 `Icon` | `spec` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `spec` |
 | 1.5 `Separator` | `spec` | 1.11 `Code` | `spec` |
