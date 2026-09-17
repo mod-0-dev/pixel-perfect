@@ -26,12 +26,11 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 1 — Gate C **approved** (D-015, D-016). Implementing in
-  dependency order, one at a time: ~~`VisuallyHidden`~~ → ~~`Text`~~ → ~~`Heading`~~ →
-  ~~`Icon`~~ → ~~`Separator`~~ → ~~`Badge`~~ → ~~`Kbd`~~ → ~~`Code`~~ → ~~`Spinner`~~ → ~~`Skeleton`~~ →
-  `Avatar`
-- **Next up:** Tier 2 — Layout primitives. 0.10 docs site is deferred, not blocking
-- **Done:** 20 / 78 tracked items (10 foundations + 68 components)
+- **In flight:** _none_ — **Tier 1 is complete** (11 / 11 atoms `done`)
+- **Next up:** Tier 2 — Layout primitives, specified as one batch per D-014
+  (Gate C). `Stack` first; `Container` is the only component permitted
+  `max-width`. 0.10 docs site is deferred, not blocking
+- **Done:** 21 / 78 tracked items (10 foundations + 68 components)
 
 ---
 
@@ -69,7 +68,7 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 | 1.6 | `Spinner` | `done` | hug | server | T0 | `prefers-reduced-motion` |
 | 1.7 | `Skeleton` | `done` | fill | server | T0 | |
 | 1.8 | `Badge` | `done` | hug | server | T0 | The canonical `hug` case |
-| 1.9 | `Avatar` | `build` | hug | client | 1.3 | Image fallback needs state |
+| 1.9 | `Avatar` | `done` | hug | client | 1.3 | Image fallback needs state |
 | 1.10 | `Kbd` | `done` | hug | server | T0 | |
 | 1.11 | `Code` | `done` | hug | server | T0 | Inline only; block code is Tier 5 |
 

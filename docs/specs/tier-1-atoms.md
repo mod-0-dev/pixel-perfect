@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 1 |
-| **Status** | approved at Gate C 2026-09-17 (D-015, D-016) — in `build` |
+| **Status** | `done` — all eleven implemented 2026-09-17 (D-015 … D-019) |
 | **Components** | 1.1 `Text` · 1.2 `Heading` · 1.3 `Icon` · 1.4 `VisuallyHidden` · 1.5 `Separator` · 1.6 `Spinner` · 1.7 `Skeleton` · 1.8 `Badge` · 1.9 `Avatar` · 1.10 `Kbd` · 1.11 `Code` |
 | **Depends on** | Tier 0 (`done`) |
 | **Approval** | One gate for the group — see [D-014](../DECISIONS.md) |
@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | 1.1 `Text` | `done` | 1.7 `Skeleton` | `done` |
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
-| 1.3 `Icon` | `done` | 1.9 `Avatar` | `build` |
+| 1.3 `Icon` | `done` | 1.9 `Avatar` | `done` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
 | 1.5 `Separator` | `done` | 1.11 `Code` | `done` |
 | 1.6 `Spinner` | `done` | | |
