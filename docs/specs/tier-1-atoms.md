@@ -1288,6 +1288,29 @@ None.
 8. **`AvatarGroup`** is wanted by the consuming app and is not on the roadmap.
    Add it as a Tier 5 item?
 
+## Consumed by launchpad — what the first real consumer found
+
+The spec's premise was that a real app catches what the playground cannot.
+[`launchpad#1`](https://github.com/mod-0-dev/launchpad/pull/1) swapped its
+hand-rolled stand-ins for these atoms the day they landed:
+
+- **`Badge` dropped in unchanged.** The app's own `Badge({ tone, children })`
+  was re-exported as the library's — the API it had invented independently was
+  this one. That is the strongest evidence the vocabulary is right.
+- **`Avatar` replaced a stand-in through its styling API alone.** The app's
+  "unassigned" state (dashed ring, muted `?`) is the library component with
+  `--pp-avatar-bg` and `--pp-avatar-color` set — nothing reached into the
+  internals. The app also deleted its stored `initials` field: the component
+  derives them, per grapheme, and did it better.
+- **`Text` inside `Text` for an emphasised run is the wrong tool.** Nesting
+  `<Text asChild weight="semibold">` inside a `size="sm"` Text produced a
+  14px sentence with a 16px name, because the inner Text has its own default
+  size. `<strong>` is the element for that, and the docs page now says so.
+- **Wanted next, in order of how often the app reached for them:** `Progress`
+  (5.3, the readiness bars), `EmptyState` (5.8), `Card` (5.1), `Stack` /
+  `Cluster` (2.1–2.2, which every screen fakes with a class), `AvatarGroup`
+  (5.13). Tier 2 first, as the roadmap already says.
+
 ## Implementation order once approved
 
 Dependency order, one at a time under the Gate A limit:

@@ -28,7 +28,8 @@ is `done`.
 
 - **In flight:** _none_ — **Tier 1 is complete** (11 / 11 atoms `done`)
 - **Next up:** Tier 2 — Layout primitives, specified as one batch per D-014
-  (Gate C). `Stack` first; `Container` is the only component permitted
+  (Gate C). launchpad fakes `Stack` and `Cluster` on every screen, so the
+  demand is not hypothetical. `Stack` first; `Container` is the only component permitted
   `max-width`. 0.10 docs site is deferred, not blocking
 - **Done:** 21 / 78 tracked items (10 foundations + 68 components)
 

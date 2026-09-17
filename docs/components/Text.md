@@ -67,4 +67,9 @@ Set on any ancestor; they win over the prop.
 
 // ✗ Colour is not a message. Say what is wrong.
 <Text tone="danger">{value}</Text>
+
+// ✗ An emphasised run inside a sentence is <strong>, not a nested Text —
+//    the inner Text brings its own default size and the sentence mismatches.
+<Text size="sm"><Text asChild weight="semibold"><span>{name}</span></Text> uploaded a file</Text>
+<Text size="sm"><strong>{name}</strong> uploaded a file</Text>   // ✓
 ```
