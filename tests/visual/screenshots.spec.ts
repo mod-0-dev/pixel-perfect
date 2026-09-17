@@ -13,6 +13,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'tokens', path: '/tokens' },
   { name: 'harness', path: '/harness' },
   { name: 'text', path: '/components/text' },
+  { name: 'heading', path: '/components/heading' },
   { name: 'visually-hidden', path: '/components/visually-hidden' },
 ];
 

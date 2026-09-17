@@ -89,6 +89,15 @@ for (const expected of EXPECTED_RULE_LINT) {
   }
 }
 
+// A browser global inside a comment, a string, a type or a function body is
+// not a module-scope access and must NOT be flagged. Exactly one `window`
+// access (the real one) may fire, and `document` must not fire at all.
+const globalHits = found.filter((m) => m.includes('is accessed at module scope'));
+if (globalHits.length !== 1 || globalHits.some((m) => m.includes('`document`'))) {
+  console.error(`✗ module-scope global rule fired ${globalHits.length}× — expected exactly one, for window:\n  ${globalHits.join('\n  ')}`);
+  failures++;
+}
+
 // `tone` is a legal prop name and must NOT be flagged.
 if (found.some((m) => m.includes('banned prop `tone`'))) {
   console.error('✗ rule lint flagged `tone`, which is part of the approved vocabulary');
