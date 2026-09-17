@@ -71,7 +71,7 @@ No internal state, no a11y surface beyond semantics. Specified as one batch in
 | 1.8 | `Badge` | `done` | hug | server | T0 | The canonical `hug` case |
 | 1.9 | `Avatar` | `spec` | hug | client | 1.3 | Image fallback needs state |
 | 1.10 | `Kbd` | `done` | hug | server | T0 | |
-| 1.11 | `Code` | `spec` | hug | server | T0 | Inline only; block code is Tier 5 |
+| 1.11 | `Code` | `build` | hug | server | T0 | Inline only; block code is Tier 5 |
 
 ---
 

@@ -1,0 +1,30 @@
+/*
+ * Code — spec §1.11
+ *
+ * Inline, so it stays inside the sentence and wraps with it. The mono face
+ * has a larger x-height than the sans, so 0.9em reads as the same size as
+ * the surrounding text; a fixed step is opt-in via `size`.
+ */
+
+@layer pp.components {
+  .pp-code {
+    --_font-size: var(--pp-code-font-size, 0.9em);
+
+    padding-inline: var(--pp-space-1);
+    border-radius: var(--pp-code-radius, var(--pp-radius-1));
+    background-color: var(--pp-code-bg, var(--pp-tone-bg));
+    color: var(--pp-code-color, var(--pp-tone-text-strong));
+    font-family: var(--pp-font-family-mono);
+    font-size: var(--_font-size);
+    /* A long path must never force the page to scroll sideways; this is the
+       one layout opinion the component holds, and it is a defensive one. */
+    overflow-wrap: anywhere;
+    /* Padding and radius on every fragment when it wraps mid-line. */
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .pp-code[data-size="sm"] { --_font-size: var(--pp-font-size-1); }
+  .pp-code[data-size="md"] { --_font-size: var(--pp-font-size-2); }
+  .pp-code[data-size="lg"] { --_font-size: var(--pp-font-size-3); }
+}

@@ -16,7 +16,7 @@
 | 1.2 `Heading` | `done` | 1.8 `Badge` | `done` |
 | 1.3 `Icon` | `done` | 1.9 `Avatar` | `spec` |
 | 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `done` |
-| 1.5 `Separator` | `done` | 1.11 `Code` | `spec` |
+| 1.5 `Separator` | `done` | 1.11 `Code` | `build` |
 | 1.6 `Spinner` | `spec` | | |
 
 Eleven components with no internal state (bar one), no keyboard interaction, and
@@ -1203,8 +1203,12 @@ not be block-level.
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Shared size scale |
+| `size` | `'sm' \| 'md' \| 'lg'` | — | **Unset by default**, deliberately: omitted, the code is `0.9em` of its surrounding text. A fixed step is for standalone use |
 | `tone` | `Tone` | `'neutral'` | For `danger` in error messages |
+
+**Build note.** The draft gave `size` a default of `md`, which would have made
+the relative `0.9em` — the reason inline code tracks its sentence — unreachable.
+This is the one component whose `size` defaults to nothing.
 
 ### State
 
