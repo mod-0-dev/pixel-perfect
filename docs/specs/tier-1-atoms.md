@@ -8,6 +8,17 @@
 | **Depends on** | Tier 0 (`done`) |
 | **Approval** | One gate for the group — see [D-014](../DECISIONS.md) |
 
+### Progress
+
+| Component | Status | Component | Status |
+| --- | --- | --- | --- |
+| 1.1 `Text` | `spec` | 1.7 `Skeleton` | `spec` |
+| 1.2 `Heading` | `spec` | 1.8 `Badge` | `spec` |
+| 1.3 `Icon` | `spec` | 1.9 `Avatar` | `spec` |
+| 1.4 `VisuallyHidden` | `done` | 1.10 `Kbd` | `spec` |
+| 1.5 `Separator` | `spec` | 1.11 `Code` | `spec` |
+| 1.6 `Spinner` | `spec` | | |
+
 Eleven components with no internal state (bar one), no keyboard interaction, and
 no ARIA surface beyond correct semantics. They are specified together because
 the only interesting questions here are the ones that cut *across* them: what
@@ -112,6 +123,10 @@ Stated once here rather than eleven times below.
 - `asChild` is offered only where composition genuinely requires it: `Text`,
   `Heading`, `VisuallyHidden`. Nowhere else — an `asChild` on `Badge` is an
   invitation to put a button inside it.
+- **`asChild` works in Server Components**, but only because `Slot` attaches a
+  ref exclusively when one exists. Any element carrying a ref throws during a
+  server render, and `forwardRef` passes `null` when the consumer gave none.
+  Found by the playground prerender of `VisuallyHidden`; pinned by a unit test.
 
 ### The shared size scale
 
