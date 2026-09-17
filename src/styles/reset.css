@@ -1,0 +1,42 @@
+/*
+ * Minimal reset. A component library that ships an opinionated global reset is
+ * a component library that breaks the app it was added to, so this does four
+ * things and stops.
+ *
+ * Everything sits in the lowest cascade layer and uses :where() for zero
+ * specificity, so anything the consuming app declares wins without effort.
+ */
+
+@layer pp.reset {
+  /* 1. Border-box everywhere. The library's padding maths assumes it. */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* 2. Form controls do not inherit typography by default. They should. */
+  :where(button, input, optgroup, select, textarea) {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+  }
+
+  /* 3. Honour a reduced-motion preference globally rather than asking every
+        component to remember. Components may still opt into essential motion
+        by declaring their own transition inside pp.components. */
+  @media (prefers-reduced-motion: reduce) {
+    :where(*, *::before, *::after) {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+      transition-duration: 0.01ms;
+      scroll-behavior: auto;
+    }
+  }
+
+  /* 4. Never remove a focus ring without replacing it. (RULES §6) */
+  :where(:focus-visible) {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+}

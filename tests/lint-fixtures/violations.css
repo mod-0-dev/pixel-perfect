@@ -1,0 +1,40 @@
+/* Every line here is a deliberate rule violation. scripts/test-lint.mjs asserts
+   that each one is still caught. If a rule silently stops firing, this fails. */
+@layer pp.components {
+  .pp-bad {
+    width: 100%;
+    max-width: 40rem;
+    min-width: 10rem;
+    inline-size: 100%;
+    margin: 1rem;
+    margin-block-start: 2rem;
+    float: left;
+    left: 0;
+    padding-left: 8px;
+    border-left: 1px solid red;
+    color: #ff0000;
+    background-color: rgb(255 0 0);
+    box-shadow: 0 0 0 1px hsl(0 100% 50%);
+    padding: 12px;
+    gap: 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: opacity 200ms ease;
+    z-index: 999;
+    text-align: left;
+    outline: none;
+    min-inline-size: 320px;
+    font-family: Inter, sans-serif;
+    border-width: 2px;
+  }
+
+  .badClassName {
+    color: var(--pp-color-text);
+  }
+
+  @media (min-width: 640px) {
+    .pp-bad {
+      display: none;
+    }
+  }
+}

@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `prepare` builds the package, so dist/ exists for every later step.
+      - run: npm ci
+
+      # Enforces the ground rules in docs/RULES.md. A rule CI does not run is
+      # a suggestion.
+      - name: Rule lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # The generated token files are committed. If regenerating them produces
+      # a diff, someone hand-edited generated CSS or changed the generator
+      # without re-running it.
+      - name: Tokens are up to date
+        run: |
+          npm run tokens
+          git diff --exit-code -- src/styles/tokens/ \
+            || (echo "::error::Token CSS is stale. Run 'npm run tokens' and commit the result." && exit 1)
+
+  visual:
+    name: Visual regression
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Checks out the branch itself rather than the PR merge commit, so this
+      # job can commit authored baselines back to it.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The playground is not a workspace member — see D-012 — so it installs
+      # separately.
+      - run: npm --prefix playground ci
+
+      # No system Chromium here, so playwright.config.ts falls back to
+      # Playwright's own managed browser.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Baselines are authored HERE and nowhere else. A screenshot depends on
+      # the exact Chromium build, and the runner image pins one that a given
+      # dev container will not have. Baselines generated anywhere else are
+      # guaranteed to mismatch. See D-013.
+      - name: Are baselines present?
+        id: baselines
+        run: |
+          if [ -z "$(ls -A tests/visual/__screenshots__ 2>/dev/null)" ]; then
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Author baselines
+        if: steps.baselines.outputs.present == 'false'
+        run: npm run test:visual:update
+
+      # A push made with GITHUB_TOKEN does not trigger another workflow run, by
+      # design, so this commit lands with no checks of its own. The baselines
+      # are therefore authored but not yet COMPARED; the next real push
+      # verifies them. That is the intended shape — it is what stops an
+      # authoring run from looping forever — but it does mean an
+      # authoring commit should never be the final head of a PR.
+      - name: Commit authored baselines
+        if: steps.baselines.outputs.present == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add tests/visual/__screenshots__
+          git commit -m "test(visual): author screenshot baselines in CI"
+          git push
+
+      - name: Visual regression
+        if: steps.baselines.outputs.present == 'true'
+        run: npm run test:visual
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

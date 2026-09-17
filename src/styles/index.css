@@ -1,0 +1,25 @@
+/*
+ * pixel-perfect — single stylesheet entry point.
+ * Consumers import "pixel-perfect/styles.css" once, at the app root.
+ *
+ * The layer order below is the whole cascade strategy. It is declared before
+ * anything is imported, so the order is fixed by this statement rather than by
+ * the order files happen to load in:
+ *
+ *   pp.reset       lowest — anything the app declares beats it
+ *   pp.tokens      custom properties
+ *   pp.base        theme plumbing (color-scheme, selection)
+ *   pp.components  every component's own CSS
+ *   pp.overrides   reserved for consumers who want to win without !important
+ *
+ * Unlayered CSS beats all layered CSS, so a consuming app's own stylesheet
+ * already wins by default. That is intentional: !important should never be
+ * necessary to restyle this library. (RULES §3)
+ */
+
+@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides;
+
+@import "./reset.css";
+@import "./tokens/primitives.css";
+@import "./tokens/semantic.css";
+@import "./base.css";

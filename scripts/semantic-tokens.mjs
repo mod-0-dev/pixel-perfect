@@ -1,0 +1,78 @@
+// The semantic token map — the hand-edited source of truth for what every
+// token MEANS. scripts/generate-tokens.mjs turns it into CSS.
+//
+// It is generated rather than hand-written CSS because each theme scope needs
+// the COMPLETE set, not just its differences. `var()` is substituted where the
+// declaration sits, so `--pp-color-text: var(--pp-palette-neutral-12)` declared
+// once on :root computes to a concrete light colour there and inherits into
+// dark subtrees as that light colour. Re-declaring the palette per theme does
+// nothing unless the semantic layer is re-declared alongside it.
+
+/** Identical in both themes — emitted into every theme scope. */
+export const BASE = {
+  'Surfaces': {
+    '--pp-color-bg-page': 'var(--pp-palette-neutral-1)',
+  },
+  'Text': {
+    '--pp-color-text': 'var(--pp-palette-neutral-12)',
+    '--pp-color-text-muted': 'var(--pp-palette-neutral-11)',
+    '--pp-color-text-disabled': 'var(--pp-palette-neutral-8)',
+    '--pp-color-text-on-solid': 'var(--pp-palette-neutral-on-solid)',
+  },
+  'Borders': {
+    '--pp-color-border-subtle': 'var(--pp-palette-neutral-6)',
+    '--pp-color-border': 'var(--pp-palette-neutral-7)',
+    '--pp-color-border-strong': 'var(--pp-palette-neutral-8)',
+  },
+  'Focus': {
+    '--pp-color-focus-ring': 'var(--pp-palette-accent-focus)',
+    '--pp-focus-ring-width': 'var(--pp-border-width-2)',
+    '--pp-focus-ring-offset': 'var(--pp-border-width-2)',
+  },
+  'Selection': {
+    '--pp-color-selection-bg': 'var(--pp-palette-accent-5)',
+    '--pp-color-selection-text': 'var(--pp-palette-accent-12)',
+  },
+  'Default tone (neutral)': toneMap('neutral'),
+};
+
+/**
+ * Elevation is the one thing that genuinely inverts between themes: a light UI
+ * raises a surface by making it whiter and adding a shadow, a dark UI by making
+ * it lighter, because shadows are invisible on dark backgrounds.
+ */
+export const THEME_SPECIFIC = {
+  light: {
+    '--pp-color-bg-surface': 'var(--pp-palette-neutral-1)',
+    '--pp-color-bg-raised': 'var(--pp-palette-neutral-1)',
+    '--pp-color-bg-sunken': 'var(--pp-palette-neutral-3)',
+    '--pp-color-bg-scrim': 'oklch(15% 0.01 258 / 0.55)',
+  },
+  dark: {
+    '--pp-color-bg-surface': 'var(--pp-palette-neutral-2)',
+    '--pp-color-bg-raised': 'var(--pp-palette-neutral-3)',
+    '--pp-color-bg-sunken': 'var(--pp-palette-neutral-1)',
+    '--pp-color-bg-scrim': 'oklch(8% 0.01 258 / 0.7)',
+  },
+};
+
+export const TONES = ['neutral', 'accent', 'danger', 'success', 'warning'];
+
+/** Every tone exposes the same shape, so components never branch on tone. */
+export function toneMap(hue) {
+  return {
+    '--pp-tone-surface': `var(--pp-palette-${hue}-2)`,
+    '--pp-tone-bg': `var(--pp-palette-${hue}-3)`,
+    '--pp-tone-bg-hover': `var(--pp-palette-${hue}-4)`,
+    '--pp-tone-bg-active': `var(--pp-palette-${hue}-5)`,
+    '--pp-tone-border-subtle': `var(--pp-palette-${hue}-6)`,
+    '--pp-tone-border': `var(--pp-palette-${hue}-7)`,
+    '--pp-tone-border-strong': `var(--pp-palette-${hue}-8)`,
+    '--pp-tone-solid': `var(--pp-palette-${hue}-9)`,
+    '--pp-tone-solid-hover': `var(--pp-palette-${hue}-10)`,
+    '--pp-tone-on-solid': `var(--pp-palette-${hue}-on-solid)`,
+    '--pp-tone-text': `var(--pp-palette-${hue}-11)`,
+    '--pp-tone-text-strong': `var(--pp-palette-${hue}-12)`,
+    '--pp-tone-focus': `var(--pp-palette-${hue}-focus)`,
+  };
+}

@@ -1,0 +1,87 @@
+{
+  "rules": {
+    "declaration-no-important": true,
+
+    "property-disallowed-list": [
+      "width", "min-width", "max-width",
+      "inline-size", "max-inline-size",
+      "margin", "margin-top", "margin-right", "margin-bottom", "margin-left",
+      "margin-inline", "margin-inline-start", "margin-inline-end",
+      "margin-block", "margin-block-start", "margin-block-end",
+      "float", "clear",
+      "left", "right",
+      "padding-left", "padding-right",
+      "border-left", "border-right",
+      "border-left-width", "border-right-width",
+      "border-left-color", "border-right-color",
+      "border-left-style", "border-right-style"
+    ],
+
+    "declaration-property-value-allowed-list": {
+      "min-inline-size": ["0"]
+    },
+
+    "media-feature-name-disallowed-list": ["width", "min-width", "max-width", "device-width"],
+
+    "selector-class-pattern": [
+      "^pp-[a-z0-9]+(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
+      { "message": "Class names must be pp-<component>__<part>--<modifier> (RULES §3)" }
+    ],
+
+    "declaration-property-value-disallowed-list": {
+      "/^(color|background|background-color|background-image|border|border-color|border-block|border-inline|border-block-color|border-inline-color|fill|stroke|outline|outline-color|box-shadow|text-decoration-color|caret-color|accent-color|text-shadow)$/": [
+        "/#[0-9a-fA-F]{3,8}\\b/",
+        "/\\brgba?\\(/",
+        "/\\bhsla?\\(/",
+        "/\\boklch\\(/",
+        "/\\boklab\\(/",
+        "/\\blab\\(/",
+        "/\\blch\\(/",
+        "/\\bcolor-mix\\(/"
+      ],
+      "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset)$/": [
+        "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
+      ],
+      "/^(transition|transition-duration|animation|animation-duration|transition-timing-function|animation-timing-function)$/": [
+        "/(^|\\s)[0-9]*\\.?[0-9]+m?s(\\s|$)/",
+        "/\\bcubic-bezier\\(/"
+      ],
+      "/^(z-index)$/": ["/^-?[0-9]+$/"],
+      "/^(text-align)$/": ["left", "right"],
+      "/^(font-family)$/": ["/[a-z]/"],
+      "/^(outline)$/": ["none", "0"]
+    }
+  },
+
+  "overrides": [
+    {
+      "files": ["src/styles/tokens/*.css"],
+      "rules": {
+        "declaration-property-value-disallowed-list": null,
+        "selector-class-pattern": null,
+        "property-disallowed-list": null
+      }
+    },
+    {
+      "files": ["src/styles/reset.css", "src/styles/base.css"],
+      "rules": {
+        "declaration-property-value-disallowed-list": null,
+        "selector-class-pattern": null
+      }
+    },
+    {
+      "files": ["src/components/Container/**/*.css"],
+      "rules": {
+        "property-disallowed-list": [
+          "width", "min-width",
+          "inline-size",
+          "margin-top", "margin-right", "margin-bottom", "margin-left",
+          "margin-block", "margin-block-start", "margin-block-end",
+          "float", "clear", "left", "right",
+          "padding-left", "padding-right",
+          "border-left", "border-right"
+        ]
+      }
+    }
+  ]
+}
