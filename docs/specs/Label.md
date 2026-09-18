@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3B — Field foundation |
-| **Status** | `spec` |
+| **Status** | `done` — 2026-09-18 (D-034, D-035) |
 | **Sizing contract** | `fill` |
 | **RSC** | `server` |
 | **Depends on** | 1.1 `Text` — typography, not composition (§6) |
@@ -119,9 +119,17 @@ that one component wraps the other.
 
 Wrapping `Text` here would put two class names and two size vocabularies on one
 node (`data-size="md"` meaning `--pp-font-size-3` to `Text` and
-`--pp-control-font-size-md` to `Label`), and would inherit
-`overflow-wrap: anywhere`, which mid-word-breaks a label the user needs to read.
-`Label` is ~25 lines of CSS that owns its own type.
+`--pp-control-font-size-md` to `Label`). `Label` is ~25 lines of CSS that owns
+its own type.
+
+**Corrected during the build.** This section originally gave a third reason:
+that composing `Text` would inherit `overflow-wrap: anywhere`, "which
+mid-word-breaks a label the user needs to read". That is wrong about the CSS —
+`anywhere` breaks a word only when the word does not fit, exactly like
+`break-word`; what it additionally does is let the min-content size shrink,
+which is what stops a one-word label from forcing a `Cluster` to overflow in a
+240px sidebar. `Label` therefore declares `overflow-wrap: anywhere` itself. The
+two remaining reasons carry the decision unchanged.
 
 ### 7. No `asChild`
 
@@ -215,10 +223,12 @@ control cannot receive focus, clicking a disabled label already does nothing.
 | `--pp-label-font-weight` | `--pp-font-weight-medium` | Weight |
 | `--pp-label-line-height` | `--pp-line-height-normal` | Leading |
 | `--pp-label-gap` | `--pp-space-1` | Space before the required indicator (§2) |
-| `--pp-label-required-color` | `--pp-color-text` | The indicator glyph |
+| `--pp-label-required-color` | `currentcolor` | The indicator glyph |
 | `--pp-label-cursor` | `inherit` | Cursor, for controls that make the row clickable (§5) |
 
-`--pp-label-required-color` defaults to the text colour rather than to danger.
+`--pp-label-required-color` defaults to `currentcolor` — the label's own
+colour, which is `--pp-color-text` at rest and follows the label into the
+disabled state without a second rule — rather than to danger.
 The asterisk's job is to be noticed, and its shape does that; making it the
 error colour spends the error colour on a field that is merely required and
 conflates "you must fill this in" with "you filled this in wrong". Teams whose
@@ -350,6 +360,25 @@ field they cannot fill in correctly. Truncation is never applied to a label.
 ```
 
 ---
+
+## Build findings
+
+Recorded in [D-034](../DECISIONS.md) and [D-035](../DECISIONS.md).
+
+- **§1 is now D-034** and binds every component in 3C and 3D. It is asserted by
+  comparing a `Label`'s computed `font-size` against a `Button`'s at the same
+  `size`, not against a number — a numeric assertion still passes after someone
+  hardcodes one of the two.
+- **A playground page cannot demonstrate `htmlFor` inside a `Matrix`.** The
+  harness renders its subtree six times, so an `id` inside it exists six times
+  and `for` binds to whichever copy comes first in the document. Appearance is
+  demonstrated in the matrices; association is demonstrated once, outside them.
+  `Field`, `Input`, `Checkbox`, `Radio`, `Switch` and `Select` all render ids
+  and all will hit this.
+- **Two browser assertions could not fail** as first written, and were rewritten
+  until a deliberate break produced the symptom they name. One of them — the
+  wrapping asterisk — cannot guard the absence of a space character at all; that
+  guard lives in the jsdom test, where it fails every time.
 
 ## Open questions
 

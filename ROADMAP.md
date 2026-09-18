@@ -26,21 +26,42 @@ is `done`.
 
 ### Current state
 
-- **In flight:** 3.6 `Label` — `spec`, on branch `tier-3b-field`. **Gate C is
-  open:** [`docs/specs/Label.md`](docs/specs/Label.md) is written and awaiting
-  API approval. No implementation may land until it is approved. The spec asks
-  for seven rulings, one of which (§1, labels scale off `--pp-control-font-size-*`
-  rather than the `Text` scale) becomes D-034 and binds every component in 3C
-  and 3D
-- **Next up:** 3.7 `Field`, which may not enter `spec` until `Label` is `done`.
-  These two are the only components in Tier 3 still approved **individually**
-  ([D-027](docs/DECISIONS.md)) — D-014's carve-out narrowed to the components
-  its reasoning was actually about. Every input in 3C composes into `Field`, so
-  its API is the expensive one to get wrong
-- **Tier 3A is complete** (5 / 5 action-core components `done`), merged to
-  `main` in [#4](https://github.com/mod-0-dev/pixel-perfect/pull/4). The library
-  now has a focus ring, a control scale, a keyboard-safe loading state and one
-  controlled/uncontrolled hook
+- **In flight:** _none_. 3.6 `Label` is `done` — Tier 3B is half built
+- **Next up:** 3.7 **`Field`**, now unblocked. It is the component D-014's
+  carve-out was written about and the last one in Tier 3 approved on its own
+  ([D-027](docs/DECISIONS.md)); 3C is one gate after it. `Label`'s spec closes
+  with two open questions that are really `Field`'s to answer: where
+  `labelHidden` lives (recommendation: on `Field`, wrapping the `Label` in
+  `VisuallyHidden`, never a `Label` prop — a label that can hide itself gets
+  hidden by accident), and whether `size` rides on both (recommendation: yes,
+  `Field` passes it down)
+- **What `Label` settled:** **D-034** — a form's type comes from the control
+  scale, not the text scale. `size` resolves `--pp-control-font-size-*`, the
+  same token the input beside it reads, so a label and its field agree by
+  construction; its visible consequence is that `sm` and `md` labels are the
+  same size, deliberately. Every component in 3C and 3D follows it. Asserted by
+  comparing a `Label`'s computed `font-size` to a `Button`'s rather than to a
+  number, because a numeric assertion still passes after someone hardcodes one
+  of the two
+- **A playground page cannot demonstrate `htmlFor` inside a `Matrix`**
+  (D-035 §1). The harness renders its subtree six times, so an `id` inside it
+  exists six times and `for` binds to whichever copy is first in the document —
+  five of six labels then name a control in another cell. Caught by a browser
+  assertion reading an accessible name of `""`. Appearance goes in the matrices;
+  association goes outside them, once. `Field`, `Input`, `Checkbox`, `Radio`,
+  `Switch` and `Select` all render ids and all will hit this
+- **The `'use client'` lint matched prose.** Its regex ran over raw source, so
+  `useId()` written inside a comment explaining that `Label` deliberately does
+  *not* call it was read as a call. It now walks the AST for identifiers — the
+  same fix the module-scope-globals rule beside it already had for the word
+  `document` in a JSDoc. A fixture that ships and only *mentions* hooks was
+  added, and the self-test's exactly-one-hit count now asserts both directions
+- **Two browser assertions could not fail** as first written (D-035 §2–3), and
+  one of them still cannot guard the thing it was named for: a space before the
+  required glyph only orphans it when the last line is nearly full. That guard
+  lives in the jsdom test, where it fails every time. Third time a
+  break-it-and-watch check has found a test that could not fail — it is the
+  check earning its place, not a coincidence
 - **What 3A settled for everything after it:** `--pp-control-*` (32 / 40 / 48,
   so a `Button`, an `Input` and a `Select` agree by construction rather than by
   vigilance), the focus ring (an `outline` in `--pp-color-focus-ring` on every
@@ -69,10 +90,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 33 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations (0.10 docs site is deferred, not blocking) + 24 components. The
-  previous count of 34 was an arithmetic error in this block, not a status
-  mismatch: every row was and is correct
+- **Done:** 34 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations (0.10 docs site is deferred, not blocking) + 25 components
 
 ---
 
@@ -156,7 +175,7 @@ to the component it was written about — see
 | 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
 | 3.4 | `ButtonGroup` | `done` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. One-border seam, no negative margin (D-033) |
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
-| 3.6 | `Label` | `spec` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md) — awaiting Gate C. Scales off `--pp-control-font-size-*`, not the `Text` scale |
+| 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
 | 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |
 | 3.9 | `Textarea` | `planned` | fill | client | 3.7 | Auto-resize opt-in |

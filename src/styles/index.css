@@ -57,3 +57,6 @@
 @import "../components/IconButton/IconButton.css";
 @import "../components/Toggle/Toggle.css";
 @import "../components/ButtonGroup/ButtonGroup.css";
+
+/* Tier 3B — field foundation. */
+@import "../components/Label/Label.css";

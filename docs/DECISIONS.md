@@ -1145,3 +1145,76 @@ toolbar of twenty controls and wrong for three attached buttons, where it costs
 a keyboard user an arrow-key discovery step to reach what one Tab would have
 reached. `Toolbar` (6.6) is the roving component; that is why it is a separate
 roadmap entry, and this divergence is recorded per RULES §6.
+
+## D-034 — A label's type scale is the control scale, not the text scale
+
+**Date:** 2026-09-18 · **Status:** accepted · **Extends:** D-028, D-015
+
+`Text` has four size steps (`xs sm md lg`, D-016 §1). Controls have three
+(`sm md lg`, D-028). `Label` sits directly above or beside a control, and the
+thing it has to agree with is the control, not the prose around it — so `size`
+resolves `--pp-control-font-size-<size>`, the same token the `Input` beneath it
+will read.
+
+This is D-028's argument moved from height to type. A `Button`, an `Input` and a
+`Select` must be the same height at `size="md"` or every form is a pixel
+crooked; a label and its field must be the same type size for exactly the same
+reason, and "agree by construction rather than by vigilance" is the whole point
+of the `--pp-control-*` set existing at all. Every component in 3C and 3D
+follows this: a form's text comes from the control scale.
+
+**The visible consequence is that `sm` and `md` labels are the same font size**,
+because `--pp-control-font-size-sm` and `-md` are both `--pp-font-size-2`. That
+is not a gap in the ramp, it is the ramp: a control gets small by losing height
+and padding, and a 12px label is not a smaller label, it is a worse one.
+
+Asserted in the browser by comparing a `Label`'s computed `font-size` with a
+`Button`'s at the same `size`, rather than against a number. A numeric
+assertion still passes after someone hardcodes one of the two; the comparison
+is the only form of the test that fails when they stop sharing a token.
+
+## D-035 — `Label` build findings: the Matrix duplicates ids, and two tests that could not fail
+
+**Date:** 2026-09-18 · **Status:** accepted
+
+Three things found while building `Label`, all by a test failing rather than by
+review. The first one is the one that matters for every remaining Tier 3
+component.
+
+**1. A playground page cannot demonstrate `htmlFor` inside a `Matrix`.** The
+harness renders the same subtree six times (3 widths × 2 themes), so every `id`
+inside it exists six times, and `for` resolves to the first match in the
+document. Five of the six labels then name a control in another cell, and the
+sixth is the only one that works. Caught by a browser assertion on the
+accessible name returning `""`.
+
+This is not a `Label` problem — `Field`, `Input`, `Checkbox`, `Radio`, `Switch`
+and `Select` all render ids, and all of them will hit it. **The convention: a
+component page demonstrates appearance inside the Matrix and association
+outside it, once, where the ids are unique.** The alternative — teaching
+`Matrix` to suffix ids per cell — was rejected: it would have to rewrite props
+of arbitrary children, which is the cloning-children anti-pattern D-033's
+component already refused, and it would hide a constraint that is real.
+
+**2. `getClientRects()` on a block element returns one rect, not one per line.**
+The test asserting that a wrapping label keeps its asterisk on the last line
+counted the label's own rects and got `1` for a label visibly wrapping in three.
+Line boxes come from a `Range` over the contents. It then had to be narrowed
+further to a Range over the **text node**, because a Range over the whole label
+includes the indicator, so the thing being compared against moves whenever the
+indicator moves — an indicator given its own line reported a 2px delta instead
+of a line height.
+
+**3. A test named for the space character could not fail on the space
+character.** Putting a literal space back before the indicator left that browser
+test green: a space only orphans the glyph when the last line is nearly full, so
+the layout it asserts is not sensitive to it. The test was rewritten to assert
+what it can actually prove — the indicator shares the last line of the text, and
+fails by a full line height when given `display: block` — and the space guard
+was left where it can fail every time, in the jsdom test asserting the label's
+text content directly.
+
+This is the second time a break-it-and-watch check has found a test that could
+not fail (D-009, and the Tier 3A focus test). It is the check earning its place
+rather than a coincidence: **a test is not verified by passing, only by failing
+on the symptom it names.**
