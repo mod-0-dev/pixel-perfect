@@ -350,6 +350,52 @@ test.describe('layout primitives', () => {
     await expect(overflowing).toHaveAttribute('data-overflow', 'both');
   });
 
+  /*
+   * D-046. As shipped, `both` measured the block axis and reported it as
+   * data-overflow; the inline axis was never measured and never shaded. The
+   * shadows are asserted as the number of NON-ZERO background layers, because
+   * the attributes alone would pass against a stylesheet that ignores them —
+   * which is exactly what the first version did for the inline axis.
+   */
+  test('Scroller both reports and shades both axes', async ({ page }) => {
+    await page.goto('/components/scroller');
+
+    const scroller = page
+      .locator('section', { hasText: 'Both axes' })
+      .locator('.pp-scroller')
+      .first();
+    const shadedEdges = () =>
+      scroller.evaluate(
+        (el) =>
+          getComputedStyle(el)
+            .backgroundSize.split(',')
+            .filter((layer) => !/(^|\s)0px(\s|$)/.test(layer.trim())).length,
+      );
+
+    // At rest, scrolled to the top-left corner: content lies past the block-end
+    // and inline-end edges only. Two shadows.
+    await expect(scroller).toHaveAttribute('data-overflow', 'end');
+    await expect(scroller).toHaveAttribute('data-overflow-inline', 'end');
+    // Polled, not read once: the attributes land in a React commit after the
+    // scroll event, and a single read can precede it.
+    await expect.poll(shadedEdges, { message: 'two edges shaded at rest' }).toBe(2);
+
+    // In the middle of both axes: every edge has content beyond it. Four.
+    await scroller.evaluate((el) =>
+      el.scrollTo({ top: el.scrollHeight / 2, left: el.scrollWidth / 2 }),
+    );
+    await expect(scroller).toHaveAttribute('data-overflow', 'both');
+    await expect(scroller).toHaveAttribute('data-overflow-inline', 'both');
+    await expect.poll(shadedEdges, { message: 'four edges shaded mid-scroll' }).toBe(4);
+
+    // And a single-axis region never grows the second attribute.
+    const vertical = page
+      .locator('section', { hasText: 'Vertical, with a max block size' })
+      .locator('.pp-scroller')
+      .first();
+    await expect(vertical).not.toHaveAttribute('data-overflow-inline', /.*/);
+  });
+
   test('Scroller is a focusable region with an accessible name', async ({ page }) => {
     await page.goto('/components/scroller');
 

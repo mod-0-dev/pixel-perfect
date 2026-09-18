@@ -2016,3 +2016,46 @@ property that was never built and described a `mask` the §13 amendment had
 already replaced with an inline `Icon`. And the playground registry listed
 components in implementation order, so the home page navigation read 1.3, 1.5,
 1.8, 1.10, 1.6 — it is in roadmap order now, with the screenshot list beside it.
+
+## D-046 — `Scroller` `both` measures and shades both axes; the inline axis is `data-overflow-inline`
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/tier-2-layout.md` §2.8 (State)
+
+`orientation="both"` promised two scrolling axes and delivered one. The
+component measured only `scrollTop`, reported it as `data-overflow`, and the
+stylesheet's `both` rules shaded the block edges only. Content past the inline
+edge of a `both` region had no shadow and no attribute — the exact failure
+`Scroller` exists to prevent, on half of its widest case. Raised in the sweep
+that produced D-045, as a gap rather than a defect, because nothing promised
+otherwise in a test; it is a defect, because the prop promised it.
+
+**One attribute cannot name the edges of two axes.** `"start" | "end" |
+"both"` describes one axis. So `both` reports the block axis as `data-overflow`
+— the default orientation's axis, and unchanged for `vertical` — and the inline
+axis as `data-overflow-inline` beside it. The inline attribute exists only on
+`both`: on `horizontal`, `data-overflow` already *is* the inline axis, and a
+second attribute for the same axis would be a second source of truth.
+
+**The stylesheet is one property per edge, not one rule per combination.**
+The first version wrote a rule for each orientation × overflow pair — eight
+rules for two axes, and `both` would have needed sixteen. Now four gradient
+layers are always declared and each is sized by a private property that
+defaults to `0`; a zero-sized layer paints nothing, so showing an edge is one
+declaration. The two axes cannot collide because they never share a rule.
+
+Both axes are now measured on every event regardless of orientation; the
+second read costs nothing, and the attributes decide what is reported. The
+state setter returns the previous object when neither axis changed, so a scroll
+that crosses no edge does not re-render.
+
+**Asserted in the browser as shaded edges, not attributes.** The count of
+non-zero background layers is what is checked — two at rest, four mid-scroll —
+because attributes alone would pass against a stylesheet that ignores them,
+which is precisely what the shipped version did for the inline axis.
+Broken on purpose before it was trusted: with the `data-overflow-inline` rules
+renamed so the stylesheet ignores the attribute — confirmed in the served CSS
+first — the attribute assertions still passed and the edge count failed,
+`Expected: 2, Received: 1`. That is the shipped defect reproduced, and the
+only assertion that would have caught it.
+
+Minor bump: a new attribute in the rendered DOM.

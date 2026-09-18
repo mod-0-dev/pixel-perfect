@@ -11,6 +11,9 @@ goes to `blocked` with a stated reason — never to `done`.
 - [ ] Props table final, using the `variant` / `tone` / `size` vocabulary
 - [ ] Anatomy documents every DOM part and its `pp-` class name
 - [ ] Any deviation from RULES has a corresponding `docs/DECISIONS.md` entry
+- [ ] Every claim the spec, docs or comments make about how ANOTHER component
+      behaves is either asserted by a test or a link to the entry that asserts it —
+      never restated. Prose stated in four places was false in all four (D-045)
 
 ## Sizing & spacing (RULES §1–2)
 

@@ -1,4 +1,4 @@
-import { Badge, Cluster, Scroller, Stack, Text } from 'pixel-perfect';
+import { Badge, Cluster, Grid, Scroller, Stack, Text } from 'pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 
@@ -67,6 +67,33 @@ export default function ScrollerPage() {
                 </Badge>
               ))}
             </Cluster>
+          </Scroller>
+        </Matrix>
+      </section>
+
+      <section>
+        <h2>Both axes</h2>
+        <p>
+          A table wider and taller than its box. <code>data-overflow</code> reports the block axis
+          and <code>data-overflow-inline</code> the inline one, because one attribute cannot name
+          the edges of two axes (D-046); all four edges shade. The grid below declares its own
+          inline size, which is the parent&apos;s right and the reason there is anything to scroll.
+        </p>
+        <Matrix>
+          <Scroller
+            label="Readiness by workstream"
+            orientation="both"
+            style={{ '--pp-scroller-max-block-size': 'var(--pp-space-9)' } as React.CSSProperties}
+          >
+            <Grid columns={5} gap="2" style={{ inlineSize: '48rem' }}>
+              {ROWS.flatMap((row) =>
+                ['Engineering', 'Legal', 'Marketing', 'Support', 'Design'].map((team) => (
+                  <Text key={`${row}-${team}`} size="xs" tone="muted">
+                    {row} · {team}
+                  </Text>
+                )),
+              )}
+            </Grid>
           </Scroller>
         </Matrix>
       </section>
