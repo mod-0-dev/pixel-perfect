@@ -1687,3 +1687,67 @@ cross-component agreement should be structural rather than vigilant. **A comment
 asking a future reader to keep two files in step is neither.** Where
 deduplication is genuinely impossible — and here it genuinely is — the agreement
 gets a test, not a paragraph.
+
+## D-042 — A baseline authored after its PR merges is lost, and `main` cannot author one
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** D-013, D-017, D-041
+
+D-041 gave the registry/`PAGES` drift a test and added `input` to `PAGES`. It
+did not land the baseline, and the baseline did not land itself.
+
+**The sequence, from the run logs:** PR #9 merged at 13:09:28. Its visual job
+started at 13:09:31 — three seconds *after* the merge — authored `input.png`,
+and pushed it to the PR branch at 13:11:30, two minutes after that branch had
+stopped mattering. The file was real the whole time, sitting on a merged branch
+at `1b72878`, reachable from no ref anyone would look at. So `v0.2.0` shipped
+`Input` with "visual regression snapshots committed" unmet for the second time,
+by a different mechanism than the first.
+
+**Then `main` went red and could not recover.** Every push since ran the visual
+job against a missing baseline, authored it, and had the push rejected:
+
+> `remote: error: GH006: Protected branch update failed for refs/heads/main.`
+> `remote: - Changes must be made through a pull request.`
+
+Everything upstream green, failure at the last step, an Actions write vetoed by
+repository policy — **D-038's shape exactly, in a different workflow, eight
+hours later.** Twice makes it a pattern worth naming: *a CI step that writes to
+the repository is a step repository policy can veto, and it will look like a
+working pipeline until someone reads the last line of a job that mostly passed.*
+
+**Repaired in two places.** The baseline lands through a pull request, where —
+because the file now exists — CI *compares* it instead of authoring it, which is
+the verification D-013 asks for and an authoring run by construction cannot
+give. And the authoring step is gated on `github.event_name == 'pull_request'`,
+with a `main`-side step that fails naming the missing file rather than
+attempting a push policy forbids.
+
+**What is not repaired, because the repository cannot repair it.** `main` has no
+required status checks; PR #9 was mergeable before a single check existed. The
+workflow comment that "an authoring commit should never be the final head of a
+PR" describes an ordering that nothing enforces and nothing in this repository
+can enforce. That is a branch-protection setting, and it is the root cause.
+
+**Required status checks were considered and deliberately declined** (2026-09-18).
+Requiring the two CI jobs would close the race, but it collides with the way
+baselines are authored: a push made with `GITHUB_TOKEN` starts no workflow run,
+so the authoring commit becomes a head SHA that the required checks never report
+on, and the PR blocks until someone pushes again — a manual nudge once per new
+component, 68 components ahead of us. The version that avoids the nudge needs a
+PAT or App token with `contents: write` standing in the repository secrets, and
+that credential was judged not worth its blast radius for this.
+
+So the race is accepted, and **the `main`-side guard is the mitigation rather
+than a second line of defence.** If it is ever deleted as redundant, this class
+of failure goes back to being silent. Its shell was checked by running the
+classify logic against an untracked baseline and watching it exit 1 naming the
+file; its `if:` condition is verified only by YAML parse, because no run since
+has had a missing baseline on `main` to trigger it. First real merge that skips
+it while `new == 'false'` is the confirmation — PR #10 recorded exactly that.
+
+**And the lesson that generalises past screenshots:** D-041 ruled that where
+deduplication is impossible, the agreement gets a test. This adds the limit of
+that ruling — **a test that two lists agree is not a test that the artifact the
+lists describe exists.** `tests/unit/playground-registry.test.ts` passed at
+every moment described above, correctly, while the baseline it was written to
+protect was absent from `main`.

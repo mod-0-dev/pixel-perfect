@@ -26,9 +26,36 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3.8 `Input` is `done`.** Next is 3.9 `Textarea`,
-  then `Checkbox`, `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec`
-  under the Gate C approval of 2026-09-18 (**D-039**)
+- **In flight:** _none_ — **3.8 `Input` is `done`**, and its screenshot baseline
+  is on `main` at last. Next is 3.9 `Textarea`, then `Checkbox`,
+  `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec` under the Gate C
+  approval of 2026-09-18 (**D-039**)
+- **`Input` shipped in `v0.2.0` with no visual baseline, and `main` went red
+  over it** (**D-042**). D-041 gave the registry/`PAGES` drift a test and still
+  did not land the file: PR #9 merged three seconds before its own visual job
+  started, and the authored `input.png` was pushed to the branch two minutes
+  after that branch stopped mattering. Every later push to `main` re-authored it
+  and had the push rejected — `GH006 … Changes must be made through a pull
+  request` — which is **D-038's shape a second time**: everything upstream
+  green, an Actions write vetoed by policy at the very last step. Twice is a
+  pattern: *a CI step that writes to the repository is a step policy can veto,
+  and it looks like a working pipeline until someone reads the last line of a
+  job that mostly passed.* The baseline now lands through a PR, where its
+  presence makes CI **compare** it rather than author it — the verification
+  D-013 asks for and an authoring run cannot give. Authoring is gated to
+  `pull_request` events, and `main` now fails naming the missing file instead of
+  attempting a push it is forbidden to make. **The root cause is not in the
+  repository:** `main` has no required status checks, so nothing stops a merge
+  that lands before any check reports. Requiring them was **considered and
+  declined** — a `GITHUB_TOKEN` push starts no workflow run, so an authoring
+  commit would become a head SHA the required checks never report on and block
+  its own PR, once per new component, 68 components ahead of us. **The
+  `main`-side guard is therefore the mitigation, not a spare one:** delete it as
+  redundant and this failure goes back to being silent
+- **A test that two lists agree is not a test that the artifact exists**
+  (D-042). `tests/unit/playground-registry.test.ts` passed correctly at every
+  moment of the failure above, while the baseline it was written to protect was
+  absent from `main`
 - **A form control does not fill, and RULES §1 says it does** (**D-040 §1**).
   The rule's argument against `width: 100%` is that a block element with no
   width declaration "already fills its parent … in every layout context". True
@@ -182,7 +209,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.3 | Cascade layers + minimal reset | `done` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides`. Reset uses `:where()` so the app always wins |
 | 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths × 2 themes, each cell a query container, overflow flagged at runtime. `/tokens` gallery, `/harness` self-check |
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
-| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013). Functional harness assertions run anywhere |
+| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013), on a PR branch only (D-042). Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
@@ -253,7 +280,7 @@ to the component it was written about — see
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
 | 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
-| 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040) |
+| 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040). Baseline landed after the fact (D-042) |
 | 3.9 | `Textarea` | `spec` | fill | client | 3.7 | Auto-resize opt-in |
 | 3.10 | `Checkbox` | `spec` | hug | client | 3.7 | Indeterminate state |
 | 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |
