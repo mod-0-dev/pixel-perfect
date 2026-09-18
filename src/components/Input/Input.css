@@ -1,0 +1,159 @@
+/*
+ * Input — spec docs/specs/tier-3c-inputs.md §3.8
+ *
+ * The first of the three text surfaces (Textarea and Select follow), and they
+ * do NOT share a base class. The agreement is already structural: --pp-control-*
+ * is the one definition all three read, which is what D-028 built it for. A
+ * shared class would put the declarations in one place too — a second mechanism
+ * doing the first one's job — and it would not survive contact, because
+ * Textarea has no block-size and Select reserves room for an indicator.
+ *
+ * TWO ELEMENTS, BECAUSE AN <input> DOES NOT FILL (D-040). RULES §1's mechanism
+ * — "a block element with no width declaration already fills its parent" — is
+ * false for form controls, which carry an intrinsic inline size from the `size`
+ * attribute. Measured: 185px inside a 600px parent. A grid item with auto width
+ * does stretch, so the root is a one-cell grid and no width is declared
+ * anywhere. Flex was measured too and does not work: a flex item needs
+ * flex-grow to stretch on the main axis.
+ */
+
+@layer pp.components {
+  .pp-input {
+    --_height: var(--pp-control-height-md);
+    --_padding-inline: var(--pp-control-padding-inline-md);
+    --_font-size: var(--pp-control-font-size-md);
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_color: var(--pp-color-text);
+
+    /* fill: block-level with no width declaration. Grid, so the control
+       stretches — see the header. */
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .pp-input[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_padding-inline: var(--pp-control-padding-inline-sm);
+    --_font-size: var(--pp-control-font-size-sm);
+  }
+
+  .pp-input[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_padding-inline: var(--pp-control-padding-inline-lg);
+    --_font-size: var(--pp-control-font-size-lg);
+  }
+
+  .pp-input__control {
+    /* Lets the control shrink below its intrinsic size instead of pushing the
+       container wide. The grid stretch above handles the other direction. */
+    min-inline-size: 0;
+    block-size: var(--pp-input-height, var(--_height));
+    padding-inline: var(--pp-input-padding-inline, var(--_padding-inline));
+    border: var(--pp-border-width-1) solid var(--pp-input-border-color, var(--_border));
+    border-radius: var(--pp-input-radius, var(--pp-control-radius));
+    background-color: var(--pp-input-bg, var(--_bg));
+    color: var(--pp-input-color, var(--_color));
+    /*
+     * No font-family here. reset.css already gives form controls `font:
+     * inherit` — they do not inherit typography otherwise — and it does so at
+     * :where() zero specificity, which is right: a consuming app that sets its
+     * own font on inputs SHOULD win. Declaring it again in pp.components would
+     * take that away, and a first attempt at this line was removed for exactly
+     * that reason (D-037 §5: a declaration that can be removed with no
+     * observable effect is a claim of a dependency that does not exist).
+     *
+     * font-size and line-height are declared, because the control scale is
+     * ours and the shorthand above would otherwise hand them to the page.
+     */
+    font-size: var(--_font-size);
+    line-height: var(--pp-line-height-normal);
+    /* Kills the UA chrome that survives a background declaration, and the
+       inner shadow iOS draws on text fields. */
+    appearance: none;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* The reset crushes durations in pp.reset, and this file is in pp.components,
+     so ours would win. Every animated component answers for itself — the
+     mechanism Button.css and Spinner both document. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-input__control {
+      transition-property: none;
+    }
+  }
+
+  .pp-input__control::placeholder {
+    /* Carries a solved 4.5:1 guarantee (D-008). A placeholder is still not a
+       label — see the component's docs page. */
+    color: var(--pp-input-placeholder-color, var(--pp-color-text-muted));
+    /* Safari applies the UA's opacity to ::placeholder on top of the colour,
+       which drops a solved ratio below the thing it was solved for. */
+    opacity: 1;
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4).
+   *
+   * The outline is the focus affordance: one colour library-wide, outside the
+   * box, and the only pairing lint:contrast asserts. The border shift is not an
+   * affordance — it is the control acknowledging focus in its own tone, inside
+   * the box, and it is the job D-029 reserved --pp-tone-focus for when it ruled
+   * the ring could not be per-tone.
+   *
+   * The payoff is on an invalid field: the tone is danger, so the border stays
+   * red while the user is fixing it, instead of the error state vanishing at
+   * the moment they act on it.
+   */
+  .pp-input__control:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+    --_border: var(--pp-tone-focus);
+  }
+
+  /*
+   * STATE IS DECLARED ON THE ROOT, NOT ON A DESCENDANT, AND THAT IS A
+   * SPECIFICITY FIX RATHER THAN A TIDY-UP (D-040).
+   *
+   * Written as `.pp-input[data-invalid] .pp-input__control` this outranks
+   * `.pp-input__control:focus-visible` — 0-3-0 against 0-2-0 — so focus never
+   * shifted the border on an invalid control and --pp-tone-focus reached valid
+   * controls only, silently undoing half of D-039 §4. Found by deleting the
+   * tone context and watching the test that names it pass anyway.
+   *
+   * Declared on the root, the custom property inherits down to the control,
+   * and the control's OWN :focus-visible declaration wins for that element —
+   * which is the precedence the design wanted, expressed as inheritance rather
+   * than as a specificity race.
+   *
+   * The root carries data-pp-tone="danger", so --pp-tone-border resolves to the
+   * danger ramp without this file naming a colour (D-007).
+   */
+  .pp-input[data-invalid] {
+    --_border: var(--pp-tone-border);
+  }
+
+  /*
+   * pointer-events: none is deliberately NOT used, for the reason Button.css
+   * gives: it kills `title`, breaks a Tooltip (4.3) wrapping the control, and
+   * makes cursor: not-allowed impossible to show. The native attribute already
+   * suppresses interaction.
+   */
+  .pp-input[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+  }
+
+  .pp-input[data-disabled] .pp-input__control {
+    cursor: not-allowed;
+  }
+
+  /* Read-only is not disabled: the value is still selectable, focusable and
+     submitted, so only the fill says "not yours to change". The border stays
+     put, which is what distinguishes it from disabled at a glance. */
+  .pp-input[data-readonly] {
+    --_bg: var(--pp-color-bg-sunken);
+  }
+}

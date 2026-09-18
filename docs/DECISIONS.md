@@ -1490,3 +1490,87 @@ a focused field, rejects a locale decimal comma, and reports `value === ''` for
 anything it cannot parse, so `1,5` in a German locale is silently lost.
 `NumberInput` (3.14) is `type="text"` with `inputMode="numeric"`, and `Input`'s
 docs say so now rather than surprising someone a tier later.
+
+## D-040 — `Input` build findings: a form control does not fill
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §1 (statement of mechanism); `docs/specs/tier-3c-inputs.md` §3.8, §3.9, §3.11, §3.13
+
+Four findings, three of them from a measurement or a deliberate break rather
+than from review. The first invalidates a sentence in RULES §1 and changes the
+anatomy of three components.
+
+**1. RULES §1's mechanism is false for form controls.** The rule's argument
+against `width: 100%` is that it is unnecessary:
+
+> A block element with no width declaration already fills its parent, and does
+> so correctly in every layout context.
+
+That is true of a `<div>` and false of every control in this tier, which carries
+an intrinsic inline size from the HTML `size` / `cols` attribute. Measured inside
+a 600px parent, before a line of the component was written:
+
+| Element | `display: block` | grid item | flex item |
+| --- | --- | --- | --- |
+| `<input>` | **185px** | 600px | **185px** |
+| `<textarea>` | **182px** | 600px | — |
+| `<select>` | **52px** | 600px | — |
+| `<p>` (control) | 600px | 600px | — |
+
+**The fix needs no exemption.** The root is a `<span>` that is `display: grid`
+and the control stretches into its single cell, so no width is declared anywhere
+and the layout does the job RULES §1 assigns to the parent — which is D-021's
+ruling ("a layout primitive may size the boxes it creates") applied by a
+component to its own one child.
+
+Flexbox is not an alternative and was measured rather than assumed: a flex item
+does not stretch on the main axis without `flex-grow`.
+
+**Consequence: `Input` and `Textarea` were specified as single-element
+components and are not.** Every component in 3C has a wrapper, which makes
+D-039 §1's prop split uniform across the group rather than a per-component rule.
+`RULES.md` §1 keeps its rule — *don't declare width* — and its stated mechanism
+now has a named exception.
+
+**2. `Exclude<HTMLInputTypeAttribute, …>` bans nothing.** React types an input's
+`type` as a union of literals ending in `(string & {})`, so that custom values
+stay assignable. `'checkbox'` is assignable to `string & {}`, which means
+`Exclude` removes the literal and lets the value straight back in — the spec's
+props table was a type that did not typecheck anything. Replaced with an explicit
+allow-list, which also documents what the component supports.
+
+**The general shape:** a subtractive type over a union with a string escape hatch
+subtracts nothing. Additive is the only form that holds.
+
+**3. Two browser assertions could not fail, and one was hiding a real bug.**
+Both focus tests compared a *valid* control's border against an *invalid* one's
+and called the difference the focus shift. Those two differ because of
+`data-invalid`, not because of focus, so deleting the focus rule from the
+stylesheet entirely left all seven Input tests green. Isolating focus requires
+comparing the **same control** at rest and focused; nothing else does.
+
+Rewriting them found the bug. `.pp-input[data-invalid] .pp-input__control` is
+0-3-0 and outranks `.pp-input__control:focus-visible` at 0-2-0, so **focus never
+shifted the border on an invalid control** and `--pp-tone-focus` reached valid
+controls only — silently undoing half of D-039 §4, the ruling that spends the
+token D-029 reserved.
+
+State is now declared on the **root**, where the custom property inherits down
+and the control's own `:focus-visible` declaration wins for that element. The
+precedence the design wanted, expressed as inheritance rather than as a
+specificity race. **Standing rule for the rest of the tier: a state declaration
+goes on the root, never on a descendant selector, because the descendant form
+quietly outranks the control's own pseudo-classes.**
+
+This is the fourth time a break-it-and-watch check has found a test that could
+not fail (D-009, the Tier 3A focus test, D-035 §2–3). It is no longer evidence
+about those tests; it is evidence that **a test's value is established by
+watching it fail, and a suite where that has never been done is unmeasured.**
+
+**4. `font-family: inherit` was redundant, and the linter said so first.**
+Stylelint rejected it — the rule requires `var(--pp-font-family-*)` — and the
+right answer was neither to comply nor to widen the rule. `reset.css` already
+gives form controls `font: inherit`, at `:where()` zero specificity, which is
+deliberate: a consuming app that sets its own font on inputs *should* win, and
+redeclaring it in `pp.components` would take that away. The line was deleted.
+D-037 §5's lesson, reached from the other direction — there the declaration was
+load-bearing-looking and inert, here the linter pointed at it first.

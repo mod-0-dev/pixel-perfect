@@ -26,12 +26,36 @@ is `done`.
 
 ### Current state
 
-- **In flight:** **3.8 `Input`** (`build`) — the first of Tier 3C, whose spec
-  [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) was approved at Gate C on
-  2026-09-18 (**D-039**). The other five are `spec` and implement in order:
-  `Textarea`, `Checkbox`, `Radio`/`RadioGroup`, `Switch`, `Select`. `Input` is
-  first because it establishes the control surface — if that is wrong it is
-  wrong in one file rather than three
+- **In flight:** _none_ — **3.8 `Input` is `done`.** Next is 3.9 `Textarea`,
+  then `Checkbox`, `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec`
+  under the Gate C approval of 2026-09-18 (**D-039**)
+- **A form control does not fill, and RULES §1 says it does** (**D-040 §1**).
+  The rule's argument against `width: 100%` is that a block element with no
+  width declaration "already fills its parent … in every layout context". True
+  of a `<div>`; false of every control in this tier. Measured inside a 600px
+  parent: `<input>` **185px**, `<textarea>` **182px**, `<select>` **52px**, a
+  `<p>` 600px. As a grid item every one of them is 600px; as a flex item the
+  input is still 185px, because a flex item needs `flex-grow`. So every 3C
+  component has a `display: grid` root and the control stretches into it —
+  **no width is declared anywhere**, so the rule is satisfied rather than bent.
+  `Input` and `Textarea` were specified as single-element components and are not
+- **A state declaration goes on the root, never on a descendant selector**
+  (D-040 §3). `.pp-input[data-invalid] .pp-input__control` is 0-3-0 and outranks
+  `.pp-input__control:focus-visible` at 0-2-0, so focus never shifted the border
+  on an invalid control and `--pp-tone-focus` reached valid controls only —
+  silently undoing half of D-039 §4. On the root the property inherits down and
+  the control's own pseudo-class wins for that element. Inheritance, not a
+  specificity race
+- **Fourth test that could not fail** (D-040 §3). Both focus assertions compared
+  a *valid* control against an *invalid* one and called the difference the focus
+  shift — but those differ because of `data-invalid`, so deleting the focus rule
+  outright left all seven green. It is no longer evidence about those tests:
+  **a test's value is established by watching it fail, and a suite where that
+  has never been done is unmeasured**
+- **A subtractive type over a union with a string escape hatch subtracts
+  nothing** (D-040 §2). `Exclude<HTMLInputTypeAttribute, 'checkbox' | …>` bans
+  nothing, because React's union ends in `(string & {})` and `'checkbox'` is
+  assignable to it. `Input`'s `type` is an explicit allow-list
 - **The one precedence rule, in all six:** an explicit prop beats the field,
   which beats the default — for `size`, `required`, `disabled` and `invalid`
   alike, including `disabled={false}` inside a disabled `Field`. "Explicit wins"
@@ -137,8 +161,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 34 / 78 tracked items (10 foundations + 68 components) — 8
-  foundations + 26 components. Of the two foundations not `done`: 0.10 docs site
+- **Done:** 35 / 78 tracked items (10 foundations + 68 components) — 8
+  foundations + 27 components. Of the two foundations not `done`: 0.10 docs site
   is deferred and not blocking, 0.8 release pipeline is `blocked` on a repository
   setting (D-038)
 
@@ -226,7 +250,7 @@ to the component it was written about — see
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
 | 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
-| 3.8 | `Input` | `build` | fill | client | 3.7 | The control surface, the four-value precedence rule, the tone-shifted focus border. Everything after it copies this |
+| 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040) |
 | 3.9 | `Textarea` | `spec` | fill | client | 3.7 | Auto-resize opt-in |
 | 3.10 | `Checkbox` | `spec` | hug | client | 3.7 | Indeterminate state |
 | 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |

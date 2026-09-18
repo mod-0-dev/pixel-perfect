@@ -13,7 +13,7 @@
 
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
-| 3.8 `Input` | `spec` | 3.11 `Radio`/`RadioGroup` | `spec` |
+| 3.8 `Input` | **`done`** | 3.11 `Radio`/`RadioGroup` | `spec` |
 | 3.9 `Textarea` | `spec` | 3.12 `Switch` | `spec` |
 | 3.10 `Checkbox` | `spec` | 3.13 `Select` | `spec` |
 
@@ -387,8 +387,11 @@ RULES §5 unchanged.
 - **`className` and `style` → the root**, merged, never replaced. Styling is
   about the box the caller sees, and for `Switch` that box is the wrapper.
 
-`Input` and `Textarea` have no wrapper, so for them all four land on the same
-element and the question does not arise.
+**This applies to all six.** `Input` and `Textarea` were specified as
+single-element components and are not: a form control does not fill without a
+grid root (§3.8, D-040), so every component in this group has a wrapper and every
+one of them splits the props the same way. That is the better outcome for
+consistency — there is no per-component rule to remember.
 
 The props type stays `ComponentPropsWithoutRef<'input'>`, so the split is
 invisible to the caller: they see input props and they get input props. The
@@ -435,25 +438,52 @@ layout, and that is a different component with a different sizing story. No
 
 ### Sizing contract justification
 
-`fill`. A text input occupies the inline space the form gives it. Block-level,
-no width declaration, `min-inline-size: 0` so a long `placeholder` cannot push
-it out of a narrow `Field`.
+`fill`, and **it takes two elements to get there** — a finding from building it,
+not a preference (D-040).
 
-Native `<input>` ships `size="20"`, a UA-level intrinsic width of about twenty
-characters, which is a control sizing itself — the exact thing RULES §1 forbids
-— and it is why `FieldContextValue.size` is deliberately absent from the
-spreadable control props. The stylesheet neutralises it by not declaring a width
-at all and letting the block box fill; the `size` *attribute* is never set.
+RULES §1 says "a block element with no width declaration already fills its
+parent, and does so correctly in every layout context." That is true of a `<div>`
+and **false of a form control**, which carries an intrinsic inline size from the
+HTML `size` attribute. Measured inside a 600px parent:
+
+| | `display: block` | grid item | flex item |
+| --- | --- | --- | --- |
+| `<input>` | **185px** | 600px | 185px |
+| `<textarea>` | **182px** | 600px | — |
+| `<select>` | **52px** | 600px | — |
+| `<p>` (control) | 600px | 600px | — |
+
+So the root is a `<span>` that is `display: grid`, and the control stretches into
+its single cell. **No width is declared anywhere** — the rule is satisfied rather
+than bent, and the layout does the job RULES §1 assigns to the parent. Flexbox is
+not an alternative: a flex item does not stretch on the main axis without
+`flex-grow`, and it measured the same 185px.
+
+`min-inline-size: 0` on the control is the other half, so a long value shrinks
+the control instead of pushing the container wide.
+
+The HTML `size` attribute is never set, and it is absent from the props type
+entirely — the same hazard `FieldContextValue.size` is kept out of the spreadable
+control props for.
 
 ### Anatomy
 
 ```
-<input class="pp-input" data-size data-invalid? data-disabled? data-pp-tone?>
+<span class="pp-input" data-size data-invalid? data-disabled? data-readonly? data-pp-tone?>
+  └── <input class="pp-input__control">
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
-| Root | `pp-input` | `<input>` | The whole component. Focusable, the ref target, the prop target |
+| Root | `pp-input` | `<span>` | `display: grid`, one cell. Carries the state attributes and the tone context. `className` and `style` land here (§11) |
+| Control | `pp-input__control` | `<input>` | The surface. Focusable, the `ref` target, the prop target |
+
+**State is declared on the root, never on a descendant selector.** Written as
+`.pp-input[data-invalid] .pp-input__control` the invalid rule is 0-3-0 and
+outranks `.pp-input__control:focus-visible` at 0-2-0, so focus would never shift
+the border on an invalid control — half of §4 silently undone. Declared on the
+root the custom property inherits down, and the control's own `:focus-visible`
+declaration wins for that element. Inheritance, not a specificity race (D-040).
 
 ### Props
 
@@ -570,21 +600,24 @@ and it is read-only).
 
 ### Sizing contract justification
 
-`fill`, inline axis, exactly as `Input`. Native `<textarea>` carries both a
-`cols` intrinsic width and a `rows` intrinsic height; `cols` is neutralised the
-same way `size` is on `Input`, while **`rows` is kept and exposed**, because the
-block axis is not what RULES §1 governs (§10). `Skeleton`'s `lines` is the
-precedent.
+`fill`, inline axis, exactly as `Input` — **including the grid root**, because a
+block `<textarea>` measured 182px inside a 600px parent for the same reason an
+`<input>` measured 185px (§3.8, D-040).
+
+`rows` **is** kept and exposed, because the block axis is not what RULES §1
+governs (§10). `Skeleton`'s `lines` is the precedent.
 
 ### Anatomy
 
 ```
-<textarea class="pp-textarea" data-size data-auto-resize? …>
+<span class="pp-textarea" data-size data-auto-resize? …>
+  └── <textarea class="pp-textarea__control">
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
-| Root | `pp-textarea` | `<textarea>` | One element, like `Input` |
+| Root | `pp-textarea` | `<span>` | `display: grid`, as `Input` |
+| Control | `pp-textarea__control` | `<textarea>` | The surface, the `ref` and prop target |
 
 ### Props
 
@@ -1073,10 +1106,10 @@ built on the overlay foundation rather than on this.
 
 ### Sizing contract justification
 
-`fill`, like `Input`. The wrapper is the `fill` root and the `<select>` inside
-it fills the wrapper; native `<select>` intrinsically sizes to its longest
-option, which is a control sizing itself and is neutralised by declaring no
-width and letting the block box fill.
+`fill`, like `Input`, and the wrapper the chevron needs is the same grid root the
+fill contract needs anyway. A native `<select>` intrinsically sizes to its
+longest option and is the worst of the three: **52px** as a block element inside
+a 600px parent, against 600px as a grid item (§3.8, D-040).
 
 ### Anatomy
 
