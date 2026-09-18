@@ -1640,3 +1640,50 @@ deliberate: a consuming app that sets its own font on inputs *should* win, and
 redeclaring it in `pp.components` would take that away. The line was deleted.
 D-037 §5's lesson, reached from the other direction — there the declaration was
 load-bearing-looking and inert, here the linter pointed at it first.
+
+## D-041 — The screenshot list is asserted against the registry, not kept in step by hand
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** D-012 (consequence), Tier 0.6
+
+`Input` shipped with a playground page, a registry entry and **no screenshot
+baseline**, and CI went green on it.
+
+`tests/visual/screenshots.spec.ts` holds a hand-maintained `PAGES` list that
+duplicates `playground/app/components/registry.ts`. The duplication is forced
+and cannot be removed: the playground is not a workspace member (D-012), it has
+its own lockfile, and neither side can import the other. The spec carried a
+comment about it:
+
+> Keep this list in step with `playground/app/components/registry.ts`. The two
+> cannot share a module — the playground is not a workspace member (D-012) — so
+> a component page without a screenshot here is a Definition of Done miss.
+
+**The comment was correct, predicted the exact failure, and could not prevent
+it.** `input` was added to the registry and not to `PAGES`. No screenshot test
+was generated, so the visual job compared twenty-eight baselines that all still
+matched, reported success, and skipped the authoring step — because there was
+nothing new to author.
+
+**The failure is silent in the one way that matters: a missing baseline normally
+fails loudly, but only for a test that exists.** Tier 0.6's whole design assumes
+that a new component produces a new screenshot test whose baseline is absent,
+which CI then authors (D-017). A component that produces no test at all walks
+straight through that mechanism, and the Definition of Done's "visual regression
+snapshots committed" box goes unmet with every check green.
+
+**`tests/unit/playground-registry.test.ts` asserts the invariant in both
+directions** — every registry slug has a screenshot entry, and every screenshot
+entry has a page. It runs in `npm test`, so it gates the same PRs CI does.
+
+It also asserts that both lists are non-empty, because both directional checks
+are vacuously true if either regex stops matching — which is precisely how a
+rewrite of either file would disable this test without anyone noticing. Verified
+by deleting the `input` entry and watching it fail by name, not merely by
+watching it pass.
+
+**The general rule, now stated for the third time in this log:** D-009 said rules
+that are not tested decay into rules that are not enforced; D-028 said
+cross-component agreement should be structural rather than vigilant. **A comment
+asking a future reader to keep two files in step is neither.** Where
+deduplication is genuinely impossible — and here it genuinely is — the agreement
+gets a test, not a paragraph.

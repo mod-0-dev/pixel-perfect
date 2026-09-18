@@ -38,6 +38,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'button-group', path: '/components/button-group' },
   { name: 'label', path: '/components/label' },
   { name: 'field', path: '/components/field' },
+  { name: 'input', path: '/components/input' },
 ];
 
 /**
