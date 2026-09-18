@@ -36,4 +36,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'toggle', name: 'Toggle', tier: '3.5' },
   { slug: 'button-group', name: 'ButtonGroup', tier: '3.4' },
   { slug: 'label', name: 'Label', tier: '3.6' },
+  { slug: 'field', name: 'Field', tier: '3.7' },
 ];

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3B — Field foundation |
-| **Status** | `spec` |
+| **Status** | `done` — 2026-09-18 (D-036, D-037) |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` (`useId` + context) |
 | **Depends on** | 3.6 `Label`, 1.4 `VisuallyHidden` |
@@ -118,6 +118,12 @@ Context requires the control to opt in. A bare `<input>`, or a third-party
 control, cannot — so `children` accepts a function that receives the spreadable
 props. It is the documented escape hatch for controls the library does not own.
 
+**Corrected during the build: the render prop is client-only** (D-037 §2). A
+function cannot cross the server/client boundary, so a Server Component passing
+one to `Field` fails the Next.js build with "Functions cannot be passed directly
+to Client Components". Passing an *element* works from anywhere, which is one
+more reason controls read context rather than being handed props.
+
 It is also the only way `Field` can be used **at all** right now: `Input` is 3.8
 and does not exist yet. A `Field` that could not be demonstrated, tested or
 shipped until the next component landed would be a `Field` whose API was
@@ -210,9 +216,8 @@ inconsistently across browsers, and adopting it would give `Field` two different
 DOM shapes and two stylesheets for one component. The ARIA route is equivalent
 in the accessibility tree and is one shape.
 
-**To verify at build:** that axe raises nothing for a `<label>` with no `for`.
-If it does, the fallback is a `<span>` carrying the label's own class, and that
-becomes a build finding rather than a silent deviation.
+**Verified at build:** axe raises nothing for a `<label>` with no `for`, in the
+group field's own test. The `<span>` fallback was not needed.
 
 ### 10. No `id` prop
 
@@ -221,12 +226,26 @@ lands on the root `<div>` like it does on every other component in the library.
 It does **not** secretly become the control's id — a prop that lands somewhere
 other than where it says is worse than no prop.
 
-`Field` owns the control's id, from `useId()` (RULES §7). A caller who needs a
-specific one uses the render prop and overrides it:
+`Field` owns the control's id, from `useId()` (RULES §7).
+
+**Corrected during the build (D-037 §1).** This section originally said a caller
+needing a specific id should override it through the render prop:
 
 ```tsx
+// ✗ overrides the id the control receives, but NOT the `for` on the label
+//   Field already rendered. The label points at nothing, and the control has no
+//   accessible name — silently.
 <Field label="Email">{(control) => <input {...control} id="email" />}</Field>
 ```
+
+That does not work, and a test now asserts the failure exists rather than
+pretending it does not. `Field` takes **`controlId`**, which wires both sides:
+
+```tsx
+<Field label="Email" controlId="email">{(control) => <input {...control} />}</Field>
+```
+
+It is `controlId` and not `id` for the reason this section gives above.
 
 ### 11. Explicit prop > field context > default
 
@@ -310,6 +329,7 @@ stops lining up.
 | `labelHidden` | `boolean` | `false` | Wraps the `Label` in `VisuallyHidden`. Still present, still associated |
 | `orientation` | `'vertical' \| 'horizontal'` | `'vertical'` | `horizontal` is the checkbox arrangement (§8) |
 | `group` | `boolean` | `false` | The control is a group, not a labelable element (§9) |
+| `controlId` | `string` | from `useId()` | When the control's id must be a known value (§10) |
 
 Plus every `<div>` attribute. `ref` goes to the root. Exported as `FieldProps`.
 

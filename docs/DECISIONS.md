@@ -1218,3 +1218,89 @@ This is the second time a break-it-and-watch check has found a test that could
 not fail (D-009, and the Tier 3A focus test). It is the check earning its place
 rather than a coincidence: **a test is not verified by passing, only by failing
 on the symptom it names.**
+
+## D-036 — `Field` is configuration, not a compound API
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §5.6
+
+RULES §5.6 prefers `<Card><Card.Header/></Card>` over configuration props, and
+warns that more than ~10 props probably means two components. `Field` takes
+eleven and stays one component.
+
+**`aria-describedby` has to be computed, and a compound API makes it a runtime
+discovery problem.** With props, `Field` knows at render whether a description
+and an error exist and builds the exact token list in one pass. With
+subcomponents it must have children register themselves through context — an
+effect, a state update, and a first render where the control's `describedby` is
+wrong — or point at ids that may not exist yet. A token pointing at a missing
+element is ignored silently by assistive tech, so that failure is invisible in
+testing and total in use.
+
+**The anatomy is invariant.** A field is a label, a description, a control and an
+error, in that order, always. Composition earns its keep where structure varies;
+here it would only buy the caller the ability to put the error above the label,
+which is a design regression the library should not offer.
+
+`Card` (5.1) remains compound — its slots really are optional and independent,
+and nothing about `Card.Header` has to know whether `Card.Footer` rendered.
+
+**Consequence:** every input in 3C and 3D is `<Field label="…"><Input /></Field>`
+and never `<Field.Label>`. If a future component needs the compound form, that
+is a new component, not a second API on this one.
+
+## D-037 — `Field` build findings
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/Field.md` §3, §10
+
+Five findings, four of them from a test or a build failing rather than from
+review.
+
+**1. §10's escape hatch did not work, and `controlId` replaces it.** The spec
+said a caller needing a specific control id should override it through the
+render prop: `{(control) => <input {...control} id="email" />}`. That overrides
+the id the control receives but not the `for` on the label `Field` has already
+rendered, so the label points at nothing and the control has no accessible name
+— silently. `Field` now takes `controlId`, which wires both sides. It is
+`controlId` and not `id` for the reason §10 gave in the first place: `id`
+spreads onto the root like it does on every other component, and a prop that
+lands somewhere other than where it says is worse than no prop. A test asserts
+the failure mode still exists for anyone who tries the old route.
+
+**2. A render prop cannot cross the server/client boundary.** `Field` is a
+client component, and a Server Component passing `children` as a *function*
+fails the Next.js build outright: "Functions cannot be passed directly to Client
+Components". Found by the playground prerender, the same way D-024's `Slot` ref
+bug was.
+
+The escape hatch is therefore **client-only**, and that is now documented in the
+spec, the docs page and the component. The ordinary path is unaffected —
+`<Field label="…"><Input /></Field>` passes an element, which serializes fine —
+and this is one more reason controls read context rather than being handed
+props: context has no such restriction.
+
+**3. `exactOptionalPropertyTypes` applies to the build, not to `npm test`.**
+`FieldControlProps` is assembled in one pass with `undefined` for every value
+that does not apply, which needs `?: T | undefined` rather than `?: T`. Only
+`tsc -p tsconfig.build.json` says so.
+
+**4. A failing `tsc` silently serves a stale stylesheet, and two break-it checks
+verified nothing.** `npm run build` is `build:js && build:css`, so a type error
+leaves `dist/pixel-perfect.css` untouched; the playground then rebuilds and
+serves the *previous* CSS, and a check that breaks a rule and watches a test
+still pass concludes the test is worthless when in fact the break never
+shipped. Two of this component's checks did exactly that.
+
+**The rule, for every browser check from here on: prove the break is in the
+served CSS before believing the result.** A `curl` of the stylesheet the page
+links, grepped for the broken declaration, is the whole of it. And grep the
+*served* file, not `dist/` — lightningcss does not minify, Next.js does, so
+`grid-column: 2` and `grid-column:2` are both correct answers in different
+files, and a pattern that assumes one silently reports zero for the other.
+
+**5. Two CSS declarations were lying about being load-bearing.** `Field`'s
+horizontal arrangement explicitly placed the control and the label at
+`grid-column: 1 / 2; grid-row: 1`. Removing both changed nothing in the browser:
+they are the first two items in source order, and pinning only the description
+and the error to column 2 makes auto-placement produce the identical grid. The
+explicit rules were deleted. A declaration that can be removed with no observable
+effect is not documentation, it is a claim of a dependency that does not exist.

@@ -1,0 +1,89 @@
+/*
+ * Field — spec docs/specs/Field.md
+ *
+ * A GRID, not a stack of margins. The four parts sit in one column when
+ * vertical and in two when horizontal, and the arrangement is the only thing
+ * this component draws. It does not restyle its children: the control's own
+ * invalid and disabled appearance belongs to the control, because
+ * `.pp-field[data-invalid] .pp-input` is precisely the cross-component selector
+ * --pp-label-cursor was invented to avoid (D-035, 3.6 §5).
+ *
+ * THE DESCRIPTION AND THE ERROR ARE THE LABEL'S TYPE SIZE, distinguished by
+ * colour and weight rather than by shrinking (D-034 continued). The control
+ * scale has no step below --pp-font-size-2 on purpose, and an error message is
+ * the single most important string in a failed form — setting it in the
+ * smallest type on the page is exactly backwards.
+ */
+
+@layer pp.components {
+  .pp-field {
+    /* Always emitted, never conditionally: custom properties inherit, so a
+       nested Field must redeclare its own or it would read its parent's
+       (D-024's always-emit rule, which is now three components old). */
+    --_font-size: var(--pp-control-font-size-md);
+
+    display: grid;
+    min-inline-size: 0;
+    gap: var(--pp-field-gap, var(--pp-space-1));
+  }
+
+  .pp-field[data-size="sm"] { --_font-size: var(--pp-control-font-size-sm); }
+  .pp-field[data-size="lg"] { --_font-size: var(--pp-control-font-size-lg); }
+
+  /*
+   * Horizontal — the checkbox arrangement. Column 1 hugs the control, column 2
+   * takes the rest; the description and the error fall into column 2 on the
+   * rows below by auto-placement.
+   */
+  .pp-field[data-orientation="horizontal"] {
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: var(--pp-field-gap-inline, var(--pp-space-2));
+    align-items: center;
+  }
+
+  /*
+   * Only the description and the error are placed. The control and the label
+   * need no rule at all: they are the first two items in source order, so
+   * auto-placement puts them in row 1 columns 1 and 2 on its own. Explicit
+   * `grid-column` / `grid-row` on both was written first and then deleted —
+   * removing it changed nothing at all in the browser, which is the definition
+   * of a declaration that is lying about being load-bearing.
+   *
+   * This IS load-bearing: without the pin, the description auto-places into
+   * column 1 and sits under the checkbox instead of under the label.
+   */
+  .pp-field[data-orientation="horizontal"] > .pp-field__description,
+  .pp-field[data-orientation="horizontal"] > .pp-field__error {
+    grid-column: 2;
+  }
+
+  /* A grid item, so a fill control fills the column it was given. */
+  .pp-field__control {
+    min-inline-size: 0;
+  }
+
+  .pp-field__description,
+  .pp-field__error {
+    /* <p> carries a UA margin the minimal reset does not touch. Removing it is
+       the rule, not a breach of it (D-018). */
+    margin: 0;
+    min-inline-size: 0;
+    font-size: var(--pp-field-font-size, var(--_font-size));
+    line-height: var(--pp-line-height-normal);
+    /* A message the user cannot read in full is a message that did not arrive. */
+    overflow-wrap: anywhere;
+  }
+
+  .pp-field__description {
+    color: var(--pp-field-description-color, var(--pp-color-text-muted));
+  }
+
+  /*
+   * The element carries data-pp-tone="danger", so --pp-tone-text resolves to the
+   * danger ramp's text colour in both themes without this file naming a hue
+   * (D-007). Contrast for that pairing is settled at the token layer (D-008).
+   */
+  .pp-field__error {
+    color: var(--pp-field-error-color, var(--pp-tone-text));
+  }
+}

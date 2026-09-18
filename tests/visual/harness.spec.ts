@@ -848,3 +848,138 @@ test.describe('Label', () => {
     }
   });
 });
+
+test.describe('Field', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  const box = (el: import('@playwright/test').Locator) =>
+    el.evaluate((node) => {
+      const r = node.getBoundingClientRect();
+      return { top: r.top, left: r.left, bottom: r.bottom, width: r.width };
+    });
+
+  test('vertical puts the label above the control and the error below it', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Required, and invalid', 'wide · 960px');
+    const field = wide.locator('.pp-field[data-invalid]').first();
+
+    const label = await box(field.locator('.pp-field__label'));
+    const description = await box(field.locator('.pp-field__description'));
+    const control = await box(field.locator('.pp-field__control'));
+    const error = await box(field.locator('.pp-field__error'));
+
+    // The order the spec commits to: label, description, control, error. The
+    // description is above the control because it is the instruction you need
+    // before you type; the error is below it because that is where the thing to
+    // fix is.
+    expect(label.bottom).toBeLessThanOrEqual(description.top);
+    expect(description.bottom).toBeLessThanOrEqual(control.top);
+    expect(control.bottom).toBeLessThanOrEqual(error.top);
+  });
+
+  test('horizontal puts the control beside the label, with the rest in the label column', async ({
+    page,
+  }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Horizontal — the checkbox arrangement', 'wide · 960px');
+    const field = wide.locator('.pp-field[data-orientation="horizontal"]').first();
+
+    const control = await box(field.locator('.pp-field__control'));
+    const label = await box(field.locator('.pp-field__label'));
+    const description = await box(field.locator('.pp-field__description'));
+
+    // Same row, control first.
+    expect(control.left).toBeLessThan(label.left);
+    expect(Math.abs(control.top - label.top)).toBeLessThan(label.bottom - label.top);
+    // The description is in the label's column, not under the checkbox.
+    expect(Math.round(description.left)).toBe(Math.round(label.left));
+    expect(description.top).toBeGreaterThanOrEqual(label.bottom - 1);
+  });
+
+  test('the description and the error are the label\'s type size', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, "The description and the error are the label", 'wide · 960px');
+
+    for (const size of ['sm', 'md', 'lg']) {
+      const field = wide.locator(`.pp-field[data-size="${size}"]`);
+      const sizes = await field.evaluate((node) => ({
+        label: getComputedStyle(node.querySelector('.pp-field__label') as HTMLElement).fontSize,
+        description: getComputedStyle(node.querySelector('.pp-field__description') as HTMLElement)
+          .fontSize,
+        error: getComputedStyle(node.querySelector('.pp-field__error') as HTMLElement).fontSize,
+      }));
+
+      // D-034 continued: distinguished by colour and weight, never by shrinking.
+      expect(sizes.description, `description shrank at size=${size}`).toBe(sizes.label);
+      expect(sizes.error, `error shrank at size=${size}`).toBe(sizes.label);
+    }
+  });
+
+  test('the error takes its colour from the danger tone, not from the text colour', async ({
+    page,
+  }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Required, and invalid', 'wide · 960px');
+    const field = wide.locator('.pp-field[data-invalid]').first();
+
+    const colors = await field.evaluate((node) => ({
+      label: getComputedStyle(node.querySelector('.pp-field__label') as HTMLElement).color,
+      description: getComputedStyle(node.querySelector('.pp-field__description') as HTMLElement)
+        .color,
+      error: getComputedStyle(node.querySelector('.pp-field__error') as HTMLElement).color,
+    }));
+
+    // Three distinct roles. The error resolves --pp-tone-text under
+    // data-pp-tone="danger" (D-007), so this fails if the attribute is dropped
+    // and the error silently inherits the page's text colour.
+    expect(colors.error).not.toBe(colors.label);
+    expect(colors.error).not.toBe(colors.description);
+    expect(colors.description).not.toBe(colors.label);
+  });
+
+  test('the control is named and described in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Required, and invalid', 'wide · 960px');
+    const control = wide.locator('.pp-field[data-invalid] input');
+
+    // D-030 §2. jsdom asserts this too, and jsdom's accessibility tree is a
+    // model of one rather than the one a screen reader reads.
+    await expect(control).toHaveAccessibleName('Email address');
+    await expect(control).toHaveAccessibleDescription(
+      'We only use this for receipts. Enter an email address in the format name@example.com',
+    );
+  });
+
+  test('a hidden label is hidden from sight and present in the tree', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'labelHidden hides the label', 'wide · 960px');
+
+    const label = wide.locator('.pp-field__label');
+    const size = await box(label);
+
+    // Clipped to nothing visually — and still the control's name.
+    expect(size.width).toBeLessThan(2);
+    await expect(wide.locator('.pp-field input')).toHaveAccessibleName('Search orders');
+  });
+
+  test('fill: the field takes the box it is given, at every width', async ({ page }) => {
+    await page.goto('/components/field');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'Long text wraps', width);
+      const ratio = await c.locator('.pp-field').evaluate((node) => {
+        const parent = node.parentElement as HTMLElement;
+        const style = getComputedStyle(parent);
+        const content =
+          parent.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        return node.getBoundingClientRect().width / content;
+      });
+      expect(ratio, `field did not fill its parent at ${width}`).toBeCloseTo(1, 2);
+    }
+  });
+});

@@ -26,20 +26,42 @@ is `done`.
 
 ### Current state
 
-- **In flight:** 3.7 **`Field`** — `spec`. **Gate C is open:**
-  [`docs/specs/Field.md`](docs/specs/Field.md) awaits API approval. It is the
-  most expensive API in the library: eleven components compose into it
-- **Settled at the gate:** `labelHidden` lives on `Field` and wraps the `Label`
-  in `VisuallyHidden`, never as a `Label` prop; `size` rides on both, with an
-  explicit prop on a control beating the field context beating the default
-- **Was next:** 3.7 **`Field`**. It is the component D-014's
-  carve-out was written about and the last one in Tier 3 approved on its own
-  ([D-027](docs/DECISIONS.md)); 3C is one gate after it. `Label`'s spec closes
-  with two open questions that are really `Field`'s to answer: where
-  `labelHidden` lives (recommendation: on `Field`, wrapping the `Label` in
-  `VisuallyHidden`, never a `Label` prop — a label that can hide itself gets
-  hidden by accident), and whether `size` rides on both (recommendation: yes,
-  `Field` passes it down)
+- **In flight:** _none_ — **Tier 3B is complete.** `Label` and `Field` are both
+  `done`, and they were the last two components in Tier 3 approved individually
+  ([D-027](docs/DECISIONS.md))
+- **Next up:** Tier 3C — 3.8 `Input`, 3.9 `Textarea`, 3.10 `Checkbox`,
+  3.11 `Radio`/`RadioGroup`, 3.12 `Switch`, 3.13 `Select`. **One spec, one
+  gate**, now that 3B is `done`. Every one of them composes into `Field`, reads
+  `useField()`, and follows the one precedence rule: an explicit prop beats the
+  field, which beats the default — for `size`, `required` and `disabled` alike
+- **What `Field` settled for all of 3C:** controls read their wiring from
+  context and are never cloned (D-036, extending D-033 one tier on); `error` is
+  the invalid state, with no `invalid` prop to contradict it and `''` counting
+  as valid because that is what form libraries hand you; `aria-describedby` is
+  built from what actually rendered, because a token pointing at a missing
+  element is ignored silently and so fails invisibly in testing and totally in
+  use; `field.size` is deliberately absent from the spreadable control props,
+  since spreading it onto a native `<input>` sets the HTML `size` attribute —
+  a control sizing itself, in the one place RULES §1 would never look
+- **A render prop cannot cross the server/client boundary** (D-037 §2).
+  `Field`'s escape hatch for controls the library does not own is therefore
+  client-only: a Server Component passing `children` as a function fails the
+  Next.js build outright. Passing an *element* works from anywhere, which is one
+  more reason 3C's controls read context instead of being handed props
+- **A failing `tsc` silently serves a stale stylesheet** (D-037 §4).
+  `npm run build` is `build:js && build:css`, so a type error leaves
+  `dist/pixel-perfect.css` untouched and the playground serves the previous CSS
+  — and two break-it checks concluded a test was worthless when the break had
+  never shipped. **Every browser check from here on proves the break is in the
+  served CSS first.** Grep the served file, not `dist/`: lightningcss does not
+  minify and Next.js does, so a pattern that assumes one reports zero for the
+  other
+- **Two CSS declarations were lying about being load-bearing** (D-037 §5).
+  `Field`'s horizontal grid explicitly placed the control and the label;
+  removing both changed nothing, because source order plus pinning the
+  description and error to column 2 produces the identical grid. Deleted. A
+  declaration that can be removed with no observable effect is a claim of a
+  dependency that does not exist
 - **What `Label` settled:** **D-034** — a form's type comes from the control
   scale, not the text scale. `size` resolves `--pp-control-font-size-*`, the
   same token the input beside it reads, so a label and its field agree by
@@ -95,8 +117,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 34 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations (0.10 docs site is deferred, not blocking) + 25 components
+- **Done:** 35 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations (0.10 docs site is deferred, not blocking) + 26 components
 
 ---
 
@@ -181,7 +203,7 @@ to the component it was written about — see
 | 3.4 | `ButtonGroup` | `done` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. One-border seam, no negative margin (D-033) |
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
-| 3.7 | **`Field`** | `spec` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md) — awaiting Gate C. Context, not `cloneElement`. Every input composes into this |
+| 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |
 | 3.9 | `Textarea` | `planned` | fill | client | 3.7 | Auto-resize opt-in |
 | 3.10 | `Checkbox` | `planned` | hug | client | 3.7 | Indeterminate state |
