@@ -26,13 +26,21 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 3A is complete** (5 / 5 action-core components
-  `done`). The library has a focus ring, a control scale and a keyboard
-- **Next up:** Tier 3B — 3.6 `Label` and 3.7 `Field`, the two components
-  [D-014](docs/DECISIONS.md) was actually written to protect and the only ones
-  in Tier 3 still approved **individually** ([D-027](docs/DECISIONS.md)). Every
-  input in 3C composes into `Field`, so its API is the expensive one to get
-  wrong
+- **In flight:** 3.6 `Label` — `spec`, on branch `tier-3b-field`. **Gate C is
+  open:** [`docs/specs/Label.md`](docs/specs/Label.md) is written and awaiting
+  API approval. No implementation may land until it is approved. The spec asks
+  for seven rulings, one of which (§1, labels scale off `--pp-control-font-size-*`
+  rather than the `Text` scale) becomes D-034 and binds every component in 3C
+  and 3D
+- **Next up:** 3.7 `Field`, which may not enter `spec` until `Label` is `done`.
+  These two are the only components in Tier 3 still approved **individually**
+  ([D-027](docs/DECISIONS.md)) — D-014's carve-out narrowed to the components
+  its reasoning was actually about. Every input in 3C composes into `Field`, so
+  its API is the expensive one to get wrong
+- **Tier 3A is complete** (5 / 5 action-core components `done`), merged to
+  `main` in [#4](https://github.com/mod-0-dev/pixel-perfect/pull/4). The library
+  now has a focus ring, a control scale, a keyboard-safe loading state and one
+  controlled/uncontrolled hook
 - **What 3A settled for everything after it:** `--pp-control-*` (32 / 40 / 48,
   so a `Button`, an `Input` and a `Select` agree by construction rather than by
   vigilance), the focus ring (an `outline` in `--pp-color-focus-ring` on every
@@ -61,8 +69,10 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 34 / 78 tracked items (10 foundations + 68 components). 0.10 docs
-  site is deferred, not blocking
+- **Done:** 33 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations (0.10 docs site is deferred, not blocking) + 24 components. The
+  previous count of 34 was an arithmetic error in this block, not a status
+  mismatch: every row was and is correct
 
 ---
 
@@ -146,7 +156,7 @@ to the component it was written about — see
 | 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
 | 3.4 | `ButtonGroup` | `done` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. One-border seam, no negative margin (D-033) |
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
-| 3.6 | `Label` | `planned` | fill | server | 1.1 | |
+| 3.6 | `Label` | `spec` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md) — awaiting Gate C. Scales off `--pp-control-font-size-*`, not the `Text` scale |
 | 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |
 | 3.9 | `Textarea` | `planned` | fill | client | 3.7 | Auto-resize opt-in |
