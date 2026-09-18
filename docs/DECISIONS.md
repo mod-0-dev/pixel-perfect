@@ -1405,10 +1405,26 @@ after.** `origin/changeset-release/main` already carries the correct output:
 every merge for five merges. Worth establishing first, because a fix applied to a
 pipeline with two faults looks exactly like a fix that did not work.
 
-**0.8 stays `blocked` until a Release run is observed succeeding** — D-009's rule,
-and the reason this entry exists. `gh run rerun 35335458783` is the check: it
-should open a "chore(release): version packages" PR, and merging that PR cuts and
-tags `v0.1.0`.
+**Observed succeeding 2026-09-18, and 0.8 is `done`.** The setting reads
+`can_approve_pull_request_reviews: true`, the rerun of the `main` Release run
+completed green, and it produced the artifact rather than merely exiting zero:
+PR **#6** `chore(release): version packages`, from `changeset-release/main`,
+carrying `0.0.0` → `0.1.0` and a generated `CHANGELOG.md`. Checked in that order
+deliberately — a green run and a created PR are different claims, and this entry
+exists because the first was never checked at all.
+
+**`Tag release` remains unobserved, and that is stated rather than assumed.** It
+is gated on `hasChangesets == 'false'`, which is only true once the version PR
+has merged, so it has never executed in this repository. Merging PR #6 is what
+runs it and cuts `v0.1.0` — the library's first tag. Until then the honest status
+of the tagging half is *unknown*, which is D-009's rule applied to the one step
+this fix did not exercise.
+
+That is a narrower caveat than the one this entry opened with. A conditional
+branch that has not yet met its condition is not the same as a pipeline that has
+never run, and 0.8 is `done` on the strength of the path that was broken now
+working. The distinction is worth keeping, because collapsing it in either
+direction is how a status stops meaning anything.
 
 ## D-039 — Tier 3C rulings, approved as a batch
 

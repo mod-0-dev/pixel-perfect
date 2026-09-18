@@ -68,16 +68,18 @@ is `done`.
   rather than a CSS asset — the first ruling proposed a `mask-image` data URI
   plus a lint rule to police it, and **a ruling that needs a new lint rule to be
   safe is evidence the mechanism is wrong**
-- **Blocked: 0.8, the release pipeline, and it has never once worked**
-  (**D-038**). The `Release` workflow has failed on all five merges to `main`,
-  from Tier 0 (`a39117e`) to Tier 3B (`5de2407`), always at the last step:
-  `changesets/action` tries to open the version PR and the repository policy
-  forbids GitHub Actions from creating pull requests. Everything upstream of
-  that step works, so the failure looks like a release and produces nothing —
-  **version `0.0.0`, no `CHANGELOG.md`, no git tag, 27 changesets pending.**
-  `CI` is green throughout and gates the merges, so no component's Definition
-  of Done was mis-ticked; what went unchecked for five merges was the *other*
-  workflow. It does not block component work (D-038 §3)
+- **0.8 is `done`, and was `blocked` for one day after five silent failures**
+  (**D-038**). The `Release` workflow had failed on every merge to `main` since
+  Tier 0 without anyone looking, always at the last step: the repository policy
+  forbade Actions from opening the version PR. Everything upstream succeeded
+  every time, so a failing release looked like a working one. Fixed by flipping
+  `can_approve_pull_request_reviews`, and **observed succeeding** — PR #6
+  `chore(release): version packages` is open, carrying `0.0.0` → `0.1.0` and a
+  generated `CHANGELOG.md`.
+  **One half is still unobserved:** `Tag release` is gated on there being no
+  pending changesets, so it has never run. Merging PR #6 is what proves it and
+  cuts the library's first tag. Until then the standing caution applies — a
+  step that has never been seen to pass is evidence of nothing (D-009)
 - **What `Field` settled for all of 3C:** controls read their wiring from
   context and are never cloned (D-036, extending D-033 one tier on); `error` is
   the invalid state, with no `invalid` prop to contradict it and `''` counting
@@ -161,10 +163,9 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 35 / 78 tracked items (10 foundations + 68 components) — 8
-  foundations + 27 components. Of the two foundations not `done`: 0.10 docs site
-  is deferred and not blocking, 0.8 release pipeline is `blocked` on a repository
-  setting (D-038)
+- **Done:** 36 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 27 components. The one foundation not `done` is 0.10 docs site,
+  deferred and not blocking
 
 ---
 
@@ -181,7 +182,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
 | 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013). Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
-| 0.8 | Changesets + release pipeline | `blocked` | 0.1 | **Has never completed a run** — the `Release` workflow has failed on all five merges to `main` (D-038). Repo policy forbids Actions opening the version PR. 27 changesets pending, version `0.0.0`, no tags. See `docs/RELEASING.md` |
+| 0.8 | Changesets + release pipeline | `done` | 0.1 | Observed succeeding 2026-09-18 after five silent failures (D-038). Versions, changelogs and tags; npm publish opt-in via `PUBLISH_TO_NPM`. **`Tag release` is still unobserved** — it runs when the version PR merges. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
 
