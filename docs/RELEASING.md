@@ -8,7 +8,7 @@ no registry, no auth, and no publish step:
 ```json
 {
   "dependencies": {
-    "pixel-perfect": "github:mod-0-dev/pixel-perfect#v0.1.0"
+    "pixel-perfect": "github:mod-0-dev/pixel-perfect#v0.3.0"
   }
 }
 ```
@@ -47,17 +47,15 @@ that PR cuts the release.
 **By default** the workflow versions, changelogs and tags. That is everything a
 git dependency needs.
 
-> **This has never actually run — 0.8 is `blocked`. See
-> [D-038](DECISIONS.md#d-038).** The workflow fails at the final step on every
-> merge to `main`: the repository policy forbids GitHub Actions from creating
-> pull requests, so the Version Packages PR is never opened. Everything before
-> it works, which is why the failure went unnoticed for five merges.
->
-> The consequence for the paragraph above: **nothing is tagged.** The
-> `Tag release` step is gated on there being no pending changesets, which is
-> only true once the version PR has merged. Until the policy is changed, `main`
-> stays at version `0.0.0` with no `CHANGELOG.md` and no tags, and a git
-> dependency has to be pinned by commit or branch rather than by tag.
+> **Proven end to end on 2026-09-18, after five silent failures.** The workflow
+> had failed at its final step on every merge to `main` since Tier 0, because
+> the repository policy forbade GitHub Actions from opening the Version Packages
+> PR — everything before that step worked, which is why nobody noticed. The
+> setting was flipped, PR #6 was opened and merged, and `v0.1.0` was read back
+> from `git ls-remote --tags`. `v0.2.0` and `v0.3.0` followed the same route.
+> See [D-038](DECISIONS.md#d-038) for the whole episode, and for the standing
+> rule it left: infrastructure is done when it has been observed producing its
+> artifact, not when its config file exists.
 
 **To publish to npm as well**, set the repository variable `PUBLISH_TO_NPM=true`
 and add an `NPM_TOKEN` secret. Nothing else changes; the same workflow starts

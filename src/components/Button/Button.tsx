@@ -98,8 +98,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
   /**
    * The label lives in its own element so `loading` can hide it with
-   * `visibility` while the box keeps its size. A button that shrinks under the
-   * cursor mid-click is how a mis-click happens.
+   * `opacity: 0` while the box keeps its size. A button that shrinks under the
+   * cursor mid-click is how a mis-click happens. Opacity and NOT `visibility`:
+   * `visibility: hidden` removes the label from the accessibility tree and the
+   * button loses its name at the moment it starts working (D-030 §2).
    */
   const inner = (node: ReactNode) => (
     <>

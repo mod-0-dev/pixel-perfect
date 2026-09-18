@@ -30,9 +30,12 @@
     /*
      * Inert by default, and that is the point. A pointer cursor is right for a
      * checkbox row and wrong for a block label above a text input, so Label
-     * declines to choose: Checkbox, Radio and Switch set --pp-label-cursor on
-     * their own root and it inherits down. Same mechanism as the tone context
-     * (D-007), and no .pp-checkbox .pp-label selector ever has to exist.
+     * declines to choose: a horizontal Field sets --pp-label-cursor on its own
+     * root and it inherits down to the label beside the control (D-045). Same
+     * mechanism as the tone context (D-007), and no .pp-checkbox .pp-label
+     * selector ever has to exist. It is Field and not Checkbox that sets it,
+     * because the label is the control's sibling and a custom property only
+     * inherits downward — nothing on the control's root could reach it.
      */
     cursor: var(--pp-label-cursor, inherit);
     /*

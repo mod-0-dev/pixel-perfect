@@ -755,9 +755,9 @@ That matches the platform and the "select all" case it exists for.
 
 | State | Exposed as | Visual treatment |
 | --- | --- | --- |
-| Checked | `data-state="checked"` | Box fills `--pp-tone-solid`, mask shows the check |
-| Unchecked | `data-state="unchecked"` | Box is `--pp-color-bg-surface` with a `--pp-color-border` edge |
-| Indeterminate | `data-state="indeterminate"` | Box fills, mask shows the dash |
+| Checked | `data-state="checked"` | Box fills `--pp-tone-solid`, the indicator draws the check (§7) |
+| Unchecked | `data-state="unchecked"` | Box is `--pp-color-bg-surface` with a `--pp-color-border` edge; no indicator is rendered |
+| Indeterminate | `data-state="indeterminate"` | Box fills, the indicator draws the dash |
 | Disabled | `data-disabled` | `--pp-color-bg-sunken`, `--pp-color-text-disabled`, `cursor: not-allowed` |
 | Invalid | `data-invalid`, `data-pp-tone="danger"` | Border → `--pp-tone-border` |
 | Focus | `:focus-visible` on the input | Ring on the input, which is the painted box |
@@ -772,9 +772,13 @@ That matches the platform and the "select all" case it exists for.
 | `--pp-checkbox-size` | `--pp-size-4/5/6` | The square |
 | `--pp-checkbox-radius` | `--pp-radius-1` | Corners — a checkbox is squarer than a control |
 | `--pp-checkbox-bg` | `--pp-color-bg-surface` | Unchecked fill |
-| `--pp-checkbox-bg-checked` | `--pp-tone-solid` | Checked fill |
 | `--pp-checkbox-border-color` | `--pp-color-border` | Edge |
 | `--pp-checkbox-mark-color` | `--pp-tone-on-solid` | The mark — set as `color`, which the SVG reads as `currentColor` |
+
+The checked fill is `--pp-tone-solid` and has no property of its own: set the
+tone, or set `--pp-checkbox-bg` inside a `[data-state="checked"]` scope of your
+own. (A `--pp-checkbox-bg-checked` was listed here at the gate and never built;
+removed rather than left as a promise the stylesheet does not keep.)
 
 ### Keyboard interaction
 
@@ -820,7 +824,7 @@ None. It hugs at every width.
 <Checkbox label="Email me about releases" />
 
 // ✗ Standalone and unlabelled is a 20px target with no accessible name:
-//   WCAG 2.5.8 and 4.1.2 in one line. The label is the rest of the target (§8).
+//   WCAG 2.5.8 and 4.1.2 in one line. Pass `aria-label`, or use a Field (§8, §13.2).
 <Checkbox />
 ```
 

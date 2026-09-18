@@ -183,7 +183,14 @@ body {
   overflow-wrap: anywhere;
 }
 
-/* A neutral button for harness pages, until Button (3.1) exists. */
+/*
+ * Harness-only helpers. The Tier 1 pages were written before Stack, Cluster
+ * and Button existed and still use these, deliberately: rewriting those pages
+ * onto the library's own primitives would change their screenshot baselines
+ * to prove nothing new. A page written after Tier 2 uses Stack and Cluster.
+ */
+
+/* A neutral button, for a page that needs a control without testing Button. */
 .demo-button {
   display: inline-flex;
   align-items: center;
@@ -196,7 +203,7 @@ body {
   cursor: pointer;
 }
 
-/* Vertical rhythm for harness pages, until Stack (2.1) exists. */
+/* Vertical rhythm, without putting Stack (2.1) under test on another page. */
 .stack-tight {
   display: flex;
   flex-direction: column;
@@ -204,7 +211,7 @@ body {
   min-width: 0;
 }
 
-/* Horizontal rhythm for harness pages, until Cluster (2.2) exists. */
+/* Horizontal rhythm, without putting Cluster (2.2) under test on another page. */
 .row-tight {
   display: flex;
   align-items: flex-start;
@@ -212,7 +219,7 @@ body {
   min-width: 0;
 }
 
-/* Wrapping row for harness pages, until Cluster (2.2) exists. */
+/* The wrapping form of the row above. */
 .row-wrap {
   display: flex;
   flex-wrap: wrap;
@@ -221,8 +228,9 @@ body {
 }
 
 /*
- * A stand-in control for the Field harness, until Input (3.8) exists. It fills
- * its container because that is the sizing contract Input will have — a native
+ * A stand-in control for the Field page, which demonstrates the render prop
+ * with bare <input>s on purpose — a control the library does not own. It fills
+ * its container because that is the sizing contract Input has — a native
  * <input> hugs to its `size` attribute's character count, which would make the
  * Field page demonstrate the wrong thing.
  */

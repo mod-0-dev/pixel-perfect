@@ -42,6 +42,27 @@
   }
 
   /*
+   * THE POINTER OVER A CHECKBOX ROW IS SET HERE, NOT BY THE CHECKBOX (D-045).
+   *
+   * Label exposes `--pp-label-cursor` so a control that makes its whole row a
+   * click target can ask for the pointer without a `.pp-checkbox .pp-label`
+   * selector. The Label spec said Checkbox, Radio and Switch would set it on
+   * their own root — but inside a Field the label is the control's SIBLING,
+   * and a custom property only inherits downward, so nothing set on the
+   * control could ever reach it. The common ancestor is this element, and the
+   * horizontal arrangement IS the checkbox arrangement, so the row asks for
+   * the pointer once, here, through Label's public API — the one channel
+   * D-044 allows across a component boundary.
+   *
+   * Not on a disabled row: a disabled control cannot take focus, so clicking
+   * its label does nothing, and a pointer would promise a click that does not
+   * happen. The control beneath already shows `not-allowed`.
+   */
+  .pp-field[data-orientation="horizontal"]:not([data-disabled]) {
+    --pp-label-cursor: pointer;
+  }
+
+  /*
    * Only the description and the error are placed. The control and the label
    * need no rule at all: they are the first two items in source order, so
    * auto-placement puts them in row 1 columns 1 and 2 on its own. Explicit

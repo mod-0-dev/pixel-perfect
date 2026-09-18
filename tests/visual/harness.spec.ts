@@ -955,6 +955,46 @@ test.describe('Field', () => {
     );
   });
 
+  /*
+   * D-045. Label exposes --pp-label-cursor and the Label spec said Checkbox
+   * would set it on its own root — which could never work, because inside a
+   * Field the label is the control's SIBLING and a custom property only
+   * inherits downward. The horizontal Field is the common ancestor and sets it
+   * once. Asserted as a computed style on the label itself, so it fails if the
+   * declaration moves back onto the control where nothing can read it.
+   */
+  test('a horizontal field gives its label the pointer; a vertical one does not', async ({
+    page,
+  }) => {
+    await page.goto('/components/field');
+
+    const cursorOf = (section: string, selector: string) =>
+      cell(page, section, 'wide · 960px')
+        .locator(selector)
+        .first()
+        .locator('.pp-field__label')
+        .evaluate((el) => getComputedStyle(el).cursor);
+
+    expect(
+      await cursorOf('Horizontal — the checkbox arrangement', '.pp-field[data-orientation="horizontal"]'),
+      'the checkbox row is one click target and its label should say so',
+    ).toBe('pointer');
+    expect(
+      await cursorOf('Label, description, control', '.pp-field[data-orientation="vertical"]'),
+      'a block label above a text input overstates the affordance with a pointer',
+    ).not.toBe('pointer');
+  });
+
+  test('a disabled horizontal field does not promise a click with a pointer', async ({ page }) => {
+    await page.goto('/components/checkbox');
+
+    const cursor = await cell(page, 'Disabled', 'wide · 960px')
+      .locator('.pp-field[data-orientation="horizontal"][data-disabled] .pp-field__label')
+      .first()
+      .evaluate((el) => getComputedStyle(el).cursor);
+    expect(cursor).not.toBe('pointer');
+  });
+
   test('a hidden label is hidden from sight and present in the tree', async ({ page }) => {
     await page.goto('/components/field');
     const wide = cell(page, 'labelHidden hides the label', 'wide · 960px');

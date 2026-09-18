@@ -5,17 +5,23 @@ import { Matrix } from '../../../harness/Matrix';
 
 const SIZES = ['sm', 'md', 'lg'] as const;
 
-/** What Checkbox (3.10) will set on its own root. Custom properties inherit. */
+/**
+ * What a horizontal Field sets on its own root (D-045). Set by hand here
+ * because this row is a bare Cluster, not a Field. Custom properties inherit,
+ * so the ancestor is the only place it can be set from.
+ */
 const clickableRow = { '--pp-label-cursor': 'pointer' } as CSSProperties;
 
 /**
- * Input (3.8) does not exist yet, so the association demo below uses bare
- * <input>s. It is rendered ONCE, outside the Matrix, and that is not an
- * oversight: the Matrix renders the same subtree six times, so any `id` inside
- * it appears six times, and `for` resolves to the first match in the document —
- * which would silently associate five of the six labels with a control in
- * another cell. Appearance is demonstrated in the matrices; association is
- * demonstrated here, where the ids are unique.
+ * The association demo below uses bare <input>s on purpose: this page shows
+ * Label standalone, where the caller owns the id and the control's own
+ * `required` — the case Field (3.7) exists to remove. It is rendered ONCE,
+ * outside the Matrix, and that is not an oversight: the Matrix renders the
+ * same subtree six times, so any `id` inside it appears six times, and `for`
+ * resolves to the first match in the document — which would silently associate
+ * five of the six labels with a control in another cell. Appearance is
+ * demonstrated in the matrices; association is demonstrated here, where the
+ * ids are unique.
  */
 
 export default function LabelPage() {
@@ -137,11 +143,12 @@ export default function LabelPage() {
         <p>
           <code>Label</code> declares <code>cursor: var(--pp-label-cursor, inherit)</code> and
           nothing else. Pointer is right for a checkbox row and wrong for a block label above a text
-          input, so <code>Checkbox</code>, <code>Radio</code> and <code>Switch</code> will set{' '}
-          <code>--pp-label-cursor: pointer</code> on their own root and let it inherit — the same
-          mechanism as the tone context (D-007), and no <code>.pp-checkbox .pp-label</code> selector
-          ever has to exist. The first row below sets it by hand, standing in for the component that
-          does not exist yet.
+          input, so a horizontal <code>Field</code> sets <code>--pp-label-cursor: pointer</code> on
+          its own root and lets it inherit — the same mechanism as the tone context (D-007), and no{' '}
+          <code>.pp-checkbox .pp-label</code> selector ever has to exist. It is the field and not
+          the checkbox that sets it: the label is the control&rsquo;s sibling, and a custom property
+          only inherits downward (D-045). The first row below is a bare <code>Cluster</code>, so it
+          sets the property by hand.
         </p>
         <Stack gap="4">
           <Cluster gap="2" align="center" style={clickableRow}>

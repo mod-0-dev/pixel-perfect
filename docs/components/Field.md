@@ -135,6 +135,12 @@ at. `group` switches the wiring to `aria-labelledby`:
 | `--pp-field-error-color` | `--pp-tone-text` (danger) | Error |
 | `--pp-field-font-size` | `--pp-control-font-size-<size>` | Description and error |
 
+A horizontal field also sets `Label`'s own `--pp-label-cursor` to `pointer` on
+its root, so the label beside a checkbox reads as the click target it is. It is
+the field that sets it and not the control, because the label is the control's
+sibling and a custom property only inherits downward ([D-045](../DECISIONS.md)).
+A disabled field leaves it alone.
+
 The description and the error are the **same type size as the label**,
 distinguished by colour and weight rather than by shrinking. An error message is
 the most important string in a failed form; the smallest type on the page is the

@@ -125,8 +125,9 @@ export default function ButtonPage() {
         <h2>Loading — aria-disabled, not disabled</h2>
         <p>
           The button stays focusable and keeps its size; the label is hidden with{' '}
-          <code>visibility</code> rather than removed, so the accessible name never changes and the
-          box never shrinks under the cursor. A <code>disabled</code> button would be blurred by the
+          <code>opacity</code>, never <code>visibility</code> or <code>display</code> — those two
+          remove it from the accessibility tree — so the accessible name never changes and the box
+          never shrinks under the cursor. A <code>disabled</code> button would be blurred by the
           browser the instant it disabled, which is the bug this avoids.
         </p>
         <Matrix>
