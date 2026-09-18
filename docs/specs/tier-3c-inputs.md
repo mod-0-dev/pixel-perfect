@@ -15,7 +15,7 @@
 | --- | --- | --- | --- |
 | 3.8 `Input` | **`done`** | 3.11 `Radio`/`RadioGroup` | `spec` |
 | 3.9 `Textarea` | **`done`** | 3.12 `Switch` | `spec` |
-| 3.10 `Checkbox` | `spec` | 3.13 `Select` | `spec` |
+| 3.10 `Checkbox` | **`done`** | 3.13 `Select` | `spec` |
 
 ---
 

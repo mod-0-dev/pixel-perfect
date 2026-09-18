@@ -1,0 +1,175 @@
+/*
+ * Checkbox — spec docs/specs/tier-3c-inputs.md §3.10
+ *
+ * The first of the three CHECKABLE controls, and the first control in 3C that
+ * is not a text surface: no --pp-control-height-*, no inline padding, no
+ * placeholder. It is a box, sized 16 / 20 / 24 from --pp-size-4/5/6 (spec §8).
+ *
+ * `inline-size` is declared here under the D-019 exemption, which D-031
+ * extended to IconButton and D-039 §7 extends to this file: the box is
+ * intrinsically square, and that is not the "how much of my parent do I take"
+ * decision RULES §1 reserves for the parent. It is explicit in
+ * `.stylelintrc.json` rather than routed around with `aspect-ratio`.
+ *
+ * THE NATIVE INPUT IS THE PAINTED CONTROL (D-039 §2). `appearance: none` on the
+ * real <input>, styled directly, with the mark as an aria-hidden sibling
+ * stacked in the same grid cell. Not a hidden input behind a div — that has to
+ * rebuild :checked, :indeterminate, label-click, Space, form reset, autofill
+ * and the accessibility tree, and rebuilds them incompletely.
+ */
+
+@layer pp.components {
+  .pp-checkbox {
+    --_size: var(--pp-size-5);
+    /*
+     * RESOLVED HERE, ON OUR OWN ROOT, AND THAT IS THE WHOLE POINT.
+     *
+     * `--_size` is not private. Nothing in CSS scopes a custom property to a
+     * component; the leading underscore is a naming convention and no more. The
+     * indicator carries `.pp-icon` as well as `.pp-checkbox__indicator`, and
+     * Icon.css legitimately declares its own `--_size: 1em` on `.pp-icon` — so
+     * reading `var(--_size)` down there resolved to ICON's value, not ours, and
+     * an `lg` checkbox drew a 16px mark in a 24px box.
+     *
+     * A custom property is substituted at computed-value time on the element
+     * where it is DECLARED, so resolving it on the root and letting the result
+     * inherit reads our own value by construction. The rule this generalises
+     * to: resolve a private property on the element that owns it, and pass the
+     * result down. Reading `--_anything` inside another component's root is
+     * reading whatever that component happens to mean by the name.
+     */
+    --_mark-size: var(--pp-checkbox-size, var(--_size));
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_mark: var(--pp-tone-on-solid);
+
+    /* hug: inline-level, intrinsically sized, no width declaration that decides
+       anything about the parent. One cell, two children stacked in it. */
+    display: inline-grid;
+    /*
+     * NO `flex-shrink: 0`, AND THAT IS A MEASUREMENT RATHER THAN AN OVERSIGHT.
+     *
+     * Icon.css carries one, so its absence here needs saying. It was written,
+     * then removed in a non-wrapping Cluster at 240px beside an unbreakable
+     * neighbour — the squeeze it was supposed to survive — and the box measured
+     * 20px either way. A flex item's automatic minimum size is its content's,
+     * and this one's content is an <input> with a definite `inline-size`, so
+     * there is nothing for flex to take. Icon needs the declaration because its
+     * child is an SVG at `inline-size: 100%`, which contributes nothing to a
+     * min-content measurement.
+     *
+     * Deleted under D-037 §5: a declaration that can be removed with no
+     * observable effect is a claim of a dependency that does not exist.
+     */
+  }
+
+  .pp-checkbox[data-size="sm"] { --_size: var(--pp-size-4); }
+  .pp-checkbox[data-size="lg"] { --_size: var(--pp-size-6); }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3). `.pp-checkbox[data-state="checked"] .pp-checkbox__input` is
+   * 0-3-0 and would outrank `.pp-checkbox__input:focus-visible` at 0-2-0, which
+   * is exactly how Input shipped a focus border that never appeared on an
+   * invalid control. On the root the custom property inherits down and the
+   * control's own pseudo-class wins for that element.
+   *
+   * Source order is therefore the whole precedence story below: checked, then
+   * invalid, then disabled — each one overriding the last.
+   */
+  .pp-checkbox[data-state="checked"],
+  .pp-checkbox[data-state="indeterminate"] {
+    --_bg: var(--pp-tone-solid);
+    --_border: var(--pp-tone-solid);
+  }
+
+  /* The root carries data-pp-tone="danger", so --pp-tone-border resolves in the
+     danger ramp without this file naming a colour (D-007). After `checked`, so
+     an invalid checked box still reads as invalid. */
+  .pp-checkbox[data-invalid] {
+    --_border: var(--pp-tone-border);
+  }
+
+  /* Last, so a disabled checked box is grey rather than solid — the state the
+     user can do nothing about should not be the loudest thing in the form. */
+  .pp-checkbox[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_border: var(--pp-color-border);
+    --_mark: var(--pp-color-text-disabled);
+  }
+
+  .pp-checkbox__input {
+    grid-area: 1 / 1;
+    inline-size: var(--pp-checkbox-size, var(--_size));
+    block-size: var(--pp-checkbox-size, var(--_size));
+    /* The UA gives an <input> a margin the minimal reset leaves alone. Removing
+       it is the rule rather than a breach of it (D-018, and Field.css does the
+       same to a <p>): RULES §2 is about a component's own root spacing itself,
+       not about zeroing what the user agent added inside. */
+    margin: 0;
+    border: var(--pp-border-width-1) solid var(--pp-checkbox-border-color, var(--_border));
+    /* A checkbox is squarer than a control surface: --pp-radius-1, not
+       --pp-control-radius. At 16px the control radius reads as a circle. */
+    border-radius: var(--pp-checkbox-radius, var(--pp-radius-1));
+    background-color: var(--pp-checkbox-bg, var(--_bg));
+    appearance: none;
+    cursor: pointer;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* The reset crushes durations in pp.reset and this file is in pp.components,
+     so ours would win. Every animated component answers for itself. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-checkbox__input {
+      transition-property: none;
+    }
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4). The outline is
+   * the focus affordance — one colour library-wide, outside the box, the only
+   * pairing lint:contrast asserts. The border shift is the control
+   * acknowledging focus in its own tone, inside the box.
+   *
+   * Declared on the INPUT, which is where the focus is. The root's --_border
+   * inherits down and this wins for this element, so focus beats checked,
+   * invalid and disabled without any of them being reordered around it.
+   */
+  .pp-checkbox__input:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+    --_border: var(--pp-tone-focus);
+  }
+
+  /* pointer-events: none is deliberately NOT used on the input, for the reason
+     Button.css gives: it kills `title`, breaks a Tooltip (4.3) wrapping the
+     control, and makes cursor: not-allowed impossible to show. */
+  .pp-checkbox[data-disabled] .pp-checkbox__input {
+    cursor: not-allowed;
+  }
+
+  .pp-checkbox__indicator {
+    grid-area: 1 / 1;
+    /*
+     * Icon's own styling API, used as the escape hatch RULES §3 sanctions —
+     * not a deep selector into another component. It tracks the box rather
+     * than a fixed step, so overriding --pp-checkbox-size moves the box AND
+     * the mark; passing Icon a `size` prop would move only the box.
+     *
+     * --_mark-size, never var(--_size): see the root. Icon declares --_size on
+     * this very element, and it would win.
+     */
+    --pp-icon-size: var(--_mark-size);
+
+    place-self: center;
+    /* The pointer only ever hits the input beneath. Without this a click
+       landing on the mark is a click on a <span>, and the box does not toggle
+       — which looks like a dead centre on a control that works at its edges. */
+    pointer-events: none;
+    /* Set as `color`, which the inline SVG reads as currentColor (D-039 §3).
+       The solid-vs-on-solid pairing is solved once at the token layer. */
+    color: var(--pp-checkbox-mark-color, var(--_mark));
+  }
+}

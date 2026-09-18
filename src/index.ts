@@ -19,6 +19,11 @@ export {
   type ClusterProps,
 } from './components/Cluster/Cluster';
 export { Center, type CenterAxis, type CenterProps } from './components/Center/Center';
+export {
+  Checkbox,
+  type CheckboxProps,
+  type CheckedState,
+} from './components/Checkbox/Checkbox';
 export { Code, type CodeProps } from './components/Code/Code';
 export {
   Heading,

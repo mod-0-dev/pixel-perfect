@@ -26,9 +26,34 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3.9 `Textarea` is `done`.** Next is 3.10 `Checkbox`,
-  then `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec` under the
+- **In flight:** _none_ — **3.10 `Checkbox` is `done`.** Next is 3.11
+  `Radio`/`RadioGroup`, then `Switch`, `Select`, all already `spec` under the
   Gate C approval of 2026-09-18 (**D-039**)
+- **A private custom property is not private, and `Icon`'s `--_size` beat
+  `Checkbox`'s** (**D-044 §1**). The indicator carries `.pp-icon` as well as
+  `.pp-checkbox__indicator`, and `Icon.css` declares `--_size: 1em` on that very
+  element — correctly, under D-024's always-emit rule. So reading
+  `var(--_size)` down there resolved to Icon's value and an `lg` checkbox drew a
+  16px mark in a 24px box, which on the page looks like a design choice. The
+  leading underscore is a naming convention; CSS has no component scope. **The
+  other half of D-024: emit your private properties on your own root, and
+  resolve them there too** — a custom property is substituted where it is
+  declared, so resolving on the root and letting the result inherit reads your
+  own value by construction. `Radio`, `Switch` and `Select` all render another
+  component's root as one of their parts and will all hit this
+- **React restores `checked` for a controlled input; nothing restores
+  `indeterminate`** (D-044 §2). A click clears the DOM property, and a parent
+  that ignores `onCheckedChange` never re-renders, so the effect does not run
+  either — the third state gone on the first click, in the component that exists
+  to hold it. Re-asserted at the end of the change handler, where React's
+  batching makes the render-time value the correct one to write
+- **Borrowing a precedent is not sharing its cause** (D-044 §3). `flex-shrink: 0`
+  was copied from `Icon` and was inert: a flex item's automatic minimum size is
+  its content's, and this content is an `<input>` with a definite `inline-size`,
+  where Icon's is an SVG at `100%` that contributes nothing to min-content. The
+  declaration went (D-037 §5) and so did the test beside it, which could not
+  fail — the first draft of its demo used a **wrapping** `Cluster`, making it a
+  squeeze test with no squeeze in it
 - **A scale exists to stop people inventing values, and this is the case where
   the value genuinely is not on it** (**D-043 §1**). A one-row `Textarea` should
   be exactly an `Input`'s height — D-028's agreement, on the axis D-028 never
@@ -214,8 +239,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 37 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations + 28 components. The one foundation not `done` is 0.10 docs site,
+- **Done:** 38 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 29 components. The one foundation not `done` is 0.10 docs site,
   deferred and not blocking
 
 ---
@@ -304,7 +329,7 @@ to the component it was written about — see
 | 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
 | 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040). Baseline landed after the fact (D-042) |
 | 3.9 | `Textarea` | `done` | fill | client | 3.7 | Auto-resize opt-in, floored at `rows`. Block padding derived from `--pp-control-*`, because the space scale cannot express it (D-043) |
-| 3.10 | `Checkbox` | `spec` | hug | client | 3.7 | Indeterminate state |
+| 3.10 | `Checkbox` | `done` | hug | client | 3.7 | Tri-state, and only the caller can set the third. 16/20/24 from the size scale; 2.5.8 through the spacing exception (D-044) |
 | 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |
 | 3.12 | `Switch` | `spec` | hug | client | 3.7 | |
 | 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
