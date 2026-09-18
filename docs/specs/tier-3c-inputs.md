@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3C |
-| **Status** | `spec` — awaiting Gate C approval |
+| **Status** | **approved** 2026-09-18 — Gate C passed, five open questions resolved (see §13) |
 | **Components** | 3.8 `Input` · 3.9 `Textarea` · 3.10 `Checkbox` · 3.11 `Radio`/`RadioGroup` · 3.12 `Switch` · 3.13 `Select` |
 | **Depends on** | 3.7 `Field` (`done`), 3.6 `Label` (`done`), Tier 3A (`done`), Tiers 0–2 (`done`) |
 | **Approval** | One gate for the group ([D-027](../DECISIONS.md#d-027)) |
@@ -215,6 +215,14 @@ wrong, it is already present and we would be replacing it with a copy.
 2. **`Radio` may be used outside a `RadioGroup`**, but then the caller owns
    `name`. Documented as the "don't" on `Radio`'s page.
 
+**One mismatch to know about before someone "fixes" it.** APG specifies
+Left/Right for a horizontal radio group and Up/Down for a vertical one. Native
+radios respond to **all four** arrows regardless of visual orientation, which is
+a superset of the pattern rather than a deviation from it — so
+`orientation="horizontal"` ships no keyboard code and no divergence note. The
+next person to read the APG page will notice the difference; this paragraph is
+why it stays.
+
 `RadioGroup` renders `role="radiogroup"` and `Field`'s `group` prop wires
 `aria-labelledby` to the label — the path `Field` shipped for precisely this
 component.
@@ -250,36 +258,41 @@ Both children occupy the same grid cell. The indicator is `aria-hidden` and
 transparent to the pointer: every click lands on the real input underneath.
 `Radio` and `Switch` are the same three nodes with different geometry.
 
-### 7. The mark is a `mask-image`, so its colour comes from a token
+### 7. The mark is an inline `Icon`, not a CSS asset
 
-The indicator needs a checkmark, a dash, a dot and a thumb. Four options, and
-none of them is free:
+The indicator needs a checkmark, a dash, a dot and a chevron. **The indicator is
+a `<span>`, so it takes children** — only the `<input>` is void — which means the
+mark is simply an SVG in the markup:
+
+```tsx
+<Icon className="pp-checkbox__indicator" decorative>
+  <path d="…" />
+</Icon>
+```
+
+`Icon` (1.3) already ships `1em` sizing, `currentColor`, and the
+`label` / `decorative` discriminant that makes a nameless icon a type error.
+The colour comes from `color: var(--pp-tone-on-solid)` on the indicator — a
+token, so the mark inverts per theme and per tone with no further work.
+
+**Three CSS-side approaches were considered and all three lose to it:**
 
 | Approach | Why not |
 | --- | --- |
-| `background-image` with an SVG data URI | The stroke colour is baked into the URI. That is a hardcoded colour in component CSS (RULES §3) and it cannot respond to theme or tone |
-| An `<svg>` child | The input is void; the indicator would need its own child, and `Icon` (1.3) requires a path as `children`, so every checkbox ships an inline path |
-| CSS-drawn (rotated box with two borders) | No asset, but the checkmark needs a width, a height, a rotation and two border widths tuned by eye — more magic numbers than the thing it avoids |
-| **`mask-image` with a colourless SVG data URI** | **Proposed** |
+| `background-image` with an SVG data URI | The stroke colour is baked into the URI: a hardcoded colour in component CSS (RULES §3) that no theme can reach |
+| `mask-image` with a colourless data URI | Works, and costs a new lint rule that parses inside a data URI for `fill=`, `stroke=` and `#`, plus the exemption to go with it. A URL-encoded `%3Csvg…` blob also cannot be read in a diff |
+| CSS-drawn (rotated box, two borders) | No asset, but the checkmark needs a width, a height, a rotation and two border widths tuned by eye — more magic numbers than the thing it avoids, and it looks mediocre at 16px |
 
-The mask carries **geometry only — no colour at all** — and the paint comes from
-`background-color: var(--pp-tone-on-solid)`, a token, which means the mark
-inverts correctly per theme and per tone for free.
+The only thing any of them buys is about sixty bytes of markup per control. That
+does not pay for a lint rule, an exemption, and an unreadable stylesheet — and
+the SVG path is the mechanism every other icon in this library already uses.
 
-This is the same shape as the exemptions D-016 §5 and D-025 granted
-`VisuallyHidden`: a fixed technique whose values are part of the technique rather
-than design decisions. The ruling is narrow and checkable: **a `mask-image` data
-URI is permitted in component CSS if it contains no colour**, which the rule lint
-enforces by rejecting `fill=`, `stroke=` and `#` inside a `mask-image` URI. A
-fixture goes in `violations.css` so the rule is observed firing (D-009).
+`Radio`'s dot and `Switch`'s thumb need no SVG at all: they are filled boxes at
+`border-radius: var(--pp-radius-full)`.
 
-`Switch`'s thumb and `Radio`'s dot need no mask at all — they are a filled
-`border-radius: var(--pp-radius-full)` box — so this affects the checkmark and
-the indeterminate dash only.
+### 8. The checkable controls are 16 / 20 / 24, and the spacing exception is why
 
-### 8. The checkable controls are 16 / 20 / 24, and the label is the touch target
-
-A checkbox is not 40px tall. `--pp-control-height-md` is the wrong token here,
+A checkbox is not 40px tall. `--pp-control-height-*` is the wrong token here,
 and the checkable three take their own square from the size scale:
 
 | `size` | Box | Token |
@@ -291,19 +304,31 @@ and the checkable three take their own square from the size scale:
 `Switch` is a `2:1` track at the same block sizes, so a `md` switch is 40×20 and
 lines up with a `md` checkbox beside it.
 
-**This means the painted box is smaller than WCAG 2.2 SC 2.5.8's 24×24 minimum
-at `sm` and `md`, and that is deliberate.** The target is not the box — it is the
-box *plus its label*, because a `<label>` with a `for` is part of the control's
-hit area in every browser. Inside a `Field` that association is guaranteed, which
-is the strongest argument yet for the docs saying a `Checkbox` belongs in a
-`Field`. A standalone, unlabelled `md` checkbox is a 20px target and a 2.5.8
-failure, and that is documented as the caller's, on the component's page, in the
-"don't".
+**Two of the three are smaller than WCAG 2.2 SC 2.5.8's 24×24 minimum, and they
+pass on the spacing exception** — undersized targets are conforming if a 24px
+diameter circle centred on each does not intersect the circle of another. Against
+the real tokens, at `RadioGroup`'s default `gap="3"` (`--pp-space-3`, 12px):
+
+| `size` | Box | Centre to centre | 24px circles |
+| --- | --- | --- | --- |
+| `sm` | 16px | 28px | clear |
+| `md` | 20px | 32px | clear |
+| `lg` | 24px | 36px | meets the minimum outright |
+
+**This is why `RadioGroup`'s `gap` defaults to `"3"` and not `"2"`.** At `"2"`
+(8px) a column of `sm` radios puts centres exactly 24px apart — tangent circles,
+which touch at a point, which is an argument with an auditor rather than a pass.
+`"3"` is the floor that makes the exception hold, and it is asserted in a test
+rather than eyeballed.
+
+The associated label enlarges the real target further, because a `<label for>`
+accepts the pointer action for its control in every browser — but that is now a
+second line of defence rather than the argument. A bare, unlabelled `<Checkbox />`
+in a dense custom layout is still the caller's 2.5.8 problem, and that is the
+"don't" on the component's page.
 
 **Rejected:** inflating the box to 24px at every size, which makes `sm`
-meaningless and puts a comically large checkbox next to `sm` text; and an
-invisible padded hit area on the wrapper, which overlaps the neighbouring
-control in a dense `Stack` and steals its clicks.
+meaningless and puts a comically large checkbox next to `sm` text.
 
 ### 9. `Select` is the native element, indicator and all
 
@@ -347,7 +372,12 @@ remaining props onto it. For the three components with a wrapper — `Checkbox`,
 literal reading gives the caller a ref to a span and spreads `placeholder` onto
 it.
 
-**Proposal, for every component in this group:**
+**The principle: the root is the box, the control is the element.** Anything
+describing appearance goes to the box; anything functional goes to the element.
+For `Input` and `Textarea` the two are the same node and this collapses to
+RULES §5 unchanged.
+
+**Concretely, for every component in this group:**
 
 - **`ref` → the control element** (`<input>`, `<textarea>`, `<select>`). A ref to
   a form control is used to focus it, read `.value`, call `.setCustomValidity()`
@@ -360,10 +390,14 @@ it.
 `Input` and `Textarea` have no wrapper, so for them all four land on the same
 element and the question does not arise.
 
-This is a deliberate divergence from RULES §5.1/§5.3 and gets a DECISIONS entry
-if approved. The alternative — a `wrapperProps` escape hatch — was rejected as
-the beginning of `inputProps`, `labelProps` and `indicatorProps`, which is the
-configuration sprawl RULES §5.6 exists to stop.
+The props type stays `ComponentPropsWithoutRef<'input'>`, so the split is
+invisible to the caller: they see input props and they get input props. The
+divergence is in where the wrapper's `className` lands and nowhere else.
+
+This is a deliberate divergence from RULES §5.1/§5.3 and is recorded as
+[D-039](../DECISIONS.md#d-039). The alternative — a `wrapperProps` escape hatch
+— was rejected as the beginning of `inputProps`, `labelProps` and
+`indicatorProps`, which is the configuration sprawl RULES §5.6 exists to stop.
 
 ### 12. Every one of these renders an id, so every playground page splits in two
 
@@ -429,7 +463,7 @@ at all and letting the block box fill; the `size` *attribute* is never set.
 | `invalid` | `boolean` | field, then `false` | Sets `data-pp-tone="danger"` and `aria-invalid` (§3) |
 | `disabled` | `boolean` | field, then `false` | Native attribute |
 | `required` | `boolean` | field, then `false` | Native attribute |
-| `type` | `Exclude<HTMLInputTypeAttribute, 'checkbox' \| 'radio' \| 'button' \| 'submit' \| 'reset' \| 'image' \| 'range'>` | `'text'` | Passthrough, not an invented prop (D-030 §3). The excluded values are other components |
+| `type` | `Exclude<HTMLInputTypeAttribute, 'checkbox' \| 'radio' \| 'button' \| 'submit' \| 'reset' \| 'image' \| 'range' \| 'file' \| 'hidden'>` | `'text'` | Passthrough, not an invented prop (D-030 §3). Every excluded value is another component — `Checkbox`, `Radio`, `Button`, `Slider` (3.15), `FileUpload` (5.10) — or, for `hidden`, no component at all |
 | `value` / `defaultValue` / `onChange` | native | — | Straight to the DOM (§2) |
 | …rest | `ComponentPropsWithoutRef<'input'>` | — | `placeholder`, `autoComplete`, `name`, `onBlur`, `aria-*` |
 
@@ -507,6 +541,15 @@ decide how much.
 // ✗ `size` is the prop, never the HTML attribute — that one counts characters
 //   and is a control sizing itself (RULES §1).
 <Input size={40} />
+
+// ✗ type="number" is allowed, and is still usually the wrong tool. It mutates
+//   its value on a scroll wheel over a focused field, rejects a locale decimal
+//   comma, and reports value === '' for anything it cannot parse — so `1,5`
+//   typed in a German locale is silently lost.
+<Input type="number" />
+
+// ✓ until NumberInput (3.14), which will be type="text" for these reasons
+<Input inputMode="numeric" pattern="[0-9]*" />
 ```
 
 ---
@@ -648,14 +691,15 @@ a 2:1 track is as intrinsic as a 1:1 box.
 ```
 <span class="pp-checkbox" data-size data-state data-invalid? data-disabled?>
   ├── <input class="pp-checkbox__input" type="checkbox">     ← the box
-  └── <span class="pp-checkbox__indicator" aria-hidden />    ← the mark
+  └── <span class="pp-icon pp-checkbox__indicator" aria-hidden>  ← <Icon decorative>
+        └── <svg><path/></svg>                                   check or dash
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | Root | `pp-checkbox` | `<span>` | Grid, one cell, both children stacked. `className` lands here (§11) |
 | Input | `pp-checkbox__input` | `<input type="checkbox">` | `appearance: none`, painted as the box. `ref` and rest props land here (§11) |
-| Indicator | `pp-checkbox__indicator` | `<span>` | `aria-hidden`, `pointer-events: none`, masked check or dash (§7) |
+| Indicator | `pp-checkbox__indicator` | `<Icon decorative>` | `aria-hidden` via `decorative`, `pointer-events: none`, holds the check or dash path (§7) |
 
 ### Props
 
@@ -697,7 +741,7 @@ That matches the platform and the "select all" case it exists for.
 | `--pp-checkbox-bg` | `--pp-color-bg-surface` | Unchecked fill |
 | `--pp-checkbox-bg-checked` | `--pp-tone-solid` | Checked fill |
 | `--pp-checkbox-border-color` | `--pp-color-border` | Edge |
-| `--pp-checkbox-mark-color` | `--pp-tone-on-solid` | The mark |
+| `--pp-checkbox-mark-color` | `--pp-tone-on-solid` | The mark — set as `color`, which the SVG reads as `currentColor` |
 
 ### Keyboard interaction
 
@@ -787,7 +831,7 @@ primitives size the boxes they create).
 | Group root | `pp-radio-group` | `<div role="radiogroup">` | Named by `Field`'s label via `aria-labelledby` (`group` prop) |
 | Radio root | `pp-radio` | `<span>` | |
 | Radio input | `pp-radio__input` | `<input type="radio">` | `appearance: none`, round |
-| Radio indicator | `pp-radio__indicator` | `<span>` | The dot — a filled circle, no mask needed (§7) |
+| Radio indicator | `pp-radio__indicator` | `<span>` | The dot — a filled circle at `--pp-radius-full`, no SVG needed (§7) |
 
 ### Props — `RadioGroup`
 
@@ -798,7 +842,7 @@ primitives size the boxes they create).
 | `onValueChange` | `(value: string) => void` | — | |
 | `name` | `string` | `useId()` | **Generated when omitted** (§5). Grouping *is* the name |
 | `orientation` | `'vertical' \| 'horizontal'` | `'vertical'` | `data-orientation`; horizontal wraps |
-| `gap` | `Space` | `'2'` | Passed to the internal layout primitive (D-020) |
+| `gap` | `Space` | `'3'` | Passed to the internal layout primitive (D-020). **Not `'2'`** — `'3'` is the floor that keeps `sm` radios clear of WCAG 2.5.8's spacing exception (§8) |
 | `size` / `disabled` / `required` / `invalid` | | field, then default | Published to every `Radio` through the group's own context |
 
 ### Props — `Radio`
@@ -1039,14 +1083,15 @@ width and letting the block box fill.
 ```
 <span class="pp-select" data-size data-invalid? data-disabled?>
   ├── <select class="pp-select__input">…</select>
-  └── <span class="pp-select__indicator" aria-hidden />   ← chevron
+  └── <span class="pp-icon pp-select__indicator" aria-hidden>  ← <Icon decorative>
+        └── <svg><path/></svg>                                   chevron
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | Root | `pp-select` | `<span>` | `display: grid`, one cell. `className` lands here |
 | Input | `pp-select__input` | `<select>` | `appearance: none`, the surface, the ref and prop target |
-| Indicator | `pp-select__indicator` | `<span>` | Masked chevron, `pointer-events: none` so the click opens the popup |
+| Indicator | `pp-select__indicator` | `<Icon decorative>` | The chevron path, `pointer-events: none` so the click opens the popup |
 
 ### Props
 
@@ -1139,7 +1184,7 @@ thing is the only new thing in it:
 | --- | --- | --- |
 | 1 | `Input` | The control surface, the four-value precedence rule, the tone-shifted focus border (§4). Everything after it copies this |
 | 2 | `Textarea` | Only auto-resize is new |
-| 3 | `Checkbox` | The wrapper/input/indicator structure (§6), the mask ruling (§7), the `inline-size` exemption (§8), `useControllableState` |
+| 3 | `Checkbox` | The wrapper/input/indicator structure (§6), the `Icon` indicator (§7), the `inline-size` exemption (§8), `useControllableState` |
 | 4 | `Radio`/`RadioGroup` | Only the group: `name` generation and the three-level precedence |
 | 5 | `Switch` | Checkbox's structure with a thumb and a transition |
 | 6 | `Select` | The wrapper again, plus the platform popup |
@@ -1179,25 +1224,44 @@ Beyond the Definition of Done's standing requirements:
 - **The `Matrix` id constraint** (§12) is asserted per page by reading a real
   accessible name outside the matrix.
 
-## Open questions
+## §13 — The five open questions, resolved
 
-Resolve at Gate C.
+Answered at Gate C on 2026-09-18. Three of the five changed the spec above;
+they are recorded here because the reasoning is the part worth keeping.
 
-1. **§7's mask ruling** — is a colourless `mask-image` data URI an acceptable
-   asset in component CSS, with the lint rejecting `fill=`, `stroke=` and `#`
-   inside one? The alternative is a CSS-drawn checkmark with more magic numbers
-   and no rule to enforce.
-2. **§8's target size** — 16/20/24 with the label supplying the rest of the
-   WCAG 2.5.8 target, or 24 at every size? The first makes `sm` meaningful and
-   makes an unlabelled standalone checkbox the caller's problem; the second is
-   unconditionally compliant and makes `sm` nearly pointless.
-3. **§11's ref/prop split** — `ref` and rest props to the control, `className`
-   and `style` to the root. This diverges from RULES §5.1/§5.3 and needs a
-   DECISIONS entry if approved.
-4. **§5's overturn of "roving tabindex"** in `ROADMAP.md` 3.11 — confirm, and
-   the roadmap Notes cell is updated in the same commit.
-5. **`Input`'s excluded `type` values** — the table bans `checkbox`, `radio`,
-   `button`, `submit`, `reset`, `image` and `range` because each is another
-   component or no component at all. `number` is *allowed* pending
-   `NumberInput` (3.14); should it be excluded now so the migration is a type
-   error later, or allowed so the tier is usable before 3D lands?
+**1. The mark (§7) — none of the three CSS options. It is an inline `Icon`.**
+The original ruling proposed a colourless `mask-image` data URI plus a lint rule
+to police it. That was measuring against the wrong constraint: the `<input>` is
+void, but the *indicator* is a `<span>` and takes children. The mark is an SVG
+path in the markup, coloured by `currentColor` from a token. It deletes a
+proposed lint rule, a proposed exemption, and an unreadable URL-encoded blob, and
+it costs about sixty bytes of markup per control.
+
+**2. The target size (§8) — 16/20/24 stands; the justification changed.**
+The original argument was that the label supplies the rest of the WCAG 2.5.8
+target, which leaves a bare `<Checkbox />` indefensible. The real argument is
+2.5.8's **spacing exception**, which needs no label: at `gap="3"` the 24px
+circles are clear at every size. That moved `RadioGroup`'s default gap from `"2"`
+to `"3"`, where `"2"` put `sm` centres exactly 24px apart — tangent, which is an
+argument rather than a pass. The label remains a second line of defence.
+
+**3. The ref/prop split (§11) — approved, with the principle stated as
+"the root is the box, the control is the element."** Recorded as D-039.
+
+**4. Overturning "roving tabindex" (§5) — approved.** `ROADMAP.md` 3.11's Notes
+cell is updated in the same commit. One addition to the spec: native radios
+answer all four arrow keys regardless of orientation, which is a superset of
+APG rather than a deviation, so `orientation="horizontal"` ships no keyboard code.
+
+**5. `Input`'s `type` (§3.8) — `number` is allowed, and two more are excluded.**
+Banning a type the platform supports, to push people toward a component that does
+not exist yet, is hostile for the months between 3C and 3.14. `file` and `hidden`
+join the exclusion list — the first is `FileUpload` (5.10) and renders as a
+button that ignores every token we have, the second needs no component at all.
+
+The more useful finding sits underneath the question: **`NumberInput` (3.14)
+should not be `type="number"` either.** That input mutates its value on a scroll
+wheel over a focused field, rejects a locale decimal comma, and reports
+`value === ''` for anything it cannot parse, so `1,5` typed in a German locale is
+silently lost. 3.14 is `type="text"` with `inputMode="numeric"`, and `Input`'s
+"don't" says so now rather than surprising someone in 3D.

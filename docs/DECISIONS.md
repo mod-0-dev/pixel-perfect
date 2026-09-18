@@ -1380,3 +1380,113 @@ Enabling the setting changes repository policy; a PAT adds a secret with more
 authority than `GITHUB_TOKEN`; committing the version directly to `main` from CI
 removes the human review step that the version PR exists to provide. Recorded
 here rather than resolved, with 0.8 `blocked` until one is chosen.
+
+## D-039 — Tier 3C rulings, approved as a batch
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §5.1, §5.3; D-019; ROADMAP 3.11
+
+Gate C for the six native inputs
+([`tier-3c-inputs.md`](specs/tier-3c-inputs.md)). Twelve rulings were put up and
+all twelve accepted; three were amended at the gate and are recorded in the
+spec's §13. The ones that are precedents rather than local choices:
+
+**1. `ref` and rest props go to the control; `className` and `style` go to the
+root.** RULES §5.1 forwards `ref` to the root element and §5.3 spreads the
+remaining props onto it. For `Checkbox`, `Radio`, `Switch` and `Select` the root
+is a decorative wrapper, so a literal reading hands the caller a ref to a
+`<span>` and spreads `placeholder` onto it.
+
+The principle: **the root is the box, the control is the element.** Anything
+describing appearance goes to the box; anything functional goes to the element.
+A ref to a form control is used to focus it, read `.value`, call
+`setCustomValidity()` and hand to `react-hook-form` — a ref to the wrapper does
+none of them. For `Input` and `Textarea` the two are the same node and this
+collapses to RULES §5 unchanged.
+
+The props type stays `ComponentPropsWithoutRef<'input'>`, so the split is
+invisible: the caller sees input props and gets input props.
+
+Rejected: a `wrapperProps` escape hatch, which is the first of `inputProps`,
+`labelProps` and `indicatorProps` — the configuration sprawl RULES §5.6 exists
+to stop.
+
+**2. The native input is the painted control.** `appearance: none` on the real
+`<input>`, styled directly, with the mark as an `aria-hidden` sibling. Not a
+hidden input behind a `<div role="checkbox">`, which has to rebuild `:checked`,
+`:indeterminate`, label-click, Space, form reset, autofill and the accessibility
+tree, and rebuilds them incompletely.
+
+**3. The mark is an inline `Icon`, not a CSS asset — and the first answer was
+wrong.** The spec originally ruled for a colourless `mask-image` data URI, plus
+a lint rule parsing inside the URI for `fill=`, `stroke=` and `#`, plus the
+exemption to go with it. That measured against the wrong constraint: the
+`<input>` is void, but the **indicator is a `<span>` and takes children**. So the
+mark is an SVG path in the markup, inside `Icon` (1.3), coloured by
+`currentColor` from a token.
+
+It deletes a proposed lint rule and a proposed exemption, and it makes the path
+reviewable in a diff rather than URL-encoded in a stylesheet. The whole cost is
+about sixty bytes of markup per control.
+
+**Worth generalising:** the rejected options were all CSS mechanisms, and the
+question was never a CSS question. A ruling that proposes a new lint rule to
+make itself safe is evidence the mechanism is wrong, not that the linter is
+missing a feature.
+
+**4. Undersized checkable controls pass 2.5.8 on spacing, not on the label.**
+The boxes are 16/20/24 (`--pp-size-4/5/6`), so `sm` and `md` are under WCAG 2.2
+SC 2.5.8's 24×24 minimum. They conform through the **spacing exception** — a
+24px circle centred on each target does not intersect its neighbour's — which,
+unlike the label argument, does not depend on a label existing.
+
+**This is why `RadioGroup`'s `gap` defaults to `"3"` and not `"2"`.** At 8px a
+column of `sm` radios puts centres exactly 24px apart: tangent circles, touching
+at a point, which is an argument with an auditor rather than a pass. 12px clears
+it at every size (28 / 32 / 36). The default is load-bearing and asserted in a
+test — the third time a default has been (D-020's `gap="0"`, D-022 §6's
+`gutter="5"`, now this one).
+
+**5. `RadioGroup` implements no roving tabindex, overturning `ROADMAP.md` 3.11.**
+Radios sharing a `name` already implement the APG Radio Group pattern in every
+browser, including wrapping, Home/End and skipping disabled members. Writing our
+own means removing that and rebuilding it. This is RULES §8's argument pointed
+at the browser rather than at Radix, and D-030 §7's `ButtonGroup` ruling a second
+time.
+
+**Consequence: `RadioGroup` generates a `name` from `useId()` when none is
+given.** Grouping *is* the `name` attribute, so two unnamed groups on one page
+are one group and selecting in either clears the other — silent, and exactly the
+kind of thing that ships.
+
+Native radios also answer all four arrow keys regardless of orientation, which is
+a superset of APG rather than a deviation. Recorded so the next reader of the APG
+page does not "fix" it.
+
+**6. Text controls use no state hook.** `Input`, `Textarea` and `Select` pass
+`value` / `defaultValue` / `onChange` straight to the DOM. This is the fullest
+compliance with RULES §5.5, not an exception to it: React's inputs already
+implement the exact contract D-032 wrote down, and wrapping them would hand
+callers an `onChange` taking a value instead of an event — unusable by
+`react-hook-form`, and unable to read `event.target.validity`.
+
+`Checkbox`, `Switch` and `RadioGroup` do use `useControllableState`, because
+RULES §4 needs the state during render to emit `data-state`, and a native
+checkbox's checkedness is not available to the render that has to describe it.
+
+**7. The `inline-size` exemption extends to three more files.** `Checkbox`,
+`Radio` and `Switch` join `Icon`, `Spinner`, `Avatar` (D-019) and `IconButton`
+(D-031). All `hug`, all intrinsically sized, all explicit in `.stylelintrc.json`
+rather than routed around with `aspect-ratio`. `Switch` is the first that is not
+square — a 2:1 track is as intrinsic as a 1:1 box.
+
+**8. `Input` allows `type="number"`, and `NumberInput` will not use it.**
+Excluding a type the platform supports, to push callers toward a component that
+does not exist until 3.14, is hostile for the months in between. `file` and
+`hidden` do join the exclusion list — the first is `FileUpload` (5.10), the
+second needs no component.
+
+The finding underneath: `type="number"` mutates its value on a scroll wheel over
+a focused field, rejects a locale decimal comma, and reports `value === ''` for
+anything it cannot parse, so `1,5` in a German locale is silently lost.
+`NumberInput` (3.14) is `type="text"` with `inputMode="numeric"`, and `Input`'s
+docs say so now rather than surprising someone a tier later.

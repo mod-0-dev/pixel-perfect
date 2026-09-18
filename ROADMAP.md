@@ -26,13 +26,24 @@ is `done`.
 
 ### Current state
 
-- **In flight:** Tier 3C — 3.8 `Input`, 3.9 `Textarea`, 3.10 `Checkbox`,
-  3.11 `Radio`/`RadioGroup`, 3.12 `Switch`, 3.13 `Select`, all in `spec` in
-  [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md). **One spec, one gate**
-  ([D-027](docs/DECISIONS.md)), awaiting approval at Gate C. Every one composes
-  into `Field`, reads `useField()`, and follows the one precedence rule: an
-  explicit prop beats the field, which beats the default — for `size`,
-  `required`, `disabled` and `invalid` alike
+- **In flight:** **3.8 `Input`** (`build`) — the first of Tier 3C, whose spec
+  [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) was approved at Gate C on
+  2026-09-18 (**D-039**). The other five are `spec` and implement in order:
+  `Textarea`, `Checkbox`, `Radio`/`RadioGroup`, `Switch`, `Select`. `Input` is
+  first because it establishes the control surface — if that is wrong it is
+  wrong in one file rather than three
+- **The one precedence rule, in all six:** an explicit prop beats the field,
+  which beats the default — for `size`, `required`, `disabled` and `invalid`
+  alike, including `disabled={false}` inside a disabled `Field`. "Explicit wins"
+  is a rule you can hold in your head; "explicit wins except for disabled" is one
+  you have to look up
+- **What D-039 settled that outlives 3C:** the root is the box and the control is
+  the element (so `ref` and rest props go to the `<input>`, `className` and
+  `style` to the wrapper); the native input is the painted control, never a
+  hidden input behind a `div role="checkbox"`; and the mark is an inline `Icon`
+  rather than a CSS asset — the first ruling proposed a `mask-image` data URI
+  plus a lint rule to police it, and **a ruling that needs a new lint rule to be
+  safe is evidence the mechanism is wrong**
 - **Blocked: 0.8, the release pipeline, and it has never once worked**
   (**D-038**). The `Release` workflow has failed on all five merges to `main`,
   from Tier 0 (`a39117e`) to Tier 3B (`5de2407`), always at the last step:
@@ -203,7 +214,7 @@ to the component it was written about — see
 | --- | --- | --- |
 | **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — **`done`** 2026-09-17 (D-027 … D-033) |
 | **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
-| **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **`spec`**, one gate, awaiting approval |
+| **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **approved** 2026-09-18 (D-039). Implementing in order |
 | **3D — Composite inputs** | 3.14–3.16 | one gate |
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
@@ -215,10 +226,10 @@ to the component it was written about — see
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
 | 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
-| 3.8 | `Input` | `spec` | fill | client | 3.7 | |
+| 3.8 | `Input` | `build` | fill | client | 3.7 | The control surface, the four-value precedence rule, the tone-shifted focus border. Everything after it copies this |
 | 3.9 | `Textarea` | `spec` | fill | client | 3.7 | Auto-resize opt-in |
 | 3.10 | `Checkbox` | `spec` | hug | client | 3.7 | Indeterminate state |
-| 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | ~~Roving tabindex~~ — the spec asks to overturn this cell ([tier-3c §5](docs/specs/tier-3c-inputs.md)): native `name` grouping already implements the APG pattern. Unsettled until Gate C |
+| 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |
 | 3.12 | `Switch` | `spec` | hug | client | 3.7 | |
 | 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
 | 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |
