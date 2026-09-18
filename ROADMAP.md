@@ -73,13 +73,15 @@ is `done`.
   Tier 0 without anyone looking, always at the last step: the repository policy
   forbade Actions from opening the version PR. Everything upstream succeeded
   every time, so a failing release looked like a working one. Fixed by flipping
-  `can_approve_pull_request_reviews`, and **observed succeeding** — PR #6
-  `chore(release): version packages` is open, carrying `0.0.0` → `0.1.0` and a
-  generated `CHANGELOG.md`.
-  **One half is still unobserved:** `Tag release` is gated on there being no
-  pending changesets, so it has never run. Merging PR #6 is what proves it and
-  cuts the library's first tag. Until then the standing caution applies — a
-  step that has never been seen to pass is evidence of nothing (D-009)
+  `can_approve_pull_request_reviews`, and **proven end to end the same day**:
+  PR #6 merged, `Tag release` ran for the first time instead of being skipped,
+  and the library has its first release — **`v0.1.0` tagged on origin**,
+  `CHANGELOG.md` on `main`, `0.0.0` → `0.1.0`, all 27 changesets consumed.
+  The tag was read from `git ls-remote` rather than inferred from a green step,
+  because **a step succeeding and an artifact existing are different claims** —
+  mistaking one for the other is what cost five merges. The lesson generalises
+  past linters (D-009): **infrastructure is `done` when it has been observed
+  producing its artifact, not when its config file exists**
 - **What `Field` settled for all of 3C:** controls read their wiring from
   context and are never cloned (D-036, extending D-033 one tier on); `error` is
   the invalid state, with no `invalid` prop to contradict it and `''` counting
@@ -182,7 +184,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
 | 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013). Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
-| 0.8 | Changesets + release pipeline | `done` | 0.1 | Observed succeeding 2026-09-18 after five silent failures (D-038). Versions, changelogs and tags; npm publish opt-in via `PUBLISH_TO_NPM`. **`Tag release` is still unobserved** — it runs when the version PR merges. See `docs/RELEASING.md` |
+| 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
 

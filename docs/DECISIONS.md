@@ -1413,18 +1413,39 @@ carrying `0.0.0` → `0.1.0` and a generated `CHANGELOG.md`. Checked in that ord
 deliberately — a green run and a created PR are different claims, and this entry
 exists because the first was never checked at all.
 
-**`Tag release` remains unobserved, and that is stated rather than assumed.** It
-is gated on `hasChangesets == 'false'`, which is only true once the version PR
-has merged, so it has never executed in this repository. Merging PR #6 is what
-runs it and cuts `v0.1.0` — the library's first tag. Until then the honest status
-of the tagging half is *unknown*, which is D-009's rule applied to the one step
-this fix did not exercise.
+**`Tag release` observed the same day, and the pipeline is now proven end to
+end.** Merging PR #6 (`ce456d1`) ran Release once more with no changesets left,
+so the step finally executed instead of being skipped:
 
-That is a narrower caveat than the one this entry opened with. A conditional
-branch that has not yet met its condition is not the same as a pipeline that has
-never run, and 0.8 is `done` on the strength of the path that was broken now
-working. The distinction is worth keeping, because collapsing it in either
-direction is how a status stops meaning anything.
+| Evidence | Result |
+| --- | --- |
+| Release run 35346875708 | `success` |
+| step `Changesets` / `Tag release` | `success` / **`success`** |
+| `git ls-remote --tags origin` | `v0.1.0`, `v0.1.0^{}` |
+| `package.json` on `main` | `0.1.0` |
+| `CHANGELOG.md` on `main` | present |
+| `.changeset/*.md` remaining | none — all 27 consumed |
+
+The tag was read from `ls-remote` rather than inferred from the step's exit code,
+for the same reason the version PR was checked rather than the run's colour: a
+step succeeding and an artifact existing are different claims, and mistaking one
+for the other is the entire content of this entry.
+
+**A predicted failure mode did not happen, and the prediction was wrong for a
+checkable reason.** `git push --follow-tags` pushes only *annotated* tags, so
+lightweight ones would have produced a green step and no tag — a silent failure
+shaped exactly like the one being fixed. `@changesets/git` runs
+`git tag <name> -m <name>`, and `-m` makes the tag annotated, so `--follow-tags`
+carries it. Confirmed in the dependency's source before the run finished, and
+then in the peeled `v0.1.0^{}` ref afterwards. Worth recording because the guess
+was reasonable and still wrong: the source settled it in one grep.
+
+**The whole episode, in one line:** a workflow that had never once succeeded sat
+behind a `done` status for five merges, and the check that found it — `gh run
+list` — costs a second and had never been run. The Definition of Done gained
+nothing from this that D-009 did not already say about linters; what it gained
+is a second domain where the rule holds. **Infrastructure is `done` when it has
+been observed producing its artifact, not when its config file exists.**
 
 ## D-039 — Tier 3C rulings, approved as a batch
 
