@@ -122,6 +122,10 @@ Always close with:
 ```
 In flight : <Name> (<status>)
 Next up   : <Name> (tier N)
-Done      : X / 75
+Done      : X / N
 Blocked   : <items or none>
 ```
+
+Both numbers in `Done` are read from `ROADMAP.md`'s **Current state** block.
+Never hardcode the denominator here: it was `75` until 2026-09-18 and had been
+wrong since the roadmap was written, which shipped at 77 and is now 78.

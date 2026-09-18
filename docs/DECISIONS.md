@@ -1304,3 +1304,79 @@ they are the first two items in source order, and pinning only the description
 and the error to column 2 makes auto-placement produce the identical grid. The
 explicit rules were deleted. A declaration that can be removed with no observable
 effect is not documentation, it is a claim of a dependency that does not exist.
+
+## D-038 — The release pipeline has never run; `blocked` is its real status
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** ROADMAP 0.8, Gate B
+
+Found by checking CI on `main` before starting Tier 3C, which no session had
+done since the workflow was written.
+
+**Two workflows run on a push to `main`. Only one of them was ever looked at.**
+`CI` — lint, typecheck, test, build, token freshness, visual regression — is
+green on every merge and is what gates the PRs. `Release` has failed on **all
+five merges to `main`**: `a39117e` (Tier 0), `3b7edec` (Tier 1), `6d265e8`
+(Tier 2), `f3bcbfa` (Tier 3A), `5de2407` (Tier 3B). It has never succeeded once.
+
+```
+##[error]HttpError: GitHub Actions is not permitted to create or approve
+pull requests.
+```
+
+`changesets/action` versions the package, writes `CHANGELOG.md`, commits, and
+force-pushes `changeset-release/main` — all of which worked every time — and
+then calls the API to open the version PR, which the repository's Actions policy
+forbids. `.github/workflows/release.yml` already grants `pull-requests: write`;
+the job-level permission is not the thing saying no. The repository or
+organisation setting **Settings → Actions → General → Workflow permissions →
+"Allow GitHub Actions to create and approve pull requests"** is.
+
+**1. The failure mode is the dangerous kind: it looks like it worked.** Every
+step that produces visible output succeeded, the release branch really is pushed
+and up to date, and the only thing missing is the PR that would let a human
+merge it. So `main` carries version `0.0.0`, no `CHANGELOG.md` and no git tag
+after twenty-six components, and the branch that would fix all three has been
+sitting force-pushed and unmerged since 2026-09-17.
+
+`docs/RELEASING.md` says that without `PUBLISH_TO_NPM` "the repo still gets
+versions, a CHANGELOG and git tags, which is all a git dependency needs." That
+sentence is false as written and has been since it was written: the `Tag release`
+step is gated on `hasChangesets == 'false'`, which is only ever true *after* the
+version PR merges, and the version PR has never existed. Nothing tags anything.
+
+**2. 0.8 is `blocked`, not `done`.** The Definition of Done says a thing that
+cannot be completed "goes to `blocked` with a stated reason — never to `done`."
+0.8's deliverables were reviewed as files — a workflow, a config, a docs page —
+and the file existing was taken for the pipeline working. It is the same mistake
+D-009 names for linters: **a pipeline that has never been observed succeeding
+provides no evidence about anything**, and the observation is one `gh run list`
+away.
+
+The component work is unaffected. Every `Changeset added` box was ticked
+truthfully: 27 changesets exist and are correct, including one each for `Label`
+and `Field` under generated names. They are pending, not missing.
+
+**3. A blocked release pipeline does not gate component work**, and this is an
+explicit ruling rather than an oversight, because Tier 0's heading says
+"Nothing else may start until this tier is `done`" and Gate B says "Tier 0 must
+be fully `done` before any component starts." Read literally, 0.8 turning
+`blocked` halts the roadmap.
+
+That reading is wrong, and the reason is the one Tier 0's rule was written for:
+the tier gates component work because **components are built on it** — tokens,
+layers, the test harness, the lint. Nothing about `Input` depends on a version
+number or a git tag. The consuming app installs from a git ref, which resolves
+without tags. The blast radius of shipping Tier 3C with the release pipeline
+broken is that the changeset count goes from 27 to 33.
+
+**So Gate B reads: every foundation a component *consumes* must be `done`.**
+0.8 and 0.10 are release and documentation infrastructure, and neither is
+consumed by a component. If this exception is ever load-bearing for something
+else, it needs its own entry — it is not a general licence to start work on top
+of a broken foundation.
+
+**4. Fixing it is the user's call, because every route is outward-facing.**
+Enabling the setting changes repository policy; a PAT adds a secret with more
+authority than `GITHUB_TOKEN`; committing the version directly to `main` from CI
+removes the human review step that the version PR exists to provide. Recorded
+here rather than resolved, with 0.8 `blocked` until one is chosen.

@@ -34,6 +34,16 @@ is `done`.
   gate**, now that 3B is `done`. Every one of them composes into `Field`, reads
   `useField()`, and follows the one precedence rule: an explicit prop beats the
   field, which beats the default — for `size`, `required` and `disabled` alike
+- **Blocked: 0.8, the release pipeline, and it has never once worked**
+  (**D-038**). The `Release` workflow has failed on all five merges to `main`,
+  from Tier 0 (`a39117e`) to Tier 3B (`5de2407`), always at the last step:
+  `changesets/action` tries to open the version PR and the repository policy
+  forbids GitHub Actions from creating pull requests. Everything upstream of
+  that step works, so the failure looks like a release and produces nothing —
+  **version `0.0.0`, no `CHANGELOG.md`, no git tag, 27 changesets pending.**
+  `CI` is green throughout and gates the merges, so no component's Definition
+  of Done was mis-ticked; what went unchecked for five merges was the *other*
+  workflow. It does not block component work (D-038 §3)
 - **What `Field` settled for all of 3C:** controls read their wiring from
   context and are never cloned (D-036, extending D-033 one tier on); `error` is
   the invalid state, with no `invalid` prop to contradict it and `''` counting
@@ -117,8 +127,10 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 35 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations (0.10 docs site is deferred, not blocking) + 26 components
+- **Done:** 34 / 78 tracked items (10 foundations + 68 components) — 8
+  foundations + 26 components. Of the two foundations not `done`: 0.10 docs site
+  is deferred and not blocking, 0.8 release pipeline is `blocked` on a repository
+  setting (D-038)
 
 ---
 
@@ -135,7 +147,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
 | 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013). Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
-| 0.8 | Changesets + release pipeline | `done` | 0.1 | Versions, changelogs and tags by default; npm publish is opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
+| 0.8 | Changesets + release pipeline | `blocked` | 0.1 | **Has never completed a run** — the `Release` workflow has failed on all five merges to `main` (D-038). Repo policy forbids Actions opening the version PR. 27 changesets pending, version `0.0.0`, no tags. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
 
