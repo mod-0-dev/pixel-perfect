@@ -1,0 +1,68 @@
+/*
+ * Label — spec docs/specs/Label.md
+ *
+ * ITS TYPE SCALE IS THE CONTROL SCALE, NOT TEXT'S (D-034). A label sits
+ * directly above or beside an input, and the thing it has to agree with is the
+ * input. So `size` reads --pp-control-font-size-*, which means sm and md are
+ * the same font size — deliberately, because a control gets small by losing
+ * height and padding, and a label you squint at is not a smaller label.
+ *
+ * NO COLOUR CHANGE WHEN INVALID. The attribute is here so consumers and Field
+ * can hang styling off it, but a field in error already has a red border, a red
+ * message and aria-invalid on the control. A red label is the fourth shout and
+ * the only one that is pure colour — the same WCAG 1.4.1 argument that made
+ * `underline="always"` the default for Link (D-030 §7).
+ */
+
+@layer pp.components {
+  .pp-label {
+    --_font-size: var(--pp-control-font-size-md);
+    --_color: var(--pp-color-text);
+
+    /* fill: block-level with no width declaration. A <label> is inline by
+       default, so unlike Text this one has to say so. */
+    display: block;
+    min-inline-size: 0;
+    font-size: var(--pp-label-font-size, var(--_font-size));
+    font-weight: var(--pp-label-font-weight, var(--pp-font-weight-medium));
+    line-height: var(--pp-label-line-height, var(--pp-line-height-normal));
+    color: var(--pp-label-color, var(--_color));
+    /*
+     * Inert by default, and that is the point. A pointer cursor is right for a
+     * checkbox row and wrong for a block label above a text input, so Label
+     * declines to choose: Checkbox, Radio and Switch set --pp-label-cursor on
+     * their own root and it inherits down. Same mechanism as the tone context
+     * (D-007), and no .pp-checkbox .pp-label selector ever has to exist.
+     */
+    cursor: var(--pp-label-cursor, inherit);
+    /*
+     * A long label wraps; it is never truncated and never nowrap. `anywhere`
+     * rather than `break-word` because it also lets the min-content size
+     * shrink, which is what stops a one-word label from forcing a Cluster to
+     * overflow in a 240px sidebar. Neither value breaks a word that fits.
+     */
+    overflow-wrap: anywhere;
+  }
+
+  .pp-label[data-size="sm"] { --_font-size: var(--pp-control-font-size-sm); }
+  .pp-label[data-size="lg"] { --_font-size: var(--pp-control-font-size-lg); }
+
+  /* Visual only. The real disabled state is on the control, and because a
+     disabled control cannot take focus, clicking this already does nothing. */
+  .pp-label[data-disabled] { --_color: var(--pp-color-text-disabled); }
+
+  .pp-label__required {
+    /* Padding, not margin (D-018) and not a space character (see Label.tsx). */
+    padding-inline-start: var(--pp-label-gap, var(--pp-space-1));
+    /*
+     * currentcolor, so the glyph follows the label into the disabled state
+     * without a second rule. It resolves to --pp-color-text in the default
+     * case, which is the documented default.
+     *
+     * NOT the danger colour. The asterisk's job is to be noticed and its shape
+     * does that; spending the error colour on a field that is merely required
+     * conflates "you must fill this in" with "you filled this in wrong".
+     */
+    color: var(--pp-label-required-color, currentcolor);
+  }
+}

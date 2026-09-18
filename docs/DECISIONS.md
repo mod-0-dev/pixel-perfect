@@ -1145,3 +1145,162 @@ toolbar of twenty controls and wrong for three attached buttons, where it costs
 a keyboard user an arrow-key discovery step to reach what one Tab would have
 reached. `Toolbar` (6.6) is the roving component; that is why it is a separate
 roadmap entry, and this divergence is recorded per RULES §6.
+
+## D-034 — A label's type scale is the control scale, not the text scale
+
+**Date:** 2026-09-18 · **Status:** accepted · **Extends:** D-028, D-015
+
+`Text` has four size steps (`xs sm md lg`, D-016 §1). Controls have three
+(`sm md lg`, D-028). `Label` sits directly above or beside a control, and the
+thing it has to agree with is the control, not the prose around it — so `size`
+resolves `--pp-control-font-size-<size>`, the same token the `Input` beneath it
+will read.
+
+This is D-028's argument moved from height to type. A `Button`, an `Input` and a
+`Select` must be the same height at `size="md"` or every form is a pixel
+crooked; a label and its field must be the same type size for exactly the same
+reason, and "agree by construction rather than by vigilance" is the whole point
+of the `--pp-control-*` set existing at all. Every component in 3C and 3D
+follows this: a form's text comes from the control scale.
+
+**The visible consequence is that `sm` and `md` labels are the same font size**,
+because `--pp-control-font-size-sm` and `-md` are both `--pp-font-size-2`. That
+is not a gap in the ramp, it is the ramp: a control gets small by losing height
+and padding, and a 12px label is not a smaller label, it is a worse one.
+
+Asserted in the browser by comparing a `Label`'s computed `font-size` with a
+`Button`'s at the same `size`, rather than against a number. A numeric
+assertion still passes after someone hardcodes one of the two; the comparison
+is the only form of the test that fails when they stop sharing a token.
+
+## D-035 — `Label` build findings: the Matrix duplicates ids, and two tests that could not fail
+
+**Date:** 2026-09-18 · **Status:** accepted
+
+Three things found while building `Label`, all by a test failing rather than by
+review. The first one is the one that matters for every remaining Tier 3
+component.
+
+**1. A playground page cannot demonstrate `htmlFor` inside a `Matrix`.** The
+harness renders the same subtree six times (3 widths × 2 themes), so every `id`
+inside it exists six times, and `for` resolves to the first match in the
+document. Five of the six labels then name a control in another cell, and the
+sixth is the only one that works. Caught by a browser assertion on the
+accessible name returning `""`.
+
+This is not a `Label` problem — `Field`, `Input`, `Checkbox`, `Radio`, `Switch`
+and `Select` all render ids, and all of them will hit it. **The convention: a
+component page demonstrates appearance inside the Matrix and association
+outside it, once, where the ids are unique.** The alternative — teaching
+`Matrix` to suffix ids per cell — was rejected: it would have to rewrite props
+of arbitrary children, which is the cloning-children anti-pattern D-033's
+component already refused, and it would hide a constraint that is real.
+
+**2. `getClientRects()` on a block element returns one rect, not one per line.**
+The test asserting that a wrapping label keeps its asterisk on the last line
+counted the label's own rects and got `1` for a label visibly wrapping in three.
+Line boxes come from a `Range` over the contents. It then had to be narrowed
+further to a Range over the **text node**, because a Range over the whole label
+includes the indicator, so the thing being compared against moves whenever the
+indicator moves — an indicator given its own line reported a 2px delta instead
+of a line height.
+
+**3. A test named for the space character could not fail on the space
+character.** Putting a literal space back before the indicator left that browser
+test green: a space only orphans the glyph when the last line is nearly full, so
+the layout it asserts is not sensitive to it. The test was rewritten to assert
+what it can actually prove — the indicator shares the last line of the text, and
+fails by a full line height when given `display: block` — and the space guard
+was left where it can fail every time, in the jsdom test asserting the label's
+text content directly.
+
+This is the second time a break-it-and-watch check has found a test that could
+not fail (D-009, and the Tier 3A focus test). It is the check earning its place
+rather than a coincidence: **a test is not verified by passing, only by failing
+on the symptom it names.**
+
+## D-036 — `Field` is configuration, not a compound API
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §5.6
+
+RULES §5.6 prefers `<Card><Card.Header/></Card>` over configuration props, and
+warns that more than ~10 props probably means two components. `Field` takes
+eleven and stays one component.
+
+**`aria-describedby` has to be computed, and a compound API makes it a runtime
+discovery problem.** With props, `Field` knows at render whether a description
+and an error exist and builds the exact token list in one pass. With
+subcomponents it must have children register themselves through context — an
+effect, a state update, and a first render where the control's `describedby` is
+wrong — or point at ids that may not exist yet. A token pointing at a missing
+element is ignored silently by assistive tech, so that failure is invisible in
+testing and total in use.
+
+**The anatomy is invariant.** A field is a label, a description, a control and an
+error, in that order, always. Composition earns its keep where structure varies;
+here it would only buy the caller the ability to put the error above the label,
+which is a design regression the library should not offer.
+
+`Card` (5.1) remains compound — its slots really are optional and independent,
+and nothing about `Card.Header` has to know whether `Card.Footer` rendered.
+
+**Consequence:** every input in 3C and 3D is `<Field label="…"><Input /></Field>`
+and never `<Field.Label>`. If a future component needs the compound form, that
+is a new component, not a second API on this one.
+
+## D-037 — `Field` build findings
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/Field.md` §3, §10
+
+Five findings, four of them from a test or a build failing rather than from
+review.
+
+**1. §10's escape hatch did not work, and `controlId` replaces it.** The spec
+said a caller needing a specific control id should override it through the
+render prop: `{(control) => <input {...control} id="email" />}`. That overrides
+the id the control receives but not the `for` on the label `Field` has already
+rendered, so the label points at nothing and the control has no accessible name
+— silently. `Field` now takes `controlId`, which wires both sides. It is
+`controlId` and not `id` for the reason §10 gave in the first place: `id`
+spreads onto the root like it does on every other component, and a prop that
+lands somewhere other than where it says is worse than no prop. A test asserts
+the failure mode still exists for anyone who tries the old route.
+
+**2. A render prop cannot cross the server/client boundary.** `Field` is a
+client component, and a Server Component passing `children` as a *function*
+fails the Next.js build outright: "Functions cannot be passed directly to Client
+Components". Found by the playground prerender, the same way D-024's `Slot` ref
+bug was.
+
+The escape hatch is therefore **client-only**, and that is now documented in the
+spec, the docs page and the component. The ordinary path is unaffected —
+`<Field label="…"><Input /></Field>` passes an element, which serializes fine —
+and this is one more reason controls read context rather than being handed
+props: context has no such restriction.
+
+**3. `exactOptionalPropertyTypes` applies to the build, not to `npm test`.**
+`FieldControlProps` is assembled in one pass with `undefined` for every value
+that does not apply, which needs `?: T | undefined` rather than `?: T`. Only
+`tsc -p tsconfig.build.json` says so.
+
+**4. A failing `tsc` silently serves a stale stylesheet, and two break-it checks
+verified nothing.** `npm run build` is `build:js && build:css`, so a type error
+leaves `dist/pixel-perfect.css` untouched; the playground then rebuilds and
+serves the *previous* CSS, and a check that breaks a rule and watches a test
+still pass concludes the test is worthless when in fact the break never
+shipped. Two of this component's checks did exactly that.
+
+**The rule, for every browser check from here on: prove the break is in the
+served CSS before believing the result.** A `curl` of the stylesheet the page
+links, grepped for the broken declaration, is the whole of it. And grep the
+*served* file, not `dist/` — lightningcss does not minify, Next.js does, so
+`grid-column: 2` and `grid-column:2` are both correct answers in different
+files, and a pattern that assumes one silently reports zero for the other.
+
+**5. Two CSS declarations were lying about being load-bearing.** `Field`'s
+horizontal arrangement explicitly placed the control and the label at
+`grid-column: 1 / 2; grid-row: 1`. Removing both changed nothing in the browser:
+they are the first two items in source order, and pinning only the description
+and the error to column 2 makes auto-placement produce the identical grid. The
+explicit rules were deleted. A declaration that can be removed with no observable
+effect is not documentation, it is a claim of a dependency that does not exist.

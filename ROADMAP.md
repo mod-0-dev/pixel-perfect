@@ -26,13 +26,69 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 3A is complete** (5 / 5 action-core components
-  `done`). The library has a focus ring, a control scale and a keyboard
-- **Next up:** Tier 3B — 3.6 `Label` and 3.7 `Field`, the two components
-  [D-014](docs/DECISIONS.md) was actually written to protect and the only ones
-  in Tier 3 still approved **individually** ([D-027](docs/DECISIONS.md)). Every
-  input in 3C composes into `Field`, so its API is the expensive one to get
-  wrong
+- **In flight:** _none_ — **Tier 3B is complete.** `Label` and `Field` are both
+  `done`, and they were the last two components in Tier 3 approved individually
+  ([D-027](docs/DECISIONS.md))
+- **Next up:** Tier 3C — 3.8 `Input`, 3.9 `Textarea`, 3.10 `Checkbox`,
+  3.11 `Radio`/`RadioGroup`, 3.12 `Switch`, 3.13 `Select`. **One spec, one
+  gate**, now that 3B is `done`. Every one of them composes into `Field`, reads
+  `useField()`, and follows the one precedence rule: an explicit prop beats the
+  field, which beats the default — for `size`, `required` and `disabled` alike
+- **What `Field` settled for all of 3C:** controls read their wiring from
+  context and are never cloned (D-036, extending D-033 one tier on); `error` is
+  the invalid state, with no `invalid` prop to contradict it and `''` counting
+  as valid because that is what form libraries hand you; `aria-describedby` is
+  built from what actually rendered, because a token pointing at a missing
+  element is ignored silently and so fails invisibly in testing and totally in
+  use; `field.size` is deliberately absent from the spreadable control props,
+  since spreading it onto a native `<input>` sets the HTML `size` attribute —
+  a control sizing itself, in the one place RULES §1 would never look
+- **A render prop cannot cross the server/client boundary** (D-037 §2).
+  `Field`'s escape hatch for controls the library does not own is therefore
+  client-only: a Server Component passing `children` as a function fails the
+  Next.js build outright. Passing an *element* works from anywhere, which is one
+  more reason 3C's controls read context instead of being handed props
+- **A failing `tsc` silently serves a stale stylesheet** (D-037 §4).
+  `npm run build` is `build:js && build:css`, so a type error leaves
+  `dist/pixel-perfect.css` untouched and the playground serves the previous CSS
+  — and two break-it checks concluded a test was worthless when the break had
+  never shipped. **Every browser check from here on proves the break is in the
+  served CSS first.** Grep the served file, not `dist/`: lightningcss does not
+  minify and Next.js does, so a pattern that assumes one reports zero for the
+  other
+- **Two CSS declarations were lying about being load-bearing** (D-037 §5).
+  `Field`'s horizontal grid explicitly placed the control and the label;
+  removing both changed nothing, because source order plus pinning the
+  description and error to column 2 produces the identical grid. Deleted. A
+  declaration that can be removed with no observable effect is a claim of a
+  dependency that does not exist
+- **What `Label` settled:** **D-034** — a form's type comes from the control
+  scale, not the text scale. `size` resolves `--pp-control-font-size-*`, the
+  same token the input beside it reads, so a label and its field agree by
+  construction; its visible consequence is that `sm` and `md` labels are the
+  same size, deliberately. Every component in 3C and 3D follows it. Asserted by
+  comparing a `Label`'s computed `font-size` to a `Button`'s rather than to a
+  number, because a numeric assertion still passes after someone hardcodes one
+  of the two
+- **A playground page cannot demonstrate `htmlFor` inside a `Matrix`**
+  (D-035 §1). The harness renders its subtree six times, so an `id` inside it
+  exists six times and `for` binds to whichever copy is first in the document —
+  five of six labels then name a control in another cell. Caught by a browser
+  assertion reading an accessible name of `""`. Appearance goes in the matrices;
+  association goes outside them, once. `Field`, `Input`, `Checkbox`, `Radio`,
+  `Switch` and `Select` all render ids and all will hit this
+- **The `'use client'` lint matched prose.** Its regex ran over raw source, so
+  `useId()` written inside a comment explaining that `Label` deliberately does
+  *not* call it was read as a call. It now walks the AST for identifiers — the
+  same fix the module-scope-globals rule beside it already had for the word
+  `document` in a JSDoc. A fixture that ships and only *mentions* hooks was
+  added, and the self-test's exactly-one-hit count now asserts both directions
+- **Two browser assertions could not fail** as first written (D-035 §2–3), and
+  one of them still cannot guard the thing it was named for: a space before the
+  required glyph only orphans it when the last line is nearly full. That guard
+  lives in the jsdom test, where it fails every time. Third time a
+  break-it-and-watch check has found a test that could not fail — it is the
+  check earning its place, not a coincidence
 - **What 3A settled for everything after it:** `--pp-control-*` (32 / 40 / 48,
   so a `Button`, an `Input` and a `Select` agree by construction rather than by
   vigilance), the focus ring (an `outline` in `--pp-color-focus-ring` on every
@@ -61,8 +117,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 34 / 78 tracked items (10 foundations + 68 components). 0.10 docs
-  site is deferred, not blocking
+- **Done:** 35 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations (0.10 docs site is deferred, not blocking) + 26 components
 
 ---
 
@@ -146,8 +202,8 @@ to the component it was written about — see
 | 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
 | 3.4 | `ButtonGroup` | `done` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. One-border seam, no negative margin (D-033) |
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
-| 3.6 | `Label` | `planned` | fill | server | 1.1 | |
-| 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
+| 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
+| 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |
 | 3.9 | `Textarea` | `planned` | fill | client | 3.7 | Auto-resize opt-in |
 | 3.10 | `Checkbox` | `planned` | hug | client | 3.7 | Indeterminate state |

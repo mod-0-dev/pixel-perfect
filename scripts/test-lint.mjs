@@ -91,10 +91,13 @@ for (const expected of EXPECTED_RULE_LINT) {
   }
 }
 
-// The 'use client' rule is scoped to files that SHIP. A colocated test using
-// client-only React must not be flagged — but the rule must still fire for the
-// component beside it, which EXPECTED_RULE_LINT above already asserts. Without
-// this negative check, scoping the rule too widely would look like a pass.
+// The 'use client' rule is scoped to files that SHIP, and detects hook
+// IDENTIFIERS rather than the text of the file. Two fixtures must not be
+// flagged — Bad.test.tsx, which uses hooks but does not ship, and Prose.tsx,
+// which ships but only mentions hooks in a comment, a string and a type — while
+// the rule must still fire for Bad.tsx beside them, which EXPECTED_RULE_LINT
+// above asserts. Without this count, scoping the rule too widely (or too
+// narrowly) would look exactly like a pass.
 const clientHits = found.filter((m) => m.includes("missing the 'use client' directive"));
 if (clientHits.length !== 1) {
   console.error(

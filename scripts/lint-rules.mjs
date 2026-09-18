@@ -53,7 +53,10 @@ for (const file of walk(join(SRC, 'components'), ['.css'])) {
 
 // ---- 3 & 4: TypeScript sources -------------------------------------------
 
-const CLIENT_ONLY = /\b(useState|useReducer|useEffect|useLayoutEffect|useRef|useId|useContext|useSyncExternalStore|useTransition|createContext)\s*[(<]/;
+const CLIENT_ONLY = new Set([
+  'useState', 'useReducer', 'useEffect', 'useLayoutEffect', 'useRef', 'useId',
+  'useContext', 'useSyncExternalStore', 'useTransition', 'createContext',
+]);
 
 /*
  * The 'use client' rule is about RSC correctness of what SHIPS, and these files
@@ -73,10 +76,31 @@ for (const file of walk(SRC, ['.ts', '.tsx'])) {
   const code = readFileSync(file, 'utf8');
   const rel = relative(ROOT, file);
 
-  if (!NOT_SHIPPED.test(rel) && CLIENT_ONLY.test(code) && !/^\s*(['"])use client\1/.test(code)) {
+  const source = ts.createSourceFile(rel, code, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX);
+
+  /*
+   * IDENTIFIERS, NOT TEXT. This was a regex over the raw source, and it flagged
+   * `useId()` written inside a sentence in Label's JSDoc — a comment whose
+   * entire point was that Label deliberately does NOT call it, because ids come
+   * from Field. A hook named in prose is not a hook call, exactly as the word
+   * `document` in a comment is not a module-scope access; the rule below was
+   * already fixed for that, and this is the same defect in the rule above it.
+   *
+   * The self-test asserts both directions: the rule still fires for a shipped
+   * file that really calls a hook, and does not fire for one that only talks
+   * about them.
+   */
+  let usesClientOnly = false;
+  const findClientOnly = (node) => {
+    if (usesClientOnly) return;
+    if (ts.isIdentifier(node) && CLIENT_ONLY.has(node.text)) usesClientOnly = true;
+    else ts.forEachChild(node, findClientOnly);
+  };
+  findClientOnly(source);
+
+  if (!NOT_SHIPPED.test(rel) && usesClientOnly && !/^\s*(['"])use client\1/.test(code)) {
     fail(rel, "uses client-only React but is missing the 'use client' directive (RULES §7)");
   }
-  const source = ts.createSourceFile(rel, code, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX);
 
   const visit = (node) => {
     const isPropsType =

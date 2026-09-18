@@ -698,3 +698,288 @@ test.describe('ButtonGroup', () => {
     expect(borders[1]!.inline).not.toBe('0px');
   });
 });
+
+test.describe('Label', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  const fontSize = (el: import('@playwright/test').Locator) =>
+    el.evaluate((node) => getComputedStyle(node).fontSize);
+
+  test('a label is the same type size as the control beside it', async ({ page }) => {
+    await page.goto('/components/label');
+    const wide = cell(page, 'The label rides the control scale', 'wide · 960px');
+
+    // D-034. The claim is not "labels are 14px" — it is that the label and the
+    // control resolve the SAME token, so moving --pp-control-font-size-md moves
+    // both. Comparing the two computed values is the only way to assert that;
+    // asserting a number would still pass after someone hardcoded one of them.
+    for (const size of ['sm', 'md', 'lg']) {
+      const label = wide.locator(`.pp-label[data-size="${size}"]`).first();
+      const button = wide.locator(`.pp-button[data-size="${size}"]`).first();
+      expect(await fontSize(label), `label and button disagree at size=${size}`).toBe(
+        await fontSize(button),
+      );
+    }
+  });
+
+  test('sm and md are the same size, and lg is not', async ({ page }) => {
+    await page.goto('/components/label');
+    const wide = cell(page, 'sm and md are the same size', 'wide · 960px');
+
+    const sm = await fontSize(wide.locator('.pp-label[data-size="sm"]'));
+    const md = await fontSize(wide.locator('.pp-label[data-size="md"]'));
+    const lg = await fontSize(wide.locator('.pp-label[data-size="lg"]'));
+
+    expect(sm).toBe(md);
+    expect(parseFloat(lg)).toBeGreaterThan(parseFloat(md));
+  });
+
+  test('the required glyph is not in the control\'s accessible name', async ({ page }) => {
+    await page.goto('/components/label');
+    // Deliberately NOT a Matrix cell. The Matrix renders its subtree six times,
+    // so an id inside it exists six times and `for` resolves to whichever copy
+    // comes first in the document — which associates five of the six labels
+    // with a control in another cell and leaves this one unnamed. Found by this
+    // test failing with an accessible name of "".
+    const section = page.locator('section', { hasText: 'Association, click-to-focus' });
+
+    // D-030 §2: jsdom asserts this too, and jsdom is a model of an
+    // accessibility tree rather than the one a screen reader reads. Button's
+    // loading label passed in jsdom while being invisible to assistive tech, so
+    // anything about what a screen reader perceives is asserted here as well.
+    await expect(section.locator('#assoc-long')).toHaveAccessibleName(
+      'Postal address for delivery confirmation',
+    );
+  });
+
+  test('the required indicator shares the last line of a wrapping label', async ({ page }) => {
+    await page.goto('/components/label');
+    const narrow = cell(page, 'Required: one asterisk', 'narrow · 240px');
+
+    const label = narrow.locator('.pp-label[data-required]').nth(1);
+    const boxes = await label.evaluate((node) => {
+      const indicator = node.querySelector('.pp-label__required') as HTMLElement;
+      // getClientRects() on a block element returns ONE border-box rect however
+      // many lines it has. Line boxes come from a Range over its contents, and
+      // the first version of this test counted 1 for a label that was visibly
+      // wrapping in three.
+      // Over the TEXT NODE only, not the whole label. Measuring the label's
+      // contents includes the indicator itself, so when the indicator moves the
+      // thing being compared against moves with it — which reported a 2px delta
+      // for an indicator that had been given its own line.
+      const range = document.createRange();
+      range.selectNodeContents(node.childNodes[0]);
+      const lines = Array.from(range.getClientRects());
+      const rect = indicator.getBoundingClientRect();
+      return {
+        lines: lines.length,
+        lastLineTop: Math.round(lines[lines.length - 1].top),
+        indicatorTop: Math.round(rect.top),
+        indicatorLeft: rect.left,
+        labelLeft: node.getBoundingClientRect().left,
+      };
+    });
+
+    // The label must actually be wrapping, or this proves nothing.
+    expect(boxes.lines).toBeGreaterThan(1);
+    // On the last line OF THE TEXT, not below it and not alone on it. What this
+    // guards is the indicator staying an inline part of the text flow — give it
+    // `display: block` and it drops a whole line, and this fails.
+    //
+    // It does NOT guard the absence of a space character before the indicator:
+    // a space only orphans the glyph when the last line happens to be nearly
+    // full, so putting one back left this test green. That guard lives in
+    // Label.test.tsx, where it asserts the text content directly and fails
+    // every time.
+    expect(boxes.indicatorTop).toBe(boxes.lastLineTop);
+    expect(boxes.indicatorLeft).toBeGreaterThan(boxes.labelLeft);
+  });
+
+  test('invalid changes no colour; disabled does', async ({ page }) => {
+    await page.goto('/components/label');
+    const wide = cell(page, 'Disabled dims; invalid changes nothing', 'wide · 960px');
+
+    const color = (selector: string) =>
+      wide.locator(selector).first().evaluate((node) => getComputedStyle(node).color);
+
+    const resting = await color('.pp-label:not([data-disabled]):not([data-invalid])');
+    expect(await color('.pp-label[data-invalid]')).toBe(resting);
+    expect(await color('.pp-label[data-disabled]')).not.toBe(resting);
+  });
+
+  test('the required glyph follows the label into the disabled state', async ({ page }) => {
+    await page.goto('/components/label');
+    const wide = cell(page, 'Disabled dims; invalid changes nothing', 'wide · 960px');
+
+    // currentcolor rather than a second rule. If the default is ever changed to
+    // a fixed colour, the glyph stays bright on a dimmed label and this fails.
+    const pair = await wide
+      .locator('.pp-label[data-disabled][data-required]')
+      .evaluate((node) => ({
+        label: getComputedStyle(node).color,
+        glyph: getComputedStyle(node.querySelector('.pp-label__required') as HTMLElement).color,
+      }));
+
+    expect(pair.glyph).toBe(pair.label);
+  });
+
+  test('fill means the label takes the box it is given, at every width', async ({ page }) => {
+    await page.goto('/components/label');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'A long label wraps', width);
+      const ratio = await c.locator('.pp-label').evaluate((node) => {
+        const parent = node.parentElement as HTMLElement;
+        // The CONTENT box. The harness viewport is padded and bordered, so
+        // comparing against its border box asks a filling child to be wider
+        // than the space it was given — the first version of this test did
+        // exactly that and reported 0.89 as a failure to fill.
+        const style = getComputedStyle(parent);
+        const content =
+          parent.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        return node.getBoundingClientRect().width / content;
+      });
+      expect(ratio, `label did not fill its parent at ${width}`).toBeCloseTo(1, 2);
+    }
+  });
+});
+
+test.describe('Field', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  const box = (el: import('@playwright/test').Locator) =>
+    el.evaluate((node) => {
+      const r = node.getBoundingClientRect();
+      return { top: r.top, left: r.left, bottom: r.bottom, width: r.width };
+    });
+
+  test('vertical puts the label above the control and the error below it', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Required, and invalid', 'wide · 960px');
+    const field = wide.locator('.pp-field[data-invalid]').first();
+
+    const label = await box(field.locator('.pp-field__label'));
+    const description = await box(field.locator('.pp-field__description'));
+    const control = await box(field.locator('.pp-field__control'));
+    const error = await box(field.locator('.pp-field__error'));
+
+    // The order the spec commits to: label, description, control, error. The
+    // description is above the control because it is the instruction you need
+    // before you type; the error is below it because that is where the thing to
+    // fix is.
+    expect(label.bottom).toBeLessThanOrEqual(description.top);
+    expect(description.bottom).toBeLessThanOrEqual(control.top);
+    expect(control.bottom).toBeLessThanOrEqual(error.top);
+  });
+
+  test('horizontal puts the control beside the label, with the rest in the label column', async ({
+    page,
+  }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Horizontal — the checkbox arrangement', 'wide · 960px');
+    const field = wide.locator('.pp-field[data-orientation="horizontal"]').first();
+
+    const control = await box(field.locator('.pp-field__control'));
+    const label = await box(field.locator('.pp-field__label'));
+    const description = await box(field.locator('.pp-field__description'));
+
+    // Same row, control first.
+    expect(control.left).toBeLessThan(label.left);
+    expect(Math.abs(control.top - label.top)).toBeLessThan(label.bottom - label.top);
+    // The description is in the label's column, not under the checkbox.
+    expect(Math.round(description.left)).toBe(Math.round(label.left));
+    expect(description.top).toBeGreaterThanOrEqual(label.bottom - 1);
+  });
+
+  test('the description and the error are the label\'s type size', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, "The description and the error are the label", 'wide · 960px');
+
+    for (const size of ['sm', 'md', 'lg']) {
+      const field = wide.locator(`.pp-field[data-size="${size}"]`);
+      const sizes = await field.evaluate((node) => ({
+        label: getComputedStyle(node.querySelector('.pp-field__label') as HTMLElement).fontSize,
+        description: getComputedStyle(node.querySelector('.pp-field__description') as HTMLElement)
+          .fontSize,
+        error: getComputedStyle(node.querySelector('.pp-field__error') as HTMLElement).fontSize,
+      }));
+
+      // D-034 continued: distinguished by colour and weight, never by shrinking.
+      expect(sizes.description, `description shrank at size=${size}`).toBe(sizes.label);
+      expect(sizes.error, `error shrank at size=${size}`).toBe(sizes.label);
+    }
+  });
+
+  test('the error takes its colour from the danger tone, not from the text colour', async ({
+    page,
+  }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Required, and invalid', 'wide · 960px');
+    const field = wide.locator('.pp-field[data-invalid]').first();
+
+    const colors = await field.evaluate((node) => ({
+      label: getComputedStyle(node.querySelector('.pp-field__label') as HTMLElement).color,
+      description: getComputedStyle(node.querySelector('.pp-field__description') as HTMLElement)
+        .color,
+      error: getComputedStyle(node.querySelector('.pp-field__error') as HTMLElement).color,
+    }));
+
+    // Three distinct roles. The error resolves --pp-tone-text under
+    // data-pp-tone="danger" (D-007), so this fails if the attribute is dropped
+    // and the error silently inherits the page's text colour.
+    expect(colors.error).not.toBe(colors.label);
+    expect(colors.error).not.toBe(colors.description);
+    expect(colors.description).not.toBe(colors.label);
+  });
+
+  test('the control is named and described in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'Required, and invalid', 'wide · 960px');
+    const control = wide.locator('.pp-field[data-invalid] input');
+
+    // D-030 §2. jsdom asserts this too, and jsdom's accessibility tree is a
+    // model of one rather than the one a screen reader reads.
+    await expect(control).toHaveAccessibleName('Email address');
+    await expect(control).toHaveAccessibleDescription(
+      'We only use this for receipts. Enter an email address in the format name@example.com',
+    );
+  });
+
+  test('a hidden label is hidden from sight and present in the tree', async ({ page }) => {
+    await page.goto('/components/field');
+    const wide = cell(page, 'labelHidden hides the label', 'wide · 960px');
+
+    const label = wide.locator('.pp-field__label');
+    const size = await box(label);
+
+    // Clipped to nothing visually — and still the control's name.
+    expect(size.width).toBeLessThan(2);
+    await expect(wide.locator('.pp-field input')).toHaveAccessibleName('Search orders');
+  });
+
+  test('fill: the field takes the box it is given, at every width', async ({ page }) => {
+    await page.goto('/components/field');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'Long text wraps', width);
+      const ratio = await c.locator('.pp-field').evaluate((node) => {
+        const parent = node.parentElement as HTMLElement;
+        const style = getComputedStyle(parent);
+        const content =
+          parent.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        return node.getBoundingClientRect().width / content;
+      });
+      expect(ratio, `field did not fill its parent at ${width}`).toBeCloseTo(1, 2);
+    }
+  });
+});

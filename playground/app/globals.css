@@ -219,3 +219,31 @@ body {
   gap: var(--pp-space-2);
   min-width: 0;
 }
+
+/*
+ * A stand-in control for the Field harness, until Input (3.8) exists. It fills
+ * its container because that is the sizing contract Input will have — a native
+ * <input> hugs to its `size` attribute's character count, which would make the
+ * Field page demonstrate the wrong thing.
+ */
+.demo-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding-inline: var(--pp-control-padding-inline-md);
+  block-size: var(--pp-control-height-md);
+  border: 1px solid var(--pp-color-border);
+  border-radius: var(--pp-control-radius);
+  background-color: var(--pp-color-bg-surface);
+  color: var(--pp-color-text);
+  font: inherit;
+  font-size: var(--pp-control-font-size-md);
+}
+
+.demo-input[aria-invalid] {
+  border-color: var(--pp-tone-border-strong);
+}
+
+.demo-input:disabled {
+  color: var(--pp-color-text-disabled);
+  cursor: not-allowed;
+}
