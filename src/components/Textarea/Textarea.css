@@ -1,0 +1,179 @@
+/*
+ * Textarea — spec docs/specs/tier-3c-inputs.md §3.9
+ *
+ * The second of the three text surfaces. It does NOT share a base class with
+ * Input: the agreement is already structural, because --pp-control-* is the one
+ * definition both read (D-028), and a shared class would be a second mechanism
+ * doing the first one's job. It also would not survive contact — Input has a
+ * fixed block-size and this has none at all.
+ *
+ * TWO ELEMENTS, for the reason Input is two (D-040): a <textarea> measured 182px
+ * inside a 600px parent, because form controls carry an intrinsic inline size
+ * and RULES §1's "a block element with no width declaration already fills its
+ * parent" is false for them. Grid root, control stretches, no width declared.
+ */
+
+@layer pp.components {
+  .pp-textarea {
+    --_height: var(--pp-control-height-md);
+    --_padding-inline: var(--pp-control-padding-inline-md);
+    --_font-size: var(--pp-control-font-size-md);
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_color: var(--pp-color-text);
+    --_resize: vertical;
+
+    /*
+     * DERIVED, NOT PICKED FROM THE SPACE SCALE, AND THE ARITHMETIC IS THE POINT.
+     *
+     * A one-row Textarea should be exactly as tall as an Input at the same size
+     * — that is D-028's agreement, on the axis D-028 did not have to think
+     * about. The padding that produces it is (height − line box − borders) / 2,
+     * which comes out at 3.8 / 7.8 / 10.2px.
+     *
+     * The space scale can express the first two (--pp-space-1, --pp-space-2 land
+     * within half a pixel) and CANNOT express the third: the steps either side
+     * are 8px and 12px, so lg would be 4.4px short or 3.6px over. Approximating
+     * it would make the large control the one that visibly disagrees with the
+     * Button beside it.
+     *
+     * So it is computed from the same tokens Input reads, which is a structural
+     * agreement rather than a number someone eyeballed once — and there is no
+     * hardcoded length here, only tokens and unitless factors.
+     */
+    --_padding-block: calc(
+      (
+          var(--_height) - (var(--_font-size) * var(--pp-line-height-normal)) - 2 *
+            var(--pp-border-width-1)
+        ) / 2
+    );
+
+    /* fill: block-level with no width declaration. Grid, so the control
+       stretches — see the header. */
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .pp-textarea[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_padding-inline: var(--pp-control-padding-inline-sm);
+    --_font-size: var(--pp-control-font-size-sm);
+  }
+
+  .pp-textarea[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_padding-inline: var(--pp-control-padding-inline-lg);
+    --_font-size: var(--pp-control-font-size-lg);
+  }
+
+  /*
+   * STATE AND CONFIGURATION ARE DECLARED ON THE ROOT (D-040 §3).
+   *
+   * Written as `.pp-textarea[data-auto-resize] .pp-textarea__control` this would
+   * be a specificity race against the [data-resize] rule beside it — the exact
+   * shape that silently broke Input's focus border. On the root, the property
+   * inherits down and source order is the whole story: auto-resize is last, so
+   * it wins, which is what forcing `resize: none` means.
+   */
+  .pp-textarea[data-resize="none"] {
+    --_resize: none;
+  }
+
+  /* A drag handle and a JS-written block-size fight each other, and the user
+     loses: the handle sets a height that the next keystroke overwrites. */
+  .pp-textarea[data-auto-resize] {
+    --_resize: none;
+  }
+
+  .pp-textarea__control {
+    /* Lets the control shrink below its intrinsic size instead of pushing the
+       container wide. The grid stretch above handles the other direction. */
+    min-inline-size: 0;
+    /* No block-size. The height is `rows`, content, or the caller's — which is
+       why there is no --pp-textarea-height to go with the six below. */
+    min-block-size: var(--pp-textarea-min-block-size, auto);
+    padding-block: var(--pp-textarea-padding-block, var(--_padding-block));
+    padding-inline: var(--pp-textarea-padding-inline, var(--_padding-inline));
+    border: var(--pp-border-width-1) solid var(--pp-textarea-border-color, var(--_border));
+    border-radius: var(--pp-textarea-radius, var(--pp-control-radius));
+    background-color: var(--pp-textarea-bg, var(--_bg));
+    color: var(--pp-textarea-color, var(--_color));
+    resize: var(--_resize);
+    /*
+     * No font-family. reset.css already gives form controls `font: inherit` at
+     * :where() zero specificity, which is right — a consuming app that sets its
+     * own font on textareas SHOULD win, and redeclaring it here would take that
+     * away (D-037 §5).
+     *
+     * font-size and line-height ARE declared: the control scale is ours, and
+     * the line height is load-bearing twice over — the padding above is
+     * computed from it, and it is what `rows` multiplies to get a height.
+     */
+    font-size: var(--_font-size);
+    line-height: var(--pp-line-height-normal);
+    /* Kills the UA chrome that survives a background declaration. */
+    appearance: none;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* The reset crushes durations in pp.reset and this file is in pp.components,
+     so ours would win. Every animated component answers for itself. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-textarea__control {
+      transition-property: none;
+    }
+  }
+
+  .pp-textarea__control::placeholder {
+    /* Carries a solved 4.5:1 guarantee (D-008). A placeholder is still not a
+       label — see the component's docs page. */
+    color: var(--pp-textarea-placeholder-color, var(--pp-color-text-muted));
+    /* Safari applies the UA's opacity on top of the colour, which drops a
+       solved ratio below the thing it was solved for. */
+    opacity: 1;
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4). The outline is
+   * the focus affordance — one colour library-wide, outside the box, the only
+   * pairing lint:contrast asserts. The border shift is the control
+   * acknowledging focus in its own tone, inside the box.
+   *
+   * On an invalid field the tone is danger, so the border stays red while the
+   * user is fixing it instead of the error vanishing the moment they act on it.
+   */
+  .pp-textarea__control:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+    --_border: var(--pp-tone-focus);
+  }
+
+  /* On the root, so it inherits down and the control's own :focus-visible wins
+     for that element — inheritance rather than a specificity race (D-040 §3).
+     The root carries data-pp-tone="danger", so --pp-tone-border resolves to the
+     danger ramp without this file naming a colour (D-007). */
+  .pp-textarea[data-invalid] {
+    --_border: var(--pp-tone-border);
+  }
+
+  /* pointer-events: none is deliberately NOT used — it kills `title`, breaks a
+     Tooltip (4.3) wrapping the control, and makes cursor: not-allowed
+     impossible to show. The native attribute already suppresses interaction. */
+  .pp-textarea[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+  }
+
+  .pp-textarea[data-disabled] .pp-textarea__control {
+    cursor: not-allowed;
+  }
+
+  /* Read-only is not disabled: the value is still selectable, focusable and
+     submitted, so only the fill says "not yours to change". The border stays
+     put, which is what distinguishes it from disabled at a glance. */
+  .pp-textarea[data-readonly] {
+    --_bg: var(--pp-color-bg-sunken);
+  }
+}

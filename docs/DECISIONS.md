@@ -1751,3 +1751,80 @@ that ruling — **a test that two lists agree is not a test that the artifact th
 lists describe exists.** `tests/unit/playground-registry.test.ts` passed at
 every moment described above, correctly, while the baseline it was written to
 protect was absent from `main`.
+
+## D-043 — `Textarea` build findings: padding derived from the control scale
+
+**Date:** 2026-09-18 · **Status:** accepted · **Extends:** D-028, spec §10
+
+### 1. The space scale cannot express this component's padding, so it is computed
+
+A one-row `Textarea` should be exactly as tall as an `Input` at the same size.
+That is D-028's agreement — a `Button`, an `Input` and a `Select` agree by
+construction rather than by vigilance — applied to the axis D-028 never had to
+think about, because every control before this one declared a fixed height.
+
+The padding that produces it is `(height − line box − borders) / 2`:
+**3.8 / 7.8 / 10.2px** at `sm` / `md` / `lg`. `--pp-space-1` and `--pp-space-2`
+land within half a pixel of the first two. **Nothing on the scale is within
+1.8px of the third** — the neighbours are 8px and 12px — so `lg` would be 4.4px
+short or 3.6px over, and the largest control would be the one visibly
+disagreeing with the `Button` beside it.
+
+So it is a `calc()` over the same tokens `Input` reads. No hardcoded length, no
+new token, and the agreement is structural rather than a number someone eyeballed
+once. Verified by replacing the calc with `--pp-space-2` and watching the browser
+assertion fail at `sm` by 8.39px — the exact 4.2px-per-side error the arithmetic
+predicts — with the broken value confirmed in the **served** stylesheet first,
+per D-037 §4.
+
+**The general point:** a scale exists to stop people inventing values, and this
+is the case where an increment genuinely is not on it. The answer is to derive
+the value from the tokens that already encode the constraint, not to round to the
+nearest step and let a 3.6px disagreement ship as if it were a design decision.
+
+### 2. `rows` is the floor because the measurement resets first, not because anything enforces it
+
+`measure()` writes `block-size: auto`, reads `scrollHeight`, writes it back. Both
+halves of the spec's §10 claim fall out of the reset:
+
+- **It shrinks.** `scrollHeight` is max(content, client), so measuring against a
+  height the component wrote itself can only ratchet upward — the control grows
+  with the text and never comes back when it is deleted. Verified by deleting the
+  reset and watching the control stay at 152px after being emptied, against a
+  62px floor.
+- **It never goes below `rows`.** With no height of its own the element falls
+  back to its `rows` height, and `scrollHeight` cannot report less than that.
+  There is no minimum stored anywhere to drift from the attribute. Verified by
+  making `autoResize` ignore `rows`, which left the empty control 22.375px — one
+  line — shorter than the fixed control beside it.
+
+Borders are read as `offsetHeight − clientHeight` rather than from
+`getComputedStyle`: that difference *is* the border box minus the padding box, it
+needs no parsing that can return `NaN` for a logical property an engine spells
+differently, and it costs one layout read instead of two.
+
+### 3. The `ResizeObserver` watches width only, and that is not an optimisation
+
+Writing `block-size` is itself a resize. An observer that re-measures on any size
+change re-enters its own callback forever. Width is the only dimension that is a
+*reason* to re-measure — it reflows the text and changes the height the content
+needs — so width is the only one that triggers it.
+
+### 4. `--pp-textarea-placeholder-color` is in the component and not in the spec
+
+The spec §3.9 lists seven custom properties and this is an eighth. `Input` ships
+`--pp-input-placeholder-color`, both controls style `::placeholder` the same way
+and for the same solved-contrast reason (D-008), and a caller who can retint one
+surface's placeholder but not its sibling's would be looking at an oversight,
+which is what this was. Recorded rather than left as a silent superset.
+
+### 5. Five unit tests and four browser assertions were broken on purpose
+
+The precedence rule, the chained `onInput`, the auto-resize teardown, the merged
+`ref` and the Tab-does-not-insert guard each failed on exactly one test when
+broken; the padding calc, the auto-resize reset and the `rows` floor each failed
+in the browser on the assertion named for them. **This is the fifth component in
+a row where that check has been run, and the first where it found nothing wrong**
+— which is worth recording, because the check earning its place four times and
+then coming up empty once is what a working practice looks like, not a reason to
+stop running it.
