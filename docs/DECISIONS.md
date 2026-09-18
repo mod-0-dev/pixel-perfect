@@ -1828,3 +1828,116 @@ a row where that check has been run, and the first where it found nothing wrong*
 — which is worth recording, because the check earning its place four times and
 then coming up empty once is what a working practice looks like, not a reason to
 stop running it.
+
+## D-044 — `Checkbox` build findings: a private custom property is not private
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/tier-3c-inputs.md` §3.10
+
+Four findings. The first is a mechanism the library had half-written down and
+had not stated, and it will recur in `Radio`, `Switch` and `Select` — every
+component whose anatomy includes another component's root element.
+
+**1. `--_size` collided with `Icon`'s `--_size`, and an `lg` checkbox drew a
+16px mark in a 24px box.**
+
+The indicator is an `Icon`, so that element carries both `.pp-checkbox__indicator`
+and `.pp-icon`. Checkbox read its own box size down there:
+
+```css
+.pp-checkbox { --_size: var(--pp-size-6); }          /* lg */
+.pp-checkbox__indicator { --pp-icon-size: var(--_size); }   /* resolved to 1em */
+```
+
+`Icon.css` declares `--_size: 1em` on `.pp-icon`, on that same element, and it is
+right to — that is D-024's always-emit rule, the one `Field.css` cites for nested
+fields. So the inherited value was shadowed by Icon's own, and `var(--_size)`
+resolved to Icon's `1em` rather than to Checkbox's `--pp-size-6`.
+
+**The leading underscore is a naming convention and nothing else.** CSS has no
+component scope for custom properties: they inherit, and any element may
+redeclare any of them. Two components that both use `--_size` collide on any
+element that carries both their classes.
+
+The fix is not a rename. A custom property is substituted at computed-value time
+on the element where it is **declared**, so the value is resolved on Checkbox's
+own root and the result inherits down:
+
+```css
+.pp-checkbox { --_mark-size: var(--pp-checkbox-size, var(--_size)); }
+.pp-checkbox__indicator { --pp-icon-size: var(--_mark-size); }
+```
+
+**Standing rule, and the other half of D-024:** *always emit your own private
+properties on your own root* (D-024) — **and resolve them there too, never
+inside another component's element.** Reading `--_anything` inside a subtree you
+do not own is reading whatever that subtree happens to mean by the name. The
+public `--pp-<component>-*` API is the only safe channel across a component
+boundary, which is what it is for.
+
+Found by an assertion written to make the `--pp-icon-size` line load-bearing —
+not by review, and not by looking at the page, where a 16px check inside a 24px
+box looks like a design choice.
+
+**2. A controlled `checked="indeterminate"` lost its dash on the first click.**
+
+A click's activation behaviour clears the `indeterminate` DOM property. React
+restores `checked` for a controlled input after the handler returns, but
+`indeterminate` is not a prop it rendered, so nothing restores it — and a parent
+that ignores `onCheckedChange` never re-renders, so the effect that sets it does
+not run either. The third state, silently gone, in the one component that exists
+to hold it.
+
+Re-asserted at the end of the change handler, using the **render-time** value.
+The ordering is what makes that correct rather than lucky: React batches the
+update and flushes it after the handler, so when the state really does change the
+effect runs afterwards and wins; when nothing changes, nothing runs afterwards
+and this is the last word.
+
+**3. `flex-shrink: 0` was inert, and the test paired with it could not fail.**
+
+Both were written on `Icon`'s precedent (D-019's "an icon that shrinks inside a
+tight Cluster is the commonest icon bug"). Removing the declaration and rebuilding
+changed nothing: the box measured 20px in a **non-wrapping** `Cluster` at 240px
+beside an unbreakable neighbour. So did adding `min-inline-size: 0`.
+
+The reason is that a flex item's automatic minimum size is its content's, and
+this one's content is an `<input>` with a definite `inline-size`. `Icon` needs
+the declaration because its child is an SVG at `inline-size: 100%`, which
+contributes nothing to a min-content measurement; a real length contributes all
+of it. **Borrowing a precedent is not the same as sharing its cause.**
+
+Both deleted, under D-037 §5 — a declaration that can be removed with no
+observable effect is a claim of a dependency that does not exist — and the test
+with it, since it was strictly redundant with the size assertions that do fail.
+The first version of the demo made it worse than redundant: `Cluster` wraps by
+default, so it was a squeeze test with no squeeze in it.
+
+**4. Sixth break-it check, and a note on what counts as a break.** Ten breaks
+were made. Eight failed on exactly the test named for them — the `type` strip,
+the `indeterminate` effect (five tests at once), the mark's `pointer-events`, the
+focus border, the size scale, the source order of `disabled` against `checked`,
+the change-handler re-assert of §2, and the naive negation below.
+
+Two failed nothing, and that pair is §3: the check found the declaration inert
+and then found that the test written beside it could not fail either. §1 was not
+found by a break at all — it was found by writing an assertion to make an
+existing line load-bearing, which is the cheaper half of the same habit.
+
+One "break" failed nothing and was **not** a finding: replacing
+`setChecked(event.target.checked)` with `setChecked(checked !== true)` is an
+equivalent correct implementation, not a defect, so a green suite was the right
+answer. The mistake a person actually makes is `setChecked(!checked)` —
+`!'indeterminate'` is `false`, a "select all" that deselects everything on its
+first click — and that one failed two tests immediately.
+
+**Worth keeping:** a break-it check measures a test only if the break is a bug.
+Mutating code until something goes red measures nothing, and a green result from
+a correct mutation is not evidence of an unmeasured test.
+
+**5. The served-CSS rule (D-037 §4) earned its keep on the path, not the
+minification.** The first served-CSS grep reported zero matches for a declaration
+that was present, because Next.js serves the library stylesheet from
+`/_next/static/chunks/*.css` and the pattern assumed `/_next/static/css/`. A
+check that silently reports "absent" for "looked in the wrong place" is the same
+failure shape D-037 §4 was written about, one level up: **verify the verifier by
+seeing it find the thing before you trust it not finding the thing.**

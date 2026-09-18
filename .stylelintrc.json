@@ -197,7 +197,8 @@
         "src/components/Icon/**/*.css",
         "src/components/Spinner/**/*.css",
         "src/components/Avatar/**/*.css",
-        "src/components/IconButton/**/*.css"
+        "src/components/IconButton/**/*.css",
+        "src/components/Checkbox/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [

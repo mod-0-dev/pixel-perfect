@@ -1324,3 +1324,272 @@ test.describe('Textarea', () => {
     await expect(control).toHaveAttribute('id', 'release-notes');
   });
 });
+
+/*
+ * Checkbox (3.10). The first checkable control, and the first in 3C whose
+ * claims are almost entirely geometric: a 16/20/24 box, a solid fill, a mark
+ * that must not be a hole in its own target, and a spacing exception that is
+ * the whole WCAG 2.5.8 conformance argument. jsdom has no layout and no
+ * `oklch()`, so none of it can be asserted anywhere but here.
+ */
+test.describe('Checkbox', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  test('the box is 16 / 20 / 24, from the size scale and not the control scale', async ({
+    page,
+  }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px');
+
+    // --pp-size-4/5/6 at a 16px root. --pp-control-height-* would be 32/40/48,
+    // which is the mistake this asserts against: a checkbox is a box, not a
+    // control surface with a height.
+    for (const [size, expected] of [
+      ['sm', 16],
+      ['md', 20],
+      ['lg', 24],
+    ] as const) {
+      const box = await wide
+        .locator(`.pp-checkbox[data-size="${size}"] .pp-checkbox__input`)
+        .first()
+        .evaluate((el) => el.getBoundingClientRect());
+
+      expect(box.width, `${size} is ${box.width}px wide`).toBeCloseTo(expected, 0);
+      expect(box.height, `${size} is not square`).toBeCloseTo(expected, 0);
+    }
+  });
+
+  test('hug: the box keeps its size at every container width', async ({ page }) => {
+    await page.goto('/components/checkbox');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'It hugs, at every container width', width);
+      const box = await c
+        .locator('.pp-checkbox__input')
+        .first()
+        .evaluate((el) => el.getBoundingClientRect());
+
+      // A `fill` control would stretch into the Field column and become an
+      // oblong. 20px is --pp-size-5, the md default.
+      expect(box.width, `stretched to ${box.width}px at ${width}`).toBeCloseTo(20, 0);
+      expect(box.height).toBeCloseTo(20, 0);
+    }
+  });
+
+  test('checked fills the box; unchecked does not', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Three states, and only two a user can reach', 'wide · 960px');
+
+    const bg = (state: string) =>
+      wide
+        .locator(`.pp-checkbox[data-state="${state}"] .pp-checkbox__input`)
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    const unchecked = await bg('unchecked');
+    expect(await bg('checked'), 'a checked box is painted like an empty one').not.toBe(unchecked);
+    // Indeterminate is a filled box with a different mark, not a third fill.
+    expect(await bg('indeterminate')).toBe(await bg('checked'));
+  });
+
+  test('the mark is drawn, and indeterminate draws a different one', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Three states, and only two a user can reach', 'wide · 960px');
+
+    const mark = (state: string) =>
+      wide.locator(`.pp-checkbox[data-state="${state}"] .pp-checkbox__indicator`).first();
+
+    await expect(mark('unchecked')).toHaveCount(0);
+
+    // It is markup, not a mask-image data URI (D-039 §3): the path is in the
+    // DOM and readable, which is what made the lint rule that ruling proposed
+    // unnecessary.
+    const check = await mark('checked').locator('path').getAttribute('d');
+    const dash = await mark('indeterminate').locator('path').getAttribute('d');
+    expect(check).not.toBe(dash);
+
+    // And it is actually visible: an inline SVG that resolved to a 0×0 box
+    // would still satisfy every assertion above.
+    const size = await mark('checked').evaluate((el) => el.getBoundingClientRect());
+    expect(size.width).toBeGreaterThan(0);
+    expect(size.height).toBeGreaterThan(0);
+  });
+
+  /*
+   * The mark reads `--pp-icon-size` from Checkbox.css — Icon's own styling API,
+   * used as the escape hatch RULES §3 sanctions rather than as a deep selector.
+   * Passing `Icon` a `size` prop instead would pin the mark to a fixed step, so
+   * overriding `--pp-checkbox-size` would move the box and leave the mark
+   * behind; with no size at all the Icon falls back to 1em and the mark tracks
+   * the LABEL's type rather than the box it sits in.
+   */
+  test('the mark tracks the box, not the font size beside it', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px');
+
+    for (const size of ['sm', 'lg'] as const) {
+      const root = wide.locator(`.pp-checkbox[data-size="${size}"]`).first();
+      const box = await root
+        .locator('.pp-checkbox__input')
+        .evaluate((el) => el.getBoundingClientRect().width);
+      const mark = await root
+        .locator('.pp-checkbox__indicator')
+        .evaluate((el) => el.getBoundingClientRect().width);
+
+      expect(mark, `${size}: a ${mark}px mark in a ${box}px box`).toBeCloseTo(box, 0);
+    }
+  });
+
+  /* The same control at rest and focused — nothing else isolates focus. The
+     first version of Input's equivalent compared a valid control to an invalid
+     one, which differ for another reason entirely, and so could not fail
+     (D-040 §3). */
+  test('focus shifts the border, and the ring is one colour', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-checkbox:not([data-invalid]) .pp-checkbox__input').first();
+    const invalid = wide.locator('.pp-checkbox[data-invalid] .pp-checkbox__input').first();
+
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    const outline = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).outlineColor);
+
+    const resting = await border(valid);
+    await valid.focus();
+    expect(await border(valid), 'the border did not shift on focus').not.toBe(resting);
+
+    const validRing = await outline(valid);
+    await invalid.focus();
+    expect(await outline(invalid), 'the ring is one colour library-wide (D-029)').toBe(validRing);
+  });
+
+  test('an invalid checkbox stays in the danger tone while focused', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+
+    const focusedBorder = async (selector: string) => {
+      const el = wide.locator(selector).first();
+      await el.focus();
+      return el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    };
+
+    expect(
+      await focusedBorder('.pp-checkbox[data-invalid] .pp-checkbox__input'),
+      'the error state vanished the moment the user acted on it',
+    ).not.toBe(await focusedBorder('.pp-checkbox:not([data-invalid]) .pp-checkbox__input'));
+  });
+
+  /* Source order in the stylesheet is the precedence story: checked, then
+     invalid, then disabled. A disabled checked box must not still be solid. */
+  test('disabled beats checked, and is distinguishable from an unchecked box', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const disabled = cell(page, 'Disabled', 'wide · 960px');
+    const live = cell(page, 'Three states, and only two a user can reach', 'wide · 960px');
+
+    const bg = (scope: ReturnType<typeof cell>, selector: string) =>
+      scope.locator(selector).first().evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    const disabledChecked = await bg(disabled, '.pp-checkbox[data-state="checked"] .pp-checkbox__input');
+    const liveChecked = await bg(live, '.pp-checkbox[data-state="checked"] .pp-checkbox__input');
+
+    expect(disabledChecked, 'a disabled checked box is as loud as a live one').not.toBe(
+      liveChecked,
+    );
+    expect(
+      await disabled
+        .locator('.pp-checkbox[data-disabled] .pp-checkbox__input')
+        .first()
+        .evaluate((el) => getComputedStyle(el).cursor),
+    ).toBe('not-allowed');
+  });
+
+  /*
+   * WCAG 2.2 SC 2.5.8, and the reason RadioGroup's gap defaults to "3"
+   * (D-039 §4). A 16px target passes through the SPACING exception: a 24px
+   * circle centred on each one must not intersect its neighbour's, which needs
+   * 24px between centres. At gap="2" (8px) a column of sm boxes puts them
+   * exactly 24px apart — tangent circles, an argument with an auditor rather
+   * than a pass.
+   */
+  test('undersized boxes clear the 2.5.8 spacing exception at gap="3"', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const wide = cell(page, 'Spacing is how an undersized target passes', 'wide · 960px');
+
+    const centres = await wide
+      .locator('.pp-checkbox__input')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return r.top + r.height / 2;
+        }),
+      );
+
+    expect(centres.length).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i < centres.length; i += 1) {
+      const gap = (centres[i] as number) - (centres[i - 1] as number);
+      expect(gap, `centres are ${gap}px apart — 24px circles would intersect`).toBeGreaterThanOrEqual(24);
+    }
+  });
+
+  /*
+   * The pointer half of D-039 §2. The mark sits in the same grid cell as the
+   * input and covers it completely, so without `pointer-events: none` the
+   * middle of a checked box is dead and the control only works at its edges —
+   * which reads as flakiness rather than as a bug.
+   */
+  test('clicking the mark toggles the box beneath it', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const scope = page.locator('[data-testid="checkbox-mark-target"]');
+    const control = scope.locator('input');
+
+    await expect(control).toBeChecked();
+    // Dead centre, which is the mark. Not `control.click()`, which Playwright
+    // would route to the input regardless of what is painted over it.
+    await scope.locator('.pp-checkbox').click({ position: { x: 12, y: 12 } });
+    await expect(control, 'the centre of the box does not toggle it').not.toBeChecked();
+  });
+
+  /* The third state, end to end, in the only case it exists for. */
+  test('select all: the parent computes indeterminate and the click resolves it', async ({
+    page,
+  }) => {
+    await page.goto('/components/checkbox');
+    const scope = page.locator('[data-testid="checkbox-select-all"]');
+    const all = scope.locator('#select-all');
+    const first = scope.locator('#notify-0');
+
+    /* One of three checked, so the parent hands down 'indeterminate'.
+       Asserted as a CHECKED STATE rather than as an `aria-checked` attribute,
+       because the component deliberately writes no such attribute: the native
+       input carries the state and the browser derives `mixed` from the
+       `indeterminate` DOM property. Reading the attribute returns null and
+       would be asserting the absence of our own second source of truth. */
+    await expect(all).toBeChecked({ indeterminate: true });
+    await expect(scope.locator('.pp-checkbox[data-state="indeterminate"]')).toHaveCount(1);
+
+    // Clicking a mixed box selects everything — never 'indeterminate'.
+    await all.click();
+    await expect(all).toBeChecked();
+    await expect(scope.locator('input:checked')).toHaveCount(4);
+
+    // And unchecking a child puts the parent back into the third state.
+    await first.click();
+    await expect(all).toBeChecked({ indeterminate: true });
+  });
+
+  /* D-035 §1 / spec §12: association is demonstrated once, outside the Matrix,
+     where the id is unique — and this is the assertion that proves it worked. */
+  test('an explicit controlId names the control in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const control = page.locator('[data-testid="checkbox-mark-target"] input');
+
+    await expect(control).toHaveAccessibleName('Click the check itself');
+    await expect(control).toHaveAttribute('id', 'mark-target');
+  });
+});

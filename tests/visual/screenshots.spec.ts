@@ -40,6 +40,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'field', path: '/components/field' },
   { name: 'input', path: '/components/input' },
   { name: 'textarea', path: '/components/textarea' },
+  { name: 'checkbox', path: '/components/checkbox' },
 ];
 
 /**
