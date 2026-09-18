@@ -1379,7 +1379,36 @@ of a broken foundation.
 Enabling the setting changes repository policy; a PAT adds a secret with more
 authority than `GITHUB_TOKEN`; committing the version directly to `main` from CI
 removes the human review step that the version PR exists to provide. Recorded
-here rather than resolved, with 0.8 `blocked` until one is chosen.
+here rather than resolved.
+
+**Chosen 2026-09-18: enable the repository setting.** A PAT grants more authority
+than `GITHUB_TOKEN` to solve a problem that is not about authority, and
+committing the version straight to `main` deletes the gate the version PR exists
+to be. The workflow is written correctly for the flow it assumes; one toggle
+makes the assumption true:
+
+```
+gh api -X PUT repos/mod-0-dev/pixel-perfect/actions/permissions/workflow \
+  -f default_workflow_permissions=read \
+  -F can_approve_pull_request_reviews=true
+```
+
+`default_workflow_permissions` stays `read` deliberately. It is already `read`,
+and the workflow declares `contents: write` for itself — which is why it could
+push `changeset-release/main` every time it failed — so widening the default
+would grant authority nothing asked for.
+
+**Nothing else in the pipeline is broken, verified before the toggle rather than
+after.** `origin/changeset-release/main` already carries the correct output:
+`0.0.0` → `0.1.0` with a generated `CHANGELOG.md`, from a config with
+`baseBranch: main` and `commit: false`. Every step but the last has succeeded on
+every merge for five merges. Worth establishing first, because a fix applied to a
+pipeline with two faults looks exactly like a fix that did not work.
+
+**0.8 stays `blocked` until a Release run is observed succeeding** — D-009's rule,
+and the reason this entry exists. `gh run rerun 35335458783` is the check: it
+should open a "chore(release): version packages" PR, and merging that PR cuts and
+tags `v0.1.0`.
 
 ## D-039 — Tier 3C rulings, approved as a batch
 
