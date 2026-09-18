@@ -26,14 +26,62 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 3B is complete.** `Label` and `Field` are both
-  `done`, and they were the last two components in Tier 3 approved individually
-  ([D-027](docs/DECISIONS.md))
-- **Next up:** Tier 3C — 3.8 `Input`, 3.9 `Textarea`, 3.10 `Checkbox`,
-  3.11 `Radio`/`RadioGroup`, 3.12 `Switch`, 3.13 `Select`. **One spec, one
-  gate**, now that 3B is `done`. Every one of them composes into `Field`, reads
-  `useField()`, and follows the one precedence rule: an explicit prop beats the
-  field, which beats the default — for `size`, `required` and `disabled` alike
+- **In flight:** _none_ — **3.8 `Input` is `done`.** Next is 3.9 `Textarea`,
+  then `Checkbox`, `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec`
+  under the Gate C approval of 2026-09-18 (**D-039**)
+- **A form control does not fill, and RULES §1 says it does** (**D-040 §1**).
+  The rule's argument against `width: 100%` is that a block element with no
+  width declaration "already fills its parent … in every layout context". True
+  of a `<div>`; false of every control in this tier. Measured inside a 600px
+  parent: `<input>` **185px**, `<textarea>` **182px**, `<select>` **52px**, a
+  `<p>` 600px. As a grid item every one of them is 600px; as a flex item the
+  input is still 185px, because a flex item needs `flex-grow`. So every 3C
+  component has a `display: grid` root and the control stretches into it —
+  **no width is declared anywhere**, so the rule is satisfied rather than bent.
+  `Input` and `Textarea` were specified as single-element components and are not
+- **A state declaration goes on the root, never on a descendant selector**
+  (D-040 §3). `.pp-input[data-invalid] .pp-input__control` is 0-3-0 and outranks
+  `.pp-input__control:focus-visible` at 0-2-0, so focus never shifted the border
+  on an invalid control and `--pp-tone-focus` reached valid controls only —
+  silently undoing half of D-039 §4. On the root the property inherits down and
+  the control's own pseudo-class wins for that element. Inheritance, not a
+  specificity race
+- **Fourth test that could not fail** (D-040 §3). Both focus assertions compared
+  a *valid* control against an *invalid* one and called the difference the focus
+  shift — but those differ because of `data-invalid`, so deleting the focus rule
+  outright left all seven green. It is no longer evidence about those tests:
+  **a test's value is established by watching it fail, and a suite where that
+  has never been done is unmeasured**
+- **A subtractive type over a union with a string escape hatch subtracts
+  nothing** (D-040 §2). `Exclude<HTMLInputTypeAttribute, 'checkbox' | …>` bans
+  nothing, because React's union ends in `(string & {})` and `'checkbox'` is
+  assignable to it. `Input`'s `type` is an explicit allow-list
+- **The one precedence rule, in all six:** an explicit prop beats the field,
+  which beats the default — for `size`, `required`, `disabled` and `invalid`
+  alike, including `disabled={false}` inside a disabled `Field`. "Explicit wins"
+  is a rule you can hold in your head; "explicit wins except for disabled" is one
+  you have to look up
+- **What D-039 settled that outlives 3C:** the root is the box and the control is
+  the element (so `ref` and rest props go to the `<input>`, `className` and
+  `style` to the wrapper); the native input is the painted control, never a
+  hidden input behind a `div role="checkbox"`; and the mark is an inline `Icon`
+  rather than a CSS asset — the first ruling proposed a `mask-image` data URI
+  plus a lint rule to police it, and **a ruling that needs a new lint rule to be
+  safe is evidence the mechanism is wrong**
+- **0.8 is `done`, and was `blocked` for one day after five silent failures**
+  (**D-038**). The `Release` workflow had failed on every merge to `main` since
+  Tier 0 without anyone looking, always at the last step: the repository policy
+  forbade Actions from opening the version PR. Everything upstream succeeded
+  every time, so a failing release looked like a working one. Fixed by flipping
+  `can_approve_pull_request_reviews`, and **proven end to end the same day**:
+  PR #6 merged, `Tag release` ran for the first time instead of being skipped,
+  and the library has its first release — **`v0.1.0` tagged on origin**,
+  `CHANGELOG.md` on `main`, `0.0.0` → `0.1.0`, all 27 changesets consumed.
+  The tag was read from `git ls-remote` rather than inferred from a green step,
+  because **a step succeeding and an artifact existing are different claims** —
+  mistaking one for the other is what cost five merges. The lesson generalises
+  past linters (D-009): **infrastructure is `done` when it has been observed
+  producing its artifact, not when its config file exists**
 - **What `Field` settled for all of 3C:** controls read their wiring from
   context and are never cloned (D-036, extending D-033 one tier on); `error` is
   the invalid state, with no `invalid` prop to contradict it and `''` counting
@@ -117,8 +165,9 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 35 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations (0.10 docs site is deferred, not blocking) + 26 components
+- **Done:** 36 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 27 components. The one foundation not `done` is 0.10 docs site,
+  deferred and not blocking
 
 ---
 
@@ -135,7 +184,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
 | 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013). Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
-| 0.8 | Changesets + release pipeline | `done` | 0.1 | Versions, changelogs and tags by default; npm publish is opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
+| 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
 
@@ -192,7 +241,7 @@ to the component it was written about — see
 | --- | --- | --- |
 | **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — **`done`** 2026-09-17 (D-027 … D-033) |
 | **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
-| **3C — Native inputs** | 3.8–3.13 | one gate, after 3B is `done` |
+| **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **approved** 2026-09-18 (D-039). Implementing in order |
 | **3D — Composite inputs** | 3.14–3.16 | one gate |
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
@@ -204,12 +253,12 @@ to the component it was written about — see
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
 | 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
-| 3.8 | `Input` | `planned` | fill | client | 3.7 | |
-| 3.9 | `Textarea` | `planned` | fill | client | 3.7 | Auto-resize opt-in |
-| 3.10 | `Checkbox` | `planned` | hug | client | 3.7 | Indeterminate state |
-| 3.11 | `Radio` / `RadioGroup` | `planned` | hug / fill | client | 3.7 | Roving tabindex |
-| 3.12 | `Switch` | `planned` | hug | client | 3.7 | |
-| 3.13 | `Select` | `planned` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
+| 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040) |
+| 3.9 | `Textarea` | `spec` | fill | client | 3.7 | Auto-resize opt-in |
+| 3.10 | `Checkbox` | `spec` | hug | client | 3.7 | Indeterminate state |
+| 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |
+| 3.12 | `Switch` | `spec` | hug | client | 3.7 | |
+| 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
 | 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |
 | 3.15 | `Slider` | `planned` | fill | client | 3.7 | Single + range |
 | 3.16 | `Form` | `planned` | fill | client | 3.7 | Error summary, submission state; validation stays the app's job |

@@ -61,3 +61,6 @@
 /* Tier 3B — field foundation. */
 @import "../components/Label/Label.css";
 @import "../components/Field/Field.css";
+
+/* Tier 3C — native inputs. */
+@import "../components/Input/Input.css";

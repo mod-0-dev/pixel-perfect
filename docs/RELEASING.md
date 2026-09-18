@@ -47,6 +47,18 @@ that PR cuts the release.
 **By default** the workflow versions, changelogs and tags. That is everything a
 git dependency needs.
 
+> **This has never actually run — 0.8 is `blocked`. See
+> [D-038](DECISIONS.md#d-038).** The workflow fails at the final step on every
+> merge to `main`: the repository policy forbids GitHub Actions from creating
+> pull requests, so the Version Packages PR is never opened. Everything before
+> it works, which is why the failure went unnoticed for five merges.
+>
+> The consequence for the paragraph above: **nothing is tagged.** The
+> `Tag release` step is gated on there being no pending changesets, which is
+> only true once the version PR has merged. Until the policy is changed, `main`
+> stays at version `0.0.0` with no `CHANGELOG.md` and no tags, and a git
+> dependency has to be pinned by commit or branch rather than by tag.
+
 **To publish to npm as well**, set the repository variable `PUBLISH_TO_NPM=true`
 and add an `NPM_TOKEN` secret. Nothing else changes; the same workflow starts
 publishing.

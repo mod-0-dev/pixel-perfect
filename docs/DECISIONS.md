@@ -1304,3 +1304,339 @@ they are the first two items in source order, and pinning only the description
 and the error to column 2 makes auto-placement produce the identical grid. The
 explicit rules were deleted. A declaration that can be removed with no observable
 effect is not documentation, it is a claim of a dependency that does not exist.
+
+## D-038 — The release pipeline has never run; `blocked` is its real status
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** ROADMAP 0.8, Gate B
+
+Found by checking CI on `main` before starting Tier 3C, which no session had
+done since the workflow was written.
+
+**Two workflows run on a push to `main`. Only one of them was ever looked at.**
+`CI` — lint, typecheck, test, build, token freshness, visual regression — is
+green on every merge and is what gates the PRs. `Release` has failed on **all
+five merges to `main`**: `a39117e` (Tier 0), `3b7edec` (Tier 1), `6d265e8`
+(Tier 2), `f3bcbfa` (Tier 3A), `5de2407` (Tier 3B). It has never succeeded once.
+
+```
+##[error]HttpError: GitHub Actions is not permitted to create or approve
+pull requests.
+```
+
+`changesets/action` versions the package, writes `CHANGELOG.md`, commits, and
+force-pushes `changeset-release/main` — all of which worked every time — and
+then calls the API to open the version PR, which the repository's Actions policy
+forbids. `.github/workflows/release.yml` already grants `pull-requests: write`;
+the job-level permission is not the thing saying no. The repository or
+organisation setting **Settings → Actions → General → Workflow permissions →
+"Allow GitHub Actions to create and approve pull requests"** is.
+
+**1. The failure mode is the dangerous kind: it looks like it worked.** Every
+step that produces visible output succeeded, the release branch really is pushed
+and up to date, and the only thing missing is the PR that would let a human
+merge it. So `main` carries version `0.0.0`, no `CHANGELOG.md` and no git tag
+after twenty-six components, and the branch that would fix all three has been
+sitting force-pushed and unmerged since 2026-09-17.
+
+`docs/RELEASING.md` says that without `PUBLISH_TO_NPM` "the repo still gets
+versions, a CHANGELOG and git tags, which is all a git dependency needs." That
+sentence is false as written and has been since it was written: the `Tag release`
+step is gated on `hasChangesets == 'false'`, which is only ever true *after* the
+version PR merges, and the version PR has never existed. Nothing tags anything.
+
+**2. 0.8 is `blocked`, not `done`.** The Definition of Done says a thing that
+cannot be completed "goes to `blocked` with a stated reason — never to `done`."
+0.8's deliverables were reviewed as files — a workflow, a config, a docs page —
+and the file existing was taken for the pipeline working. It is the same mistake
+D-009 names for linters: **a pipeline that has never been observed succeeding
+provides no evidence about anything**, and the observation is one `gh run list`
+away.
+
+The component work is unaffected. Every `Changeset added` box was ticked
+truthfully: 27 changesets exist and are correct, including one each for `Label`
+and `Field` under generated names. They are pending, not missing.
+
+**3. A blocked release pipeline does not gate component work**, and this is an
+explicit ruling rather than an oversight, because Tier 0's heading says
+"Nothing else may start until this tier is `done`" and Gate B says "Tier 0 must
+be fully `done` before any component starts." Read literally, 0.8 turning
+`blocked` halts the roadmap.
+
+That reading is wrong, and the reason is the one Tier 0's rule was written for:
+the tier gates component work because **components are built on it** — tokens,
+layers, the test harness, the lint. Nothing about `Input` depends on a version
+number or a git tag. The consuming app installs from a git ref, which resolves
+without tags. The blast radius of shipping Tier 3C with the release pipeline
+broken is that the changeset count goes from 27 to 33.
+
+**So Gate B reads: every foundation a component *consumes* must be `done`.**
+0.8 and 0.10 are release and documentation infrastructure, and neither is
+consumed by a component. If this exception is ever load-bearing for something
+else, it needs its own entry — it is not a general licence to start work on top
+of a broken foundation.
+
+**4. Fixing it is the user's call, because every route is outward-facing.**
+Enabling the setting changes repository policy; a PAT adds a secret with more
+authority than `GITHUB_TOKEN`; committing the version directly to `main` from CI
+removes the human review step that the version PR exists to provide. Recorded
+here rather than resolved.
+
+**Chosen 2026-09-18: enable the repository setting.** A PAT grants more authority
+than `GITHUB_TOKEN` to solve a problem that is not about authority, and
+committing the version straight to `main` deletes the gate the version PR exists
+to be. The workflow is written correctly for the flow it assumes; one toggle
+makes the assumption true:
+
+```
+gh api -X PUT repos/mod-0-dev/pixel-perfect/actions/permissions/workflow \
+  -f default_workflow_permissions=read \
+  -F can_approve_pull_request_reviews=true
+```
+
+`default_workflow_permissions` stays `read` deliberately. It is already `read`,
+and the workflow declares `contents: write` for itself — which is why it could
+push `changeset-release/main` every time it failed — so widening the default
+would grant authority nothing asked for.
+
+**Nothing else in the pipeline is broken, verified before the toggle rather than
+after.** `origin/changeset-release/main` already carries the correct output:
+`0.0.0` → `0.1.0` with a generated `CHANGELOG.md`, from a config with
+`baseBranch: main` and `commit: false`. Every step but the last has succeeded on
+every merge for five merges. Worth establishing first, because a fix applied to a
+pipeline with two faults looks exactly like a fix that did not work.
+
+**Observed succeeding 2026-09-18, and 0.8 is `done`.** The setting reads
+`can_approve_pull_request_reviews: true`, the rerun of the `main` Release run
+completed green, and it produced the artifact rather than merely exiting zero:
+PR **#6** `chore(release): version packages`, from `changeset-release/main`,
+carrying `0.0.0` → `0.1.0` and a generated `CHANGELOG.md`. Checked in that order
+deliberately — a green run and a created PR are different claims, and this entry
+exists because the first was never checked at all.
+
+**`Tag release` observed the same day, and the pipeline is now proven end to
+end.** Merging PR #6 (`ce456d1`) ran Release once more with no changesets left,
+so the step finally executed instead of being skipped:
+
+| Evidence | Result |
+| --- | --- |
+| Release run 35346875708 | `success` |
+| step `Changesets` / `Tag release` | `success` / **`success`** |
+| `git ls-remote --tags origin` | `v0.1.0`, `v0.1.0^{}` |
+| `package.json` on `main` | `0.1.0` |
+| `CHANGELOG.md` on `main` | present |
+| `.changeset/*.md` remaining | none — all 27 consumed |
+
+The tag was read from `ls-remote` rather than inferred from the step's exit code,
+for the same reason the version PR was checked rather than the run's colour: a
+step succeeding and an artifact existing are different claims, and mistaking one
+for the other is the entire content of this entry.
+
+**A predicted failure mode did not happen, and the prediction was wrong for a
+checkable reason.** `git push --follow-tags` pushes only *annotated* tags, so
+lightweight ones would have produced a green step and no tag — a silent failure
+shaped exactly like the one being fixed. `@changesets/git` runs
+`git tag <name> -m <name>`, and `-m` makes the tag annotated, so `--follow-tags`
+carries it. Confirmed in the dependency's source before the run finished, and
+then in the peeled `v0.1.0^{}` ref afterwards. Worth recording because the guess
+was reasonable and still wrong: the source settled it in one grep.
+
+**The whole episode, in one line:** a workflow that had never once succeeded sat
+behind a `done` status for five merges, and the check that found it — `gh run
+list` — costs a second and had never been run. The Definition of Done gained
+nothing from this that D-009 did not already say about linters; what it gained
+is a second domain where the rule holds. **Infrastructure is `done` when it has
+been observed producing its artifact, not when its config file exists.**
+
+## D-039 — Tier 3C rulings, approved as a batch
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §5.1, §5.3; D-019; ROADMAP 3.11
+
+Gate C for the six native inputs
+([`tier-3c-inputs.md`](specs/tier-3c-inputs.md)). Twelve rulings were put up and
+all twelve accepted; three were amended at the gate and are recorded in the
+spec's §13. The ones that are precedents rather than local choices:
+
+**1. `ref` and rest props go to the control; `className` and `style` go to the
+root.** RULES §5.1 forwards `ref` to the root element and §5.3 spreads the
+remaining props onto it. For `Checkbox`, `Radio`, `Switch` and `Select` the root
+is a decorative wrapper, so a literal reading hands the caller a ref to a
+`<span>` and spreads `placeholder` onto it.
+
+The principle: **the root is the box, the control is the element.** Anything
+describing appearance goes to the box; anything functional goes to the element.
+A ref to a form control is used to focus it, read `.value`, call
+`setCustomValidity()` and hand to `react-hook-form` — a ref to the wrapper does
+none of them. For `Input` and `Textarea` the two are the same node and this
+collapses to RULES §5 unchanged.
+
+The props type stays `ComponentPropsWithoutRef<'input'>`, so the split is
+invisible: the caller sees input props and gets input props.
+
+Rejected: a `wrapperProps` escape hatch, which is the first of `inputProps`,
+`labelProps` and `indicatorProps` — the configuration sprawl RULES §5.6 exists
+to stop.
+
+**2. The native input is the painted control.** `appearance: none` on the real
+`<input>`, styled directly, with the mark as an `aria-hidden` sibling. Not a
+hidden input behind a `<div role="checkbox">`, which has to rebuild `:checked`,
+`:indeterminate`, label-click, Space, form reset, autofill and the accessibility
+tree, and rebuilds them incompletely.
+
+**3. The mark is an inline `Icon`, not a CSS asset — and the first answer was
+wrong.** The spec originally ruled for a colourless `mask-image` data URI, plus
+a lint rule parsing inside the URI for `fill=`, `stroke=` and `#`, plus the
+exemption to go with it. That measured against the wrong constraint: the
+`<input>` is void, but the **indicator is a `<span>` and takes children**. So the
+mark is an SVG path in the markup, inside `Icon` (1.3), coloured by
+`currentColor` from a token.
+
+It deletes a proposed lint rule and a proposed exemption, and it makes the path
+reviewable in a diff rather than URL-encoded in a stylesheet. The whole cost is
+about sixty bytes of markup per control.
+
+**Worth generalising:** the rejected options were all CSS mechanisms, and the
+question was never a CSS question. A ruling that proposes a new lint rule to
+make itself safe is evidence the mechanism is wrong, not that the linter is
+missing a feature.
+
+**4. Undersized checkable controls pass 2.5.8 on spacing, not on the label.**
+The boxes are 16/20/24 (`--pp-size-4/5/6`), so `sm` and `md` are under WCAG 2.2
+SC 2.5.8's 24×24 minimum. They conform through the **spacing exception** — a
+24px circle centred on each target does not intersect its neighbour's — which,
+unlike the label argument, does not depend on a label existing.
+
+**This is why `RadioGroup`'s `gap` defaults to `"3"` and not `"2"`.** At 8px a
+column of `sm` radios puts centres exactly 24px apart: tangent circles, touching
+at a point, which is an argument with an auditor rather than a pass. 12px clears
+it at every size (28 / 32 / 36). The default is load-bearing and asserted in a
+test — the third time a default has been (D-020's `gap="0"`, D-022 §6's
+`gutter="5"`, now this one).
+
+**5. `RadioGroup` implements no roving tabindex, overturning `ROADMAP.md` 3.11.**
+Radios sharing a `name` already implement the APG Radio Group pattern in every
+browser, including wrapping, Home/End and skipping disabled members. Writing our
+own means removing that and rebuilding it. This is RULES §8's argument pointed
+at the browser rather than at Radix, and D-030 §7's `ButtonGroup` ruling a second
+time.
+
+**Consequence: `RadioGroup` generates a `name` from `useId()` when none is
+given.** Grouping *is* the `name` attribute, so two unnamed groups on one page
+are one group and selecting in either clears the other — silent, and exactly the
+kind of thing that ships.
+
+Native radios also answer all four arrow keys regardless of orientation, which is
+a superset of APG rather than a deviation. Recorded so the next reader of the APG
+page does not "fix" it.
+
+**6. Text controls use no state hook.** `Input`, `Textarea` and `Select` pass
+`value` / `defaultValue` / `onChange` straight to the DOM. This is the fullest
+compliance with RULES §5.5, not an exception to it: React's inputs already
+implement the exact contract D-032 wrote down, and wrapping them would hand
+callers an `onChange` taking a value instead of an event — unusable by
+`react-hook-form`, and unable to read `event.target.validity`.
+
+`Checkbox`, `Switch` and `RadioGroup` do use `useControllableState`, because
+RULES §4 needs the state during render to emit `data-state`, and a native
+checkbox's checkedness is not available to the render that has to describe it.
+
+**7. The `inline-size` exemption extends to three more files.** `Checkbox`,
+`Radio` and `Switch` join `Icon`, `Spinner`, `Avatar` (D-019) and `IconButton`
+(D-031). All `hug`, all intrinsically sized, all explicit in `.stylelintrc.json`
+rather than routed around with `aspect-ratio`. `Switch` is the first that is not
+square — a 2:1 track is as intrinsic as a 1:1 box.
+
+**8. `Input` allows `type="number"`, and `NumberInput` will not use it.**
+Excluding a type the platform supports, to push callers toward a component that
+does not exist until 3.14, is hostile for the months in between. `file` and
+`hidden` do join the exclusion list — the first is `FileUpload` (5.10), the
+second needs no component.
+
+The finding underneath: `type="number"` mutates its value on a scroll wheel over
+a focused field, rejects a locale decimal comma, and reports `value === ''` for
+anything it cannot parse, so `1,5` in a German locale is silently lost.
+`NumberInput` (3.14) is `type="text"` with `inputMode="numeric"`, and `Input`'s
+docs say so now rather than surprising someone a tier later.
+
+## D-040 — `Input` build findings: a form control does not fill
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §1 (statement of mechanism); `docs/specs/tier-3c-inputs.md` §3.8, §3.9, §3.11, §3.13
+
+Four findings, three of them from a measurement or a deliberate break rather
+than from review. The first invalidates a sentence in RULES §1 and changes the
+anatomy of three components.
+
+**1. RULES §1's mechanism is false for form controls.** The rule's argument
+against `width: 100%` is that it is unnecessary:
+
+> A block element with no width declaration already fills its parent, and does
+> so correctly in every layout context.
+
+That is true of a `<div>` and false of every control in this tier, which carries
+an intrinsic inline size from the HTML `size` / `cols` attribute. Measured inside
+a 600px parent, before a line of the component was written:
+
+| Element | `display: block` | grid item | flex item |
+| --- | --- | --- | --- |
+| `<input>` | **185px** | 600px | **185px** |
+| `<textarea>` | **182px** | 600px | — |
+| `<select>` | **52px** | 600px | — |
+| `<p>` (control) | 600px | 600px | — |
+
+**The fix needs no exemption.** The root is a `<span>` that is `display: grid`
+and the control stretches into its single cell, so no width is declared anywhere
+and the layout does the job RULES §1 assigns to the parent — which is D-021's
+ruling ("a layout primitive may size the boxes it creates") applied by a
+component to its own one child.
+
+Flexbox is not an alternative and was measured rather than assumed: a flex item
+does not stretch on the main axis without `flex-grow`.
+
+**Consequence: `Input` and `Textarea` were specified as single-element
+components and are not.** Every component in 3C has a wrapper, which makes
+D-039 §1's prop split uniform across the group rather than a per-component rule.
+`RULES.md` §1 keeps its rule — *don't declare width* — and its stated mechanism
+now has a named exception.
+
+**2. `Exclude<HTMLInputTypeAttribute, …>` bans nothing.** React types an input's
+`type` as a union of literals ending in `(string & {})`, so that custom values
+stay assignable. `'checkbox'` is assignable to `string & {}`, which means
+`Exclude` removes the literal and lets the value straight back in — the spec's
+props table was a type that did not typecheck anything. Replaced with an explicit
+allow-list, which also documents what the component supports.
+
+**The general shape:** a subtractive type over a union with a string escape hatch
+subtracts nothing. Additive is the only form that holds.
+
+**3. Two browser assertions could not fail, and one was hiding a real bug.**
+Both focus tests compared a *valid* control's border against an *invalid* one's
+and called the difference the focus shift. Those two differ because of
+`data-invalid`, not because of focus, so deleting the focus rule from the
+stylesheet entirely left all seven Input tests green. Isolating focus requires
+comparing the **same control** at rest and focused; nothing else does.
+
+Rewriting them found the bug. `.pp-input[data-invalid] .pp-input__control` is
+0-3-0 and outranks `.pp-input__control:focus-visible` at 0-2-0, so **focus never
+shifted the border on an invalid control** and `--pp-tone-focus` reached valid
+controls only — silently undoing half of D-039 §4, the ruling that spends the
+token D-029 reserved.
+
+State is now declared on the **root**, where the custom property inherits down
+and the control's own `:focus-visible` declaration wins for that element. The
+precedence the design wanted, expressed as inheritance rather than as a
+specificity race. **Standing rule for the rest of the tier: a state declaration
+goes on the root, never on a descendant selector, because the descendant form
+quietly outranks the control's own pseudo-classes.**
+
+This is the fourth time a break-it-and-watch check has found a test that could
+not fail (D-009, the Tier 3A focus test, D-035 §2–3). It is no longer evidence
+about those tests; it is evidence that **a test's value is established by
+watching it fail, and a suite where that has never been done is unmeasured.**
+
+**4. `font-family: inherit` was redundant, and the linter said so first.**
+Stylelint rejected it — the rule requires `var(--pp-font-family-*)` — and the
+right answer was neither to comply nor to widen the rule. `reset.css` already
+gives form controls `font: inherit`, at `:where()` zero specificity, which is
+deliberate: a consuming app that sets its own font on inputs *should* win, and
+redeclaring it in `pp.components` would take that away. The line was deleted.
+D-037 §5's lesson, reached from the other direction — there the declaration was
+load-bearing-looking and inert, here the linter pointed at it first.

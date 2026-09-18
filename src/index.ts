@@ -47,6 +47,7 @@ export {
   type GridProps,
 } from './components/Grid/Grid';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
+export { Input, type InputProps, type InputType } from './components/Input/Input';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
 export { Label, type LabelProps } from './components/Label/Label';

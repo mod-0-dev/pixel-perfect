@@ -983,3 +983,148 @@ test.describe('Field', () => {
     }
   });
 });
+
+/**
+ * Tier 3C. Everything here needs layout: the fill claim is a measurement, the
+ * focus border is a var() chain jsdom resolves none of, and D-030 §2 is the
+ * standing reason an accessible name is asserted where layout exists.
+ */
+test.describe('Input', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  /*
+   * THE REASON THIS COMPONENT HAS A WRAPPER. RULES §1 claims a block element
+   * with no width declaration fills its parent "in every layout context"; an
+   * <input> has an intrinsic inline size and does not. Measured before the
+   * component was written, and asserted here so a future simplification to a
+   * single element fails loudly instead of silently shipping a 185px field.
+   */
+  test('fill: the control takes the box it is given, at every width', async ({ page }) => {
+    await page.goto('/components/input');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'It fills, at every container width', width);
+      const ratio = await c.locator('.pp-input__control').evaluate((node) => {
+        const root = node.closest('.pp-input') as HTMLElement;
+        return node.getBoundingClientRect().width / root.getBoundingClientRect().width;
+      });
+      expect(ratio, `the control did not fill its root at ${width}`).toBeCloseTo(1, 2);
+    }
+  });
+
+  test('a long unbreakable value shrinks the control instead of the container', async ({
+    page,
+  }) => {
+    await page.goto('/components/input');
+    const narrow = cell(page, 'It fills, at every container width', 'narrow · 240px');
+
+    const overflow = await narrow.locator('.pp-field').evaluate((node) => {
+      const parent = node.parentElement as HTMLElement;
+      return parent.scrollWidth - parent.clientWidth;
+    });
+    expect(overflow, 'the input pushed its container wide').toBeLessThanOrEqual(1);
+  });
+
+  test('an Input and a Button are the same height at the same size', async ({ page }) => {
+    await page.goto('/components/input');
+    const wide = cell(page, 'Sizes', 'wide · 960px');
+    const heights: Record<string, number> = {};
+
+    for (const size of ['sm', 'md', 'lg'] as const) {
+      heights[size] = await wide
+        .locator(`.pp-input[data-size="${size}"] .pp-input__control`)
+        .evaluate((el) => el.getBoundingClientRect().height);
+    }
+
+    // D-028's entire purpose, stated as the numbers it aliases onto.
+    expect(heights).toEqual({ sm: 32, md: 40, lg: 48 });
+  });
+
+  /*
+   * D-029 reserved --pp-tone-focus for exactly this and D-039 §4 spends it:
+   * focus draws TWO things, one ring colour outside the box and a tone-shifted
+   * border inside it.
+   *
+   * THE FIRST VERSION OF THIS TEST COULD NOT FAIL. It compared a valid
+   * control's border with an invalid one's and called the difference "the tone
+   * shift" — but those two differ because of data-invalid, not because of
+   * focus, so deleting the focus rule outright left it green. Found by deleting
+   * it and watching all seven tests pass. The comparison has to be the SAME
+   * control at rest and focused; nothing else isolates focus.
+   */
+  test('focus shifts the control border, and the ring is one colour', async ({ page }) => {
+    await page.goto('/components/input');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-input:not([data-invalid]) .pp-input__control').first();
+    const invalid = wide.locator('.pp-input[data-invalid] .pp-input__control').first();
+
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    const outline = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).outlineColor);
+
+    const resting = await border(valid);
+    await valid.focus();
+    const focused = await border(valid);
+
+    expect(focused, 'the border did not shift on focus').not.toBe(resting);
+
+    const validRing = await outline(valid);
+    await invalid.focus();
+    expect(await outline(invalid), 'the ring is one colour library-wide (D-029)').toBe(validRing);
+  });
+
+  /*
+   * The payoff D-039 §4 claims: an invalid control focused is still visibly
+   * invalid. Fails if the root stops carrying data-pp-tone="danger", because
+   * then --pp-tone-focus resolves neutral and the two focused borders converge.
+   */
+  test('an invalid control stays in the danger tone while focused', async ({ page }) => {
+    await page.goto('/components/input');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-input:not([data-invalid]) .pp-input__control').first();
+    const invalid = wide.locator('.pp-input[data-invalid] .pp-input__control').first();
+
+    const focusedBorder = async (el: import('@playwright/test').Locator) => {
+      await el.focus();
+      return el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    };
+
+    expect(
+      await focusedBorder(invalid),
+      'the error state vanished the moment the user acted on it',
+    ).not.toBe(await focusedBorder(valid));
+  });
+
+  test('read-only and disabled are distinguishable', async ({ page }) => {
+    await page.goto('/components/input');
+    const wide = cell(page, 'Disabled and read-only are different states', 'wide · 960px');
+
+    const read = (sel: string) =>
+      wide.locator(sel).first().evaluate((n) => {
+        const s = getComputedStyle(n);
+        return { color: s.color, border: s.borderTopColor };
+      });
+
+    const disabled = await read('.pp-input[data-disabled] .pp-input__control');
+    const readOnly = await read('.pp-input[data-readonly] .pp-input__control');
+
+    // Same fill by design; the text and border are what tell them apart.
+    expect(disabled.color).not.toBe(readOnly.color);
+  });
+
+  /* D-035 §1 / spec §12: association is demonstrated once, outside the Matrix,
+     where the id is unique — and this is the assertion that proves it worked. */
+  test('an explicit controlId names the control in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/input');
+    const control = page.locator('[data-testid="input-association"] input');
+
+    await expect(control).toHaveAccessibleName('Billing email');
+    await expect(control).toHaveAttribute('id', 'billing-email');
+  });
+});
