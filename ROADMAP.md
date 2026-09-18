@@ -26,6 +26,15 @@ is `done`.
 
 ### Current state
 
+- **A sweep on 2026-09-18 found two shipped defects and five false claims, all of
+  them prose disagreeing with code** (**D-045**, **D-046**). The checkbox-row
+  pointer was promised in four places and set nowhere, and could not have
+  reached the label from where it was promised — a custom property inherits
+  downward and the label is the control's sibling — so a horizontal `Field`
+  now sets `--pp-label-cursor` on itself. `Scroller` `both` shaded one axis; it
+  now measures both and reports the inline axis as `data-overflow-inline`. The
+  Definition of Done gained one line: a claim about another component's
+  behaviour is asserted or linked, never restated
 - **In flight:** _none_ — **3.10 `Checkbox` is `done`.** Next is 3.11
   `Radio`/`RadioGroup`, then `Switch`, `Select`, all already `spec` under the
   Gate C approval of 2026-09-18 (**D-039**)
@@ -299,7 +308,7 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 | 2.5 | `Center` | `done` | fill | server | 2.1 | Centres in the box it is given; does not constrain a measure. No height prop |
 | 2.6 | `Split` | `done` | fill | server | 2.3 | Sidebar + main; container-query collapse at a named breakpoint. No `side` prop (D-022 §3) |
 | 2.7 | `AspectRatio` | `done` | fill | server | T0 | A grid, so the child stretches on both axes without an `inline-size` |
-| 2.8 | `Scroller` | `done` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component and only a11y surface |
+| 2.8 | `Scroller` | `done` | fill | client | T0 | Overflow container, scroll shadows. The tier's only client component and only a11y surface. `both` reports the inline axis as `data-overflow-inline` (D-046) |
 
 ---
 
