@@ -1728,6 +1728,23 @@ workflow comment that "an authoring commit should never be the final head of a
 PR" describes an ordering that nothing enforces and nothing in this repository
 can enforce. That is a branch-protection setting, and it is the root cause.
 
+**Required status checks were considered and deliberately declined** (2026-09-18).
+Requiring the two CI jobs would close the race, but it collides with the way
+baselines are authored: a push made with `GITHUB_TOKEN` starts no workflow run,
+so the authoring commit becomes a head SHA that the required checks never report
+on, and the PR blocks until someone pushes again — a manual nudge once per new
+component, 68 components ahead of us. The version that avoids the nudge needs a
+PAT or App token with `contents: write` standing in the repository secrets, and
+that credential was judged not worth its blast radius for this.
+
+So the race is accepted, and **the `main`-side guard is the mitigation rather
+than a second line of defence.** If it is ever deleted as redundant, this class
+of failure goes back to being silent. Its shell was checked by running the
+classify logic against an untracked baseline and watching it exit 1 naming the
+file; its `if:` condition is verified only by YAML parse, because no run since
+has had a missing baseline on `main` to trigger it. First real merge that skips
+it while `new == 'false'` is the confirmation — PR #10 recorded exactly that.
+
 **And the lesson that generalises past screenshots:** D-041 ruled that where
 deduplication is impossible, the agreement gets a test. This adds the limit of
 that ruling — **a test that two lists agree is not a test that the artifact the

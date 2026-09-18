@@ -46,7 +46,12 @@ is `done`.
   `pull_request` events, and `main` now fails naming the missing file instead of
   attempting a push it is forbidden to make. **The root cause is not in the
   repository:** `main` has no required status checks, so nothing stops a merge
-  that lands before any check reports
+  that lands before any check reports. Requiring them was **considered and
+  declined** — a `GITHUB_TOKEN` push starts no workflow run, so an authoring
+  commit would become a head SHA the required checks never report on and block
+  its own PR, once per new component, 68 components ahead of us. **The
+  `main`-side guard is therefore the mitigation, not a spare one:** delete it as
+  redundant and this failure goes back to being silent
 - **A test that two lists agree is not a test that the artifact exists**
   (D-042). `tests/unit/playground-registry.test.ts` passed correctly at every
   moment of the failure above, while the baseline it was written to protect was
