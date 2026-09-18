@@ -367,3 +367,334 @@ test.describe('layout primitives', () => {
   });
 });
 
+
+/**
+ * Computed-style assertions for Tier 3A. The whole point of `--pp-control-*`
+ * is that a chain of var() references resolves to one number in five
+ * components; jsdom resolves none of that chain, so it is checked here or it
+ * is not checked at all.
+ */
+test.describe('action core', () => {
+  /** The 960px column of a Matrix section, located by its own label. */
+  const wideCell = (page: import('@playwright/test').Page, section: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+  test('the control scale resolves to 32 / 40 / 48', async ({ page }) => {
+    await page.goto('/components/button');
+    const cell = wideCell(page, 'Size — the shared control scale');
+
+    for (const [size, expected] of [
+      ['sm', 32],
+      ['md', 40],
+      ['lg', 48],
+    ] as const) {
+      const height = await cell
+        .locator(`.pp-button[data-size="${size}"]`)
+        .first()
+        .evaluate((el) => el.getBoundingClientRect().height);
+      // Not "roughly": --pp-control-height-* is an alias onto --pp-size-8/10/12
+      // and a border does not change the box, because the reset is border-box.
+      expect(Math.round(height)).toBe(expected);
+    }
+  });
+
+  test('a Button hugs, and only its parent can stretch it', async ({ page }) => {
+    await page.goto('/components/button');
+    const cell = wideCell(page, 'hug means hug');
+
+    const ratio = (name: string) =>
+      cell
+        .getByRole('button', { name })
+        .evaluate((el) => el.getBoundingClientRect().width / el.parentElement!.clientWidth);
+
+    // RULES §1: no width declaration, so an inline-flex button is its label
+    // wide even when handed 960px.
+    expect(await ratio('Default — hugs its label')).toBeLessThan(0.5);
+
+    // ...and the escape hatch is the parent making a layout decision, which is
+    // exactly where the rule says the decision belongs. If this ever reads < 1,
+    // `hug` has become "cannot be stretched", which is a different contract.
+    expect(await ratio('The parent stretched this one')).toBeCloseTo(1, 1);
+  });
+
+  test('a loading Button keeps its box and hides the label without losing its name', async ({ page }) => {
+    await page.goto('/components/button');
+    const button = wideCell(page, 'Loading — aria-disabled, not disabled')
+      .getByRole('button', { name: 'solid' })
+      .first();
+    const content = button.locator('.pp-button__content');
+
+    // THE REGRESSION GUARD. `visibility: hidden` and `display: none` both look
+    // identical here and both remove the label from the accessibility tree, so
+    // a button announced as "solid" becomes a button announced as nothing at
+    // the moment it starts working. Only opacity hides it visually and keeps
+    // the name. This is how the bug was found; jsdom's name computation does
+    // not consult layout and reported the name either way.
+    await expect(button).toHaveAccessibleName('solid');
+    expect(await content.evaluate((el) => getComputedStyle(el).opacity)).toBe('0');
+
+    // ...and it still occupies its space, so the box does not shrink under the
+    // cursor when the button starts working.
+    const labelWidth = await content.evaluate((el) => el.getBoundingClientRect().width);
+    const boxWidth = await button.evaluate((el) => el.getBoundingClientRect().width);
+    expect(labelWidth).toBeGreaterThan(0);
+    expect(boxWidth).toBeGreaterThanOrEqual(labelWidth);
+
+    // The spinner sits in an overlay, so it contributes nothing to the box.
+    await expect(button.locator('.pp-button__spinner .pp-spinner')).toHaveCount(1);
+  });
+
+  test('the focus ring is one colour for every tone', async ({ page }) => {
+    await page.goto('/components/button');
+    const cell = wideCell(page, 'Variant × tone');
+
+    const ringOf = async (tone: string) => {
+      const button = cell.locator(`.pp-button[data-variant="solid"][data-pp-tone="${tone}"]`).first();
+      await button.focus();
+      return button.evaluate((el) => {
+        const style = getComputedStyle(el);
+        return { color: style.outlineColor, width: parseFloat(style.outlineWidth) };
+      });
+    };
+
+    const accent = await ringOf('accent');
+    const danger = await ringOf('danger');
+    const warning = await ringOf('warning');
+
+    // Spec §2: --pp-color-focus-ring, not --pp-tone-focus. `lint:contrast`
+    // asserts one ring pairing and only one; if these ever differ, four of the
+    // five ring colours in the library are unverified.
+    expect(danger.color).toBe(accent.color);
+    expect(warning.color).toBe(accent.color);
+
+    // RULES §6: focus is always visible.
+    expect(accent.width).toBeGreaterThan(0);
+  });
+});
+
+test.describe('Link', () => {
+  test('wraps across lines, because it declares no display of its own', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const narrow = page
+      .locator('section', { hasText: 'In running text, it wraps' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'narrow · 240px' })
+      .first();
+    const link = narrow.getByRole('link').first();
+
+    // An inline box that breaks across two lines produces two client rects.
+    // An `inline-flex` link — which is what several libraries ship — produces
+    // one, and overflows or truncates instead. This is the whole reason
+    // Link.css declares no `display`.
+    const rects = await link.evaluate((el) => el.getClientRects().length);
+    expect(rects).toBeGreaterThan(1);
+  });
+
+  test('underline follows the prop, and `hover` only underlines on hover', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const cell = page
+      .locator('section', { hasText: 'underline' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+    const decoration = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => getComputedStyle(node).textDecorationLine);
+
+    const always = cell.locator('.pp-link[data-underline="always"]').first();
+    const onHover = cell.locator('.pp-link[data-underline="hover"]').first();
+    const never = cell.locator('.pp-link[data-underline="none"]').first();
+
+    expect(await decoration(always)).toBe('underline');
+    expect(await decoration(never)).toBe('none');
+
+    expect(await decoration(onHover)).toBe('none');
+    await onHover.hover();
+    expect(await decoration(onHover)).toBe('underline');
+  });
+
+  test('every tone resolves to a different colour, neutral included', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const cell = page
+      .locator('section', { hasText: 'tone' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+    const colourOf = (tone: string) =>
+      cell.locator(`.pp-link[data-pp-tone="${tone}"]`).first().evaluate((el) => getComputedStyle(el).color);
+
+    const [neutral, accent, danger] = await Promise.all([
+      colourOf('neutral'),
+      colourOf('accent'),
+      colourOf('danger'),
+    ]);
+
+    // If these are equal, the tone context is not reaching the component and
+    // every link in the library is the same colour — the D-011 failure mode.
+    expect(accent).not.toBe(neutral);
+    expect(danger).not.toBe(accent);
+  });
+});
+
+test.describe('IconButton', () => {
+  test('is square at every size, on the same scale as Button', async ({ page }) => {
+    await page.goto('/components/icon-button');
+
+    const cell = page
+      .locator('section', { hasText: 'Square at every size' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+    for (const [size, expected] of [
+      ['sm', 32],
+      ['md', 40],
+      ['lg', 48],
+    ] as const) {
+      const box = await cell
+        .locator(`.pp-icon-button[data-size="${size}"]`)
+        .first()
+        .evaluate((el) => {
+          const rect = el.getBoundingClientRect();
+          return { w: rect.width, h: rect.height };
+        });
+
+      // Square, and square at the SHARED control height — not at some scale of
+      // its own. A row of Buttons and IconButtons only lines up if both read
+      // --pp-control-height-*.
+      expect(Math.round(box.w)).toBe(expected);
+      expect(Math.round(box.h)).toBe(expected);
+    }
+  });
+});
+
+test.describe('Toggle', () => {
+  test('pressed is visibly distinct, and does not lighten on hover', async ({ page }) => {
+    await page.goto('/components/toggle');
+
+    const cell = page
+      .locator('section', { hasText: 'Off and on, across variants' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+    const off = cell.getByRole('button', { name: 'ghost off' }).first();
+    const on = cell.getByRole('button', { name: 'ghost on' }).first();
+
+    const bg = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => getComputedStyle(node).backgroundColor);
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => getComputedStyle(node).borderTopColor);
+
+    const offBg = await bg(off);
+    const onBg = await bg(on);
+    expect(onBg).not.toBe(offBg);
+
+    // Pressed is already the filled end of the ramp. Hovering must not walk it
+    // back toward the resting colour — that reads as releasing the button.
+    const onBorderRest = await border(on);
+    await on.hover();
+    expect(await bg(on)).toBe(onBg);
+    expect(await border(on)).not.toBe(onBorderRest);
+  });
+});
+
+test.describe('ButtonGroup', () => {
+  const wide = (page: import('@playwright/test').Page, section: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+
+  test('ends are rounded, the middle is square, and the seam is one border', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Horizontal — end radii on the ends');
+
+    const corners = (name: string) =>
+      cell.getByRole('button', { name }).evaluate((el) => {
+        const s = getComputedStyle(el);
+        return {
+          startStart: s.borderStartStartRadius,
+          startEnd: s.borderStartEndRadius,
+          leadingBorder: s.borderInlineStartWidth,
+        };
+      });
+
+    const first = await corners('CSV');
+    const middle = await corners('JSON');
+    const last = await corners('Parquet');
+
+    expect(first.startStart).not.toBe('0px');
+    expect(first.startEnd).toBe('0px');
+    expect(middle.startStart).toBe('0px');
+    expect(middle.startEnd).toBe('0px');
+    expect(last.startEnd).not.toBe('0px');
+
+    // The seam: every button after the first drops its leading border, so the
+    // edge between two buttons is drawn exactly once. RULES §2 forbids the
+    // usual `margin-inline-start: -1px`, so there is no overlap to collapse.
+    expect(first.leadingBorder).not.toBe('0px');
+    expect(middle.leadingBorder).toBe('0px');
+    expect(last.leadingBorder).toBe('0px');
+  });
+
+  test('buttons sit edge to edge with no gap', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Horizontal — end radii on the ends');
+
+    const boxes = await cell
+      .locator('.pp-button-group > .pp-button')
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).map((r) => [r.left, r.right]));
+
+    expect(boxes).toHaveLength(3);
+    for (let i = 1; i < boxes.length; i++) {
+      // Attached means attached. A gap here means someone gave the group a
+      // `gap`, at which point it should have been a Cluster.
+      expect(Math.abs(boxes[i]![0] - boxes[i - 1]![1])).toBeLessThan(0.5);
+    }
+  });
+
+  test('a focused button is raised above its neighbours so its ring is not clipped', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Horizontal — end radii on the ends');
+    const middle = cell.getByRole('button', { name: 'JSON' });
+
+    expect(await middle.evaluate((el) => getComputedStyle(el).zIndex)).toBe('auto');
+    await middle.focus();
+    // Edge-to-edge buttons paint in source order, so an un-raised ring on the
+    // middle button is drawn underneath the one after it.
+    expect(Number(await middle.evaluate((el) => getComputedStyle(el).zIndex))).toBeGreaterThan(0);
+  });
+
+  test('vertical collapses the block-start border instead, and equalises widths', async ({ page }) => {
+    await page.goto('/components/button-group');
+    const cell = wide(page, 'Vertical');
+
+    const widths = await cell
+      .locator('.pp-button-group > .pp-button')
+      .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+    expect(new Set(widths).size).toBe(1);
+
+    const borders = await cell
+      .locator('.pp-button-group > .pp-button')
+      .evaluateAll((els) =>
+        els.map((el) => {
+          const s = getComputedStyle(el);
+          return { block: s.borderBlockStartWidth, inline: s.borderInlineStartWidth };
+        }),
+      );
+    expect(borders[0]!.block).not.toBe('0px');
+    expect(borders[1]!.block).toBe('0px');
+    // The inline border is untouched on the vertical axis — the rules are
+    // per-axis, not a blanket "drop the leading border".
+    expect(borders[1]!.inline).not.toBe('0px');
+  });
+});

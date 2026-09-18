@@ -145,6 +145,25 @@ function buildRamp(name, { hue, peak, solidL }, themeName) {
   const L10 = Math.min(0.98, Math.max(0.05, L9 + t.step10Delta));
   steps[10] = [L10, clampChroma(L10, chromaAt(10, peak), hue), hue];
 
+  // The pressed state of a solid fill. A second step in the same direction as
+  // hover, so rest -> hover -> pressed reads as one progression rather than two
+  // unrelated colours. It is NOT a ramp step: steps 11 and 12 are text, solved
+  // against step 3, and reusing one of them as a fill would make the pressed
+  // state of a button and the colour of muted text the same value by accident.
+  //
+  // Its guarantee is the same as step 9's and step 10's: 4.5:1 against the
+  // on-solid text sitting on it. Asserted here AND independently in
+  // check-contrast.mjs, because a pressed button that loses its label is a
+  // failure nobody sees in review — it is visible for 120ms.
+  const LActive = Math.min(0.98, Math.max(0.05, L9 + 2 * t.step10Delta));
+  notes.solidActive = [LActive, clampChroma(LActive, chromaAt(10, peak), hue), hue];
+  const activeContrast = contrastOklch(notes.solidActive, solid.onSolidValue);
+  if (activeContrast < 4.5 * MARGIN) {
+    throw new Error(
+      `${name}/${themeName}: solid-active is ${activeContrast.toFixed(2)}:1 against its on-solid text, below the 4.5:1 floor`,
+    );
+  }
+
   // Steps 11 and 12 — text. 4.5:1 and 7:1 against step 2.
   // Muted text is solved against step 3, not step 2. It appears on component
   // backgrounds (inside inputs, on cards, in badges) at least as often as it
@@ -180,6 +199,8 @@ function rampCss(name, ramp, indent) {
   }
   const [oL, oC, oH] = ramp.notes.onSolidValue;
   lines.push(`${indent}--pp-palette-${name}-on-solid: ${formatOklch(oL, oC, oH)};`);
+  const [aL, aC, aH] = ramp.notes.solidActive;
+  lines.push(`${indent}--pp-palette-${name}-solid-active: ${formatOklch(aL, aC, aH)};`);
   const [fL, fC, fH] = ramp.notes.focus;
   lines.push(`${indent}--pp-palette-${name}-focus: ${formatOklch(fL, fC, fH)};`);
   return lines.join('\n');
@@ -196,6 +217,7 @@ function build(themeName, indent = '    ') {
       theme: themeName,
       onSolid: ramp.notes.onSolid,
       solidVsText: contrastOklch(ramp.steps[9], ramp.notes.onSolidValue),
+      activeVsText: contrastOklch(ramp.notes.solidActive, ramp.notes.onSolidValue),
       focusVs1: contrastOklch(ramp.notes.focus, ramp.steps[1]),
       step11Vs3: contrastOklch(ramp.steps[11], ramp.steps[3]),
       step12Vs3: contrastOklch(ramp.steps[12], ramp.steps[3]),
@@ -224,8 +246,9 @@ const header = `/*
  *   9-10  solid fill: rest, hover        (>= 4.5:1 against -on-solid)
  *   11    muted text                     (>= 4.5:1 on step 3)
  *   12    body text                      (fixed lightness, asserted >= 7:1 on step 3)
- *   -focus     focus ring                (>= 3:1 on step 1)
- *   -on-solid  text/icon colour for steps 9-10
+ *   -focus         focus ring            (>= 3:1 on step 1)
+ *   -solid-active  pressed solid fill    (>= 4.5:1 against -on-solid)
+ *   -on-solid      text/icon colour for steps 9-10 and -solid-active
  */
 `;
 

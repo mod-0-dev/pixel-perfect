@@ -6,6 +6,12 @@ export {
 } from './components/AspectRatio/AspectRatio';
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
+export { Button, type ButtonProps } from './components/Button/Button';
+export {
+  ButtonGroup,
+  type ButtonGroupOrientation,
+  type ButtonGroupProps,
+} from './components/ButtonGroup/ButtonGroup';
 export {
   Cluster,
   type ClusterAlign,
@@ -33,7 +39,9 @@ export {
   type GridProps,
 } from './components/Grid/Grid';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
+export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
+export { Link, type LinkProps, type LinkUnderline } from './components/Link/Link';
 export {
   Scroller,
   overflowState,
@@ -60,6 +68,7 @@ export {
   type SplitSlotProps,
 } from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
+export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
 export {
   Text,
   type TextAlign,

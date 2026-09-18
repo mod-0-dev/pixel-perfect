@@ -1,0 +1,93 @@
+/*
+ * ButtonGroup — spec docs/specs/tier-3a-action.md §3.4
+ *
+ * IT STYLES ITS CHILDREN BY SELECTOR, NOT BY CLONING THEM WITH PROPS.
+ * Cloning would break `asChild`, break a child wrapped in a Tooltip (4.3)
+ * later, and require every child to be a Button. A descendant selector degrades
+ * gracefully when one of them is not.
+ *
+ * THE SEAM IS DRAWN ONCE, WITHOUT NEGATIVE MARGINS. The usual trick for
+ * collapsing adjacent borders is `margin-inline-start: -1px`, which RULES §2
+ * forbids and the linter refuses (D-018 permits `margin: 0` and nothing else).
+ * Instead every child but the first drops its leading border entirely, so the
+ * seam is its neighbour's trailing border and there was never a doubled edge to
+ * collapse. Solid buttons are the exception: their border is transparent, so
+ * dropping it would merge two adjacent fills into one shape. They keep the
+ * border and tint it with --pp-tone-solid-active, the pressed step, which is
+ * the one colour guaranteed to read against the fill either side of it.
+ */
+
+@layer pp.components {
+  .pp-button-group {
+    display: inline-flex;
+    /* Attached. A group with space in it is a Cluster. */
+    gap: 0;
+    /* In a column, every button takes the width of the widest — the group
+       sizing the boxes it creates, which D-021 assigns to the parent. */
+    align-items: stretch;
+    vertical-align: middle;
+  }
+
+  .pp-button-group[data-orientation="vertical"] {
+    flex-direction: column;
+  }
+
+  /*
+   * An attached set that wraps has the wrong corners on four buttons. A set too
+   * wide for its container is too many buttons, or belongs in a Scroller (2.8).
+   */
+  .pp-button-group > .pp-button {
+    flex-shrink: 0;
+    border-radius: 0;
+  }
+
+  /* Collapsed borders, per axis. */
+  .pp-button-group[data-orientation="horizontal"] > .pp-button:not(:first-child) {
+    border-inline-start-width: 0;
+  }
+
+  .pp-button-group[data-orientation="vertical"] > .pp-button:not(:first-child) {
+    border-block-start-width: 0;
+  }
+
+  .pp-button-group[data-orientation="horizontal"] > .pp-button[data-variant="solid"]:not(:first-child) {
+    border-inline-start-width: var(--pp-border-width-1);
+    border-inline-start-color: var(--pp-tone-solid-active);
+  }
+
+  .pp-button-group[data-orientation="vertical"] > .pp-button[data-variant="solid"]:not(:first-child) {
+    border-block-start-width: var(--pp-border-width-1);
+    border-block-start-color: var(--pp-tone-solid-active);
+  }
+
+  /* End radii, in logical corners so RTL needs no second rule. */
+  .pp-button-group[data-orientation="horizontal"] > .pp-button:first-child {
+    border-start-start-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+    border-end-start-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+  }
+
+  .pp-button-group[data-orientation="horizontal"] > .pp-button:last-child {
+    border-start-end-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+    border-end-end-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+  }
+
+  .pp-button-group[data-orientation="vertical"] > .pp-button:first-child {
+    border-start-start-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+    border-start-end-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+  }
+
+  .pp-button-group[data-orientation="vertical"] > .pp-button:last-child {
+    border-end-start-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+    border-end-end-radius: var(--pp-button-group-radius, var(--pp-control-radius));
+  }
+
+  /*
+   * Buttons sit edge to edge, so a focus ring drawn at an outline-offset of 2px
+   * is painted underneath the neighbour that comes after it in source order.
+   * Raising the focused button is the only reason this component touches
+   * z-index, and it uses the token (RULES §3).
+   */
+  .pp-button-group > .pp-button:focus-visible {
+    z-index: var(--pp-z-raised);
+  }
+}

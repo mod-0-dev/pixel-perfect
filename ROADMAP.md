@@ -26,17 +26,42 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 2 is complete** (8 / 8 layout primitives
-  `done`). The sizing contract now has the components it was written for
-- **Next up:** consume Tier 2 in [launchpad](https://github.com/mod-0-dev/launchpad),
-  which should delete `.lp-stack`, `.lp-cluster`, `.lp-grid`, `.lp-page`,
-  `.lp-shell` and its one remaining viewport media query. Then Tier 3, whose
-  Gate C is approved individually — D-014 says to revisit that entry first
-- **Verified, not asserted:** 22 computed-style assertions in
-  `tests/visual/harness.spec.ts`. Four were checked by deliberately breaking the
-  component and watching the test fail on the right symptom (D-009); swapping
-  `Split`'s `@container` rule for a viewport media query is the sharpest of them
-- **Done:** 29 / 78 tracked items (10 foundations + 68 components). 0.10 docs
+- **In flight:** _none_ — **Tier 3A is complete** (5 / 5 action-core components
+  `done`). The library has a focus ring, a control scale and a keyboard
+- **Next up:** Tier 3B — 3.6 `Label` and 3.7 `Field`, the two components
+  [D-014](docs/DECISIONS.md) was actually written to protect and the only ones
+  in Tier 3 still approved **individually** ([D-027](docs/DECISIONS.md)). Every
+  input in 3C composes into `Field`, so its API is the expensive one to get
+  wrong
+- **What 3A settled for everything after it:** `--pp-control-*` (32 / 40 / 48,
+  so a `Button`, an `Input` and a `Select` agree by construction rather than by
+  vigilance), the focus ring (an `outline` in `--pp-color-focus-ring` on every
+  tone — the only ring pairing `lint:contrast` verifies), `--pp-tone-solid-active`
+  (170 assertions, up from 160), and `useControllableState`, the one
+  implementation of RULES §5.5 that eleven components in Tiers 3 and 4 will use
+- **Found by the browser, not by jsdom:** `Button`'s loading label shipped as
+  `visibility: hidden`, which removes it from the accessibility tree — a button
+  announced as "Save" became a button announced as nothing at the moment it
+  started working. The jsdom test asserting the accessible name passed against
+  the defect (D-030 §2). Anything about what a screen reader perceives has to
+  be asserted where layout exists
+- **A type is a claim about callers who typecheck, and a library has callers who
+  do not.** `IconButton` omitted `asChild` from its props type and still spread
+  it into `Button`, which delegated to the `<Icon>` element and rendered a
+  `<span>` with a button's classes and no button semantics (D-031). `Toggle`
+  drops `loading` explicitly for the same reason
+- **Verified, not asserted:** 35 computed-style assertions in
+  `tests/visual/harness.spec.ts`, thirteen of them new. Nine Tier 3A claims
+  were checked by deliberately breaking the component and watching the test
+  fail on the right symptom; one of those breaks exposed a focus test that
+  could not fail at all and it was rewritten (D-009). The `'use client'` lint
+  narrowing was checked in both directions, because scoping a rule too widely
+  looks exactly like a passing lint
+- **Still open from Tier 2:** consume the layout primitives in
+  [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
+  `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
+  media query
+- **Done:** 34 / 78 tracked items (10 foundations + 68 components). 0.10 docs
   site is deferred, not blocking
 
 ---
@@ -103,13 +128,24 @@ batch in [`docs/specs/tier-2-layout.md`](docs/specs/tier-2-layout.md).
 
 The heart of the library. `Field` is the workhorse — build it before the inputs.
 
+Approved in four groups rather than sixteen gates, narrowing D-014's carve-out
+to the component it was written about — see
+[`docs/specs/tier-3a-action.md`](docs/specs/tier-3a-action.md) §0.
+
+| Group | Components | Spec |
+| --- | --- | --- |
+| **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — **`done`** 2026-09-17 (D-027 … D-033) |
+| **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
+| **3C — Native inputs** | 3.8–3.13 | one gate, after 3B is `done` |
+| **3D — Composite inputs** | 3.14–3.16 | one gate |
+
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 3.1 | `Button` | `planned` | hug | client | T2 | `variant` × `tone` × `size`, loading state |
-| 3.2 | `IconButton` | `planned` | hug | client | 3.1, 1.3 | Accessible name required by types |
-| 3.3 | `Link` | `planned` | hug | server | 1.1 | `asChild` for `next/link` |
-| 3.4 | `ButtonGroup` | `planned` | hug | server | 3.1, 2.2 | |
-| 3.5 | `Toggle` | `planned` | hug | client | 3.1 | Pressed state |
+| 3.1 | `Button` | `done` | hug | client | T2 | `variant` × `tone` × `size`, `loading`, `asChild`. Ships `--pp-control-*` and the focus ring (D-028, D-029) |
+| 3.2 | `IconButton` | `done` | hug | client | 3.1, 1.3 | `label` is a required `string`. Square, on the control scale. No `asChild` (D-031) |
+| 3.3 | `Link` | `done` | hug | server | 1.1 | `tone` + `underline`; no `variant`, no `size` (D-030 §6). `asChild` for `next/link` |
+| 3.4 | `ButtonGroup` | `done` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. One-border seam, no negative margin (D-033) |
+| 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `planned` | fill | server | 1.1 | |
 | 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |

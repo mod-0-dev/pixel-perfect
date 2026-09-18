@@ -1,0 +1,36 @@
+/*
+ * Toggle — spec docs/specs/tier-3a-action.md §3.5
+ *
+ * Everything visual comes from Button; this file describes the pressed state.
+ * The root carries both `pp-button` and `pp-toggle`, so every --pp-button-*
+ * override still applies.
+ *
+ * It writes Button's PRIVATE custom properties (--_bg, --_color, --_border)
+ * rather than its public ones. That is deliberate and it is the opposite of a
+ * layering violation: Button.css reads `var(--pp-button-bg, var(--_bg))`, so
+ * setting --_bg here leaves the consumer's --pp-button-bg still winning from
+ * anywhere, including an ancestor. Setting --pp-button-bg here instead would
+ * outrank an ancestor and quietly kill the documented escape hatch — the same
+ * failure D-024 describes for inline styles, arriving by a different route.
+ */
+
+@layer pp.components {
+  .pp-toggle[data-state="on"] {
+    --_bg: var(--pp-toggle-bg-on, var(--pp-tone-bg-active));
+    --_color: var(--pp-toggle-color-on, var(--pp-tone-text-strong));
+    --_border: var(--pp-tone-border);
+
+    /*
+     * Pressed is already the filled end of the background ramp — bg(3),
+     * bg-hover(4), bg-active(5) — so there is no darker step to move to, and
+     * moving to a LIGHTER one on hover would read as releasing. The fill holds
+     * and the border carries the hover feedback instead.
+     */
+    --_bg-hover: var(--pp-toggle-bg-on, var(--pp-tone-bg-active));
+    --_bg-active: var(--pp-toggle-bg-on, var(--pp-tone-bg-active));
+  }
+
+  .pp-toggle[data-state="on"]:not([data-disabled]):hover {
+    --_border: var(--pp-tone-border-strong);
+  }
+}

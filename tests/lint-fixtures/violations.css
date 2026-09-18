@@ -33,6 +33,10 @@
     max-inline-size: 40rem;
     block-size: 32px;
     flex-basis: 16rem;
+    /* Added with Link (3.3), the first component to decorate text. Same shape
+       as the findings above: a length-valued property nobody had checked. */
+    text-underline-offset: 3px;
+    text-decoration-thickness: 2px;
   }
 
   .badClassName {

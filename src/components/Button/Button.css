@@ -1,0 +1,201 @@
+/*
+ * Button — spec docs/specs/tier-3a-action.md §3.1
+ *
+ * The first focusable component in the library, so two things are settled here
+ * for everything that follows it:
+ *
+ * 1. THE FOCUS RING is an `outline`, not a `box-shadow`. Outline follows
+ *    border-radius, costs no layout, and survives an ancestor's
+ *    `overflow: hidden` — which matters the moment a button sits inside
+ *    Scroller (2.8) or a Tier 4 popover. reset.css already declares the same
+ *    ring at zero specificity; it is repeated here in pp.components so that a
+ *    consuming app's `button { outline: none }` cannot take it away.
+ *
+ * 2. THE RING IS ONE COLOUR, library-wide: --pp-color-focus-ring, not the
+ *    per-tone --pp-tone-focus. `npm run lint:contrast` asserts exactly one ring
+ *    pairing — focus vs page background — against --pp-color-focus-ring. The
+ *    five --pp-tone-focus values are asserted against nothing, and an
+ *    unverified colour on the one affordance RULES §6 names by hand is not a
+ *    trade this library makes. It is also easier to find the same ring every
+ *    time than five different ones.
+ *
+ * Tone comes entirely from the --pp-tone-* context (D-007), so the four
+ * variants are four ways of combining one context and adding a tone touches
+ * nothing here. The variant table matches Badge's deliberately.
+ */
+
+@layer pp.components {
+  .pp-button {
+    --_bg: var(--pp-tone-solid);
+    --_bg-hover: var(--pp-tone-solid-hover);
+    --_bg-active: var(--pp-tone-solid-active);
+    --_color: var(--pp-tone-on-solid);
+    --_border: transparent;
+    --_height: var(--pp-control-height-md);
+    --_padding-inline: var(--pp-control-padding-inline-md);
+    --_gap: var(--pp-control-gap-md);
+    --_font-size: var(--pp-control-font-size-md);
+
+    /* The spinner overlay's containing block. Not a sizing declaration. */
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    block-size: var(--pp-button-height, var(--_height));
+    padding-inline: var(--pp-button-padding-inline, var(--_padding-inline));
+    border: var(--pp-border-width-1) solid var(--pp-button-border-color, var(--_border));
+    border-radius: var(--pp-button-radius, var(--pp-control-radius));
+    background-color: var(--pp-button-bg, var(--_bg));
+    color: var(--pp-button-color, var(--_color));
+    font-size: var(--_font-size);
+    font-weight: var(--pp-font-weight-medium);
+    line-height: 1;
+    /* A button fits or it needs a shorter label; it never becomes four lines
+       of one word each in a narrow sidebar. Same ruling as Badge. */
+    white-space: nowrap;
+    vertical-align: middle;
+    /* Kills the UA button chrome that survives a background declaration in Safari. */
+    appearance: none;
+    cursor: pointer;
+    user-select: none;
+    transition-property: background-color, border-color, color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /*
+   * The reset crushes transition-duration under reduced motion, but it does so
+   * in pp.reset and this file is in pp.components, so our duration would win.
+   * Every animated component has to answer for itself — the same mechanism
+   * Spinner documents. A colour fade is decoration, so it simply goes away.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-button {
+      transition-property: none;
+    }
+  }
+
+  /* The label. Separate from the root so `loading` can hide it without
+     collapsing the box, and so an icon in children is spaced by one rule. */
+  .pp-button__content {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--pp-button-gap, var(--_gap));
+  }
+
+  /* variant — the same four combinations as Badge */
+  .pp-button[data-variant="outline"] {
+    --_bg: transparent;
+    --_bg-hover: var(--pp-tone-bg-hover);
+    --_bg-active: var(--pp-tone-bg-active);
+    --_color: var(--pp-tone-text);
+    --_border: var(--pp-tone-border);
+  }
+
+  .pp-button[data-variant="ghost"] {
+    --_bg: var(--pp-tone-bg);
+    --_bg-hover: var(--pp-tone-bg-hover);
+    --_bg-active: var(--pp-tone-bg-active);
+    --_color: var(--pp-tone-text-strong);
+    --_border: var(--pp-tone-border-subtle);
+  }
+
+  .pp-button[data-variant="plain"] {
+    --_bg: transparent;
+    --_bg-hover: var(--pp-tone-bg-hover);
+    --_bg-active: var(--pp-tone-bg-active);
+    --_color: var(--pp-tone-text);
+    --_border: transparent;
+  }
+
+  /* size — the shared control scale, so a Button and an Input line up */
+  .pp-button[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_padding-inline: var(--pp-control-padding-inline-sm);
+    --_gap: var(--pp-control-gap-sm);
+    --_font-size: var(--pp-control-font-size-sm);
+  }
+
+  .pp-button[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_padding-inline: var(--pp-control-padding-inline-lg);
+    --_gap: var(--pp-control-gap-lg);
+    --_font-size: var(--pp-control-font-size-lg);
+  }
+
+  /*
+   * :hover still matches a disabled button, and a loading one is not disabled
+   * at all, so both are excluded by hand rather than by hoping.
+   */
+  .pp-button:not([data-disabled], [data-loading]):hover {
+    background-color: var(--pp-button-bg, var(--_bg-hover));
+  }
+
+  .pp-button:not([data-disabled], [data-loading]):active {
+    background-color: var(--pp-button-bg, var(--_bg-active));
+  }
+
+  .pp-button:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  /*
+   * Disabled. pointer-events: none is deliberately NOT used — it kills `title`,
+   * breaks a Tooltip (4.3) wrapping a disabled button, and makes
+   * cursor: not-allowed impossible to show. The native attribute and the
+   * intercepted handler suppress interaction; the element stays visible to the
+   * pointer.
+   */
+  .pp-button[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+    --_border: transparent;
+
+    cursor: not-allowed;
+  }
+
+  .pp-button[data-variant="outline"][data-disabled] {
+    --_bg: transparent;
+    --_border: var(--pp-color-border-subtle);
+  }
+
+  .pp-button[data-variant="plain"][data-disabled] {
+    --_bg: transparent;
+  }
+
+  /* Loading keeps its tone — it is working, not unavailable. */
+  .pp-button[data-loading] {
+    cursor: progress;
+  }
+
+  /*
+   * `opacity`, NOT `visibility: hidden`, and not `display: none`.
+   *
+   * All three keep the spinner overlay centred and all three look identical in
+   * a screenshot. Only opacity keeps the label in the ACCESSIBILITY TREE: the
+   * other two remove it, which means a button announced as "Save" becomes a
+   * button announced as nothing at the exact moment it starts working — and
+   * `loading` exists precisely to protect a screen-reader user at that moment.
+   *
+   * This shipped as `visibility: hidden` and the jsdom test asserting the
+   * accessible name passed anyway, because name computation there does not
+   * consult layout. tests/visual/harness.spec.ts caught it in a real browser.
+   */
+  .pp-button[data-loading] .pp-button__content {
+    opacity: 0;
+  }
+
+  .pp-button__spinner {
+    --pp-spinner-color: currentColor;
+    /* The unlit part of the ring would be a second colour to justify against
+       every tone and both themes. A quarter arc alone reads as a spinner. */
+    --pp-spinner-track-color: transparent;
+
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+}

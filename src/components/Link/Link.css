@@ -1,0 +1,73 @@
+/*
+ * Link — spec docs/specs/tier-3a-action.md §3.3
+ *
+ * NO `display` DECLARATION, AND THAT IS THE POINT.
+ *
+ * An <a> is already `display: inline`, so declaring it would change nothing on
+ * its own — and it would break composition. Two of this library's components
+ * can end up on the SAME element through `asChild`, and both stylesheets sit in
+ * @layer pp.components, where the later import simply wins. A `display: inline`
+ * here would beat Button's `inline-flex` and quietly un-flex any button that
+ * delegated to a Link.
+ *
+ * The rule the spec was reaching for — "never `inline-flex`, which breaks a
+ * link across a line wrap" — is satisfied better by declaring nothing than by
+ * declaring the default. (Composing Button with THIS Link is still a mistake
+ * for other reasons, and both docs pages say so; not declaring `display` just
+ * means one fewer thing collides.)
+ *
+ * Tone comes from the --pp-tone-* context (D-007) for every tone including
+ * neutral, so a neutral link is muted until hover — the standard nav treatment
+ * — and an accent link is the standard body-text treatment.
+ */
+
+@layer pp.components {
+  .pp-link {
+    --_color: var(--pp-tone-text);
+    --_color-hover: var(--pp-tone-text-strong);
+
+    color: var(--pp-link-color, var(--_color));
+    /* Thin and offset, so the rule clears descenders instead of striking
+       through them. A browser's default underline sits on the baseline. */
+    text-decoration-thickness: var(--pp-border-width-1);
+    text-underline-offset: var(--pp-link-underline-offset, var(--pp-space-1));
+    transition-property: color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-link {
+      transition-property: none;
+    }
+  }
+
+  .pp-link[data-underline="always"] {
+    text-decoration-line: underline;
+  }
+
+  .pp-link[data-underline="hover"],
+  .pp-link[data-underline="none"] {
+    text-decoration-line: none;
+  }
+
+  .pp-link[data-underline="hover"]:hover {
+    text-decoration-line: underline;
+  }
+
+  .pp-link:hover {
+    color: var(--pp-link-color-hover, var(--_color-hover));
+  }
+
+  .pp-link:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  /*
+   * :visited is deliberately unstyled. Styling it needs a colour that passes
+   * contrast in both themes against five tones, and browsers restrict which
+   * properties :visited may change. Consumers who want it have `.pp-link:visited`
+   * and the whole token set. Its absence is a decision, not an oversight.
+   */
+}

@@ -31,6 +31,11 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'split', path: '/components/split' },
   { name: 'aspect-ratio', path: '/components/aspect-ratio' },
   { name: 'scroller', path: '/components/scroller' },
+  { name: 'button', path: '/components/button' },
+  { name: 'link', path: '/components/link' },
+  { name: 'icon-button', path: '/components/icon-button' },
+  { name: 'toggle', path: '/components/toggle' },
+  { name: 'button-group', path: '/components/button-group' },
 ];
 
 /**

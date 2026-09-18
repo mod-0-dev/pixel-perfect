@@ -48,6 +48,7 @@
     --pp-tone-border-strong: var(--pp-palette-neutral-8);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
     --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
     --pp-tone-text: var(--pp-palette-neutral-11);
     --pp-tone-text-strong: var(--pp-palette-neutral-12);
@@ -95,6 +96,7 @@
     --pp-tone-border-strong: var(--pp-palette-neutral-8);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
     --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
     --pp-tone-text: var(--pp-palette-neutral-11);
     --pp-tone-text-strong: var(--pp-palette-neutral-12);
@@ -143,6 +145,7 @@
       --pp-tone-border-strong: var(--pp-palette-neutral-8);
       --pp-tone-solid: var(--pp-palette-neutral-9);
       --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+      --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
       --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
       --pp-tone-text: var(--pp-palette-neutral-11);
       --pp-tone-text-strong: var(--pp-palette-neutral-12);
@@ -191,6 +194,7 @@
     --pp-tone-border-strong: var(--pp-palette-neutral-8);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
     --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
     --pp-tone-text: var(--pp-palette-neutral-11);
     --pp-tone-text-strong: var(--pp-palette-neutral-12);
@@ -214,6 +218,7 @@
     --pp-tone-border-strong: var(--pp-palette-neutral-8);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
+    --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
     --pp-tone-on-solid: var(--pp-palette-neutral-on-solid);
     --pp-tone-text: var(--pp-palette-neutral-11);
     --pp-tone-text-strong: var(--pp-palette-neutral-12);
@@ -230,6 +235,7 @@
     --pp-tone-border-strong: var(--pp-palette-accent-8);
     --pp-tone-solid: var(--pp-palette-accent-9);
     --pp-tone-solid-hover: var(--pp-palette-accent-10);
+    --pp-tone-solid-active: var(--pp-palette-accent-solid-active);
     --pp-tone-on-solid: var(--pp-palette-accent-on-solid);
     --pp-tone-text: var(--pp-palette-accent-11);
     --pp-tone-text-strong: var(--pp-palette-accent-12);
@@ -246,6 +252,7 @@
     --pp-tone-border-strong: var(--pp-palette-danger-8);
     --pp-tone-solid: var(--pp-palette-danger-9);
     --pp-tone-solid-hover: var(--pp-palette-danger-10);
+    --pp-tone-solid-active: var(--pp-palette-danger-solid-active);
     --pp-tone-on-solid: var(--pp-palette-danger-on-solid);
     --pp-tone-text: var(--pp-palette-danger-11);
     --pp-tone-text-strong: var(--pp-palette-danger-12);
@@ -262,6 +269,7 @@
     --pp-tone-border-strong: var(--pp-palette-success-8);
     --pp-tone-solid: var(--pp-palette-success-9);
     --pp-tone-solid-hover: var(--pp-palette-success-10);
+    --pp-tone-solid-active: var(--pp-palette-success-solid-active);
     --pp-tone-on-solid: var(--pp-palette-success-on-solid);
     --pp-tone-text: var(--pp-palette-success-11);
     --pp-tone-text-strong: var(--pp-palette-success-12);
@@ -278,6 +286,7 @@
     --pp-tone-border-strong: var(--pp-palette-warning-8);
     --pp-tone-solid: var(--pp-palette-warning-9);
     --pp-tone-solid-hover: var(--pp-palette-warning-10);
+    --pp-tone-solid-active: var(--pp-palette-warning-solid-active);
     --pp-tone-on-solid: var(--pp-palette-warning-on-solid);
     --pp-tone-text: var(--pp-palette-warning-11);
     --pp-tone-text-strong: var(--pp-palette-warning-12);

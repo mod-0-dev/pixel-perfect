@@ -30,4 +30,9 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'split', name: 'Split', tier: '2.6' },
   { slug: 'aspect-ratio', name: 'AspectRatio', tier: '2.7' },
   { slug: 'scroller', name: 'Scroller', tier: '2.8' },
+  { slug: 'button', name: 'Button', tier: '3.1' },
+  { slug: 'link', name: 'Link', tier: '3.3' },
+  { slug: 'icon-button', name: 'IconButton', tier: '3.2' },
+  { slug: 'toggle', name: 'Toggle', tier: '3.5' },
+  { slug: 'button-group', name: 'ButtonGroup', tier: '3.4' },
 ];

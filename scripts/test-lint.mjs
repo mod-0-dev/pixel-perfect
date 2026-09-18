@@ -16,6 +16,7 @@ const EXPECTED = {
     'border-radius', 'font-size', 'transition', 'z-index', 'text-align',
     'outline', 'font-family', 'border-width',
     'max-inline-size', 'block-size', 'flex-basis',
+    'text-underline-offset', 'text-decoration-thickness',
   ],
   // Non-zero margins are value violations, not property violations (D-018):
   // `margin: 0` is how a component removes UA margin, which is the rule's aim.
@@ -88,6 +89,18 @@ for (const expected of EXPECTED_RULE_LINT) {
     console.error(`✗ rule lint did not catch: ${expected}`);
     failures++;
   }
+}
+
+// The 'use client' rule is scoped to files that SHIP. A colocated test using
+// client-only React must not be flagged — but the rule must still fire for the
+// component beside it, which EXPECTED_RULE_LINT above already asserts. Without
+// this negative check, scoping the rule too widely would look like a pass.
+const clientHits = found.filter((m) => m.includes("missing the 'use client' directive"));
+if (clientHits.length !== 1) {
+  console.error(
+    `✗ 'use client' rule fired ${clientHits.length}× — expected exactly one, for the shipped component:\n  ${clientHits.join('\n  ')}`,
+  );
+  failures++;
 }
 
 // A browser global inside a comment, a string, a type or a function body is

@@ -55,11 +55,25 @@ for (const file of walk(join(SRC, 'components'), ['.css'])) {
 
 const CLIENT_ONLY = /\b(useState|useReducer|useEffect|useLayoutEffect|useRef|useId|useContext|useSyncExternalStore|useTransition|createContext)\s*[(<]/;
 
+/*
+ * The 'use client' rule is about RSC correctness of what SHIPS, and these files
+ * do not ship — tsconfig.build.json excludes exactly this list from the package
+ * build. A test that renders a controlled component needs an owner with
+ * `useState`, which RULES §5.5 makes compulsory for every stateful component,
+ * so the alternative is a 'use client' directive at the top of every test file
+ * in Tier 3 that means nothing and protects nothing.
+ *
+ * Kept as narrow as the build's own exclusion, and the self-test asserts both
+ * halves: that the rule still fires for a shipped file, and that it does not
+ * fire for one of these.
+ */
+const NOT_SHIPPED = /(\.test\.tsx?$|[\\/]test[\\/])/;
+
 for (const file of walk(SRC, ['.ts', '.tsx'])) {
   const code = readFileSync(file, 'utf8');
   const rel = relative(ROOT, file);
 
-  if (CLIENT_ONLY.test(code) && !/^\s*(['"])use client\1/.test(code)) {
+  if (!NOT_SHIPPED.test(rel) && CLIENT_ONLY.test(code) && !/^\s*(['"])use client\1/.test(code)) {
     fail(rel, "uses client-only React but is missing the 'use client' directive (RULES §7)");
   }
   const source = ts.createSourceFile(rel, code, ts.ScriptTarget.ES2022, true, ts.ScriptKind.TSX);
