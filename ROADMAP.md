@@ -26,8 +26,13 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_. 3.6 `Label` is `done` — Tier 3B is half built
-- **Next up:** 3.7 **`Field`**, now unblocked. It is the component D-014's
+- **In flight:** 3.7 **`Field`** — `spec`. **Gate C is open:**
+  [`docs/specs/Field.md`](docs/specs/Field.md) awaits API approval. It is the
+  most expensive API in the library: eleven components compose into it
+- **Settled at the gate:** `labelHidden` lives on `Field` and wraps the `Label`
+  in `VisuallyHidden`, never as a `Label` prop; `size` rides on both, with an
+  explicit prop on a control beating the field context beating the default
+- **Was next:** 3.7 **`Field`**. It is the component D-014's
   carve-out was written about and the last one in Tier 3 approved on its own
   ([D-027](docs/DECISIONS.md)); 3C is one gate after it. `Label`'s spec closes
   with two open questions that are really `Field`'s to answer: where
@@ -176,7 +181,7 @@ to the component it was written about — see
 | 3.4 | `ButtonGroup` | `done` | hug | server | 3.1 | Always attached; the spaced case is `Cluster`. One-border seam, no negative margin (D-033) |
 | 3.5 | `Toggle` | `done` | hug | client | 3.1 | `aria-pressed`, `data-state="on|off"`. Ships the shared `useControllableState` (D-032) |
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
-| 3.7 | **`Field`** | `planned` | fill | client | 3.6 | Label + description + error + `useId` wiring + `data-invalid` propagation. Every input composes into this |
+| 3.7 | **`Field`** | `spec` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md) — awaiting Gate C. Context, not `cloneElement`. Every input composes into this |
 | 3.8 | `Input` | `planned` | fill | client | 3.7 | |
 | 3.9 | `Textarea` | `planned` | fill | client | 3.7 | Auto-resize opt-in |
 | 3.10 | `Checkbox` | `planned` | hug | client | 3.7 | Indeterminate state |
