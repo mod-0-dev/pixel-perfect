@@ -79,6 +79,7 @@ export {
 } from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
 export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
+export { Textarea, type TextareaProps } from './components/Textarea/Textarea';
 export {
   Text,
   type TextAlign,

@@ -1128,3 +1128,199 @@ test.describe('Input', () => {
     await expect(control).toHaveAttribute('id', 'billing-email');
   });
 });
+
+/*
+ * Textarea (3.9). Everything here needs layout: the block-axis agreement with
+ * Input is arithmetic the browser performs, and auto-resize is scrollHeight,
+ * which jsdom reports as 0 for every element. The unit file asserts what
+ * auto-resize does to the DOM; this asserts what it does to the box.
+ */
+test.describe('Textarea', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  test('fill: the control takes the box it is given, at every width', async ({ page }) => {
+    await page.goto('/components/textarea');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'It fills, at every container width', width);
+      const ratio = await c.locator('.pp-textarea__control').evaluate((node) => {
+        const root = node.closest('.pp-textarea') as HTMLElement;
+        return node.getBoundingClientRect().width / root.getBoundingClientRect().width;
+      });
+      expect(ratio, `the control did not fill its root at ${width}`).toBeCloseTo(1, 2);
+    }
+  });
+
+  test('a long unbreakable value shrinks the control instead of the container', async ({
+    page,
+  }) => {
+    await page.goto('/components/textarea');
+    const narrow = cell(page, 'It fills, at every container width', 'narrow · 240px');
+
+    const overflow = await narrow.locator('.pp-field').evaluate((node) => {
+      const parent = node.parentElement as HTMLElement;
+      return parent.scrollWidth - parent.clientWidth;
+    });
+    expect(overflow, 'the textarea pushed its container wide').toBeLessThanOrEqual(1);
+  });
+
+  /*
+   * THE REASON THE VERTICAL PADDING IS A calc() AND NOT A SPACE STEP.
+   *
+   * (height − line box − borders) / 2 comes out at 3.8 / 7.8 / 10.2px. The space
+   * scale can express the first two and cannot express the third — 8px and 12px
+   * are the neighbours — so lg would be 4.4px short or 3.6px over, and the
+   * largest control would be the one visibly disagreeing with the Button beside
+   * it. Deriving it from the same tokens Input reads makes this test's claim
+   * true by construction; hardcoding any of the three makes it fail.
+   */
+  test('a one-row Textarea is exactly as tall as an Input, at every size', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const wide = cell(page, 'One row is exactly an Input', 'wide · 960px');
+
+    for (const size of ['sm', 'md', 'lg'] as const) {
+      const height = (sel: string) =>
+        wide.locator(sel).first().evaluate((el) => el.getBoundingClientRect().height);
+
+      const input = await height(`.pp-input[data-size="${size}"] .pp-input__control`);
+      const textarea = await height(`.pp-textarea[data-size="${size}"] .pp-textarea__control`);
+
+      // Sub-pixel only: the padding is a fraction, and the two boxes round it
+      // independently. Anything larger is a hardcoded value that stopped
+      // tracking --pp-control-height-*.
+      expect(Math.abs(textarea - input), `${size}: ${textarea}px vs an Input's ${input}px`)
+        .toBeLessThanOrEqual(1);
+    }
+  });
+
+  test('an invalid control stays in the danger tone while focused', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-textarea:not([data-invalid]) .pp-textarea__control').first();
+    const invalid = wide.locator('.pp-textarea[data-invalid] .pp-textarea__control').first();
+
+    const focusedBorder = async (el: import('@playwright/test').Locator) => {
+      await el.focus();
+      return el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    };
+
+    expect(
+      await focusedBorder(invalid),
+      'the error state vanished the moment the user acted on it',
+    ).not.toBe(await focusedBorder(valid));
+  });
+
+  /* The same control at rest and focused — nothing else isolates focus. The
+     first version of Input's equivalent compared a valid control to an invalid
+     one, which differ for another reason entirely, and so could not fail. */
+  test('focus shifts the control border, and the ring is one colour', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-textarea:not([data-invalid]) .pp-textarea__control').first();
+    const invalid = wide.locator('.pp-textarea[data-invalid] .pp-textarea__control').first();
+
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    const outline = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).outlineColor);
+
+    const resting = await border(valid);
+    await valid.focus();
+    expect(await border(valid), 'the border did not shift on focus').not.toBe(resting);
+
+    const validRing = await outline(valid);
+    await invalid.focus();
+    expect(await outline(invalid), 'the ring is one colour library-wide (D-029)').toBe(validRing);
+  });
+
+  test('read-only and disabled are distinguishable', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const wide = cell(page, 'Disabled and read-only are different states', 'wide · 960px');
+
+    const read = (sel: string) =>
+      wide.locator(sel).first().evaluate((n) => {
+        const s = getComputedStyle(n);
+        return { color: s.color, border: s.borderTopColor };
+      });
+
+    const disabled = await read('.pp-textarea[data-disabled] .pp-textarea__control');
+    const readOnly = await read('.pp-textarea[data-readonly] .pp-textarea__control');
+
+    expect(disabled.color).not.toBe(readOnly.color);
+  });
+
+  test('resize is vertical by default and none when asked for', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const wide = cell(page, 'Resize, and why there is no horizontal', 'wide · 960px');
+
+    const resize = (sel: string) =>
+      wide.locator(sel).first().evaluate((n) => getComputedStyle(n).resize);
+
+    expect(await resize('.pp-textarea[data-resize="vertical"] .pp-textarea__control')).toBe(
+      'vertical',
+    );
+    expect(await resize('.pp-textarea[data-resize="none"] .pp-textarea__control')).toBe('none');
+  });
+
+  /*
+   * AUTO-RESIZE, WHERE LAYOUT EXISTS. jsdom reports every box as 0×0, so the
+   * unit file can only assert the attribute and the handler — a height
+   * assertion there would pass against a component that computes nothing.
+   *
+   * Outside the Matrix on purpose: a test that types needs one unambiguous
+   * target, not six identical ones.
+   */
+  test('auto-resize grows with content and returns to the rows floor', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const control = page.locator('[data-testid="textarea-auto-resize"] textarea');
+    const height = () => control.evaluate((n) => n.getBoundingClientRect().height);
+
+    const floor = await height();
+    await control.fill('one\ntwo\nthree\nfour\nfive\nsix');
+    const grown = await height();
+    expect(grown, 'the control did not grow with its content').toBeGreaterThan(floor);
+
+    // The half that a naive scrollHeight implementation gets wrong: measuring
+    // against a height it wrote itself can only ratchet upward, so the control
+    // grows with the text and never shrinks when it is deleted.
+    await control.fill('');
+    expect(await height(), 'the control did not shrink back').toBeCloseTo(floor, 0);
+  });
+
+  test('auto-resize never shrinks below rows', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const auto = page.locator('[data-testid="textarea-auto-resize"] textarea');
+    const fixed = page.locator('[data-testid="textarea-fixed"] textarea');
+
+    await auto.fill('');
+    // Both are rows={2}. The empty auto-resizing one must not be shorter than
+    // the fixed one, which is what "rows is the floor" means in pixels.
+    expect(await auto.evaluate((n) => n.getBoundingClientRect().height)).toBeCloseTo(
+      await fixed.evaluate((n) => n.getBoundingClientRect().height),
+      0,
+    );
+  });
+
+  test('auto-resize forces the drag handle off', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const control = page.locator('[data-testid="textarea-auto-resize"] textarea');
+    // A handle and a JS-written block-size fight each other: the handle sets a
+    // height the next keystroke overwrites.
+    expect(await control.evaluate((n) => getComputedStyle(n).resize)).toBe('none');
+  });
+
+  /* D-035 §1 / spec §12: association is demonstrated once, outside the Matrix,
+     where the id is unique — and this is the assertion that proves it worked. */
+  test('an explicit controlId names the control in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/textarea');
+    const control = page.locator('[data-testid="textarea-auto-resize"] textarea');
+
+    await expect(control).toHaveAccessibleName('Release notes');
+    await expect(control).toHaveAttribute('id', 'release-notes');
+  });
+});

@@ -26,10 +26,32 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3.8 `Input` is `done`**, and its screenshot baseline
-  is on `main` at last. Next is 3.9 `Textarea`, then `Checkbox`,
-  `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec` under the Gate C
-  approval of 2026-09-18 (**D-039**)
+- **In flight:** _none_ — **3.9 `Textarea` is `done`.** Next is 3.10 `Checkbox`,
+  then `Radio`/`RadioGroup`, `Switch`, `Select`, all already `spec` under the
+  Gate C approval of 2026-09-18 (**D-039**)
+- **A scale exists to stop people inventing values, and this is the case where
+  the value genuinely is not on it** (**D-043 §1**). A one-row `Textarea` should
+  be exactly an `Input`'s height — D-028's agreement, on the axis D-028 never
+  had to think about, because every control before this one declared a fixed
+  height. The padding that produces it is `(height − line box − borders) / 2` =
+  **3.8 / 7.8 / 10.2px**, and nothing on the space scale is within 1.8px of the
+  third: `lg` would be 4.4px short or 3.6px over. So it is a `calc()` over the
+  same tokens `Input` reads — no hardcoded length, no new token, and the
+  agreement is structural rather than a number someone eyeballed once
+- **`rows` is the floor because the measurement resets first, not because
+  anything enforces it** (D-043 §2). `autoResize` writes `block-size: auto`,
+  reads `scrollHeight`, writes it back, and both halves of the claim fall out of
+  the reset: `scrollHeight` is max(content, client), so measuring against a
+  height the component wrote itself could only ratchet upward — and with no
+  height of its own the element falls back to `rows`, so there is no minimum
+  stored anywhere to drift from the attribute
+- **Fifth break-it check, and the first that found nothing** (D-043 §5). Five
+  unit tests and four browser assertions were broken on purpose and each failed
+  on exactly the test named for it — including the padding calc, which failed by
+  8.39px at `sm`, the precise 4.2px-per-side error the arithmetic predicts, with
+  the broken value confirmed in the **served** stylesheet first (D-037 §4). The
+  check earning its place four times and then coming up empty once is what a
+  working practice looks like, not a reason to stop running it
 - **`Input` shipped in `v0.2.0` with no visual baseline, and `main` went red
   over it** (**D-042**). D-041 gave the registry/`PAGES` drift a test and still
   did not land the file: PR #9 merged three seconds before its own visual job
@@ -192,8 +214,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 36 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations + 27 components. The one foundation not `done` is 0.10 docs site,
+- **Done:** 37 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 28 components. The one foundation not `done` is 0.10 docs site,
   deferred and not blocking
 
 ---
@@ -281,7 +303,7 @@ to the component it was written about — see
 | 3.6 | `Label` | `done` | fill | server | 1.1 | [`Label.md`](docs/specs/Label.md). Scales off `--pp-control-font-size-*`, not the `Text` scale (D-034). `required` is an `aria-hidden` glyph; `invalid` ships no colour |
 | 3.7 | **`Field`** | `done` | fill | client | 3.6 | [`Field.md`](docs/specs/Field.md). Context + `useField()`, never `cloneElement` (D-036). `error` is the invalid state. Every input in 3C composes into this |
 | 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040). Baseline landed after the fact (D-042) |
-| 3.9 | `Textarea` | `spec` | fill | client | 3.7 | Auto-resize opt-in |
+| 3.9 | `Textarea` | `done` | fill | client | 3.7 | Auto-resize opt-in, floored at `rows`. Block padding derived from `--pp-control-*`, because the space scale cannot express it (D-043) |
 | 3.10 | `Checkbox` | `spec` | hug | client | 3.7 | Indeterminate state |
 | 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |
 | 3.12 | `Switch` | `spec` | hug | client | 3.7 | |
