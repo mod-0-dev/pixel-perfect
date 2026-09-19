@@ -27,10 +27,11 @@ export default function FieldPage() {
         every API mistake here is made eleven more times.
       </p>
       <p>
-        Every control on this page is a bare <code>&lt;input&gt;</code> spread with the render prop,
-        because <code>Input</code> is 3.8 and does not exist yet. That is the escape hatch working
-        as designed: a control the library does not own still gets the wiring the library&rsquo;s own
-        controls will get.
+        Every control on this page is a bare <code>&lt;input&gt;</code> spread with the render prop
+        — on purpose, even though <code>Input</code> (3.8) exists. This page demonstrates the
+        escape hatch: a control the library does not own gets exactly the wiring the library&rsquo;s
+        own controls get. The <code>Input</code>, <code>Textarea</code> and <code>Checkbox</code>{' '}
+        pages show the ordinary path.
       </p>
       <p>
         <strong>And it is why this page is a Client Component.</strong> A function cannot cross the

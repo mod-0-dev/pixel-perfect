@@ -26,7 +26,10 @@ import { mergeRefs } from '../../internal/refs';
 
 export type ScrollerOrientation = 'vertical' | 'horizontal' | 'both';
 
-/** Which edge has content BEYOND it. Logical: `start` is left in LTR, right in RTL. */
+/**
+ * Which edge of an axis has content BEYOND it. Logical: on the inline axis
+ * `start` is left in LTR and right in RTL; on the block axis it is the top.
+ */
 export type ScrollerOverflow = 'none' | 'start' | 'end' | 'both';
 
 export interface ScrollerProps extends Omit<ComponentPropsWithoutRef<'div'>, 'role'> {
@@ -61,24 +64,37 @@ export function overflowState(
   return 'both';
 }
 
+/** Both axes, measured together. Which of them the DOM reports depends on `orientation`. */
+interface Overflow {
+  block: ScrollerOverflow;
+  inline: ScrollerOverflow;
+}
+
+const NONE: Overflow = { block: 'none', inline: 'none' };
+
 export const Scroller = forwardRef<HTMLDivElement, ScrollerProps>(function Scroller(
   { label, orientation = 'vertical', className, ...props },
   ref,
 ) {
   const portRef = useRef<HTMLDivElement>(null);
-  const [overflow, setOverflow] = useState<ScrollerOverflow>('none');
+  const [overflow, setOverflow] = useState<Overflow>(NONE);
 
   const measure = useCallback(() => {
     const el = portRef.current;
     if (!el) return;
+    // Both axes, always. Measuring only the orientation's axis is how `both`
+    // shipped shading the block axis alone (D-046); the second read costs
+    // nothing and the attributes below decide what is reported.
     // scrollLeft is negative in RTL, which is why overflowState takes the
     // absolute value rather than the raw number.
-    setOverflow(
-      orientation === 'horizontal'
-        ? overflowState(el.scrollLeft, el.scrollWidth, el.clientWidth)
-        : overflowState(el.scrollTop, el.scrollHeight, el.clientHeight),
-    );
-  }, [orientation]);
+    const next: Overflow = {
+      block: overflowState(el.scrollTop, el.scrollHeight, el.clientHeight),
+      inline: overflowState(el.scrollLeft, el.scrollWidth, el.clientWidth),
+    };
+    // Same object when nothing changed, so a scroll event that moves nothing
+    // across an edge does not re-render.
+    setOverflow((prev) => (prev.block === next.block && prev.inline === next.inline ? prev : next));
+  }, []);
 
   useEffect(() => {
     const el = portRef.current;
@@ -113,7 +129,12 @@ export const Scroller = forwardRef<HTMLDivElement, ScrollerProps>(function Scrol
       // this natively for scrollers; this makes it true everywhere.
       tabIndex={0}
       data-orientation={orientation}
-      data-overflow={overflow}
+      // The orientation's own axis: block for `vertical`, inline for
+      // `horizontal`. For `both` it is the block axis — the default
+      // orientation's — and the inline axis gets its own attribute beside it,
+      // because one attribute cannot name the edges of two axes (D-046).
+      data-overflow={orientation === 'horizontal' ? overflow.inline : overflow.block}
+      data-overflow-inline={orientation === 'both' ? overflow.inline : undefined}
       {...props}
     />
   );

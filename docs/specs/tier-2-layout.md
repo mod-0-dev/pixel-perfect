@@ -1079,12 +1079,21 @@ with a consumer's own.
 
 | State | Exposed as | Visual treatment |
 | --- | --- | --- |
-| overflow | `data-overflow="none" \| "start" \| "end" \| "both"` | Which edge shadows are visible |
+| overflow | `data-overflow="none" \| "start" \| "end" \| "both"` | Which edge shadows are visible on the orientation's own axis |
+| overflow, inline axis | `data-overflow-inline`, on `orientation="both"` only | The inline axis, beside the block axis above |
 | orientation | `data-orientation` | `overflow-inline` / `overflow-block` |
 | focus | `:focus-visible` | Focus ring, per the token set |
 
 `data-overflow` names the edge that has content *beyond* it, and is logical, so
-`start` is the left edge in LTR and the right in RTL.
+`start` is the left edge in LTR and the right in RTL on the inline axis, and
+the top on the block axis.
+
+**Corrected after the build (D-046).** As shipped, `orientation="both"`
+measured and shaded the block axis only: one attribute cannot name the edges of
+two axes, and the first implementation picked one. `both` now measures both
+axes, reports the block axis as `data-overflow` and the inline axis as
+`data-overflow-inline`, and shades all four edges. `vertical` and `horizontal`
+are unchanged and carry no inline attribute.
 
 ### Styling API
 

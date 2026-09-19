@@ -43,7 +43,21 @@ scrollers; this makes it true everywhere.
 ## `data-overflow`
 
 `"none" | "start" | "end" | "both"`, naming the edge that has content **beyond**
-it. Logical, so `start` is the left edge in LTR and the right in RTL.
+it. Logical: on the inline axis `start` is the left edge in LTR and the right in
+RTL; on the block axis it is the top.
+
+Which axis it describes follows `orientation`:
+
+| `orientation` | `data-overflow` | `data-overflow-inline` |
+| --- | --- | --- |
+| `vertical` | the block axis | absent |
+| `horizontal` | the inline axis | absent |
+| `both` | the block axis | the inline axis |
+
+One attribute cannot name the edges of two axes, so `both` reports the inline
+axis beside the block one, and shades all four edges ([D-046](../DECISIONS.md)).
+The inline attribute exists only on `both`: on a single-axis region it would be
+a second source of truth for the same axis.
 
 It is in the DOM, so the shadow is never the only signal, and the scrollbar is
 not hidden either.

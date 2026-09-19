@@ -39,8 +39,12 @@ const launchOptions = {
  * BASELINES ARE AUTHORED BY CI. Never run `test:visual:update` locally and
  * commit the result — a screenshot depends on the exact Chromium build, and
  * your machine almost certainly has a different one than the runner image.
- * To rebaseline, delete tests/visual/__screenshots__ and push; CI regenerates
- * and commits them. See D-013.
+ * To rebaseline a page, delete ITS baseline — not the whole directory — and
+ * push to a PR branch; CI authors the missing file and commits it (D-013,
+ * D-017). Only a PR branch: `main` is protected, so an authoring push there
+ * is rejected and the job fails naming the file instead (D-042). The authoring
+ * commit triggers no run of its own, so push once more afterwards to have the
+ * new baseline actually compared.
  *
  * Two variables are pinned here rather than left to the host, because both
  * were caught producing cross-machine diffs:

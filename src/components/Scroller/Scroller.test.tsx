@@ -60,6 +60,38 @@ describe('Scroller', () => {
   });
 
   /**
+   * D-046. One attribute cannot name the edges of two axes, so `both` reports
+   * the inline axis beside the block one — and only `both`, because on a
+   * single-axis region a second attribute would be a second source of truth.
+   * jsdom has no layout, so only the SHAPE is asserted here; the values are
+   * asserted where scrolling exists, in tests/visual/harness.spec.ts.
+   */
+  it.each(['vertical', 'horizontal'] as const)(
+    'reports one axis for orientation %s and no inline attribute',
+    (orientation) => {
+      const { getByRole } = renderWithTheme(
+        <Scroller label="x" orientation={orientation}>
+          y
+        </Scroller>,
+      );
+      const el = getByRole('region');
+      expect(el).toHaveAttribute('data-overflow', 'none');
+      expect(el).not.toHaveAttribute('data-overflow-inline');
+    },
+  );
+
+  it('reports both axes for orientation both', () => {
+    const { getByRole } = renderWithTheme(
+      <Scroller label="x" orientation="both">
+        y
+      </Scroller>,
+    );
+    const el = getByRole('region');
+    expect(el).toHaveAttribute('data-overflow', 'none');
+    expect(el).toHaveAttribute('data-overflow-inline', 'none');
+  });
+
+  /**
    * D-022 §7. A scrollable region a keyboard user can reach is WCAG 2.1.1; a
    * focusable region with no accessible name is a 4.1.2 failure. RULES §6 says
    * the type system should make that impossible.

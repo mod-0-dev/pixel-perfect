@@ -82,12 +82,16 @@ one prop, which is the main reason to use `Field`.
 | `--pp-label-required-color` | `currentcolor` | The indicator glyph |
 | `--pp-label-cursor` | `inherit` | Cursor |
 
-`--pp-label-cursor` exists for controls that make a whole row clickable.
-`Checkbox`, `Radio` and `Switch` set it on their own root and it inherits down,
-so you never need a selector that reaches across two components:
+`--pp-label-cursor` exists for rows that are one click target — a checkbox
+beside its label. A `Field` with `orientation="horizontal"` sets it to `pointer`
+on its own root and it inherits down to the label, so you never need a selector
+that reaches across two components. It is set by the `Field` and not by the
+control, because the label is the control's *sibling* and a custom property only
+inherits downward ([D-045](../DECISIONS.md)). A row you assemble yourself sets it
+the same way:
 
 ```css
-.pp-checkbox { --pp-label-cursor: pointer; }
+.my-checkbox-row { --pp-label-cursor: pointer; }
 ```
 
 ## Don't

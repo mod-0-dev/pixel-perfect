@@ -111,6 +111,15 @@ boundaries with `.pp-checkbox .pp-label`, `Label` declares
 properties inherit, so this is the same mechanism as the tone context (D-007),
 and it is a cross-component agreement with no cross-component selector.
 
+**Corrected after `Checkbox` shipped (D-045).** The mechanism is right and the
+element was wrong: inside a `Field` the label is the control's *sibling*, and a
+custom property only inherits downward, so a value set on the control's root
+could never reach it — `Checkbox` never set it, and a checkbox row had no
+pointer. The common ancestor is the `Field`, whose `horizontal` orientation is
+by definition the checkbox arrangement, so `.pp-field[data-orientation=
+"horizontal"]:not([data-disabled])` sets `--pp-label-cursor: pointer` once and
+the label inherits it. `Checkbox`, `Radio` and `Switch` set nothing.
+
 ### 6. `Label` does not compose `Text`, and the 1.1 dependency is typographic
 
 The roadmap lists 1.1 as a dependency. `Link` (3.3) has the same dependency and
@@ -314,9 +323,11 @@ field they cannot fill in correctly. Truncation is never applied to a label.
 // A small, dense form: the label rides the control scale, not the text scale.
 <Label htmlFor="port" size="sm">Port</Label>
 
-// A checkbox row: the label sits beside the control, and Checkbox sets
-// --pp-label-cursor: pointer on its own root.
-<Cluster gap="2" align="center">
+// A checkbox row assembled by hand: the label sits beside the control, and the
+// ROW sets --pp-label-cursor: pointer, because the label is the control's
+// sibling and only an ancestor can reach it (D-045). A horizontal Field does
+// this for you.
+<Cluster gap="2" align="center" style={{ '--pp-label-cursor': 'pointer' }}>
   <input id="terms" type="checkbox" />
   <Label htmlFor="terms">I accept the terms</Label>
 </Cluster>

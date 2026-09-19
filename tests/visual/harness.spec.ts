@@ -350,6 +350,52 @@ test.describe('layout primitives', () => {
     await expect(overflowing).toHaveAttribute('data-overflow', 'both');
   });
 
+  /*
+   * D-046. As shipped, `both` measured the block axis and reported it as
+   * data-overflow; the inline axis was never measured and never shaded. The
+   * shadows are asserted as the number of NON-ZERO background layers, because
+   * the attributes alone would pass against a stylesheet that ignores them —
+   * which is exactly what the first version did for the inline axis.
+   */
+  test('Scroller both reports and shades both axes', async ({ page }) => {
+    await page.goto('/components/scroller');
+
+    const scroller = page
+      .locator('section', { hasText: 'Both axes' })
+      .locator('.pp-scroller')
+      .first();
+    const shadedEdges = () =>
+      scroller.evaluate(
+        (el) =>
+          getComputedStyle(el)
+            .backgroundSize.split(',')
+            .filter((layer) => !/(^|\s)0px(\s|$)/.test(layer.trim())).length,
+      );
+
+    // At rest, scrolled to the top-left corner: content lies past the block-end
+    // and inline-end edges only. Two shadows.
+    await expect(scroller).toHaveAttribute('data-overflow', 'end');
+    await expect(scroller).toHaveAttribute('data-overflow-inline', 'end');
+    // Polled, not read once: the attributes land in a React commit after the
+    // scroll event, and a single read can precede it.
+    await expect.poll(shadedEdges, { message: 'two edges shaded at rest' }).toBe(2);
+
+    // In the middle of both axes: every edge has content beyond it. Four.
+    await scroller.evaluate((el) =>
+      el.scrollTo({ top: el.scrollHeight / 2, left: el.scrollWidth / 2 }),
+    );
+    await expect(scroller).toHaveAttribute('data-overflow', 'both');
+    await expect(scroller).toHaveAttribute('data-overflow-inline', 'both');
+    await expect.poll(shadedEdges, { message: 'four edges shaded mid-scroll' }).toBe(4);
+
+    // And a single-axis region never grows the second attribute.
+    const vertical = page
+      .locator('section', { hasText: 'Vertical, with a max block size' })
+      .locator('.pp-scroller')
+      .first();
+    await expect(vertical).not.toHaveAttribute('data-overflow-inline', /.*/);
+  });
+
   test('Scroller is a focusable region with an accessible name', async ({ page }) => {
     await page.goto('/components/scroller');
 
@@ -953,6 +999,46 @@ test.describe('Field', () => {
     await expect(control).toHaveAccessibleDescription(
       'We only use this for receipts. Enter an email address in the format name@example.com',
     );
+  });
+
+  /*
+   * D-045. Label exposes --pp-label-cursor and the Label spec said Checkbox
+   * would set it on its own root — which could never work, because inside a
+   * Field the label is the control's SIBLING and a custom property only
+   * inherits downward. The horizontal Field is the common ancestor and sets it
+   * once. Asserted as a computed style on the label itself, so it fails if the
+   * declaration moves back onto the control where nothing can read it.
+   */
+  test('a horizontal field gives its label the pointer; a vertical one does not', async ({
+    page,
+  }) => {
+    await page.goto('/components/field');
+
+    const cursorOf = (section: string, selector: string) =>
+      cell(page, section, 'wide · 960px')
+        .locator(selector)
+        .first()
+        .locator('.pp-field__label')
+        .evaluate((el) => getComputedStyle(el).cursor);
+
+    expect(
+      await cursorOf('Horizontal — the checkbox arrangement', '.pp-field[data-orientation="horizontal"]'),
+      'the checkbox row is one click target and its label should say so',
+    ).toBe('pointer');
+    expect(
+      await cursorOf('Label, description, control', '.pp-field[data-orientation="vertical"]'),
+      'a block label above a text input overstates the affordance with a pointer',
+    ).not.toBe('pointer');
+  });
+
+  test('a disabled horizontal field does not promise a click with a pointer', async ({ page }) => {
+    await page.goto('/components/checkbox');
+
+    const cursor = await cell(page, 'Disabled', 'wide · 960px')
+      .locator('.pp-field[data-orientation="horizontal"][data-disabled] .pp-field__label')
+      .first()
+      .evaluate((el) => getComputedStyle(el).cursor);
+    expect(cursor).not.toBe('pointer');
   });
 
   test('a hidden label is hidden from sight and present in the tree', async ({ page }) => {

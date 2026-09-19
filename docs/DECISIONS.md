@@ -1941,3 +1941,121 @@ that was present, because Next.js serves the library stylesheet from
 check that silently reports "absent" for "looked in the wrong place" is the same
 failure shape D-037 §4 was written about, one level up: **verify the verifier by
 seeing it find the thing before you trust it not finding the thing.**
+
+## D-045 — The pointer over a checkbox row comes from `Field`, not from the control
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/Label.md` §5, `docs/specs/tier-3c-inputs.md` §3.10 (Styling API, State)
+
+Found by a repository sweep rather than by a test — which is itself the
+finding, and is why a test now exists.
+
+**Label spec §5 described a mechanism that could not work.** `Label` declares
+`cursor: var(--pp-label-cursor, inherit)` so that a control which makes its
+whole row a click target can ask for the pointer without a `.pp-checkbox
+.pp-label` selector. The spec, the docs page, `Label.css` and the Label
+playground page all said `Checkbox`, `Radio` and `Switch` would set
+`--pp-label-cursor: pointer` on their own root and let it inherit.
+
+Two things were wrong with that, and `Checkbox` shipped `done` with both:
+
+1. `Checkbox.css` never set it. Nothing asserted the claim, so nothing noticed.
+2. It could not have worked if it had. Inside a `Field` the label is the
+   control's **sibling** — `.pp-field__control > .pp-checkbox` beside
+   `.pp-field__label` — and a custom property inherits **downward only**. A
+   value on the control's root reaches the control's descendants and nobody
+   else. The mechanism D-007 and D-044 rely on was invoked on an element it
+   cannot start from.
+
+**The fix keeps the mechanism and moves the declaration to the only element
+that can make it.** The common ancestor of the control and its label is the
+`Field`, and `orientation="horizontal"` is *defined* (Field spec §8) as the
+checkbox arrangement. So:
+
+```css
+.pp-field[data-orientation="horizontal"]:not([data-disabled]) {
+  --pp-label-cursor: pointer;
+}
+```
+
+That is `Field` using `Label`'s public styling API on itself — the one channel
+D-044 permits across a component boundary — and not a cross-component
+selector. `Field` still restyles no child; it sets a property the child
+published for exactly this. Not on a disabled row: a disabled control cannot
+take focus, clicking its label does nothing, and a pointer would promise a
+click that does not happen. The control beneath already shows `not-allowed`.
+
+`Checkbox`, `Radio` and `Switch` set nothing, and the spec sections that said
+they would are corrected. A row assembled by hand — a `Cluster` around an input
+and a `Label` — sets the property on the row, which is what the Label playground
+page has done since 3.6 and now says so.
+
+**Asserted in the browser**, as a computed `cursor` on the label element itself:
+`pointer` on a horizontal field, not `pointer` on a vertical one, not `pointer`
+on a disabled horizontal one. Broken on purpose before it was trusted (D-035
+§3): with the declaration flipped to `inherit` — confirmed in the *served*
+stylesheet first, per D-037 §4 — it failed on exactly the symptom it names,
+`Expected: "pointer", Received: "auto"`. It fails the same way if the
+declaration moves back onto the control, which is the whole point: the previous version of this claim lived
+only in prose, in four places, for two components, and was false in all four.
+
+**The general rule, which D-044 stated for reading and this states for
+writing:** a custom property is only a channel between two elements when one is
+an ancestor of the other. "Set it on my root and let it inherit" is correct for
+a component's own parts and meaningless for its siblings. Before a spec promises
+that component A will set a property component B reads, check that B is inside
+A. `Radio`, `Switch` and `Select` all compose into `Field` beside a `Label`, and
+all three would have copied this.
+
+**Also corrected in the same sweep, none needing a ruling:** `Button.tsx` and the
+Button playground page said the loading label is hidden with `visibility`,
+which D-030 §2 found the hard way is the one thing it must not be — the CSS was
+right and the prose was not. `docs/RELEASING.md` still said the release
+pipeline had never run and 0.8 was `blocked`, two releases after D-038 proved it
+end to end. The 3C spec's `Checkbox` section listed a `--pp-checkbox-bg-checked`
+property that was never built and described a `mask` the §13 amendment had
+already replaced with an inline `Icon`. And the playground registry listed
+components in implementation order, so the home page navigation read 1.3, 1.5,
+1.8, 1.10, 1.6 — it is in roadmap order now, with the screenshot list beside it.
+
+## D-046 — `Scroller` `both` measures and shades both axes; the inline axis is `data-overflow-inline`
+
+**Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/tier-2-layout.md` §2.8 (State)
+
+`orientation="both"` promised two scrolling axes and delivered one. The
+component measured only `scrollTop`, reported it as `data-overflow`, and the
+stylesheet's `both` rules shaded the block edges only. Content past the inline
+edge of a `both` region had no shadow and no attribute — the exact failure
+`Scroller` exists to prevent, on half of its widest case. Raised in the sweep
+that produced D-045, as a gap rather than a defect, because nothing promised
+otherwise in a test; it is a defect, because the prop promised it.
+
+**One attribute cannot name the edges of two axes.** `"start" | "end" |
+"both"` describes one axis. So `both` reports the block axis as `data-overflow`
+— the default orientation's axis, and unchanged for `vertical` — and the inline
+axis as `data-overflow-inline` beside it. The inline attribute exists only on
+`both`: on `horizontal`, `data-overflow` already *is* the inline axis, and a
+second attribute for the same axis would be a second source of truth.
+
+**The stylesheet is one property per edge, not one rule per combination.**
+The first version wrote a rule for each orientation × overflow pair — eight
+rules for two axes, and `both` would have needed sixteen. Now four gradient
+layers are always declared and each is sized by a private property that
+defaults to `0`; a zero-sized layer paints nothing, so showing an edge is one
+declaration. The two axes cannot collide because they never share a rule.
+
+Both axes are now measured on every event regardless of orientation; the
+second read costs nothing, and the attributes decide what is reported. The
+state setter returns the previous object when neither axis changed, so a scroll
+that crosses no edge does not re-render.
+
+**Asserted in the browser as shaded edges, not attributes.** The count of
+non-zero background layers is what is checked — two at rest, four mid-scroll —
+because attributes alone would pass against a stylesheet that ignores them,
+which is precisely what the shipped version did for the inline axis.
+Broken on purpose before it was trusted: with the `data-overflow-inline` rules
+renamed so the stylesheet ignores the attribute — confirmed in the served CSS
+first — the attribute assertions still passed and the edge count failed,
+`Expected: 2, Received: 1`. That is the shipped defect reproduced, and the
+only assertion that would have caught it.
+
+Minor bump: a new attribute in the rendered DOM.

@@ -1,9 +1,19 @@
 /*
- * Scroller — spec §2.8
+ * Scroller — spec docs/specs/tier-2-layout.md §2.8
  *
  * Shadows are background-image gradients on the root, shown and hidden by
  * data-overflow. No extra DOM node, and no pseudo-element that would collide
  * with a consumer's own ::before.
+ *
+ * FOUR LAYERS, ALWAYS DECLARED, EACH SIZED BY ONE CUSTOM PROPERTY (D-046).
+ * Every edge that can have a shadow — block-start, block-end, inline-start,
+ * inline-end — is one gradient layer whose size is a private property that
+ * defaults to 0. A zero-sized layer paints nothing, so showing an edge is one
+ * declaration: set its property to the shadow size. The first version wrote
+ * one rule per orientation × overflow combination, which was eight rules for
+ * two axes and would have been sixteen for `both` — and `both` therefore
+ * silently shaded the block axis only. State is a property per edge now, and
+ * the two axes cannot collide because they never share a rule.
  *
  * The gradient fades --pp-color-shadow-edge to `transparent`. That is safe in
  * every modern browser because gradient interpolation is premultiplied, so
@@ -14,7 +24,7 @@
  * the content, so the shadow slides away from the edge it is meant to mark.
  * The default (`scroll`) pins it to the element, which is the whole point.
  *
- * RTL: background-position takes no logical keywords, so the four physical
+ * RTL: background-position takes no logical keywords, so the two inline
  * values are held in custom properties and swapped once by :dir(rtl). The
  * block axis needs no swap — it does not flip between LTR and RTL.
  */
@@ -28,9 +38,30 @@
     --_pp-scroller-start-dir: to right;
     --_pp-scroller-end-dir: to left;
 
+    /* One per edge. 0 is "no shadow"; the rules below set the shadow size. */
+    --_pp-scroller-block-start: 0;
+    --_pp-scroller-block-end: 0;
+    --_pp-scroller-inline-start: 0;
+    --_pp-scroller-inline-end: 0;
+
     display: block;
     min-inline-size: 0;
     max-block-size: var(--pp-scroller-max-block-size, none);
+    background-image:
+      linear-gradient(to bottom, var(--_pp-scroller-color), transparent),
+      linear-gradient(to top, var(--_pp-scroller-color), transparent),
+      linear-gradient(var(--_pp-scroller-start-dir), var(--_pp-scroller-color), transparent),
+      linear-gradient(var(--_pp-scroller-end-dir), var(--_pp-scroller-color), transparent);
+    background-size:
+      100% var(--_pp-scroller-block-start),
+      100% var(--_pp-scroller-block-end),
+      var(--_pp-scroller-inline-start) 100%,
+      var(--_pp-scroller-inline-end) 100%;
+    background-position:
+      center top,
+      center bottom,
+      var(--_pp-scroller-start-pos) center,
+      var(--_pp-scroller-end-pos) center;
     background-repeat: no-repeat;
   }
 
@@ -45,50 +76,37 @@
   .pp-scroller[data-orientation="horizontal"] { overflow-x: auto; overflow-y: hidden; }
   .pp-scroller[data-orientation="both"] { overflow: auto; }
 
-  /* ---- inline axis (horizontal) ---- */
-
-  .pp-scroller[data-orientation="horizontal"]:not([data-overflow="none"]) {
-    background-size: var(--_pp-scroller-shadow) 100%;
-  }
-
-  .pp-scroller[data-orientation="horizontal"][data-overflow="start"] {
-    background-image: linear-gradient(var(--_pp-scroller-start-dir), var(--_pp-scroller-color), transparent);
-    background-position: var(--_pp-scroller-start-pos) center;
-  }
-
-  .pp-scroller[data-orientation="horizontal"][data-overflow="end"] {
-    background-image: linear-gradient(var(--_pp-scroller-end-dir), var(--_pp-scroller-color), transparent);
-    background-position: var(--_pp-scroller-end-pos) center;
-  }
-
-  .pp-scroller[data-orientation="horizontal"][data-overflow="both"] {
-    background-image:
-      linear-gradient(var(--_pp-scroller-start-dir), var(--_pp-scroller-color), transparent),
-      linear-gradient(var(--_pp-scroller-end-dir), var(--_pp-scroller-color), transparent);
-    background-position: var(--_pp-scroller-start-pos) center, var(--_pp-scroller-end-pos) center;
-  }
-
-  /* ---- block axis (vertical and both) ---- */
-
-  .pp-scroller:not([data-orientation="horizontal"]):not([data-overflow="none"]) {
-    background-size: 100% var(--_pp-scroller-shadow);
-  }
-
-  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="start"] {
-    background-image: linear-gradient(to bottom, var(--_pp-scroller-color), transparent);
-    background-position: center top;
-  }
-
-  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="end"] {
-    background-image: linear-gradient(to top, var(--_pp-scroller-color), transparent);
-    background-position: center bottom;
-  }
-
+  /*
+   * ---- block axis ----
+   * `vertical` and `both` report it as data-overflow.
+   */
+  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="start"],
   .pp-scroller:not([data-orientation="horizontal"])[data-overflow="both"] {
-    background-image:
-      linear-gradient(to bottom, var(--_pp-scroller-color), transparent),
-      linear-gradient(to top, var(--_pp-scroller-color), transparent);
-    background-position: center top, center bottom;
+    --_pp-scroller-block-start: var(--_pp-scroller-shadow);
+  }
+
+  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="end"],
+  .pp-scroller:not([data-orientation="horizontal"])[data-overflow="both"] {
+    --_pp-scroller-block-end: var(--_pp-scroller-shadow);
+  }
+
+  /*
+   * ---- inline axis ----
+   * `horizontal` reports it as data-overflow, its only axis. `both` reports it
+   * as data-overflow-inline, beside the block axis above.
+   */
+  .pp-scroller[data-orientation="horizontal"][data-overflow="start"],
+  .pp-scroller[data-orientation="horizontal"][data-overflow="both"],
+  .pp-scroller[data-overflow-inline="start"],
+  .pp-scroller[data-overflow-inline="both"] {
+    --_pp-scroller-inline-start: var(--_pp-scroller-shadow);
+  }
+
+  .pp-scroller[data-orientation="horizontal"][data-overflow="end"],
+  .pp-scroller[data-orientation="horizontal"][data-overflow="both"],
+  .pp-scroller[data-overflow-inline="end"],
+  .pp-scroller[data-overflow-inline="both"] {
+    --_pp-scroller-inline-end: var(--_pp-scroller-shadow);
   }
 
   /* RULES §6: never outline: none without a replacement. */
