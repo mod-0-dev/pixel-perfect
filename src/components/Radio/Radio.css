@@ -1,0 +1,182 @@
+/*
+ * Radio — spec docs/specs/tier-3c-inputs.md §3.11
+ *
+ * The same box as Checkbox — 16 / 20 / 24 from --pp-size-4/5/6 (spec §8) — with
+ * a round edge and a dot instead of a square edge and a check.
+ *
+ * `inline-size` is declared here under the D-019 exemption, which D-031
+ * extended to IconButton and D-039 §7 extends to this file: the box is
+ * intrinsically square, and that is not the "how much of my parent do I take"
+ * decision RULES §1 reserves for the parent. The exemption names THIS FILE in
+ * `.stylelintrc.json` rather than the component's directory, because
+ * RadioGroup is a layout and must keep the rule it would otherwise inherit.
+ *
+ * THE NATIVE INPUT IS THE PAINTED CONTROL (D-039 §2). `appearance: none` on the
+ * real <input>, styled directly, with the dot as an aria-hidden sibling stacked
+ * in the same grid cell.
+ *
+ * THE STYLESHEET READS `:checked`, NOT `data-state`, AND THAT IS A DEVIATION
+ * FROM RULES §4 WITH A CAUSE:
+ *
+ *   A radio is deselected when a SIBLING is selected, and the deselected radio
+ *   is told nothing. React can therefore only describe this control's state
+ *   when a RadioGroup owns it — a bare <Radio>, and any radio the platform
+ *   changes behind React's back (a native form reset is the everyday case),
+ *   would paint against a `data-state` that is stale or absent. `:checked` is
+ *   not one of our private booleans; it is the platform's own state, and it is
+ *   right in exactly the cases React is not.
+ *
+ *   `data-state` is still emitted, for consumers, whenever the group knows it.
+ *   Both are asserted, including that they agree.
+ *
+ * The state is read by `:has()` ON THE ROOT rather than on the input, because
+ * the dot is the input's SIBLING. D-045: a custom property is only a channel
+ * between two elements when one is an ancestor of the other, so the only place
+ * a declaration can reach both the box and the dot is the element above them.
+ * `:has()` is what lets that element read a state that lives below it.
+ */
+
+@layer pp.components {
+  .pp-radio {
+    /*
+     * Resolved on our own root and passed down, per D-024's other half as
+     * D-044 §1 restated it: a custom property is substituted where it is
+     * DECLARED, so a private name read on a descendant reads whatever that
+     * descendant's own component means by it. Checkbox lost an `lg` mark to
+     * Icon's `--_size` that way. Nothing else declares these names on this
+     * component's parts — the dot is a plain <span> with one class — but the
+     * rule is the same one either way: declare here, inherit down.
+     */
+    --_size: var(--pp-size-5);
+    --_box: var(--pp-radio-size, var(--_size));
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_dot: var(--pp-tone-on-solid);
+    --_dot-scale: 0;
+
+    /* hug: inline-level, intrinsically sized, no width declaration that decides
+       anything about the parent. One cell, two children stacked in it. */
+    display: inline-grid;
+  }
+
+  .pp-radio[data-size="sm"] { --_size: var(--pp-size-4); }
+  .pp-radio[data-size="lg"] { --_size: var(--pp-size-6); }
+
+  /* The root carries data-pp-tone="danger", so --pp-tone-border resolves in the
+     danger ramp without this file naming a colour (D-007). */
+  .pp-radio[data-invalid] {
+    --_border: var(--pp-tone-border);
+  }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3). `.pp-radio:has(…)` matches the ROOT — it reads a descendant
+   * but it styles the ancestor — so the value inherits down and the input's own
+   * `:focus-visible` below still wins for the input. A root-scoped DESCENDANT
+   * selector is the thing that would not, and it is how Input shipped a focus
+   * border that never appeared on an invalid control.
+   *
+   * This rule is 0-3-0 and the [data-invalid] rule above is 0-2-0, so a checked
+   * invalid radio takes its border from here. That is correct rather than
+   * tolerated: the root is in the danger tone, so --pp-tone-solid IS the danger
+   * solid, and both the fill and the edge read as danger.
+   */
+  .pp-radio:has(.pp-radio__input:checked) {
+    --_bg: var(--pp-tone-solid);
+    --_border: var(--pp-tone-solid);
+    --_dot-scale: 1;
+  }
+
+  /*
+   * Last, and at the same 0-3-0 specificity as the rule above, so source order
+   * decides: a disabled checked radio is grey rather than solid. The state the
+   * user can do nothing about should not be the loudest thing in the form.
+   * Read from `:disabled` for symmetry with `:checked` — the attribute we
+   * render and the pseudo-class the browser matches are the same fact here,
+   * and mixing the two mechanisms in one file is how the precedence gets lost.
+   */
+  .pp-radio:has(.pp-radio__input:disabled) {
+    --_bg: var(--pp-color-bg-sunken);
+    --_border: var(--pp-color-border);
+    --_dot: var(--pp-color-text-disabled);
+  }
+
+  .pp-radio__input {
+    grid-area: 1 / 1;
+    inline-size: var(--_box);
+    block-size: var(--_box);
+    /* The UA gives an <input> a margin the minimal reset leaves alone. Removing
+       it is the rule rather than a breach of it (D-018): RULES §2 is about a
+       component's own root spacing itself, not about zeroing what the user
+       agent added inside. */
+    margin: 0;
+    border: var(--pp-border-width-1) solid var(--pp-radio-border-color, var(--_border));
+    /* The one line that makes it a radio rather than a checkbox. */
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-radio-bg, var(--_bg));
+    appearance: none;
+    cursor: pointer;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* `:disabled` rather than a `[data-disabled] .pp-radio__input` descendant
+     selector, which would be 0-3-0 and outrank the focus rule below it.
+     pointer-events: none is deliberately NOT used, for the reason Button.css
+     gives: it kills `title`, breaks a Tooltip (4.3) wrapping the control, and
+     makes cursor: not-allowed impossible to show. */
+  .pp-radio__input:disabled {
+    cursor: not-allowed;
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4). The outline is
+   * the focus affordance — one colour library-wide, outside the box, the only
+   * pairing lint:contrast asserts. The border shift is the control
+   * acknowledging focus in its own tone, inside the box.
+   *
+   * Declared on the INPUT, which is where the focus is: a declaration on the
+   * element beats a value inherited from the root, so focus beats checked,
+   * invalid and disabled without any of them being reordered around it.
+   */
+  .pp-radio__input:focus-visible {
+    --_border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-radio__indicator {
+    grid-area: 1 / 1;
+    place-self: center;
+    /* Half the box, so it tracks --pp-radio-size rather than a fixed step: a
+       ratio, not a length someone picked. At md that is a 10px dot in a 20px
+       box. */
+    inline-size: calc(var(--_box) / 2);
+    block-size: calc(var(--_box) / 2);
+    border-radius: var(--pp-radius-full);
+    /* --pp-tone-on-solid on --pp-tone-solid: the one mark-on-fill pairing the
+       token layer verifies at 4.5:1 in every hue and both themes. A tone-solid
+       dot on the surface instead — which is the other common radio — measures
+       1.87:1 for `warning` in the light theme, and there is no contrast check
+       in the library that would have caught it. */
+    background-color: var(--pp-radio-dot-color, var(--_dot));
+    /* 0 when unchecked, so the dot is in the DOM at every moment and visible in
+       none of the wrong ones. The pointer still only ever hits the input. */
+    transform: scale(var(--_dot-scale));
+    pointer-events: none;
+    transition-property: transform;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* The reset crushes durations in pp.reset and this file is in pp.components,
+     so ours would win. Every animated component answers for itself. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-radio__input,
+    .pp-radio__indicator {
+      transition-property: none;
+    }
+  }
+}

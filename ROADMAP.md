@@ -26,6 +26,54 @@ is `done`.
 
 ### Current state
 
+- **In flight:** _none_ — **3.11 `Radio` / `RadioGroup` is `done`.** Next is
+  3.12 `Switch`, then `Select`, both already `spec` under the Gate C approval of
+  2026-09-18 (**D-039**)
+- **A deselected radio is told nothing, and that fact decides the API and the
+  stylesheet** (**D-047 §1–2**). Every change to a checkbox is an event on that
+  checkbox; a radio's *deselection* happens when a sibling is selected and fires
+  nothing at all. So `RadioGroup` holds the value and `Radio` has no `checked`
+  or `defaultChecked` — an option that could contradict its group is D-036's
+  second source of truth, one tier on. And because React can only describe the
+  state a group owns, **the stylesheet paints from `:checked` rather than from
+  `data-state`** — a narrow, recorded deviation from RULES §4. `:checked` is not
+  one of our private booleans; it is the platform's own state, and it is right
+  for a bare radio and for anything the platform changes behind React's back.
+  `data-state` is emitted for consumers when the group knows it and **omitted
+  rather than guessed** when it does not. The state is read on the root with
+  `:has()` — the library's first — because the dot is the input's *sibling*, and
+  D-045 says a custom property is only a channel when one element is an ancestor
+  of the other. Proven by the only test that can tell the two mechanisms apart:
+  a bare radio. Swapping `:has()` for the attribute failed that one assertion
+  and left the other seventeen correctly green
+- **The spec picked a radio design on appearance, and one of the two is not
+  available at AA** (**D-047 §3**). A `--pp-tone-solid` dot on the neutral
+  surface — the border-only treatment §3.11 specified — is **1.87:1 in the light
+  theme's `warning` tone**, against a 3:1 requirement, and no check in
+  `lint:contrast` pairs a tone step with the surface, so nothing would have
+  caught it. The box fills instead and the dot is `--pp-tone-on-solid`: the one
+  mark-on-fill pairing the token layer already verifies at 4.5:1 in every hue and
+  both themes, and the same one `Checkbox`'s mark uses
+- **A stale dev server made three break-it results garbage, and it looked like a
+  component bug** (**D-047 §5**). A `next start` left over from the previous
+  cycle kept serving HTML pointing at a chunk the new build had deleted, so the
+  page loaded with **no stylesheet at all** — every computed colour came back
+  transparent or black, and one run "failed" a `Checkbox` test this build never
+  touched. Two rules, both extending D-037 §4 and D-044 §5: **a served-CSS check
+  must be verified in both directions before it is trusted** (two of the patterns
+  used here matched in the broken and the unbroken build — one because the
+  minifier strips the quotes from `[data-state="checked"]`), and **let the test
+  runner own the server**, because a hand-started one that survives a rebuild is
+  not a stale stylesheet, it is no stylesheet
+- **Seventh test that could not fail, and an inert guard beside it** (D-047
+  §4–5). The pointer test clicked the centre of an *unselected* radio, where the
+  dot is `scale(0)` and has a zero-sized box, so nothing could intercept the
+  pointer and deleting `pointer-events: none` left it green; it now clicks a
+  *selected* one and asserts focus, because clicking an already-selected radio
+  is a no-op by design and the dot is a `<span>` that cannot take focus. The
+  change handler's `if (event.target.checked)` guarded nothing — the platform
+  fires `change` only for the radio being selected — and went under D-037 §5.
+  Sixteen breaks in total, fourteen failing on exactly the test named for them
 - **A sweep on 2026-09-18 found two shipped defects and five false claims, all of
   them prose disagreeing with code** (**D-045**, **D-046**). The checkbox-row
   pointer was promised in four places and set nowhere, and could not have
@@ -35,9 +83,6 @@ is `done`.
   now measures both and reports the inline axis as `data-overflow-inline`. The
   Definition of Done gained one line: a claim about another component's
   behaviour is asserted or linked, never restated
-- **In flight:** _none_ — **3.10 `Checkbox` is `done`.** Next is 3.11
-  `Radio`/`RadioGroup`, then `Switch`, `Select`, all already `spec` under the
-  Gate C approval of 2026-09-18 (**D-039**)
 - **A private custom property is not private, and `Icon`'s `--_size` beat
   `Checkbox`'s** (**D-044 §1**). The indicator carries `.pp-icon` as well as
   `.pp-checkbox__indicator`, and `Icon.css` declares `--_size: 1em` on that very
@@ -248,8 +293,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 38 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations + 29 components. The one foundation not `done` is 0.10 docs site,
+- **Done:** 39 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 30 components. The one foundation not `done` is 0.10 docs site,
   deferred and not blocking
 
 ---
@@ -339,7 +384,7 @@ to the component it was written about — see
 | 3.8 | `Input` | `done` | fill | client | 3.7 | Ships the control surface and the tone-shifted focus border. **Two elements** — a form control does not fill (D-040). Baseline landed after the fact (D-042) |
 | 3.9 | `Textarea` | `done` | fill | client | 3.7 | Auto-resize opt-in, floored at `rows`. Block padding derived from `--pp-control-*`, because the space scale cannot express it (D-043) |
 | 3.10 | `Checkbox` | `done` | hug | client | 3.7 | Tri-state, and only the caller can set the third. 16/20/24 from the size scale; 2.5.8 through the spacing exception (D-044) |
-| 3.11 | `Radio` / `RadioGroup` | `spec` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name`; `gap` defaults to `"3"` for WCAG 2.5.8 |
+| 3.11 | `Radio` / `RadioGroup` | `done` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name` and owns the value; `gap` defaults to `"3"` for WCAG 2.5.8. Paints from `:checked`, not `data-state` (D-047) |
 | 3.12 | `Switch` | `spec` | hug | client | 3.7 | |
 | 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
 | 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |

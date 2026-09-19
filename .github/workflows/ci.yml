@@ -4,6 +4,14 @@ on:
   pull_request:
   push:
     branches: [main]
+  # A baseline authored by the `visual` job below is pushed with GITHUB_TOKEN,
+  # which by design triggers no run — so the file lands AUTHORED but never
+  # COMPARED, and the job's own comment says an authoring commit should never
+  # be the final head of a PR. Comparing it needs another run, and the only
+  # other way to get one is a commit: an empty one to kick CI is exactly what
+  # should not be done, and a real one has to be invented. This is the
+  # supported mechanism for the step D-042 already documents.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

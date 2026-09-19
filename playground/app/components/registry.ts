@@ -43,4 +43,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'input', name: 'Input', tier: '3.8' },
   { slug: 'textarea', name: 'Textarea', tier: '3.9' },
   { slug: 'checkbox', name: 'Checkbox', tier: '3.10' },
+  { slug: 'radio', name: 'Radio', tier: '3.11' },
 ];
