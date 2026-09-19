@@ -2297,6 +2297,14 @@ Tier 0.2 work touching six shipped components, and doing it inside a Switch
 build would be exactly the unilateral widening the DoD's "minimal fix" rule
 exists to stop.
 
+**Switch is the one control in the tier that does not depend on that edge**,
+and it is worth saying why the gap is recorded here rather than inherited. An
+unchecked `Checkbox`'s border *is* the information 1.4.11 asks for — take it
+away and there is nothing left to see. An off switch has a 5.10:1 thumb sitting
+on it, which identifies both the control and its state against the page; the
+edge helps and is not what carries the requirement. That is a consequence of
+§1's amendment rather than a reason for it.
+
 Recorded here with the numbers so the next person does not have to re-derive
 them, and so that "the borders are fine" is not something anyone concludes from
 a green `lint:contrast` again.
@@ -2326,12 +2334,12 @@ suite sets `dir="rtl"` on the demo and asserts the thumb crosses to the other
 side of the track's centre — the only assertion in the file that can tell the
 two mechanisms apart, and it fails when the declaration is swapped back.
 
-### 5. Fifteen breaks, and the eighth assertion that could not fail
+### 5. Sixteen breaks, and the eighth assertion that could not fail
 
-Seven source mutations and eight stylesheet mutations, every stylesheet break
+Seven source mutations and nine stylesheet mutations, every stylesheet break
 verified present in the **served, minified** chunk before its result was read
 (D-037 §4), with Playwright's `webServer` owning the build and the server
-throughout (D-047 §5). Fourteen failed on exactly the test named for them.
+throughout (D-047 §5). Fifteen failed on exactly the test named for them.
 
 The fifteenth did not, and the test was the defect. "Disabled beats checked"
 compared a **disabled on** track with a **live off** track, and those differ

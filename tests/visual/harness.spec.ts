@@ -2181,24 +2181,58 @@ test.describe('Switch', () => {
     }
   });
 
-  /* The cross-component agreement the size scale exists to make structural: a
-     switch and a checkbox in the same form line up. Asserted against the other
-     component rather than against a number, because a numeric assertion still
-     passes after someone hardcodes one of the two (D-034's mechanism). */
-  test('a md switch is exactly as tall as a md checkbox', async ({ page }) => {
+  /*
+   * The cross-component agreement the size scale exists to make structural: a
+   * switch and a checkbox in the same form line up, and an OFF switch rests on
+   * the same surface an unchecked checkbox does. Asserted against the other
+   * component rather than against numbers, because a numeric assertion still
+   * passes after someone hardcodes one of the two (D-034's mechanism).
+   *
+   * It is also what D-045 requires of the claim: the component page and the
+   * stylesheet both say "the same fill and edge an unchecked Checkbox takes",
+   * and prose stated in four places was false in all four.
+   */
+  test('a switch and a checkbox agree on the box and on the resting surface', async ({ page }) => {
+    /* The height comes from each page's size matrix and the resting colours
+       from wherever that page shows an UNCHECKED md control — the checkbox
+       page's size matrix is all checked, which is why these are two reads. */
+    const measure = (
+      page: import('@playwright/test').Page,
+      section: string,
+      selector: string,
+    ) =>
+      cell(page, section, 'wide · 960px')
+        .locator(selector)
+        .first()
+        .evaluate((el) => {
+          const style = getComputedStyle(el);
+          return {
+            block: el.getBoundingClientRect().height,
+            bg: style.backgroundColor,
+            border: style.borderTopColor,
+          };
+        });
+
     await page.goto('/components/checkbox');
-    const checkbox = await cell(page, 'Sizes', 'wide · 960px')
-      .locator('.pp-checkbox[data-size="md"] .pp-checkbox__input')
-      .first()
-      .evaluate((el) => el.getBoundingClientRect().height);
+    const checkboxBox = await measure(page, 'Sizes', '.pp-checkbox[data-size="md"] .pp-checkbox__input');
+    const checkbox = await measure(
+      page,
+      'Three states, and only two a user can reach',
+      '.pp-checkbox[data-state="unchecked"] .pp-checkbox__input',
+    );
 
     await page.goto('/components/switch');
-    const track = await cell(page, 'Sizes', 'wide · 960px')
-      .locator('.pp-switch[data-size="md"] .pp-switch__input')
-      .first()
-      .evaluate((el) => el.getBoundingClientRect().height);
+    const trackBox = await measure(page, 'Sizes', '.pp-switch[data-size="md"] .pp-switch__input');
+    const track = await measure(
+      page,
+      'The thumb is the state indicator',
+      '.pp-switch[data-state="unchecked"] .pp-switch__input',
+    );
 
-    expect(track, `a ${track}px switch beside a ${checkbox}px checkbox`).toBeCloseTo(checkbox, 0);
+    expect(trackBox.block, `a ${trackBox.block}px switch beside a ${checkboxBox.block}px checkbox`)
+      .toBeCloseTo(checkboxBox.block, 0);
+    expect(track.bg, 'the off track is not the checkbox\'s resting fill').toBe(checkbox.bg);
+    expect(track.border, 'the off track is not the checkbox\'s resting edge').toBe(checkbox.border);
   });
 
   /*

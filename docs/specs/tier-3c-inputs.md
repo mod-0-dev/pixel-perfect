@@ -14,7 +14,7 @@
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
 | 3.8 `Input` | **`done`** | 3.11 `Radio`/`RadioGroup` | **`done`** |
-| 3.9 `Textarea` | **`done`** | 3.12 `Switch` | `build` |
+| 3.9 `Textarea` | **`done`** | 3.12 `Switch` | **`done`** |
 | 3.10 `Checkbox` | **`done`** | 3.13 `Select` | `spec` |
 
 ---

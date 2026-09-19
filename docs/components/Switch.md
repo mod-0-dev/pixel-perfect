@@ -28,6 +28,10 @@ mistake with this component.
 If there is a Save button, it is a checkbox. If it lives in a toolbar beside
 other buttons, it is a toggle.
 
+The `aria-pressed` / `aria-checked` split in that table is D-030 §5's ruling,
+not a restatement — it is the boundary the three components were given so they
+stay distinguishable in the DOM.
+
 ## Usage
 
 ```tsx

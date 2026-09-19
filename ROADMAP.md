@@ -26,9 +26,54 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3.11 `Radio` / `RadioGroup` is `done`.** Next is
-  3.12 `Switch`, then `Select`, both already `spec` under the Gate C approval of
-  2026-09-18 (**D-039**)
+- **In flight:** _none_ — **3.12 `Switch` is `done`.** Next is 3.13 `Select`,
+  already `spec` under the Gate C approval of 2026-09-18 (**D-039**), and the
+  last component in 3C
+- **The spec chose a colour on appearance for the second time in two
+  components, and it failed again** (**D-048 §1**). §3.12 put the off track on
+  `--pp-color-border-strong` with a `--pp-color-bg-surface` thumb: against the
+  real ramp that is **1.97:1 in both directions** in the light theme, so the
+  thumb — the thing that says which way the switch is set, and the part WCAG
+  1.4.11 most clearly asks about — was what failed. Off is now the library's
+  resting control surface with a `--pp-color-text-muted` thumb (5.10:1 light,
+  5.49:1 dark) and on is `--pp-tone-solid` with a `--pp-tone-on-solid` thumb;
+  **both are pairings `check-contrast.mjs` already asserts**, so the component
+  adds no assertion and leans on none that is missing. The spec's reason for a
+  filled off track — off must not read as *disabled* — is answered in the thumb
+  instead: 5.10:1 against a disabled switch's 1.77:1, which is the difference
+  1.4.11's inactive-component exemption expects to see. D-047 §3 was the first
+  time; twice is a pattern, and the rule is **compute the pairing at the gate,
+  not after the build**
+- **A library-wide contrast gap, measured and deliberately NOT fixed here**
+  (**D-048 §2**). `--pp-color-border` is **1.55:1** against the page in the
+  light theme and `--pp-color-border-strong` is 1.97:1, so the resting edge of
+  every control in 3C sits below 1.4.11's 3:1 — and **nothing in
+  `check-contrast.mjs` pairs a border step with a surface**, which is the same
+  missing check class D-047 §3 named. The neutral ramp has nothing between
+  `neutral-8` (1.97) and `neutral-9` (5.90), and `neutral-9` is the *on*
+  colour, so no arrangement of existing tokens fixes it: it needs a token-layer
+  change plus the missing check plus a re-baseline of every screenshot. That is
+  Tier 0.2 work across six shipped components and it is the next thing worth
+  doing in this repository
+- **`translate` is physical, so the thumb is offset instead** (D-048 §4). A
+  thumb moved with `translate` travels rightwards in every writing mode, so the
+  switch would run backwards in RTL — on at the start of the track, off at the
+  end — and no LTR test can see it. It uses `inset-inline-start` on a
+  relatively positioned element, and the browser suite sets `dir="rtl"` and
+  watches the thumb cross the track's centre. The only assertion in the file
+  that can tell the two mechanisms apart
+- **The geometry is derived, not tuned** (D-048 §1, and the reason overriding one
+  property moves four things). The thumb is the track minus two insets, the inset
+  is half the difference between the track and the size step below it, and the
+  travel is `inline − block` — the same distance whatever the inset is, because
+  the inset is subtracted at the start and added back at the end
+- **Eighth assertion that could not fail, and the same shape as the other
+  seven** (D-048 §5). "Disabled beats checked" compared a disabled *on* track
+  with a live *off* track, which differ because of `data-state` whatever the
+  disabled rule does, so deleting the whole `[data-disabled]` block left it
+  green. Sixteen breaks in total, fifteen failing on exactly the test named for
+  them. The pattern worth naming: **when an assertion says "A is not B", ask
+  what else is different about A and B**
 - **A deselected radio is told nothing, and that fact decides the API and the
   stylesheet** (**D-047 §1–2**). Every change to a checkbox is an event on that
   checkbox; a radio's *deselection* happens when a sibling is selected and fires
@@ -293,8 +338,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 39 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations + 30 components. The one foundation not `done` is 0.10 docs site,
+- **Done:** 40 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 31 components. The one foundation not `done` is 0.10 docs site,
   deferred and not blocking
 
 ---
@@ -385,7 +430,7 @@ to the component it was written about — see
 | 3.9 | `Textarea` | `done` | fill | client | 3.7 | Auto-resize opt-in, floored at `rows`. Block padding derived from `--pp-control-*`, because the space scale cannot express it (D-043) |
 | 3.10 | `Checkbox` | `done` | hug | client | 3.7 | Tri-state, and only the caller can set the third. 16/20/24 from the size scale; 2.5.8 through the spacing exception (D-044) |
 | 3.11 | `Radio` / `RadioGroup` | `done` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name` and owns the value; `gap` defaults to `"3"` for WCAG 2.5.8. Paints from `:checked`, not `data-state` (D-047) |
-| 3.12 | `Switch` | `build` | hug | client | 3.7 | |
+| 3.12 | `Switch` | `done` | hug | client | 3.7 | A 2:1 track, and the only member of the checkable three that is not square. Paints from `data-state`, because every change to a switch is an event on it — D-047 §2's deviation does not transfer. Off is the resting control surface with a muted thumb; the specified `--pp-color-border-strong` track was 1.97:1 (D-048) |
 | 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
 | 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |
 | 3.15 | `Slider` | `planned` | fill | client | 3.7 | Single + range |
