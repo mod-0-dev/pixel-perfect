@@ -2059,3 +2059,138 @@ first — the attribute assertions still passed and the edge count failed,
 only assertion that would have caught it.
 
 Minor bump: a new attribute in the rendered DOM.
+
+## D-047 — `Radio` build findings: the group owns the value, and the stylesheet does not
+
+**Date:** 2026-09-19 · **Status:** accepted · **Amends:** RULES §4 (one narrow
+deviation); `docs/specs/tier-3c-inputs.md` §3.11 (State, Props — `Radio`)
+
+Five findings. The first two are the same fact reaching the API and the
+stylesheet from opposite ends, and both start from something the platform does
+that no other control in this tier does.
+
+### 1. A deselected radio is told nothing, so no radio may hold the state
+
+`Checkbox` mirrors the DOM into React state safely because every change to a
+checkbox is a change event *on that checkbox*. A radio's **deselection** happens
+when a sibling is selected, and fires nothing at all — no event, no callback,
+no anything. Per-radio state could therefore only ever be right about selection
+and wrong about deselection, which is the one case radios exist for.
+
+So `RadioGroup` holds the value and every `Radio` reads `group.value === value`.
+
+**Consequence, and it narrows the spec's props table: `Radio` has no `checked`
+and no `defaultChecked`.** The spec said its rest props were
+`ComponentPropsWithoutRef<'input'>` minus `type`; those two are now omitted as
+well. One option cannot own the group's selection, and an option that is told it
+is checked while the group thinks otherwise is two sources of truth for one
+fact — the thing D-036 refused to build into `Field`.
+
+Nothing is lost by it. `RadioGroup`'s `defaultValue` renders a real `checked`
+attribute on the server, so a form still works with JavaScript off, which is the
+only case a per-option default was for.
+
+### 2. The stylesheet reads `:checked`, not `data-state` — a deviation from RULES §4
+
+RULES §4 says visual state is exposed on the DOM as `data-*` and that our own
+CSS styles off those attributes. This component paints from `:checked` instead,
+and emits `data-state` for consumers only.
+
+The reason is §1 one level down. React can describe this control's state only
+when a `RadioGroup` owns it. A bare `<Radio>` has no owner, and anything the
+platform changes behind React's back — a native form reset is the everyday
+case — leaves the attribute stale. Painting from a stale or absent attribute is
+a box that is wrong on the screen; painting from `:checked` is right in every
+case, because `:checked` is not one of our private booleans. It is the
+platform's own state, visible to every consumer, and RULES §4's actual target —
+"a boolean class that consumers can't see" — is not what this is.
+
+`data-state` is **omitted rather than guessed** when there is no group. Absent
+is a fact; wrong is a lie.
+
+**And the state is read on the root with `:has()`, which is the first use of it
+in the library.** The dot is the input's *sibling*, so D-045 applies directly: a
+custom property is only a channel between two elements when one is an ancestor
+of the other. The only element that can declare `--_bg` for the box and `--_dot`
+for the dot is the one above both, and `:has()` is what lets that element read a
+state living below it. Declaring on the root also keeps D-040 §3's standing
+rule: the input's own `:focus-visible` still wins for the input, because a
+declaration on an element beats a value it inherited.
+
+**Asserted by the only test that can tell the two mechanisms apart** — a bare
+radio, where they diverge. Replacing `:has(.pp-radio__input:checked)` with
+`[data-state="checked"]` failed exactly that one assertion and left the other
+seventeen green, correctly: inside a group the attribute and the platform agree,
+and a test in a group would have passed against the defect.
+
+### 3. A tone-9 dot on the surface is 1.87:1, so the selected radio fills
+
+The spec's State table described the selected radio as a `--pp-tone-solid`
+*border* with a visible dot, leaving the box on `--pp-color-bg-surface`. Against
+the real tokens that dot is **1.87:1 in the light theme's `warning` tone** —
+against a 3:1 requirement for a graphic that carries state, and nothing in
+`lint:contrast` would have caught it, because no check in the library pairs a
+tone step with the neutral surface.
+
+| Pairing | light `warning` | light `danger` | light `accent` | dark, worst of five |
+| --- | --- | --- | --- | --- |
+| tone-9 dot on neutral-1 surface | **1.87** | 4.83 | 4.86 | 6.00 |
+| tone-on-solid dot on tone-9 fill | ≥ 4.5 | ≥ 4.5 | ≥ 4.5 | ≥ 4.5 |
+
+So the selected radio fills with `--pp-tone-solid` and the dot is
+`--pp-tone-on-solid` — the one mark-on-fill pairing the token layer already
+verifies, in every hue and both themes, and the same pairing `Checkbox`'s mark
+uses. The spec's §3.11 State row is corrected.
+
+**The general point:** the spec chose between two conventional radio designs on
+appearance, at a gate where nobody had the numbers. One of them is not
+available at AA across a tone set this library lets consumers pick from, and the
+way to find that out is to compute it rather than to look at it.
+
+### 4. The change handler's guard was inert
+
+`if (event.target.checked) group?.select(value)` read as a careful check and
+guarded nothing: the platform fires `change` only for the radio being selected,
+and React reaches the handler from a `click` on that control. Removing the
+condition left all 34 unit tests and all 18 browser assertions green, in jsdom
+and in Chromium.
+
+Deleted under D-037 §5. Note what this is **not**: D-044 §4 ruled that a green
+suite after a *correct* mutation is not evidence of an unmeasured test, and this
+mutation is correct. It is a finding about the code, not about the tests — the
+line beside it, `if (event.defaultPrevented) return`, was broken in the same way
+and failed its test immediately.
+
+### 5. Seventh test that could not fail, and a harness that could not either
+
+**The test.** "Clicking the dot selects the radio beneath it" clicked the centre
+of an *unselected* radio — where the dot is `transform: scale(0)` and has a
+zero-sized box, so nothing could intercept the pointer there. Deleting
+`pointer-events: none` left it green. Rewritten to click a **selected** radio,
+where the dot is drawn, and to assert **focus** rather than selection: clicking
+a radio that is already selected is a no-op by design, but the dot is a `<span>`
+and is not focusable, so if it takes the click focus lands nowhere. That version
+fails on the declaration being removed.
+
+**The harness.** Three break-it results in this build were garbage, and the
+cause was not the breaks. A `next start` left over from a previous cycle kept
+serving HTML that pointed at a chunk filename the new build had already deleted,
+so the page loaded with **no stylesheet at all** and every computed colour came
+back `transparent` or `rgb(0, 0, 0)`. One of those runs "failed" a `Checkbox`
+test that this build never touched, which is what gave it away.
+
+Two rules come out of it, both extending D-037 §4 and D-044 §5:
+
+- **The served-CSS check must be verified in both directions before it is
+  trusted.** Two of the patterns used here matched in both the broken and the
+  unbroken build — one because the minifier strips the quotes from
+  `[data-state="checked"]`, one because it asserted that a rule existed rather
+  than that it had moved. A check that cannot report "absent" is not a check.
+- **Let the test runner own the server.** Playwright's `webServer` builds and
+  starts in one step, so the build under test and the server serving it cannot
+  drift apart. A hand-started server that survives a rebuild is not a stale
+  stylesheet — it is no stylesheet.
+
+**Sixteen breaks in total**, nine in jsdom and seven in the browser, each
+verified present in the served build before its result was read. Fourteen failed
+on exactly the test named for them. The other two are §4 and §5 above.

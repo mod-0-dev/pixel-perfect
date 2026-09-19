@@ -888,7 +888,7 @@ primitives size the boxes they create).
 | --- | --- | --- | --- |
 | `value` | `string` | **required** | The value this option contributes |
 | `size` / `disabled` / `invalid` | | group, then field, then default | Three levels, same precedence rule |
-| …rest | `ComponentPropsWithoutRef<'input'>` minus `type` | — | |
+| …rest | `ComponentPropsWithoutRef<'input'>` minus `type`, `checked`, `defaultChecked` | — | **Amended by D-047 §1.** A deselected radio gets no event, so the group owns the value; an option that could contradict it would be a second source of truth |
 
 `ref` → `HTMLInputElement` on `Radio`, `HTMLDivElement` on `RadioGroup` (it has
 no single control, so the root is the only meaningful target).
@@ -897,10 +897,20 @@ no single control, so the root is the only meaningful target).
 
 | State | Exposed as | Visual treatment |
 | --- | --- | --- |
-| Checked | `data-state="checked"` | Border → `--pp-tone-solid`, dot visible |
-| Unchecked | `data-state="unchecked"` | `--pp-color-border` edge, dot scaled to 0 |
+| Checked | `data-state="checked"` (**only inside a `RadioGroup`** — D-047 §2) | Box fills `--pp-tone-solid`, dot `--pp-tone-on-solid`, scaled to 1 (**amended by D-047 §3**) |
+| Unchecked | `data-state="unchecked"` (same condition) | `--pp-color-bg-surface` with a `--pp-color-border` edge, dot scaled to 0 |
 | Disabled | `data-disabled` | As `Checkbox` |
 | Invalid | `data-invalid` on the group and every radio | Border → `--pp-tone-border` |
+
+**Two amendments from the build, both in D-047.** §3: the border-only treatment
+above was specified on appearance, and a `--pp-tone-solid` dot on the neutral
+surface is **1.87:1** in the light theme's `warning` tone. The box fills, and
+the dot takes the mark-on-fill pairing the token layer verifies at 4.5:1 in
+every hue and both themes. §2: the stylesheet paints from `:checked` rather than
+from `data-state`, read on the root with `:has()`, because the dot is the
+input's sibling (D-045) and because React cannot describe the state of a radio
+that has no group above it. `data-state` is omitted rather than guessed in that
+case.
 
 ### Keyboard interaction
 

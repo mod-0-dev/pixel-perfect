@@ -1679,3 +1679,427 @@ test.describe('Checkbox', () => {
     await expect(control).toHaveAttribute('id', 'mark-target');
   });
 });
+
+/*
+ * Radio / RadioGroup (3.11). Two components and two sizing contracts, and
+ * almost every claim needs a real browser: the 16/20/24 box, the dot that is
+ * half of it, the 2.5.8 spacing exception — and, uniquely in this tier, the
+ * KEYBOARD. D-039 §5 rules that the component writes no keydown handler
+ * because radios sharing a `name` already implement the APG Radio Group
+ * pattern; jsdom implements none of that, so asserting it there would assert
+ * jsdom rather than the ruling.
+ */
+test.describe('Radio', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  test('the box is 16 / 20 / 24, from the size scale and not the control scale', async ({
+    page,
+  }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px');
+
+    for (const [size, expected] of [
+      ['sm', 16],
+      ['md', 20],
+      ['lg', 24],
+    ] as const) {
+      const box = await wide
+        .locator(`.pp-radio[data-size="${size}"] .pp-radio__input`)
+        .first()
+        .evaluate((el) => el.getBoundingClientRect());
+
+      expect(box.width, `${size} is ${box.width}px wide`).toBeCloseTo(expected, 0);
+      expect(box.height, `${size} is not square`).toBeCloseTo(expected, 0);
+    }
+  });
+
+  /*
+   * THE CLAIM THAT A RADIO AND A CHECKBOX ARE THE SAME BOX, ASSERTED RATHER
+   * THAN RESTATED. The spec, this component's stylesheet and its docs page all
+   * say it; D-045's rule — and the Definition of Done line it added — is that a
+   * claim about another component's behaviour is asserted or linked, never
+   * repeated in prose. Measured against `Checkbox` itself rather than against
+   * 20, because a numeric assertion in both files still passes after someone
+   * changes one of them. The same shape as D-034's Label-against-Button check.
+   */
+  test('a radio is the same box as a checkbox at the same size', async ({ page }) => {
+    await page.goto('/components/checkbox');
+    const checkbox = await cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px')
+      .locator('.pp-checkbox[data-size="lg"] .pp-checkbox__input')
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().width);
+
+    await page.goto('/components/radio');
+    const radio = await cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px')
+      .locator('.pp-radio[data-size="lg"] .pp-radio__input')
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().width);
+
+    expect(radio, `a ${radio}px radio beside a ${checkbox}px checkbox`).toBeCloseTo(checkbox, 0);
+  });
+
+  /* The one line that makes it a radio rather than a checkbox. Asserted as a
+     resolved RADIUS rather than as the token's text, because --pp-radius-full
+     is a large length that the box clamps to a circle — half the box is what
+     the browser actually paints. */
+  test('the box is round, where a checkbox is not', async ({ page }) => {
+    await page.goto('/components/radio');
+    const radius = await cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px')
+      .locator('.pp-radio[data-size="md"] .pp-radio__input')
+      .first()
+      .evaluate((el) => Number.parseFloat(getComputedStyle(el).borderStartStartRadius));
+
+    expect(radius, `a ${radius}px radius on a 20px box is not a circle`).toBeGreaterThanOrEqual(10);
+  });
+
+  test('hug and fill together: the box holds at every width while the group spreads', async ({
+    page,
+  }) => {
+    await page.goto('/components/radio');
+
+    let previousGroup = 0;
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'The group fills, the radio hugs', width);
+      const box = await c
+        .locator('.pp-radio__input')
+        .first()
+        .evaluate((el) => el.getBoundingClientRect());
+      const group = await c
+        .locator('.pp-radio-group')
+        .first()
+        .evaluate((el) => el.getBoundingClientRect().width);
+
+      expect(box.width, `stretched to ${box.width}px at ${width}`).toBeCloseTo(20, 0);
+      expect(box.height).toBeCloseTo(20, 0);
+      expect(group, `the group did not take the room it was given at ${width}`).toBeGreaterThan(
+        previousGroup,
+      );
+      previousGroup = group;
+    }
+  });
+
+  test('selected fills the box; unselected does not', async ({ page }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Vertical and horizontal', 'wide · 960px');
+
+    const bg = (state: string) =>
+      wide
+        .locator(`.pp-radio[data-state="${state}"] .pp-radio__input`)
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    expect(await bg('checked'), 'a selected radio is painted like an empty one').not.toBe(
+      await bg('unchecked'),
+    );
+  });
+
+  /*
+   * The dot is in the DOM at every moment — React does not know whether a bare
+   * radio is checked, so React does not decide — and the stylesheet scales it
+   * from 0. A `scale(0)` element has a zero-width box, which is what separates
+   * "not drawn" from "drawn and invisible" here.
+   */
+  test('the dot is drawn when selected and scaled away when not', async ({ page }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Vertical and horizontal', 'wide · 960px');
+
+    const dot = (state: string) =>
+      wide
+        .locator(`.pp-radio[data-state="${state}"] .pp-radio__indicator`)
+        .first()
+        .evaluate((el) => el.getBoundingClientRect().width);
+
+    await expect(wide.locator('.pp-radio__indicator').first()).toHaveCount(1);
+    expect(await dot('checked'), 'the dot is not drawn').toBeGreaterThan(0);
+    expect(await dot('unchecked'), 'the dot is drawn on an unselected radio').toBeCloseTo(0, 1);
+  });
+
+  /* Half the box, so overriding --pp-radio-size moves both. A fixed step would
+     leave the dot behind, which is the same mistake Checkbox's mark avoids by
+     reading Icon's own styling API rather than passing a `size` prop. */
+  test('the dot tracks the box at every size', async ({ page }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Sizes — 16 / 20 / 24', 'wide · 960px');
+
+    for (const size of ['sm', 'lg'] as const) {
+      const root = wide.locator(`.pp-radio[data-size="${size}"][data-state="checked"]`).first();
+      const box = await root
+        .locator('.pp-radio__input')
+        .evaluate((el) => el.getBoundingClientRect().width);
+      const dot = await root
+        .locator('.pp-radio__indicator')
+        .evaluate((el) => el.getBoundingClientRect().width);
+
+      expect(dot, `${size}: a ${dot}px dot in a ${box}px box`).toBeCloseTo(box / 2, 0);
+    }
+  });
+
+  /* The same control at rest and focused — nothing else isolates focus
+     (D-040 §3). */
+  test('focus shifts the border, and the ring is one colour', async ({ page }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-radio:not([data-invalid]) .pp-radio__input').first();
+    const invalid = wide.locator('.pp-radio[data-invalid] .pp-radio__input').first();
+
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    const outline = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).outlineColor);
+
+    const resting = await border(valid);
+    await valid.focus();
+    expect(await border(valid), 'the border did not shift on focus').not.toBe(resting);
+
+    const validRing = await outline(valid);
+    await invalid.focus();
+    expect(await outline(invalid), 'the ring is one colour library-wide (D-029)').toBe(validRing);
+  });
+
+  test('an invalid radio stays in the danger tone while focused', async ({ page }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+
+    const focusedBorder = async (selector: string) => {
+      const el = wide.locator(selector).first();
+      await el.focus();
+      return el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    };
+
+    expect(
+      await focusedBorder('.pp-radio[data-invalid] .pp-radio__input'),
+      'the error state vanished the moment the user acted on it',
+    ).not.toBe(await focusedBorder('.pp-radio:not([data-invalid]) .pp-radio__input'));
+  });
+
+  /* Source order in the stylesheet is the precedence story: the disabled rule
+     follows the checked rule at the same specificity. A disabled selected radio
+     must not still be solid. */
+  test('disabled beats selected, and says so with the cursor', async ({ page }) => {
+    await page.goto('/components/radio');
+    const disabled = cell(page, 'Disabled', 'wide · 960px');
+    const live = cell(page, 'Vertical and horizontal', 'wide · 960px');
+
+    const bg = (scope: ReturnType<typeof cell>, selector: string) =>
+      scope
+        .locator(selector)
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    expect(
+      await bg(disabled, '.pp-radio[data-state="checked"] .pp-radio__input'),
+      'a disabled selected radio is as loud as a live one',
+    ).not.toBe(await bg(live, '.pp-radio[data-state="checked"] .pp-radio__input'));
+
+    expect(
+      await disabled
+        .locator('.pp-radio[data-disabled] .pp-radio__input')
+        .first()
+        .evaluate((el) => getComputedStyle(el).cursor),
+    ).toBe('not-allowed');
+  });
+
+  /*
+   * WCAG 2.2 SC 2.5.8, and the whole reason `gap` defaults to "3" (D-039 §4).
+   * The group on this page passes NO gap, so what is measured is the default.
+   * A 16px target passes through the SPACING exception: a 24px circle centred
+   * on each one must not intersect its neighbour's, which needs 24px between
+   * centres. At gap="2" (8px) a column of sm radios puts them exactly 24px
+   * apart — tangent circles, an argument with an auditor rather than a pass.
+   */
+  test('the default gap clears the 2.5.8 spacing exception at sm', async ({ page }) => {
+    await page.goto('/components/radio');
+    const wide = cell(page, 'Spacing is how an undersized target passes', 'wide · 960px');
+
+    const centres = await wide.locator('.pp-radio__input').evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2;
+      }),
+    );
+
+    expect(centres.length).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i < centres.length; i += 1) {
+      const gap = (centres[i] as number) - (centres[i - 1] as number);
+      expect(gap, `centres are ${gap}px apart — 24px circles would intersect`).toBeGreaterThanOrEqual(24);
+    }
+  });
+
+  /*
+   * D-039 §5, the ruling this component exists to demonstrate. Every assertion
+   * below is of BROWSER behaviour that the component deliberately does not
+   * implement, so a regression here means someone added a keydown handler.
+   */
+  test('one tab stop: the group is entered at the selected radio', async ({ page }) => {
+    await page.goto('/components/radio');
+    const scope = page.locator('[data-testid="radio-keyboard"]');
+
+    await scope.locator('#region-eu').focus();
+    await page.keyboard.press('Tab');
+
+    // Out of the group entirely in one press, not onto the next radio.
+    await expect(scope.locator('input:focus')).toHaveCount(0);
+  });
+
+  test('arrow keys move AND select, skip a disabled member, and wrap', async ({ page }) => {
+    await page.goto('/components/radio');
+    const scope = page.locator('[data-testid="radio-keyboard"]');
+    const eu = scope.locator('#region-eu');
+    const us = scope.locator('#region-us');
+    const apac = scope.locator('#region-apac');
+
+    await eu.focus();
+    await expect(eu).toBeChecked();
+
+    // Past the disabled US option in one press, and selecting as it goes —
+    // which is the APG pattern, and none of it is ours.
+    await page.keyboard.press('ArrowDown');
+    await expect(apac).toBeFocused();
+    await expect(apac).toBeChecked();
+    await expect(us).not.toBeChecked();
+
+    // And it wraps at the end rather than stopping.
+    await page.keyboard.press('ArrowDown');
+    await expect(eu).toBeFocused();
+    await expect(eu).toBeChecked();
+
+    /* All four arrows, regardless of orientation — a superset of APG rather
+       than a deviation. Recorded so the next reader of the APG page does not
+       "fix" it. */
+    await page.keyboard.press('ArrowRight');
+    await expect(apac).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(eu).toBeFocused();
+  });
+
+  /*
+   * The generated `name` (D-039 §5). Two groups on this page are given no
+   * name at all; if they shared one they would be one group and selecting in
+   * the first would clear the second — silently.
+   */
+  test('two unnamed groups are two groups', async ({ page }) => {
+    await page.goto('/components/radio');
+    const groups = page.locator('[data-testid="radio-two-groups"] .pp-radio-group');
+    const second = groups.nth(1).locator('input').first();
+
+    await expect(second).toBeChecked();
+    await groups.nth(0).locator('input').nth(1).click();
+
+    await expect(second, 'selecting in one group cleared the other').toBeChecked();
+    await expect(page.locator('[data-testid="radio-two-groups"] input:checked')).toHaveCount(2);
+  });
+
+  /* The same claim one level up, and the reason nothing in a Matrix passes a
+     `name`: the harness renders its subtree six times, so a shared name would
+     make six cells one group. */
+  test('six copies of a group in the Matrix are six groups', async ({ page }) => {
+    await page.goto('/components/radio');
+    const section = page.locator('section', { hasText: 'Spacing is how an undersized target passes' });
+
+    await expect(section.locator('.pp-radio-group')).toHaveCount(6);
+    await expect(section.locator('input:checked')).toHaveCount(6);
+  });
+
+  /*
+   * THE STYLESHEET READS `:checked`, NOT `data-state` — the deviation from
+   * RULES §4 that this component records. Outside a group nothing owns the
+   * selection, so `data-state` is omitted rather than guessed; the box must
+   * still paint. This is the only assertion that can tell the two mechanisms
+   * apart, because everywhere else they agree.
+   */
+  test('a radio with no group has no data-state and is still painted', async ({ page }) => {
+    await page.goto('/components/radio');
+    const scope = page.locator('[data-testid="radio-bare"]');
+    const root = scope.locator('.pp-radio');
+    const control = scope.locator('input');
+
+    await expect(root).not.toHaveAttribute('data-state', /.*/);
+
+    const resting = await control.evaluate((el) => getComputedStyle(el).backgroundColor);
+    const dotResting = await scope
+      .locator('.pp-radio__indicator')
+      .evaluate((el) => el.getBoundingClientRect().width);
+
+    await control.click();
+
+    await expect(root, 'a group appeared from nowhere').not.toHaveAttribute('data-state', /.*/);
+    expect(
+      await control.evaluate((el) => getComputedStyle(el).backgroundColor),
+      'the box did not fill — the stylesheet is reading the attribute, not :checked',
+    ).not.toBe(resting);
+    expect(
+      await scope.locator('.pp-radio__indicator').evaluate((el) => el.getBoundingClientRect().width),
+      'the dot did not appear',
+    ).toBeGreaterThan(dotResting);
+  });
+
+  /* And where the group DOES own the value, the attribute and the platform
+     agree. Two mechanisms that disagree would be worse than either alone. */
+  test('data-state agrees with :checked inside a group', async ({ page }) => {
+    await page.goto('/components/radio');
+    const scope = page.locator('[data-testid="radio-controlled"]');
+
+    await scope.locator('#target-production').click();
+
+    await expect(scope.locator('.pp-radio[data-state="checked"] input')).toBeChecked();
+    await expect(scope.locator('.pp-radio[data-state="checked"]')).toHaveCount(1);
+    for (const state of await scope.locator('.pp-radio').all()) {
+      const attribute = await state.getAttribute('data-state');
+      const checked = await state.locator('input').isChecked();
+      expect(attribute).toBe(checked ? 'checked' : 'unchecked');
+    }
+  });
+
+  /*
+   * The pointer half of D-039 §2. The dot sits over the input in the same grid
+   * cell, so without `pointer-events: none` the middle of a SELECTED radio is
+   * dead and the control only works at its edges — which reads as flakiness
+   * rather than as a bug.
+   *
+   * IT HAS TO BE A SELECTED RADIO. The first version of this test clicked the
+   * centre of an UNSELECTED one, where the dot is `scale(0)` and has a
+   * zero-sized box: nothing could intercept the pointer there, so the
+   * assertion passed with the declaration deleted. Seventh time a
+   * break-it-and-watch check has found a test that could not fail.
+   */
+  test('the dot is not a hole in the middle of a selected radio', async ({ page }) => {
+    await page.goto('/components/radio');
+    const scope = page.locator('[data-testid="radio-controlled"]');
+    const selected = scope.locator('.pp-radio[data-state="checked"]').first();
+
+    /* Dead centre, which on a SELECTED radio is the dot. Not
+       `input.click()`, which Playwright would route to the input regardless of
+       what is painted over it.
+
+       Asserted as FOCUS rather than as selection, because clicking a radio
+       that is already selected is a no-op by design and leaves nothing else to
+       observe. The dot is a <span> and is not focusable, so if it took the
+       click, focus would land nowhere. */
+    await selected.click({ position: { x: 10, y: 10 } });
+
+    await expect(
+      selected.locator('input'),
+      'the centre of the box is dead — the click landed on the dot',
+    ).toBeFocused();
+    await expect(selected.locator('input'), 'the click deselected it').toBeChecked();
+  });
+
+  /* D-035 §1 / spec §12: association is demonstrated once, outside the Matrix,
+     where the id is unique — and the group is named through aria-labelledby,
+     because a <div> is not a labelable element. */
+  test('the group is named by its field, and each option by its own', async ({ page }) => {
+    await page.goto('/components/radio');
+    const scope = page.locator('[data-testid="radio-controlled"]');
+
+    await expect(scope.getByRole('radiogroup')).toHaveAccessibleName('Deployment target');
+    await expect(scope.locator('#target-preview')).toHaveAccessibleName('Preview');
+    await expect(scope.getByRole('radiogroup')).toHaveAccessibleDescription(
+      /Changes take effect/,
+    );
+  });
+});
