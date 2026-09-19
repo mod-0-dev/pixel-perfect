@@ -199,7 +199,8 @@
         "src/components/Avatar/**/*.css",
         "src/components/IconButton/**/*.css",
         "src/components/Checkbox/**/*.css",
-        "src/components/Radio/Radio.css"
+        "src/components/Radio/Radio.css",
+        "src/components/Switch/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [

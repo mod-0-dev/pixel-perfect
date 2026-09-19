@@ -385,7 +385,7 @@ to the component it was written about — see
 | 3.9 | `Textarea` | `done` | fill | client | 3.7 | Auto-resize opt-in, floored at `rows`. Block padding derived from `--pp-control-*`, because the space scale cannot express it (D-043) |
 | 3.10 | `Checkbox` | `done` | hug | client | 3.7 | Tri-state, and only the caller can set the third. 16/20/24 from the size scale; 2.5.8 through the spacing exception (D-044) |
 | 3.11 | `Radio` / `RadioGroup` | `done` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name` and owns the value; `gap` defaults to `"3"` for WCAG 2.5.8. Paints from `:checked`, not `data-state` (D-047) |
-| 3.12 | `Switch` | `spec` | hug | client | 3.7 | |
+| 3.12 | `Switch` | `build` | hug | client | 3.7 | |
 | 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
 | 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |
 | 3.15 | `Slider` | `planned` | fill | client | 3.7 | Single + range |

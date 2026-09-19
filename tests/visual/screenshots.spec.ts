@@ -42,6 +42,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'textarea', path: '/components/textarea' },
   { name: 'checkbox', path: '/components/checkbox' },
   { name: 'radio', path: '/components/radio' },
+  { name: 'switch', path: '/components/switch' },
 ];
 
 /**

@@ -91,6 +91,7 @@ export {
   type SplitSlotProps,
 } from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
+export { Switch, type SwitchProps } from './components/Switch/Switch';
 export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
 export { Textarea, type TextareaProps } from './components/Textarea/Textarea';
 export {
