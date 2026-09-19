@@ -2194,3 +2194,32 @@ Two rules come out of it, both extending D-037 §4 and D-044 §5:
 **Sixteen breaks in total**, nine in jsdom and seven in the browser, each
 verified present in the served build before its result was read. Fourteen failed
 on exactly the test named for them. The other two are §4 and §5 above.
+
+### 6. `ci.yml` gains `workflow_dispatch`, because D-042's last step had no mechanism
+
+The `visual` job authors a missing baseline and pushes it with `GITHUB_TOKEN`,
+which by design starts no workflow run. Its own comment states the consequence
+and the limit:
+
+> The baselines are therefore authored but not yet COMPARED; the next real push
+> verifies them. … it does mean an authoring commit should never be the final
+> head of a PR, and nothing here can enforce that.
+
+`radio.png` landed exactly there: authored on the branch, with no run of its own
+to compare it. Leaving it as the head means the first comparison happens on
+`main` after the merge, which is the shape D-042 was written about — a baseline
+whose correctness nobody checked until it was too late to check it cheaply.
+
+Getting a comparison run takes another commit, and the two commits available
+were both wrong: an empty one to kick CI is banned outright, and a real one
+would have to be invented. `workflow_dispatch` is the third option and the
+supported one. It is one line, it is safe against the job's existing gates —
+authoring is already conditioned on `github.event_name == 'pull_request'`, and
+the `main`-side guard only fires when a baseline is genuinely missing — and it
+makes the manual step D-042 accepted ("push once more afterwards") something a
+person or an agent can actually perform, once per new component, for the 67
+components after this one.
+
+**It does not close the race D-042 declined to close.** Required status checks
+are still absent and still collide with `GITHUB_TOKEN` authoring; this adds a
+way to run the checks on demand, not a way to require them.
