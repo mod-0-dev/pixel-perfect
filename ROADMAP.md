@@ -26,9 +26,44 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3.12 `Switch` is `done`.** Next is 3.13 `Select`,
-  already `spec` under the Gate C approval of 2026-09-18 (**D-039**), and the
-  last component in 3C
+- **In flight:** _none_ — **3.13 `Select` is `done`, and with it the whole of
+  3C.** Thirty-two components across Tiers 1, 2 and 3A–3C. Next up is **Tier 0.2:
+  the border-contrast gap**, not a component — see the bullet below, which has
+  been the recorded answer to "what next" since 2026-09-19 and now has no
+  component left to widen
+- **A spec instruction that could not be carried out as written**
+  (**D-049 §1**). §3.13 described `placeholder` as "a disabled, hidden,
+  selected-by-default `<option value="">`". The HTML *ask for a reset* algorithm
+  selects the first option **that is not disabled**, so the third does not
+  follow from the other two: left alone, the browser silently selects option
+  two and the control looks right while holding a value nobody chose. The
+  component seeds `defaultValue=""` when the caller gave neither `value` nor
+  `defaultValue`, which routes through the `value` *setter*, where no such
+  exclusion exists. **The same bug had a second door**: both props reached the
+  element through the prop spread, so `defaultValue={maybeUndefined}` — an
+  ordinary way to write an optional initial value — overwrote the seed and
+  handed back option two. They are written below the spread now. The
+  generalisation: **a spec sentence that mixes attributes with behaviour is a
+  list of things that must each be made true**
+- **The placeholder is painted from `:checked`, and that is D-047 §2's shape
+  with a different cause** (**D-049 §2**). §2 ruled this control holds no state,
+  so an uncontrolled select's selection changes without React being told — and
+  `form.reset()` and a write through the ref do not tell it either. An
+  attribute written from the initial value is right until the first of those.
+  So the stylesheet reads
+  `:has(option[data-pp-placeholder]:checked)` — the platform's own state,
+  correct in all three cases — and `data-placeholder` is emitted only when the
+  select is **controlled** and **omitted rather than guessed** otherwise. The
+  marker is on the option we render, so a caller's own `<option value="">None</option>`
+  stays a real choice rather than an absent one
+- **The first component whose colour was computed at the gate** (**D-049 §3**),
+  which is what D-047 §3 and D-048 §1 both asked for after failing it. The
+  chevron is the one new pairing and it matters more than a decorative glyph
+  would — `appearance: none` takes the platform's arrow away, so ours is the
+  graphic that identifies the control as a select. `--pp-color-text-muted` on
+  the surface is **5.10:1 light, 5.12:1 dark** against 1.4.11's 3:1, and it is a
+  pairing `check-contrast.mjs` already asserts in both themes. Nothing was
+  discovered after the build this time
 - **The spec chose a colour on appearance for the second time in two
   components, and it failed again** (**D-048 §1**). §3.12 put the off track on
   `--pp-color-border-strong` with a `--pp-color-bg-surface` thumb: against the
@@ -53,8 +88,10 @@ is `done`.
   `neutral-8` (1.97) and `neutral-9` (5.90), and `neutral-9` is the *on*
   colour, so no arrangement of existing tokens fixes it: it needs a token-layer
   change plus the missing check plus a re-baseline of every screenshot. That is
-  Tier 0.2 work across six shipped components and it is the next thing worth
-  doing in this repository
+  Tier 0.2 work, now across **seven** shipped controls, and with 3C complete it
+  is both the next thing worth doing in this repository and the first time it
+  has no component in flight to widen. Re-measured on `Select` and unchanged
+  (D-049 §3)
 - **`translate` is physical, so the thumb is offset instead** (D-048 §4). A
   thumb moved with `translate` travels rightwards in every writing mode, so the
   switch would run backwards in RTL — on at the start of the track, off at the
@@ -338,8 +375,8 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 40 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations + 31 components. The one foundation not `done` is 0.10 docs site,
+- **Done:** 41 / 78 tracked items (10 foundations + 68 components) — 9
+  foundations + 32 components. The one foundation not `done` is 0.10 docs site,
   deferred and not blocking
 
 ---
@@ -414,7 +451,7 @@ to the component it was written about — see
 | --- | --- | --- |
 | **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — **`done`** 2026-09-17 (D-027 … D-033) |
 | **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
-| **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **approved** 2026-09-18 (D-039). Implementing in order |
+| **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **complete** 2026-09-20, all six `done`. Approved 2026-09-18 (D-039) |
 | **3D — Composite inputs** | 3.14–3.16 | one gate |
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
@@ -431,7 +468,7 @@ to the component it was written about — see
 | 3.10 | `Checkbox` | `done` | hug | client | 3.7 | Tri-state, and only the caller can set the third. 16/20/24 from the size scale; 2.5.8 through the spacing exception (D-044) |
 | 3.11 | `Radio` / `RadioGroup` | `done` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name` and owns the value; `gap` defaults to `"3"` for WCAG 2.5.8. Paints from `:checked`, not `data-state` (D-047) |
 | 3.12 | `Switch` | `done` | hug | client | 3.7 | A 2:1 track, and the only member of the checkable three that is not square. Paints from `data-state`, because every change to a switch is an event on it — D-047 §2's deviation does not transfer. Off is the resting control surface with a muted thumb; the specified `--pp-color-border-strong` track was 1.97:1 (D-048) |
-| 3.13 | `Select` | `spec` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11 |
+| 3.13 | `Select` | `done` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11. The placeholder is seeded with `defaultValue=""`, because the HTML reset algorithm skips a disabled option; painted from `:checked` and `data-placeholder` is emitted only when controlled (D-049) |
 | 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |
 | 3.15 | `Slider` | `planned` | fill | client | 3.7 | Single + range |
 | 3.16 | `Form` | `planned` | fill | client | 3.7 | Error summary, submission state; validation stays the app's job |

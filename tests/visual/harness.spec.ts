@@ -2518,3 +2518,347 @@ test.describe('Switch', () => {
     await expect(scope).toContainText('Already in effect');
   });
 });
+
+/*
+ * Select (3.13). Everything here needs layout. The reserved chevron room is a
+ * calc() the browser performs, `:has(option:checked)` is a live selector jsdom
+ * does not implement, and the RTL question is about which physical side a
+ * logical offset lands on — none of which a DOM snapshot can answer.
+ */
+test.describe('Select', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  /*
+   * THE REASON THIS COMPONENT HAS A WRAPPER, and the worst case of the three
+   * surfaces: a native <select> sizes to its LONGEST OPTION, so as a block
+   * element it is whatever its content says rather than whatever its parent
+   * says. Asserted so a future simplification to a single element fails loudly.
+   */
+  test('fill: the control takes the box it is given, at every width', async ({ page }) => {
+    await page.goto('/components/select');
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const c = cell(page, 'It fills, at every container width', width);
+      const ratio = await c.locator('.pp-select__input').evaluate((node) => {
+        const root = node.closest('.pp-select') as HTMLElement;
+        return node.getBoundingClientRect().width / root.getBoundingClientRect().width;
+      });
+      expect(ratio, `the control did not fill its root at ${width}`).toBeCloseTo(1, 2);
+    }
+  });
+
+  test('a long option truncates instead of pushing the container wide', async ({ page }) => {
+    await page.goto('/components/select');
+    const narrow = cell(page, 'It fills, at every container width', 'narrow · 240px');
+
+    const overflow = await narrow.locator('.pp-field').evaluate((node) => {
+      const parent = node.parentElement as HTMLElement;
+      return parent.scrollWidth - parent.clientWidth;
+    });
+    expect(overflow, 'the select pushed its container wide').toBeLessThanOrEqual(1);
+  });
+
+  /*
+   * D-028's entire purpose, asserted against the other component rather than
+   * against numbers: a numeric assertion still passes after someone hardcodes
+   * one of the two (D-034's mechanism). The numbers are checked too, because
+   * "both wrong in the same way" is the case comparing them cannot catch.
+   */
+  test('a Select and an Input are the same height at the same size', async ({ page }) => {
+    const heightsOn = async (path: string, selector: string) => {
+      await page.goto(path);
+      const wide = cell(page, 'Sizes', 'wide · 960px');
+      const out: Record<string, number> = {};
+      for (const size of ['sm', 'md', 'lg'] as const) {
+        out[size] = await wide
+          .locator(selector.replace('SIZE', size))
+          .first()
+          .evaluate((el) => el.getBoundingClientRect().height);
+      }
+      return out;
+    };
+
+    const input = await heightsOn('/components/input', '.pp-input[data-size="SIZE"] .pp-input__control');
+    const select = await heightsOn(
+      '/components/select',
+      '.pp-select[data-size="SIZE"] .pp-select__input',
+    );
+
+    expect(select, 'a Select is a different height from an Input in the same form').toEqual(input);
+    expect(select).toEqual({ sm: 32, md: 40, lg: 48 });
+  });
+
+  /*
+   * THE CHEVRON'S RESERVED ROOM, as geometry rather than as a number. The text
+   * area of the control has to end before the glyph begins, or a long value
+   * runs underneath it — which looks like a rendering glitch rather than a
+   * missing declaration. Fails when --_pad-inline-end loses any of its three
+   * terms.
+   */
+  test('the text box ends before the chevron begins, at every size', async ({ page }) => {
+    await page.goto('/components/select');
+    const wide = cell(page, 'Sizes', 'wide · 960px');
+
+    for (const size of ['sm', 'md', 'lg'] as const) {
+      const gap = await wide
+        .locator(`.pp-select[data-size="${size}"]`)
+        .first()
+        .evaluate((root) => {
+          const control = root.querySelector('.pp-select__input') as HTMLElement;
+          const glyph = root.querySelector('.pp-select__indicator') as HTMLElement;
+          const box = control.getBoundingClientRect();
+          const end = box.right - parseFloat(getComputedStyle(control).paddingRight);
+          return glyph.getBoundingClientRect().left - end;
+        });
+      expect(gap, `a ${size} chevron sits inside the text box`).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  /*
+   * D-049 §2, AND THE ONLY ASSERTION THAT CAN TELL THE TWO MECHANISMS APART.
+   *
+   * An UNCONTROLLED select with its placeholder selected: the root carries no
+   * `data-placeholder` — React was never told and refuses to guess — and the
+   * text is muted anyway, because the stylesheet reads the platform's own
+   * `:checked`. Swap the `:has()` rule for `[data-placeholder]` and the colour
+   * assertion fails while every other test on this page stays green.
+   */
+  test('an uncontrolled placeholder is muted with no attribute to read', async ({ page }) => {
+    await page.goto('/components/select');
+    const scope = page.locator('[data-testid="select-uncontrolled-placeholder"]');
+    const control = scope.locator('.pp-select__input');
+
+    await expect(scope.locator('.pp-select')).not.toHaveAttribute('data-placeholder', /.*/);
+
+    const placeholderColor = await control.evaluate((el) => getComputedStyle(el).color);
+    const muted = await page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--pp-color-text-muted').trim(),
+    );
+    const resolved = await page.evaluate((value) => {
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      document.body.append(probe);
+      const out = getComputedStyle(probe).color;
+      probe.remove();
+      return out;
+    }, muted);
+
+    expect(placeholderColor, 'the placeholder is not painted muted').toBe(resolved);
+  });
+
+  /*
+   * D-045: a claim about ANOTHER component is asserted or linked, never
+   * restated. The stylesheet, the spec and the docs page all say the
+   * placeholder is the colour `Input` gives `::placeholder`, and prose stated
+   * in four places was false in all four. So it is read off both components,
+   * on their own pages, rather than written down twice.
+   */
+  test('the placeholder is the colour Input gives ::placeholder', async ({ page }) => {
+    await page.goto('/components/input');
+    const inputPlaceholder = await page
+      .locator('.pp-input__control[placeholder]')
+      .first()
+      .evaluate((el) => getComputedStyle(el, '::placeholder').color);
+
+    await page.goto('/components/select');
+    const selectPlaceholder = await page
+      .locator('[data-testid="select-uncontrolled-placeholder"] .pp-select__input')
+      .evaluate((el) => getComputedStyle(el).color);
+
+    expect(selectPlaceholder, 'the two empty states are different colours').toBe(inputPlaceholder);
+  });
+
+  /* The same rule, live: the platform changes the selection and the colour
+     follows without React rendering anything. Fails the moment the paint is
+     driven by an attribute instead. */
+  test('choosing a real option un-mutes an uncontrolled select', async ({ page }) => {
+    await page.goto('/components/select');
+    const control = page.locator('[data-testid="select-uncontrolled-placeholder"] .pp-select__input');
+
+    const before = await control.evaluate((el) => getComputedStyle(el).color);
+    await control.selectOption('production');
+    const after = await control.evaluate((el) => getComputedStyle(el).color);
+
+    expect(after, 'the placeholder colour survived a real selection').not.toBe(before);
+  });
+
+  /* The other half: controlled, so React does know, and the attribute is
+     there for consumers to style off. */
+  test('a controlled select exposes data-placeholder and drops it on change', async ({ page }) => {
+    await page.goto('/components/select');
+    const scope = page.locator('[data-testid="select-controlled"]');
+    const root = scope.locator('.pp-select');
+
+    await expect(root).toHaveAttribute('data-placeholder', 'true');
+    await scope.locator('.pp-select__input').selectOption('production');
+    await expect(root).not.toHaveAttribute('data-placeholder', /.*/);
+  });
+
+  /*
+   * D-029 / D-039 §4: focus draws TWO things, a ring outside the box in one
+   * library-wide colour and a tone-shifted border inside it. The comparison is
+   * the SAME control at rest and focused — comparing a valid control with an
+   * invalid one is the assertion that could not fail, which D-040 §3 found.
+   */
+  test('focus shifts the control border, and the ring is one colour', async ({ page }) => {
+    await page.goto('/components/select');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-select:not([data-invalid]) .pp-select__input').first();
+    const invalid = wide.locator('.pp-select[data-invalid] .pp-select__input').first();
+
+    const border = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    const outline = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).outlineColor);
+
+    const resting = await border(valid);
+    await valid.focus();
+    expect(await border(valid), 'the border did not shift on focus').not.toBe(resting);
+
+    const validRing = await outline(valid);
+    await invalid.focus();
+    expect(await outline(invalid), 'the ring is one colour library-wide (D-029)').toBe(validRing);
+  });
+
+  test('an invalid control stays in the danger tone while focused', async ({ page }) => {
+    await page.goto('/components/select');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+
+    const focusedBorder = async (selector: string) => {
+      const el = wide.locator(selector).first();
+      await el.focus();
+      return el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    };
+
+    expect(
+      await focusedBorder('.pp-select[data-invalid] .pp-select__input'),
+      'the error state vanished the moment the user acted on it',
+    ).not.toBe(await focusedBorder('.pp-select:not([data-invalid]) .pp-select__input'));
+  });
+
+  /* The chevron dims with the box rather than staying live on a dead control.
+     Read on the indicator, whose colour is the thing in question. */
+  test('a disabled chevron is not a live one', async ({ page }) => {
+    await page.goto('/components/select');
+    /* NOT `hasText: 'Disabled'`. That is a case-insensitive substring, and the
+       placeholder section above says "disabled, hidden" — so the first match
+       was a section with no disabled control in it and the locator waited out
+       the timeout. Filter on a phrase that exists once. */
+    const wide = cell(page, 'no read-only', 'wide · 960px');
+
+    const chevron = (selector: string) =>
+      wide.locator(selector).first().evaluate((n) => getComputedStyle(n).color);
+
+    expect(await chevron('.pp-select[data-disabled] .pp-select__indicator')).not.toBe(
+      await chevron('.pp-select:not([data-disabled]) .pp-select__indicator'),
+    );
+  });
+
+  /*
+   * The pointer half. The chevron sits over the control in the same grid cell,
+   * so without `pointer-events: none` the inline end of the box is dead.
+   *
+   * Asserted as FOCUS, for the reason D-047 §5 rewrote Radio's version of this
+   * test: the glyph must actually be under the click for the assertion to be
+   * able to fail, and it is a <span> that cannot take focus — so if it takes
+   * the click, focus lands nowhere.
+   */
+  test('a click on the chevron reaches the control underneath it', async ({ page }) => {
+    await page.goto('/components/select');
+    const scope = page.locator('[data-testid="select-chevron-target"]');
+    const root = scope.locator('.pp-select');
+
+    /*
+     * The ROOT is clicked at the chevron's own centre, rather than the chevron
+     * being clicked directly. Clicking it directly is unactionable BY DESIGN:
+     * Playwright hit-tests the point, finds the <select>, and reports an
+     * interception — which is the declaration working. Targeting the root means
+     * the hit landing on a descendant is a pass, and the position is measured
+     * rather than guessed so it survives a change to the size or the padding.
+     */
+    const position = await root.evaluate((el) => {
+      const box = el.getBoundingClientRect();
+      const glyph = (el.querySelector('.pp-select__indicator') as Element).getBoundingClientRect();
+      return { x: glyph.left + glyph.width / 2 - box.left, y: box.height / 2 };
+    });
+
+    await root.click({ position });
+
+    /* Focus, not state: the chevron is a <span> and cannot take focus, so if
+       it takes the click focus lands nowhere (D-047 §5). */
+    await expect(
+      scope.locator('.pp-select__input'),
+      'the click landed on the chevron, not the control',
+    ).toBeFocused();
+  });
+
+  /*
+   * D-048 §4's question on a different part, and TWO SEPARATE CLAIMS that a
+   * first version of this test collapsed into one it could not fail.
+   *
+   * That version asserted only which side of the box's centre the chevron sat
+   * on, and called the answer proof of a logical offset. It is not: which side
+   * is `place-self: center end`'s doing, and the grid mirrors that by itself.
+   * Swapping `inset-inline-end` for `right` left the chevron on the correct
+   * side in RTL and every assertion green — the ninth time this repository has
+   * found an assertion that could not fail (D-048 §5), and the same shape as
+   * the other eight: two things compared that already differ for another
+   * reason.
+   *
+   * What the OFFSET decides is the direction the glyph is pulled back in. In
+   * RTL the box's inline end is its left edge, so `right` pulls the chevron
+   * further left — clean off the control — while `inset-inline-end` pulls it
+   * inward, the same 12px the LTR layout gets. So the number to watch is the
+   * inset from the inline-end edge, and it fails on its own message.
+   */
+  test('the chevron is inset from the inline end, in RTL as well as LTR', async ({ page }) => {
+    await page.goto('/components/select');
+    const scope = page.locator('[data-testid="select-chevron-target"]');
+    const root = scope.locator('.pp-select').first();
+
+    const measure = () =>
+      root.evaluate((el) => {
+        const box = (el.querySelector('.pp-select__input') as Element).getBoundingClientRect();
+        const glyph = (el.querySelector('.pp-select__indicator') as Element).getBoundingClientRect();
+        const rtl = getComputedStyle(el).direction === 'rtl';
+        return {
+          // Positive means "toward the inline end", whichever side that is.
+          fromCentre:
+            (glyph.left + glyph.width / 2 - (box.left + box.width / 2)) * (rtl ? -1 : 1),
+          insetFromEnd: rtl ? glyph.left - box.left : box.right - glyph.right,
+        };
+      });
+
+    const ltr = await measure();
+    expect(ltr.fromCentre, 'the chevron is not at the inline end in LTR').toBeGreaterThan(0);
+    expect(ltr.insetFromEnd, 'the chevron is not inset from the edge').toBeGreaterThan(0);
+
+    await scope.evaluate((el) => el.setAttribute('dir', 'rtl'));
+    const rtl = await measure();
+
+    expect(rtl.fromCentre, 'the chevron is not at the inline end in RTL').toBeGreaterThan(0);
+    expect(
+      rtl.insetFromEnd,
+      'the chevron was pulled off the control in RTL — it is offset physically, not logically',
+    ).toBeCloseTo(ltr.insetFromEnd, 1);
+  });
+
+  /*
+   * Spec §12 and D-030 §2: what a screen reader perceives is asserted in a real
+   * browser, never in jsdom, where a visibility:hidden label once passed
+   * `toHaveAccessibleName` and was announced as nothing. One combobox in the
+   * tree, named by the field — the chevron contributes nothing.
+   */
+  test('an explicit controlId names the control in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/select');
+    const control = page.locator('[data-testid="select-association"] select');
+
+    await expect(control).toHaveAccessibleName('Billing region');
+    await expect(control).toHaveAttribute('id', 'billing-region');
+  });
+});
