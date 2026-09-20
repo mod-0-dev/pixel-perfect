@@ -14,7 +14,7 @@
 | Component | Status | Component | Status |
 | --- | --- | --- | --- |
 | 3.8 `Input` | **`done`** | 3.11 `Radio`/`RadioGroup` | **`done`** |
-| 3.9 `Textarea` | **`done`** | 3.12 `Switch` | `spec` |
+| 3.9 `Textarea` | **`done`** | 3.12 `Switch` | **`done`** |
 | 3.10 `Checkbox` | **`done`** | 3.13 `Select` | `spec` |
 
 ---
@@ -1031,20 +1031,44 @@ native semantics and keyboard stay, the announced role becomes "switch".
 
 | State | Exposed as | Visual treatment |
 | --- | --- | --- |
-| Checked | `data-state="checked"` | Track → `--pp-tone-solid`, thumb at the end |
-| Unchecked | `data-state="unchecked"` | Track → `--pp-color-border-strong`, thumb at the start |
-| Disabled | `data-disabled` | `--pp-color-bg-sunken` track, `cursor: not-allowed` |
+| Checked | `data-state="checked"` | Track → `--pp-tone-solid`, thumb → `--pp-tone-on-solid`, at the end |
+| Unchecked | `data-state="unchecked"` | Track → `--pp-color-bg-surface` with a `--pp-color-border` edge, thumb → `--pp-color-text-muted`, at the start (**amended by D-048 §1**) |
+| Invalid | `data-invalid`, `data-pp-tone="danger"` | Edge → `--pp-tone-border` |
+| Disabled | `data-disabled` | `--pp-color-bg-sunken` track, `--pp-color-text-disabled` thumb, `cursor: not-allowed` |
 | Focus | `:focus-visible` | Ring on the input, which is the track |
 
-The unchecked track is `--pp-color-border-strong` and not `--pp-color-bg-sunken`:
-an off switch has to read as *off* rather than as *disabled*, and a sunken fill
-next to a genuinely disabled switch is indistinguishable from it.
+**Amended from the build (D-048 §1).** This row originally read "unchecked track
+→ `--pp-color-border-strong`", with the argument that an off switch has to read
+as *off* rather than as *disabled*, and that a sunken fill next to a genuinely
+disabled switch is indistinguishable from it. The argument stands; the colour
+does not. `--pp-color-border-strong` is **1.97:1** against the page in the light
+theme, and a surface thumb on it is 1.97:1 too — so the thumb, which is the
+thing that says which way the switch is set, was the part that failed 1.4.11.
+
+The off track is now the library's resting control surface and the thumb is
+`--pp-color-text-muted` on it, which is 5.10:1 light and 5.49:1 dark and is a
+pairing the token layer already verifies. Off and disabled are still told apart,
+in the thumb rather than in the track: 5.10:1 against 1.77:1, and 1.4.11 exempts
+inactive components from the contrast the live one meets.
+
+The stylesheet reads `data-state` rather than `:checked`. D-047 §2's deviation
+was earned by a radio being deselected without being told; every change to a
+switch is an event on that switch, so the cause is absent and RULES §4 applies
+unamended (D-048 §3).
 
 ### Styling API
 
 `--pp-switch-track-inline-size`, `--pp-switch-track-block-size`,
-`--pp-switch-track-bg`, `--pp-switch-track-bg-checked`, `--pp-switch-thumb-bg`,
-`--pp-switch-thumb-inset`.
+`--pp-switch-track-bg` (the **off** track), `--pp-switch-track-bg-checked` (the
+**on** track), `--pp-switch-thumb-bg` (both states) and
+`--pp-switch-thumb-inset`. All six are built; none is listed here and left
+unimplemented, which is the mistake §3.10 corrected after the fact.
+
+**The geometry is derived from the track's block size**, so overriding one of
+them moves four things: the inline size is `block × 2`, the inset is
+`(block − one size step) / 2`, the thumb is `block − 2 × inset`, and the travel
+is `inline − block` — the same distance whatever the inset is, because the inset
+is subtracted at the start and added back at the end.
 
 ### Keyboard interaction
 
@@ -1060,8 +1084,10 @@ deliberate divergence.
 
 ### Motion
 
-The thumb transitions on `translate` over `--pp-duration-fast`, and the whole
-transition is dropped under `prefers-reduced-motion: reduce` — declared in
+The thumb transitions on `inset-inline-start` over `--pp-duration-fast` — **not
+on `translate`, which is physical and would run the switch backwards in an RTL
+layout** (D-048 §4) — and the whole transition is dropped under
+`prefers-reduced-motion: reduce` — declared in
 `pp.components`, because the reset's crush sits in `pp.reset` and this file
 would otherwise win (the mechanism `Button.css` and `Spinner` both document).
 

@@ -1,0 +1,218 @@
+/*
+ * Switch — spec docs/specs/tier-3c-inputs.md §3.12
+ *
+ * The third and last of the CHECKABLE controls, and the only one that is not
+ * square: a 2:1 track at the same block sizes, so a `md` switch is 40×20 and
+ * lines up with a `md` checkbox in the form beside it.
+ *
+ * `inline-size` is declared here under the D-019 exemption, which D-031
+ * extended to IconButton and D-039 §7 extends to the checkable three: the track
+ * is intrinsically proportioned, and that is not the "how much of my parent do
+ * I take" decision RULES §1 reserves for the parent. The exemption names this
+ * file in `.stylelintrc.json` rather than being routed around with
+ * `aspect-ratio`.
+ *
+ * THE NATIVE INPUT IS THE PAINTED TRACK (D-039 §2). `appearance: none` on the
+ * real <input type="checkbox" role="switch">, styled directly, with the thumb
+ * as an aria-hidden sibling stacked in the same grid cell.
+ *
+ * IT PAINTS FROM `data-state`, NOT FROM `:checked` — the opposite of `Radio`,
+ * and the difference is a cause rather than a preference. D-047 §2 let Radio
+ * read `:checked` because a radio is deselected when a SIBLING is selected and
+ * is told nothing, so React cannot describe a bare radio's state. Every change
+ * to a switch is an event on that switch, so the attribute is never absent and
+ * never guessed, and RULES §4 applies unamended.
+ *
+ * THE GEOMETRY IS DERIVED, NOT TUNED (D-048 §2). Four lengths fall out of two:
+ * the thumb is the track minus two insets, the inset is half the difference
+ * between the track and the size step below it, and the travel is
+ * `track-inline − track-block` — which is the same distance whatever the inset
+ * is, because the inset is subtracted at the start and added back at the end.
+ * Override `--pp-switch-track-block-size` and all four follow.
+ */
+
+@layer pp.components {
+  .pp-switch {
+    /* The track's BLOCK size, from the size scale — the same 16 / 20 / 24 a
+       Checkbox takes (spec §8), not --pp-control-height-*. */
+    --_size: var(--pp-size-5);
+    /*
+     * The size step below the track, which is what makes the inset 2px at every
+     * size without 2px being written down: the scale steps by 4px, so half the
+     * difference is always half a step. A thumb picked as a fraction of the
+     * track (Radio's dot is `--_box / 2`) would leave a different gap at each
+     * size; this leaves the same one.
+     */
+    --_thumb-step: var(--pp-size-4);
+
+    /*
+     * Resolved on our own root and passed down, per D-024's other half as
+     * D-044 §1 restated it: a custom property is substituted where it is
+     * DECLARED, so a private name read on a descendant reads whatever that
+     * descendant's own component means by it — which is how an `lg` Checkbox
+     * drew a 16px mark, because the indicator was also a `.pp-icon`.
+     */
+    --_track-block: var(--pp-switch-track-block-size, var(--_size));
+    --_track-inline: var(--pp-switch-track-inline-size, calc(var(--_track-block) * 2));
+    --_inset: var(--pp-switch-thumb-inset, calc((var(--_track-block) - var(--_thumb-step)) / 2));
+    --_thumb-size: calc(var(--_track-block) - 2 * var(--_inset));
+    /* start + travel, where travel is (inline − block). See the header. */
+    --_thumb-x: var(--_inset);
+
+    /*
+     * THE OFF TRACK IS THE LIBRARY'S RESTING CONTROL SURFACE, AND THE THUMB IS
+     * THE STATE INDICATOR (D-048 §1). The spec called for a
+     * --pp-color-border-strong FILL here; measured against the real ramp that
+     * is 1.97:1 on the page in the light theme, and a --pp-color-bg-surface
+     * thumb on it is 1.97:1 too — so the part WCAG 1.4.11 most clearly asks
+     * for, the thing that says which way the switch is set, was the part that
+     * failed. --pp-color-text-muted on --pp-color-bg-surface is 5.10:1 light
+     * and 5.49:1 dark, and it is a pairing `lint:contrast` already verifies in
+     * every theme rather than one this file asserts for itself.
+     */
+    --_track-bg: var(--pp-switch-track-bg, var(--pp-color-bg-surface));
+    --_track-border: var(--pp-color-border);
+    --_thumb: var(--pp-color-text-muted);
+
+    /* hug: inline-level, intrinsically proportioned, no width declaration that
+       decides anything about the parent. One cell, two children stacked in it. */
+    display: inline-grid;
+  }
+
+  .pp-switch[data-size="sm"] {
+    --_size: var(--pp-size-4);
+    --_thumb-step: var(--pp-size-3);
+  }
+
+  .pp-switch[data-size="lg"] {
+    --_size: var(--pp-size-6);
+    --_thumb-step: var(--pp-size-5);
+  }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3). `.pp-switch[data-state="checked"] .pp-switch__input` is 0-3-0
+   * and would outrank `.pp-switch__input:focus-visible` at 0-2-0, which is
+   * exactly how `Input` shipped a focus border that never appeared on an
+   * invalid control. On the root the custom properties inherit down and the
+   * control's own pseudo-class wins for that element.
+   *
+   * Source order is therefore the whole precedence story below: checked, then
+   * invalid, then disabled — each one overriding the last.
+   */
+  .pp-switch[data-state="checked"] {
+    --_track-bg: var(--pp-switch-track-bg-checked, var(--pp-tone-solid));
+    --_track-border: var(--pp-tone-solid);
+    /* The one mark-on-fill pairing the token layer verifies at 4.5:1 in every
+       hue and both themes — the same pairing Checkbox's mark and Radio's dot
+       use (D-047 §3). */
+    --_thumb: var(--pp-tone-on-solid);
+    --_thumb-x: calc(var(--_track-inline) - var(--_track-block) + var(--_inset));
+  }
+
+  /* The root carries data-pp-tone="danger", so --pp-tone-border resolves in the
+     danger ramp without this file naming a colour (D-007). After `checked`, so
+     an invalid switch that is on still reads as invalid. */
+  .pp-switch[data-invalid] {
+    --_track-border: var(--pp-tone-border);
+  }
+
+  /*
+   * Last, so a disabled switch that is ON is washed out rather than solid: the
+   * state the user can do nothing about should not be the loudest thing in the
+   * form. It is also what keeps OFF and DISABLED apart, which is the objection
+   * the spec raised against a sunken off-track and which D-048 §1 answers by
+   * moving the distinction into the thumb: a live off switch has a 5.10:1
+   * thumb, a disabled one a 1.77:1 thumb, and 1.4.11 exempts inactive
+   * components from the requirement the first one meets.
+   */
+  .pp-switch[data-disabled] {
+    --_track-bg: var(--pp-color-bg-sunken);
+    --_track-border: var(--pp-color-border);
+    --_thumb: var(--pp-color-text-disabled);
+  }
+
+  .pp-switch__input {
+    grid-area: 1 / 1;
+    inline-size: var(--_track-inline);
+    block-size: var(--_track-block);
+    /* The UA gives an <input> a margin the minimal reset leaves alone. Removing
+       it is the rule rather than a breach of it (D-018): RULES §2 is about a
+       component's own root spacing itself, not about zeroing what the user
+       agent added inside. */
+    margin: 0;
+    border: var(--pp-border-width-1) solid var(--_track-border);
+    border-radius: var(--pp-radius-full);
+    background-color: var(--_track-bg);
+    appearance: none;
+    cursor: pointer;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* `:disabled` rather than a `[data-disabled] .pp-switch__input` descendant
+     selector, which would be 0-3-0 and outrank the focus rule below it.
+     pointer-events: none is deliberately NOT used, for the reason Button.css
+     gives: it kills `title`, breaks a Tooltip (4.3) wrapping the control, and
+     makes cursor: not-allowed impossible to show. */
+  .pp-switch__input:disabled {
+    cursor: not-allowed;
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4). The outline is
+   * the focus affordance — one colour library-wide, outside the box, the only
+   * pairing lint:contrast asserts. The border shift is the control
+   * acknowledging focus in its own tone, inside the box.
+   *
+   * Declared on the INPUT, which is where the focus is: a declaration on the
+   * element beats a value inherited from the root, so focus beats checked,
+   * invalid and disabled without any of them being reordered around it.
+   */
+  .pp-switch__input:focus-visible {
+    --_track-border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-switch__thumb {
+    grid-area: 1 / 1;
+    /* Centred on the block axis, at the inline START of the cell — which is the
+       track's outer edge, so --_thumb-x is measured from there. */
+    place-self: center start;
+    inline-size: var(--_thumb-size);
+    block-size: var(--_thumb-size);
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-switch-thumb-bg, var(--_thumb));
+    /*
+     * A LOGICAL OFFSET FROM THE STATIC POSITION, NOT A `translate`.
+     *
+     * `translate` is physical: a thumb translated toward the right would move
+     * toward the track's END in LTR and toward its START in RTL, so the switch
+     * would run backwards in an Arabic or Hebrew layout. `inset-inline-start`
+     * on a relatively positioned element is the same movement expressed on the
+     * inline axis, mirrored by the engine, and RULES §1's "RTL should work
+     * without a single extra line" is met rather than worked around.
+     */
+    position: relative;
+    inset-inline-start: var(--_thumb-x);
+    /* The pointer only ever hits the track beneath. Without this a click
+       landing on the thumb is a click on a <span>, and the middle of the
+       control is dead — which reads as flakiness rather than as a bug. */
+    pointer-events: none;
+    transition-property: inset-inline-start, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* The reset crushes durations in pp.reset and this file is in pp.components,
+     so ours would win. Every animated component answers for itself. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-switch__input,
+    .pp-switch__thumb {
+      transition-property: none;
+    }
+  }
+}

@@ -2223,3 +2223,134 @@ components after this one.
 **It does not close the race D-042 declined to close.** Required status checks
 are still absent and still collide with `GITHUB_TOKEN` authoring; this adds a
 way to run the checks on demand, not a way to require them.
+
+## D-048 — `Switch` build findings: the off state failed the contrast the on state passed
+
+**Date:** 2026-09-19 · **Status:** accepted · **Amends:**
+`docs/specs/tier-3c-inputs.md` §3.12 (State, Styling API)
+
+Four findings and one measurement that belongs to the whole library rather than
+to this component.
+
+### 1. `--pp-color-border-strong` is 1.97:1, and the spec put the state indicator on it
+
+The spec's State table painted the off track `--pp-color-border-strong` with a
+`--pp-color-bg-surface` thumb, and gave a good reason for the fill: "an off
+switch has to read as *off* rather than as *disabled*, and a sunken fill next to
+a genuinely disabled switch is indistinguishable from it."
+
+The reason survives. The colour does not. Against the real ramp:
+
+| Pairing | light | dark |
+| --- | --- | --- |
+| track `neutral-8` vs the page | **1.97** | 3.28 |
+| surface thumb on a `neutral-8` track | **1.97** | 3.28 |
+| **muted thumb on a surface track (shipped)** | **5.10** | **5.49** |
+| **on-solid thumb on a tone-solid track (shipped)** | **≥ 4.50** | **≥ 4.50** |
+
+WCAG 1.4.11 asks for 3:1 on "visual information required to identify user
+interface components **and states**", and on a switch the thing that says which
+way it is set is the thumb. So the part the requirement is most clearly about
+was the part that failed, in the theme most people use.
+
+**What ships instead:** the off track is the library's resting control
+surface — the same `--pp-color-bg-surface` fill and `--pp-color-border` edge an
+unchecked `Checkbox` takes — with the thumb at `--pp-color-text-muted`. On, the
+track fills `--pp-tone-solid` and the thumb becomes `--pp-tone-on-solid`. Both
+thumb-on-track pairings are ones `check-contrast.mjs` **already asserts**, in
+every hue and both themes ("muted text vs page bg" and "solid vs on-solid"), so
+this component adds no assertion of its own and depends on none that is missing.
+An ink token painting a small solid mark is the precedent `Checkbox`'s mark and
+`Radio`'s dot already set.
+
+**The spec's objection is answered rather than overruled.** Off and disabled are
+still told apart, and by a stronger signal than a track colour: a live off
+switch has a 5.10:1 thumb and a disabled one a 1.77:1 thumb. 1.4.11 exempts
+inactive components from the contrast the live one meets, so the two states are
+*supposed* to differ exactly there. Asserted in the browser as a comparison
+between the two rather than as a number.
+
+**This is D-047 §3 a second time, on a different pairing**: the spec chose
+between two conventional designs on appearance, at a gate where nobody had the
+numbers, and one of them is not available at AA. Twice is a pattern, and the
+rule it generalises to is *compute the pairing before the gate, not after the
+build*.
+
+### 2. The library-wide finding underneath it, which is NOT this component's to fix
+
+The table above has a second reading. `--pp-color-border` is **1.55:1** against
+the page in the light theme and `--pp-color-border-strong` is 1.97:1 — so the
+resting edge of every control in this tier (`Input`, `Textarea`, `Checkbox`,
+`Radio`, and this switch's own track) sits below 1.4.11's 3:1.
+
+**Nothing in `check-contrast.mjs` pairs a border step with a surface**, which is
+the same missing check class D-047 §3 named and did not add. Its ten `CHECKS`
+are all ink-on-fill or the focus ring; a border is neither.
+
+The neutral ramp has nothing between `neutral-8` (1.97) and `neutral-9` (5.90),
+and `neutral-9` is `--pp-tone-solid` — the *on* colour. So there is no
+arrangement of the existing tokens that gives a conforming resting boundary
+while keeping off and on distinguishable in the neutral tone. **The fix is a
+token-layer change** (a step, a re-point, or a new semantic name), plus the
+missing check, plus a re-baseline of every screenshot in the repository. That is
+Tier 0.2 work touching six shipped components, and doing it inside a Switch
+build would be exactly the unilateral widening the DoD's "minimal fix" rule
+exists to stop.
+
+**Switch is the one control in the tier that does not depend on that edge**,
+and it is worth saying why the gap is recorded here rather than inherited. An
+unchecked `Checkbox`'s border *is* the information 1.4.11 asks for — take it
+away and there is nothing left to see. An off switch has a 5.10:1 thumb sitting
+on it, which identifies both the control and its state against the page; the
+edge helps and is not what carries the requirement. That is a consequence of
+§1's amendment rather than a reason for it.
+
+Recorded here with the numbers so the next person does not have to re-derive
+them, and so that "the borders are fine" is not something anyone concludes from
+a green `lint:contrast` again.
+
+### 3. It paints from `data-state`, and D-047 §2 does not transfer
+
+`Radio`'s stylesheet reads `:checked` because a radio is deselected when a
+sibling is selected and is told nothing, so React cannot describe a bare radio's
+state. **Every change to a switch is an event on that switch.** The attribute is
+never absent and never guessed, so RULES §4 applies unamended and the deviation
+stays where it was earned.
+
+The point worth keeping: D-047 §2 is a ruling about *radios*, not a new house
+style for checkable controls. A deviation is scoped to its cause, and the way to
+tell is whether the cause is present.
+
+### 4. `translate` is physical, so the thumb is offset instead
+
+A thumb moved with `translate: 20px` travels toward the *right* in every
+writing mode. In an RTL layout the track's end is on the left, so the switch
+would run backwards — on at the start, off at the end — which RULES §1's "RTL
+should work without a single extra line" forbids and which no LTR test can see.
+
+The thumb is `position: relative` with `inset-inline-start`, which is the same
+movement expressed on the inline axis and mirrored by the engine. The browser
+suite sets `dir="rtl"` on the demo and asserts the thumb crosses to the other
+side of the track's centre — the only assertion in the file that can tell the
+two mechanisms apart, and it fails when the declaration is swapped back.
+
+### 5. Sixteen breaks, and the eighth assertion that could not fail
+
+Seven source mutations and nine stylesheet mutations, every stylesheet break
+verified present in the **served, minified** chunk before its result was read
+(D-037 §4), with Playwright's `webServer` owning the build and the server
+throughout (D-047 §5). Fifteen failed on exactly the test named for them.
+
+The fifteenth did not, and the test was the defect. "Disabled beats checked"
+compared a **disabled on** track with a **live off** track, and those differ
+because of `data-state` whatever the disabled rule says — so deleting the whole
+`[data-disabled]` block left the assertion green. It now compares a disabled on
+switch with a **live on** one, which needed a second demo on the playground page
+to compare against, and it fails on its own message when the block is removed.
+
+Eighth time this check has found an assertion that could not fail, and the
+pattern is the same one every time: **two things being compared that already
+differ for another reason.** D-040 §3 found it in a focus test, D-047 §5 in a
+pointer test, and it is worth stating as a thing to look for rather than a thing
+to rediscover — when an assertion says "A is not B", ask what else is different
+about A and B.

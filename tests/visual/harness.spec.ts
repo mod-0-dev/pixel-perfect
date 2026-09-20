@@ -2103,3 +2103,418 @@ test.describe('Radio', () => {
     );
   });
 });
+
+/*
+ * Switch (3.12). The last of the checkable three, and the one whose claims are
+ * almost all geometric: a 2:1 track, a thumb derived from it, a travel that is
+ * the difference between the track's two axes. None of that exists in jsdom.
+ *
+ * Two of the assertions below exist because of a ruling rather than a feature.
+ * D-048 §1 replaced the spec's `--pp-color-border-strong` track after measuring
+ * it at 1.97:1, so the contrast of the thumb against the track is asserted here
+ * rather than trusted — in both themes, from the colours the browser actually
+ * resolved. And D-048 §4 moves the thumb with `inset-inline-start` rather than
+ * `translate`, which only differs in an RTL layout, so there is an RTL
+ * assertion and it is the only thing that can tell the two apart.
+ */
+test.describe('Switch', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  /* Resolve a computed colour to sRGB and compare two of them. getComputedStyle
+     hands back whatever colour space the token was authored in — oklch(), here
+     — so the canvas does the conversion rather than a regex that would only
+     work for one of them. */
+  const contrastOf = (scope: ReturnType<typeof cell>, selectorA: string, selectorB: string) =>
+    scope.evaluate(
+      (root, [a, b]) => {
+        /* Painted and read back rather than parsed. getComputedStyle returns
+           the colour in whatever space the token was authored in — oklch(),
+           here — and `ctx.fillStyle` echoes that string back rather than
+           normalising it, which is how the first version of this helper
+           produced NaN. One pixel of image data is always sRGB bytes. */
+        const srgb = (color: string) => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1;
+          canvas.height = 1;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
+          ctx.fillStyle = color;
+          ctx.fillRect(0, 0, 1, 1);
+          return Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3).map((v) => v / 255);
+        };
+        const luminance = (c: number[]) => {
+          const [r, g, bl] = c.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+          return 0.2126 * (r as number) + 0.7152 * (g as number) + 0.0722 * (bl as number);
+        };
+        const bg = (selector: string) =>
+          getComputedStyle(root.querySelector(selector) as Element).backgroundColor;
+        const la = luminance(srgb(bg(a as string)));
+        const lb = luminance(srgb(bg(b as string)));
+        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+      },
+      [selectorA, selectorB] as const,
+    );
+
+  test('the track is 2:1 on the size scale, not on the control scale', async ({ page }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'Sizes', 'wide · 960px');
+
+    const box = (size: string) =>
+      wide
+        .locator(`.pp-switch[data-size="${size}"] .pp-switch__input`)
+        .first()
+        .evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return { inline: r.width, block: r.height };
+        });
+
+    // 32×16 / 40×20 / 48×24. --pp-control-height-* would be 32 / 40 / 48 on the
+    // BLOCK axis, which is the mistake this asserts against.
+    for (const [size, block] of [['sm', 16], ['md', 20], ['lg', 24]] as const) {
+      const { inline, block: measured } = await box(size);
+      expect(measured, `a ${size} track is ${measured}px tall`).toBeCloseTo(block, 0);
+      expect(inline, `a ${size} track is ${inline}px long, not 2:1`).toBeCloseTo(block * 2, 0);
+    }
+  });
+
+  /*
+   * The cross-component agreement the size scale exists to make structural: a
+   * switch and a checkbox in the same form line up, and an OFF switch rests on
+   * the same surface an unchecked checkbox does. Asserted against the other
+   * component rather than against numbers, because a numeric assertion still
+   * passes after someone hardcodes one of the two (D-034's mechanism).
+   *
+   * It is also what D-045 requires of the claim: the component page and the
+   * stylesheet both say "the same fill and edge an unchecked Checkbox takes",
+   * and prose stated in four places was false in all four.
+   */
+  test('a switch and a checkbox agree on the box and on the resting surface', async ({ page }) => {
+    /* The height comes from each page's size matrix and the resting colours
+       from wherever that page shows an UNCHECKED md control — the checkbox
+       page's size matrix is all checked, which is why these are two reads. */
+    const measure = (
+      page: import('@playwright/test').Page,
+      section: string,
+      selector: string,
+    ) =>
+      cell(page, section, 'wide · 960px')
+        .locator(selector)
+        .first()
+        .evaluate((el) => {
+          const style = getComputedStyle(el);
+          return {
+            block: el.getBoundingClientRect().height,
+            bg: style.backgroundColor,
+            border: style.borderTopColor,
+          };
+        });
+
+    await page.goto('/components/checkbox');
+    const checkboxBox = await measure(page, 'Sizes', '.pp-checkbox[data-size="md"] .pp-checkbox__input');
+    const checkbox = await measure(
+      page,
+      'Three states, and only two a user can reach',
+      '.pp-checkbox[data-state="unchecked"] .pp-checkbox__input',
+    );
+
+    await page.goto('/components/switch');
+    const trackBox = await measure(page, 'Sizes', '.pp-switch[data-size="md"] .pp-switch__input');
+    const track = await measure(
+      page,
+      'The thumb is the state indicator',
+      '.pp-switch[data-state="unchecked"] .pp-switch__input',
+    );
+
+    expect(trackBox.block, `a ${trackBox.block}px switch beside a ${checkboxBox.block}px checkbox`)
+      .toBeCloseTo(checkboxBox.block, 0);
+    expect(track.bg, 'the off track is not the checkbox\'s resting fill').toBe(checkbox.bg);
+    expect(track.border, 'the off track is not the checkbox\'s resting edge').toBe(checkbox.border);
+  });
+
+  /*
+   * THE DERIVED GEOMETRY (D-048 §2). The thumb is the track minus two insets
+   * and the travel is `inline − block`, so a md switch moves its 16px thumb
+   * 20px and is inset by the same 2px at both ends. Break any one of the four
+   * calc() expressions and one of these numbers moves.
+   */
+  test('the thumb is derived from the track, and travels inline minus block', async ({ page }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'The thumb is the state indicator', 'wide · 960px');
+
+    const geometry = (state: string) =>
+      wide
+        .locator(`.pp-switch[data-state="${state}"]`)
+        .first()
+        .evaluate((root) => {
+          const track = (root.querySelector('.pp-switch__input') as Element).getBoundingClientRect();
+          const thumb = (root.querySelector('.pp-switch__thumb') as Element).getBoundingClientRect();
+          return {
+            thumb: thumb.width,
+            square: thumb.width - thumb.height,
+            start: thumb.left - track.left,
+            end: track.right - thumb.right,
+            centre: thumb.left + thumb.width / 2 - track.left,
+          };
+        });
+
+    const off = await geometry('unchecked');
+    const on = await geometry('checked');
+
+    // 20 − 2×2. The thumb is a circle, so both axes agree.
+    expect(off.thumb).toBeCloseTo(16, 0);
+    expect(off.square).toBeCloseTo(0, 1);
+    // Inset at the start when off, the same inset at the end when on.
+    expect(off.start).toBeCloseTo(2, 0);
+    expect(on.end).toBeCloseTo(2, 0);
+    // Travel is inline − block = 40 − 20, whatever the inset is.
+    expect(on.centre - off.centre, 'the thumb did not travel inline − block').toBeCloseTo(20, 0);
+  });
+
+  /* One override moves all four lengths, which is the point of deriving them.
+     The cell sets --pp-switch-track-block-size: 2rem and nothing else. */
+  test('overriding the track block size moves the thumb, the inset and the travel', async ({
+    page,
+  }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'The styling API is six custom properties', 'wide · 960px');
+
+    const measured = await wide.locator('.pp-switch').nth(1).evaluate((root) => {
+      const track = (root.querySelector('.pp-switch__input') as Element).getBoundingClientRect();
+      const thumb = (root.querySelector('.pp-switch__thumb') as Element).getBoundingClientRect();
+      return { inline: track.width, block: track.height, thumb: thumb.width, start: thumb.left - track.left };
+    });
+
+    // 2rem = 32px block, so 64px inline, and the inset is still (32 − 16) / 2 —
+    // the thumb STEP is the size scale's, not a fraction of the track.
+    expect(measured.block).toBeCloseTo(32, 0);
+    expect(measured.inline).toBeCloseTo(64, 0);
+    expect(measured.thumb).toBeCloseTo(32 - 2 * 8, 0);
+    expect(measured.start).toBeCloseTo(8, 0);
+  });
+
+  /*
+   * D-048 §1, and the reason the spec's State table was amended. A
+   * --pp-color-border-strong track with a surface thumb measures 1.97:1 in the
+   * light theme; both pairings below have to clear 3:1, in both themes, from
+   * the colours the browser actually resolved rather than from the ones the
+   * stylesheet names.
+   */
+  test('the thumb clears 3:1 against the track, on and off, in both themes', async ({ page }) => {
+    await page.goto('/components/switch');
+
+    for (const width of ['wide · 960px']) {
+      for (const theme of ['light', 'dark']) {
+        /* Theme OUTSIDE cell: the harness renders one <section
+           class="matrix__theme"> per theme and the three width cells inside
+           it, not the other way round. */
+        const scope = page
+          .locator('section', { hasText: 'The thumb is the state indicator' })
+          .locator(`.matrix__theme[data-pp-theme="${theme}"]`)
+          .locator('.matrix__cell')
+          .filter({ hasText: width })
+          .first();
+
+        for (const state of ['unchecked', 'checked']) {
+          const ratio = await contrastOf(
+            scope.locator(`.pp-switch[data-state="${state}"]`).first(),
+            '.pp-switch__thumb',
+            '.pp-switch__input',
+          );
+          expect(
+            ratio,
+            `the ${state} thumb is ${ratio.toFixed(2)}:1 against its track in the ${theme} theme`,
+          ).toBeGreaterThanOrEqual(3);
+        }
+      }
+    }
+  });
+
+  test('on and off are different tracks, not only different thumb positions', async ({ page }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'The thumb is the state indicator', 'wide · 960px');
+
+    const bg = (state: string, part: string) =>
+      wide
+        .locator(`.pp-switch[data-state="${state}"] ${part}`)
+        .first()
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    expect(await bg('checked', '.pp-switch__input'), 'an on switch is painted like an off one').not.toBe(
+      await bg('unchecked', '.pp-switch__input'),
+    );
+    expect(await bg('checked', '.pp-switch__thumb')).not.toBe(await bg('unchecked', '.pp-switch__thumb'));
+  });
+
+  test('an invalid switch borrows the danger tone, and keeps it while focused', async ({ page }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+
+    const border = (selector: string) =>
+      wide.locator(selector).first().evaluate((el) => getComputedStyle(el).borderTopColor);
+
+    expect(await border('.pp-switch[data-invalid] .pp-switch__input')).not.toBe(
+      await border('.pp-switch:not([data-invalid]) .pp-switch__input'),
+    );
+
+    const focusedBorder = async (selector: string) => {
+      const el = wide.locator(selector).first();
+      await el.focus();
+      return el.evaluate((n) => getComputedStyle(n).borderTopColor);
+    };
+
+    expect(
+      await focusedBorder('.pp-switch[data-invalid] .pp-switch__input'),
+      'the error state vanished the moment the user acted on it',
+    ).not.toBe(await focusedBorder('.pp-switch:not([data-invalid]) .pp-switch__input'));
+  });
+
+  /* Source order in the stylesheet is the precedence story: checked, then
+     invalid, then disabled. A disabled switch that is ON must not still be
+     solid — and it must still be distinguishable from a live off one. */
+  test('disabled beats checked, and is distinguishable from a live off switch', async ({ page }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'Disabled', 'wide · 960px');
+
+    const bg = (selector: string) =>
+      wide.locator(selector).first().evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    /* A LIVE ON switch, not a live OFF one. The first version of this
+       assertion compared the disabled ON track with a live OFF track, which
+       differ because of `data-state` whatever the disabled rule does — so
+       deleting that rule outright left it green. Eighth time a
+       break-it-and-watch check has found an assertion that could not fail. */
+    expect(
+      await bg('.pp-switch[data-disabled][data-state="checked"] .pp-switch__input'),
+      'a disabled switch that is on is as loud as a live one',
+    ).not.toBe(await bg('.pp-switch:not([data-disabled])[data-state="checked"] .pp-switch__input'));
+
+    /* The distinction the spec worried about, moved into the thumb (D-048 §1):
+       a live off switch has a thumb you can see and a disabled one does not. */
+    const thumbContrast = (selector: string) =>
+      contrastOf(wide.locator(selector).first(), '.pp-switch__thumb', '.pp-switch__input');
+
+    const live = await thumbContrast('.pp-switch:not([data-disabled])[data-state="unchecked"]');
+    const dead = await thumbContrast('.pp-switch[data-disabled][data-state="unchecked"]');
+    expect(live, `off ${live.toFixed(2)}:1 vs disabled ${dead.toFixed(2)}:1`).toBeGreaterThan(dead);
+
+    expect(
+      await wide
+        .locator('.pp-switch[data-disabled] .pp-switch__input')
+        .first()
+        .evaluate((el) => getComputedStyle(el).cursor),
+    ).toBe('not-allowed');
+  });
+
+  /* WCAG 2.2 SC 2.5.8 on the block axis, the same geometry Checkbox and
+     RadioGroup record: a 24px circle centred on each target must not intersect
+     its neighbour's, which needs 24px between centres. */
+  test('undersized tracks clear the 2.5.8 spacing exception at gap="3"', async ({ page }) => {
+    await page.goto('/components/switch');
+    const wide = cell(page, 'Spacing is how an undersized target passes', 'wide · 960px');
+
+    const centres = await wide.locator('.pp-switch__input').evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        return r.top + r.height / 2;
+      }),
+    );
+
+    expect(centres.length).toBeGreaterThanOrEqual(3);
+    for (let i = 1; i < centres.length; i += 1) {
+      const gap = (centres[i] as number) - (centres[i - 1] as number);
+      expect(gap, `centres are ${gap}px apart — 24px circles would intersect`).toBeGreaterThanOrEqual(24);
+    }
+  });
+
+  /*
+   * D-048 §4, and the only assertion that can tell `inset-inline-start` from
+   * `translate`: they are the same movement in LTR and opposite movements in
+   * RTL. A physically translated thumb runs toward the track's START in an
+   * Arabic or Hebrew layout, which is a switch that reads backwards.
+   */
+  test('the thumb travels toward the inline END, in RTL as well as LTR', async ({ page }) => {
+    await page.goto('/components/switch');
+    const scope = page.locator('[data-testid="switch-thumb-target"]');
+
+    const offsetFromCentre = () =>
+      scope.locator('.pp-switch').first().evaluate((root) => {
+        const track = (root.querySelector('.pp-switch__input') as Element).getBoundingClientRect();
+        const thumb = (root.querySelector('.pp-switch__thumb') as Element).getBoundingClientRect();
+        return thumb.left + thumb.width / 2 - (track.left + track.width / 2);
+      });
+
+    // Checked, so the thumb is at the track's inline end: to the right in LTR.
+    expect(await offsetFromCentre()).toBeGreaterThan(0);
+
+    await scope.evaluate((el) => el.setAttribute('dir', 'rtl'));
+
+    expect(
+      await offsetFromCentre(),
+      'the thumb still moved rightwards in RTL — it is being translated, not offset',
+    ).toBeLessThan(0);
+  });
+
+  /*
+   * The pointer half of D-039 §2. The thumb sits over the input in the same
+   * grid cell, so without `pointer-events: none` the part of the track the
+   * thumb covers is dead.
+   *
+   * Asserted as FOCUS rather than as state, and on a CHECKED switch, for the
+   * reason D-047 §5 rewrote Radio's version of this test: the thumb must
+   * actually be under the click for the assertion to be able to fail, and the
+   * thumb is a <span> that cannot take focus, so if it takes the click focus
+   * lands nowhere.
+   */
+  test('the thumb is not a hole in the track', async ({ page }) => {
+    await page.goto('/components/switch');
+    const scope = page.locator('[data-testid="switch-thumb-target"]');
+    const root = scope.locator('.pp-switch');
+    const control = scope.locator('input');
+
+    await expect(control).toBeChecked();
+
+    // A checked md switch puts its 16px thumb at 22–38px of a 40px track, so
+    // x: 30 is the middle of the thumb.
+    await root.click({ position: { x: 30, y: 10 } });
+
+    await expect(control, 'the click landed on the thumb, not the track').toBeFocused();
+    await expect(control, 'the switch did not flip').not.toBeChecked();
+  });
+
+  /*
+   * The role, in a real accessibility tree rather than in jsdom — D-030 §2's
+   * standing rule, and the line D-030 §5 drew against `Toggle`. Also D-035 §1 /
+   * spec §12: association is demonstrated once, outside the Matrix, where the
+   * id is unique.
+   */
+  test('it is announced as a switch, named by its field', async ({ page }) => {
+    await page.goto('/components/switch');
+    const control = page.locator('[data-testid="switch-controlled"] input');
+
+    await expect(control).toHaveRole('switch');
+    await expect(control).toHaveAccessibleName('Ship on merge');
+    await expect(control).toHaveAccessibleDescription(/Deploys to production/);
+    await expect(control).toHaveAttribute('id', 'ship-on-merge');
+  });
+
+  /* The attribute and the platform agree, which is what lets this stylesheet
+     paint from `data-state` where Radio's cannot (D-048 §3). */
+  test('data-state agrees with :checked, and the effect is immediate', async ({ page }) => {
+    await page.goto('/components/switch');
+    const scope = page.locator('[data-testid="switch-controlled"]');
+
+    await expect(scope.locator('.pp-switch')).toHaveAttribute('data-state', 'unchecked');
+    await expect(scope).toContainText('Merges do nothing');
+
+    await scope.locator('#ship-on-merge').click();
+
+    await expect(scope.locator('.pp-switch')).toHaveAttribute('data-state', 'checked');
+    await expect(scope.locator('input')).toBeChecked();
+    // No Save button anywhere: the consequence is already on the page.
+    await expect(scope).toContainText('Already in effect');
+  });
+});
