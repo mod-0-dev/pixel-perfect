@@ -26,9 +26,39 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3C is complete (32 components) and the Tier 0.2
-  border-contrast gap is closed** (**D-050**). Next up is a component again:
-  3.14 `NumberInput`, or Tier 4.1, the overlay foundation
+- **In flight:** 3.14 `NumberInput` and 3.15 `Slider`, both `spec`, awaiting
+  Gate C on [`tier-3d-composite.md`](docs/specs/tier-3d-composite.md). The count
+  is unchanged — a spec moves nothing to `done`; see the **Done** line below,
+  which is the only place it is stated (D-045)
+- **Tier 4.1 is not the alternative it was listed as.** The previous entry here
+  offered "3.14 `NumberInput`, or Tier 4.1, the overlay foundation". 4.1's
+  **Deps** column is `T3`, and Gate B is absolute — "a component may not enter
+  `spec` until every entry in its Deps column is `done`". Three Tier 3 items are
+  not, so 4.1 was never eligible. Tracking said otherwise for two days; it says
+  so no longer
+- **The gate asks to be made smaller** (spec §0). `ROADMAP.md` filed 3.14–3.16
+  as one group. `Form` is not a composite input — it shares no prop, no value
+  and no ruling with the other two — and its error summary is an `Alert` (5.2,
+  `planned`), a dependency its **Deps** column never declared. It is also the
+  class of component D-014's carve-out was written about, since addressing each
+  field by id may need `Field` to gain a registration API. Proposed: `Form` gets
+  its own gate after 5.2, and this one approves two
+- **A deferral decided at the gate rather than discovered in the build**
+  (spec §7). `Slider` is a native `<input type="range">`, which hands over every
+  APG keyboard row, pointer capture and the ARIA value attributes for free. The
+  two-thumb range case cannot have it both ways: two overlapping inputs each
+  draw `:focus-visible` across the whole track, so focusing one thumb rings the
+  other, and moving the ring onto the thumb pseudo-element requires
+  `outline: none` — which Tier 0.7 bans outright and D-029 banned on purpose.
+  3.15 ships single-thumb; `RangeSlider` becomes its own item with the problem
+  named in advance
+- **3C §1's revisit was run, and the answer got firmer** (spec §9). It asked for
+  a re-test "if a fourth and fifth text-surface control appear", naming
+  `NumberInput`. `NumberInput`'s surface is not a variation on `Input`'s — the
+  steppers sit inside the box, so the border, fill and radius move off the
+  `<input>` and onto the wrapper, and the focus ring follows them via `:has()`.
+  A shared base class would be overridden in every declaration it contains. What
+  stays shared is what D-028 already shared: four components, one height
 - **A control's boundary is a solved token, not a ramp step** (**D-050 §1–2**).
   `--pp-color-border` was step 7 at **1.55:1** against the page in light, and it
   could not be fixed inside the ramp: a conforming neutral border lands at
@@ -490,7 +520,7 @@ to the component it was written about — see
 | **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — **`done`** 2026-09-17 (D-027 … D-033) |
 | **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
 | **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **complete** 2026-09-20, all six `done`. Approved 2026-09-18 (D-039) |
-| **3D — Composite inputs** | 3.14–3.16 | one gate |
+| **3D — Composite inputs** | 3.14–3.15 | [`tier-3d-composite.md`](docs/specs/tier-3d-composite.md) — **`spec`**, awaiting Gate C. §0 asks to move 3.16 `Form` to a gate of its own |
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -507,9 +537,9 @@ to the component it was written about — see
 | 3.11 | `Radio` / `RadioGroup` | `done` | hug / fill | client | 3.7 | **No roving tabindex** (D-039 §5) — radios sharing a `name` already are the APG pattern. `RadioGroup` generates the `name` and owns the value; `gap` defaults to `"3"` for WCAG 2.5.8. Paints from `:checked`, not `data-state` (D-047) |
 | 3.12 | `Switch` | `done` | hug | client | 3.7 | A 2:1 track, and the only member of the checkable three that is not square. Paints from `data-state`, because every change to a switch is an event on it — D-047 §2's deviation does not transfer. Off is the resting control surface with a muted thumb; the specified `--pp-color-border-strong` track was 1.97:1 (D-048) |
 | 3.13 | `Select` | `done` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11. The placeholder is seeded with `defaultValue=""`, because the HTML reset algorithm skips a disabled option; painted from `:checked` and `data-placeholder` is emitted only when controlled (D-049) |
-| 3.14 | `NumberInput` | `planned` | fill | client | 3.8 | Locale-aware, step controls |
-| 3.15 | `Slider` | `planned` | fill | client | 3.7 | Single + range |
-| 3.16 | `Form` | `planned` | fill | client | 3.7 | Error summary, submission state; validation stays the app's job |
+| 3.14 | `NumberInput` | `spec` | fill | client | 3.8 | `type="text"` with `role="spinbutton"`, never `type="number"` (3C §13.5). `null` is empty, `undefined` is uncontrolled. Clamp and snap on commit, never on a keystroke. Formatting is opt-in because an ambient locale cannot hydrate |
+| 3.15 | `Slider` | `spec` | fill | client | 3.7 | Native `<input type="range">`. **Single-thumb only** — the two-thumb case is deferred, because two overlapping inputs cannot place a focus ring without `outline: none` (spec §7) |
+| 3.16 | `Form` | `planned` | fill | client | 3.7, **5.2?** | Error summary, submission state; validation stays the app's job. Not a composite input, and its error summary is an `Alert` (5.2, `planned`) — spec §0 asks to move it out of the 3D gate |
 
 ---
 
