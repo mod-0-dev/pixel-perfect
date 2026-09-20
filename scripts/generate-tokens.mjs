@@ -4,10 +4,17 @@
 // Twelve-step ramps per hue, per theme. Steps that carry an accessibility
 // obligation are SOLVED for their contrast target rather than eyeballed:
 //
-//   focus   focus ring                   >= 3.0:1 against step 1
-//   step 9  solid background             >= 4.5:1 against its on-solid text
-//   step 11 muted text                   >= 4.5:1 against step 3
-//   step 12 body text                    >= 7.0:1 against step 3
+//   focus        focus ring              >= 3.0:1 against step 1
+//   edge         a control's boundary    >= 3.0:1 against steps 1, 2 AND 3
+//   edge-strong  its hover/strong state  >= 4.5:1 against steps 1, 2 AND 3
+//   step 9       solid background        >= 4.5:1 against its on-solid text
+//   step 11      muted text              >= 4.5:1 against step 3
+//   step 12      body text               >= 7.0:1 against step 3
+//
+// `edge` is OFF-RAMP, for the reason the focus ring is: a conforming border in
+// the light theme lands at L 0.633, below step 8's fixed 0.780, so putting it
+// at step 7 inverts the ramp and trips assertMonotonic below. Hanging a
+// contrast obligation on a ramp step tears a hole in the ramp (D-050).
 //
 // Steps 1-8 are a fixed, monotonic lightness ramp. Step 9 starts from a
 // designed lightness so brand hues stay vivid, and moves only as far as AA
@@ -95,6 +102,46 @@ function solveSolid(name, themeName, hue, peak, solidL, t) {
   return { step9: at(L), onSolid: useWhite ? 'white' : 'dark', onSolidValue };
 }
 
+/**
+ * A control's boundary, solved against EVERY neutral surface it can sit on.
+ *
+ * A border has two sides — the control's own fill and whatever is behind it —
+ * and the semantic layer puts three different neutral steps on those sides
+ * across the two themes: page (1), surface (1 light / 2 dark) and sunken
+ * (3 light / 1 dark), with raised adding 3 in dark. Solving against only the
+ * hardest one today would go quietly wrong the first time `bg-surface` is
+ * re-pointed, so all three are solved against and the most demanding wins.
+ *
+ * The surfaces are always NEUTRAL, even for a toned border: a danger-toned
+ * input sits on the page, not on a red one.
+ *
+ * `direction` keeps as much of the original ramp's lightness as the target
+ * allows — the least dark border that conforms in light, the least light one
+ * in dark — so the edge is as close to the old step 7 as WCAG permits rather
+ * than as far from it as the search range allows.
+ */
+function solveEdge(name, themeName, hue, peak, surfaces, target, t) {
+  // Step-8 chroma: this is a border, not a fill. A fill's chroma on a 1px
+  // edge reads as a coloured line rather than as a tinted boundary.
+  const chroma = chromaAt(8, peak);
+  const search = t.descending
+    ? { lo: 0.2, hi: 0.85, direction: 'lightest' }
+    : { lo: 0.42, hi: 0.98, direction: 'darkest' };
+
+  let pick = null;
+  for (const against of surfaces) {
+    const L = solveLightness({ against, target: target * MARGIN, hue, chroma, ...search });
+    if (L === null) {
+      throw new Error(
+        `${name}/${themeName}: edge cannot reach ${target}:1 against every surface at this chroma`,
+      );
+    }
+    // "Most demanding" is darker in light and lighter in dark.
+    pick = pick === null ? L : t.descending ? Math.min(pick, L) : Math.max(pick, L);
+  }
+  return [pick, clampChroma(pick, chroma, hue), hue];
+}
+
 /** Lightness must move in one direction across steps 1-8. Catches ramp inversions. */
 function assertMonotonic(name, themeName, steps, descending) {
   for (let i = 1; i < 8; i++) {
@@ -117,7 +164,7 @@ function assertMonotonic(name, themeName, steps, descending) {
 }
 const chromaAt = (step, peak) => peak * CHROMA_CURVE[step - 1];
 
-function buildRamp(name, { hue, peak, solidL }, themeName) {
+function buildRamp(name, { hue, peak, solidL }, themeName, surfaces) {
   const t = THEMES[themeName];
   const steps = {};
   const notes = {};
@@ -135,6 +182,34 @@ function buildRamp(name, { hue, peak, solidL }, themeName) {
   const LFocus = solveLightness({ against: step1, target: 3.0 * MARGIN, hue, chroma: cFocus, ...t.focusSearch });
   if (LFocus === null) throw new Error(`${name}/${themeName}: focus ring cannot reach 3:1`);
   notes.focus = [LFocus, clampChroma(LFocus, cFocus, hue), hue];
+
+  /*
+   * The control boundary and its strong state. Solved here rather than taken
+   * from steps 7 and 8, which are fixed lightness and measured 1.55:1 and
+   * 1.97:1 against the page in the light theme — the gap D-048 §2 recorded and
+   * D-050 closes. Steps 7 and 8 stay exactly where they were; they are still
+   * the ramp, and `--pp-color-border-subtle` still reads step 6.
+   */
+  notes.edge = solveEdge(name, themeName, hue, peak, surfaces, 3.0, t);
+  notes.edgeStrong = solveEdge(name, themeName, hue, peak, surfaces, 4.5, t);
+
+  /*
+   * The names would otherwise be able to invert. `--pp-color-border-strong`
+   * pointed at step 8 while `--pp-color-border` pointed at a conforming edge
+   * would make "strong" the WEAKER of the two, and Toggle's hover — which
+   * moves from border to border-strong — would lighten on hover instead of
+   * darkening. Asserted rather than assumed, because the targets alone do not
+   * guarantee it at every hue.
+   */
+  for (const against of surfaces) {
+    const weak = contrastOklch(notes.edge, against);
+    const strong = contrastOklch(notes.edgeStrong, against);
+    if (strong <= weak) {
+      throw new Error(
+        `${name}/${themeName}: edge-strong is ${strong.toFixed(2)}:1 where edge is ${weak.toFixed(2)}:1 — "strong" is the weaker of the two`,
+      );
+    }
+  }
 
   const solid = solveSolid(name, themeName, hue, peak, solidL[themeName], t);
   steps[9] = solid.step9;
@@ -203,14 +278,29 @@ function rampCss(name, ramp, indent) {
   lines.push(`${indent}--pp-palette-${name}-solid-active: ${formatOklch(aL, aC, aH)};`);
   const [fL, fC, fH] = ramp.notes.focus;
   lines.push(`${indent}--pp-palette-${name}-focus: ${formatOklch(fL, fC, fH)};`);
+  const [eL, eC, eH] = ramp.notes.edge;
+  lines.push(`${indent}--pp-palette-${name}-edge: ${formatOklch(eL, eC, eH)};`);
+  const [sL2, sC2, sH2] = ramp.notes.edgeStrong;
+  lines.push(`${indent}--pp-palette-${name}-edge-strong: ${formatOklch(sL2, sC2, sH2)};`);
   return lines.join('\n');
 }
 
 function build(themeName, indent = '    ') {
   const out = [];
   const report = [];
+
+  /* Every surface in the semantic layer is a NEUTRAL step — page is 1, surface
+     is 1 (light) / 2 (dark), sunken is 3 (light) / 1 (dark), raised is 1 / 3.
+     Computed once and handed to every hue, because a danger-toned border still
+     sits on a neutral background. */
+  const t = THEMES[themeName];
+  const surfaces = [1, 2, 3].map((n) => {
+    const L = t.fixed[n];
+    return [L, clampChroma(L, chromaAt(n, HUES.neutral.peak), HUES.neutral.hue), HUES.neutral.hue];
+  });
+
   for (const [name, spec] of Object.entries(HUES)) {
-    const ramp = buildRamp(name, spec, themeName);
+    const ramp = buildRamp(name, spec, themeName, surfaces);
     out.push(rampCss(name, ramp, indent));
     report.push({
       hue: name,
@@ -219,6 +309,8 @@ function build(themeName, indent = '    ') {
       solidVsText: contrastOklch(ramp.steps[9], ramp.notes.onSolidValue),
       activeVsText: contrastOklch(ramp.notes.solidActive, ramp.notes.onSolidValue),
       focusVs1: contrastOklch(ramp.notes.focus, ramp.steps[1]),
+      edgeWorst: Math.min(...surfaces.map((s) => contrastOklch(ramp.notes.edge, s))),
+      edgeStrongWorst: Math.min(...surfaces.map((s) => contrastOklch(ramp.notes.edgeStrong, s))),
       step11Vs3: contrastOklch(ramp.steps[11], ramp.steps[3]),
       step12Vs3: contrastOklch(ramp.steps[12], ramp.steps[3]),
     });
@@ -241,12 +333,21 @@ const header = `/*
  * Ramp step semantics:
  *   1-2   page and subtle backgrounds
  *   3-5   component backgrounds: rest, hover, active
- *   6-7   borders: subtle, interactive
- *   8     strong border and focus ring   (>= 3:1 on step 1)
- *   9-10  solid fill: rest, hover        (>= 4.5:1 against -on-solid)
- *   11    muted text                     (>= 4.5:1 on step 3)
- *   12    body text                      (fixed lightness, asserted >= 7:1 on step 3)
- *   -focus         focus ring            (>= 3:1 on step 1)
+ *   6-7   decorative borders and dividers  (NO contrast obligation)
+ *   8     a heavier decorative border       (NO contrast obligation)
+ *   9-10  solid fill: rest, hover           (>= 4.5:1 against -on-solid)
+ *   11    muted text                        (>= 4.5:1 on step 3)
+ *   12    body text                         (fixed lightness, asserted >= 7:1 on step 3)
+ *   -focus         focus ring               (>= 3:1 on step 1)
+ *   -edge          a control's boundary     (>= 3:1 on steps 1, 2 and 3)
+ *   -edge-strong   its strong/hover state   (>= 4.5:1 on steps 1, 2 and 3)
+ *
+ * The three lines above steps 9-10 were WRONG until D-050. They read
+ * "6-7 borders: subtle, interactive" and "8 strong border and focus ring
+ * (>= 3:1 on step 1)" — but step 8 is a fixed lightness at 1.97:1 on step 1,
+ * and the focus ring had already been moved to its own solved token precisely
+ * because step 8 could not carry the requirement. A generated file claimed a
+ * guarantee that nothing produced and nothing checked.
  *   -solid-active  pressed solid fill    (>= 4.5:1 against -on-solid)
  *   -on-solid      text/icon colour for steps 9-10 and -solid-active
  */

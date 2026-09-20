@@ -44,7 +44,7 @@ something is still happening. It never freezes.
 | --- | --- | --- |
 | `--pp-spinner-size` | per `size` | Box size |
 | `--pp-spinner-color` | tone solid | Arc colour |
-| `--pp-spinner-track-color` | tone border | Ring behind the arc |
+| `--pp-spinner-track-color` | `--pp-tone-border-subtle` | Ring behind the arc |
 | `--pp-spinner-duration` | 720ms | Rotation period |
 
 ## Don't

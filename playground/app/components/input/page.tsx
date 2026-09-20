@@ -80,7 +80,9 @@ export default function InputPage() {
         <p>
           Disabled dims the text and leaves the tab order; read-only keeps the value selectable,
           focusable and submitted, and only the fill says it is not yours to change. The border
-          stays put on read-only, which is what tells the two apart at a glance.
+          tells them apart too, and in the direction WCAG expects: a live control&rsquo;s edge
+          meets 1.4.11&rsquo;s 3:1, and a disabled one drops to the decorative step because
+          inactive components are exempt from it.
         </p>
         <Matrix>
           <Stack gap="3">

@@ -92,9 +92,13 @@
 
   /* Last, so a disabled checked box is grey rather than solid — the state the
      user can do nothing about should not be the loudest thing in the form. */
+  /* The border drops to the DECORATIVE step: --pp-color-border now carries a
+     3:1 obligation, WCAG 1.4.11 exempts inactive components from it, and a
+     disabled box on the live edge erases the difference the exemption exists
+     to allow (D-050). Button's disabled outline variant is the precedent. */
   .pp-checkbox[data-disabled] {
     --_bg: var(--pp-color-bg-sunken);
-    --_border: var(--pp-color-border);
+    --_border: var(--pp-color-border-subtle);
     --_mark: var(--pp-color-text-disabled);
   }
 

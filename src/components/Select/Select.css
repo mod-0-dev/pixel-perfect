@@ -107,6 +107,17 @@
     --_bg: var(--pp-color-bg-sunken);
     --_color: var(--pp-color-text-disabled);
     --_indicator-color: var(--pp-color-text-disabled);
+    /*
+     * DROPS TO THE DECORATIVE STEP, BECAUSE A DISABLED CONTROL IS EXEMPT AND
+     * SHOULD LOOK IT (D-050).
+     *
+     * `--pp-color-border` now carries a 3:1 obligation. WCAG 1.4.11 exempts
+     * inactive components from it, and leaving a disabled control on the same
+     * edge as a live one would erase the difference the exemption exists to
+     * allow. `Button` already did exactly this for its disabled outline
+     * variant; this is that precedent applied to the rest of the tier.
+     */
+    --_border: var(--pp-color-border-subtle);
   }
 
   .pp-select__input {

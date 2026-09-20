@@ -1200,8 +1200,13 @@ test.describe('Input', () => {
     const disabled = await read('.pp-input[data-disabled] .pp-input__control');
     const readOnly = await read('.pp-input[data-readonly] .pp-input__control');
 
-    // Same fill by design; the text and border are what tell them apart.
-    expect(disabled.color).not.toBe(readOnly.color);
+    // Same fill by design; the text and the border are what tell them apart.
+    expect(disabled.color, 'the text is the same on both').not.toBe(readOnly.color);
+    /* D-050: the disabled edge drops to the decorative step, because 1.4.11
+       exempts inactive components from the 3:1 the live one meets — and the
+       docs and the playground both now say so, which under D-045 means it is
+       asserted rather than restated. */
+    expect(disabled.border, 'the disabled edge is the live one').not.toBe(readOnly.border);
   });
 
   /* D-035 §1 / spec §12: association is demonstrated once, outside the Matrix,

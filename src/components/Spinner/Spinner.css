@@ -36,7 +36,12 @@
   }
 
   .pp-spinner__ring {
-    stroke: var(--pp-spinner-track-color, var(--pp-tone-border));
+    /* THE DECORATIVE STEP, NOT THE CONTROL EDGE (D-050). --pp-tone-border now
+       resolves to a solved 3:1 boundary, which on a spinner puts the track
+       within a hair of the arc drawn over it — the thing reads as a ring with
+       a slightly darker segment rather than as an arc going round. A track is
+       decoration behind a mark, so it takes the step decoration takes. */
+    stroke: var(--pp-spinner-track-color, var(--pp-tone-border-subtle));
     stroke-width: 3;
   }
 

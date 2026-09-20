@@ -95,9 +95,10 @@
    * render and the pseudo-class the browser matches are the same fact here,
    * and mixing the two mechanisms in one file is how the precedence gets lost.
    */
+  /* The border drops to the DECORATIVE step (D-050) — see Checkbox. */
   .pp-radio:has(.pp-radio__input:disabled) {
     --_bg: var(--pp-color-bg-sunken);
-    --_border: var(--pp-color-border);
+    --_border: var(--pp-color-border-subtle);
     --_dot: var(--pp-color-text-disabled);
   }
 

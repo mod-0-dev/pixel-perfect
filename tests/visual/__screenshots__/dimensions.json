@@ -1,0 +1,138 @@
+{
+  "aspect-ratio.png": {
+    "width": 1280,
+    "height": 11530
+  },
+  "avatar.png": {
+    "width": 1280,
+    "height": 1957
+  },
+  "badge.png": {
+    "width": 1280,
+    "height": 2593
+  },
+  "button-group.png": {
+    "width": 1280,
+    "height": 3536
+  },
+  "button.png": {
+    "width": 1280,
+    "height": 5926
+  },
+  "center.png": {
+    "width": 1280,
+    "height": 2969
+  },
+  "checkbox.png": {
+    "width": 1280,
+    "height": 5605
+  },
+  "cluster.png": {
+    "width": 1280,
+    "height": 5388
+  },
+  "code.png": {
+    "width": 1280,
+    "height": 2600
+  },
+  "container.png": {
+    "width": 1280,
+    "height": 12115
+  },
+  "field.png": {
+    "width": 1280,
+    "height": 8572
+  },
+  "grid.png": {
+    "width": 1280,
+    "height": 6510
+  },
+  "harness.png": {
+    "width": 1280,
+    "height": 1262
+  },
+  "heading.png": {
+    "width": 1280,
+    "height": 3946
+  },
+  "icon-button.png": {
+    "width": 1280,
+    "height": 2984
+  },
+  "icon.png": {
+    "width": 1280,
+    "height": 2586
+  },
+  "input.png": {
+    "width": 1280,
+    "height": 5118
+  },
+  "kbd.png": {
+    "width": 1280,
+    "height": 1625
+  },
+  "label.png": {
+    "width": 1280,
+    "height": 5304
+  },
+  "link.png": {
+    "width": 1280,
+    "height": 3353
+  },
+  "radio.png": {
+    "width": 1280,
+    "height": 7503
+  },
+  "scroller.png": {
+    "width": 1280,
+    "height": 2706
+  },
+  "select.png": {
+    "width": 1280,
+    "height": 7834
+  },
+  "separator.png": {
+    "width": 1280,
+    "height": 1803
+  },
+  "skeleton.png": {
+    "width": 1280,
+    "height": 2404
+  },
+  "spinner.png": {
+    "width": 1280,
+    "height": 1601
+  },
+  "split.png": {
+    "width": 1280,
+    "height": 2502
+  },
+  "stack.png": {
+    "width": 1280,
+    "height": 6932
+  },
+  "switch.png": {
+    "width": 1280,
+    "height": 6120
+  },
+  "text.png": {
+    "width": 1280,
+    "height": 4197
+  },
+  "textarea.png": {
+    "width": 1280,
+    "height": 8428
+  },
+  "toggle.png": {
+    "width": 1280,
+    "height": 3418
+  },
+  "tokens.png": {
+    "width": 1280,
+    "height": 2417
+  },
+  "visually-hidden.png": {
+    "width": 1280,
+    "height": 1129
+  }
+}

@@ -168,10 +168,16 @@ Off is the same resting surface and edge an unchecked checkbox takes, with a
 
 Both thumb-on-track pairings are ones `npm run lint:contrast` verifies in every
 hue and both themes. The `--pp-color-border-strong` track the spec originally
-called for is not: measured against the real ramp it is 1.97:1 on the page in
-the light theme, and a surface-coloured thumb on it is 1.97:1 too — so the part
-WCAG 1.4.11 most clearly asks for, the thing that says which way the switch is
-set, was the part that failed. See D-048 §1.
+called for was not: **at the time**, that token resolved to ramp step 8, which
+measured 1.97:1 on the page in the light theme — and a surface-coloured thumb on
+it was 1.97:1 too, so the part WCAG 1.4.11 most clearly asks for, the thing that
+says which way the switch is set, was the part that failed. See D-048 §1.
+
+`--pp-color-border-strong` is a conforming 5.10:1 today, because
+[D-050](../DECISIONS.md#d-050) re-pointed it at a solved step. That does not
+reinstate the original design: a filled track still says *disabled* rather than
+*off*, and the thumb is still what carries the state. The number above is kept
+as what was measured then, not as what the token is worth now.
 
 ## Keyboard
 

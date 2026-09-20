@@ -70,3 +70,16 @@ the base tint stays — a static placeholder is fully legible.
 // ✗ A bare skeleton says nothing to a screen reader. Mark the region busy.
 <Skeleton shape="text" lines={4} />
 ```
+
+## Why the sweep is stronger in dark than in light
+
+1.24:1 against the base in light, 2.09:1 in dark. The base is a border step
+because a background step on a surface was barely visible in light, and the
+highlight has to be lighter than the base in both themes — which the neutral
+ramp running the other way in dark makes a `light-dark()` job.
+
+[D-050](../DECISIONS.md#d-050) re-pointed `--pp-color-border` at a solved 3:1
+step, which widened the dark sweep. The symmetric alternative was built and
+looked at: it brought dark back to 1.46:1 and left the bars barely
+distinguishable from the surface. The base's legibility governs, and nothing
+requires a decorative sweep to hit a ratio.
