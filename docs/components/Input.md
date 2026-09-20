@@ -76,8 +76,13 @@ except for disabled" is one you have to look up.
 
 | | Focusable | Selectable | Submitted | Looks |
 | --- | --- | --- | --- | --- |
-| `disabled` | no | no | no | dimmed text, sunken fill |
+| `disabled` | no | no | no | dimmed text, sunken fill, **faint border** |
 | `readOnly` | yes | yes | yes | sunken fill, ordinary text and border |
+
+The disabled border drops to `--pp-color-border-subtle`: WCAG 1.4.11 exempts
+inactive components from the 3:1 a live control's edge has to meet, and leaving
+both on the same edge would erase the difference the exemption exists to allow
+([D-050](../DECISIONS.md#d-050)).
 
 Use `readOnly` for a value the user should be able to read, copy and submit but
 not edit. Use `disabled` for one that is not available at all.

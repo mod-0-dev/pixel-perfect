@@ -26,8 +26,8 @@
 
     /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);
-    --pp-color-border: var(--pp-palette-neutral-7);
-    --pp-color-border-strong: var(--pp-palette-neutral-8);
+    --pp-color-border: var(--pp-palette-neutral-edge);
+    --pp-color-border-strong: var(--pp-palette-neutral-edge-strong);
 
     /* Focus */
     --pp-color-focus-ring: var(--pp-palette-accent-focus);
@@ -44,8 +44,8 @@
     --pp-tone-bg-hover: var(--pp-palette-neutral-4);
     --pp-tone-bg-active: var(--pp-palette-neutral-5);
     --pp-tone-border-subtle: var(--pp-palette-neutral-6);
-    --pp-tone-border: var(--pp-palette-neutral-7);
-    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-border: var(--pp-palette-neutral-edge);
+    --pp-tone-border-strong: var(--pp-palette-neutral-edge-strong);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
     --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
@@ -74,8 +74,8 @@
 
     /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);
-    --pp-color-border: var(--pp-palette-neutral-7);
-    --pp-color-border-strong: var(--pp-palette-neutral-8);
+    --pp-color-border: var(--pp-palette-neutral-edge);
+    --pp-color-border-strong: var(--pp-palette-neutral-edge-strong);
 
     /* Focus */
     --pp-color-focus-ring: var(--pp-palette-accent-focus);
@@ -92,8 +92,8 @@
     --pp-tone-bg-hover: var(--pp-palette-neutral-4);
     --pp-tone-bg-active: var(--pp-palette-neutral-5);
     --pp-tone-border-subtle: var(--pp-palette-neutral-6);
-    --pp-tone-border: var(--pp-palette-neutral-7);
-    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-border: var(--pp-palette-neutral-edge);
+    --pp-tone-border-strong: var(--pp-palette-neutral-edge-strong);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
     --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
@@ -123,8 +123,8 @@
 
       /* Borders */
       --pp-color-border-subtle: var(--pp-palette-neutral-6);
-      --pp-color-border: var(--pp-palette-neutral-7);
-      --pp-color-border-strong: var(--pp-palette-neutral-8);
+      --pp-color-border: var(--pp-palette-neutral-edge);
+      --pp-color-border-strong: var(--pp-palette-neutral-edge-strong);
 
       /* Focus */
       --pp-color-focus-ring: var(--pp-palette-accent-focus);
@@ -141,8 +141,8 @@
       --pp-tone-bg-hover: var(--pp-palette-neutral-4);
       --pp-tone-bg-active: var(--pp-palette-neutral-5);
       --pp-tone-border-subtle: var(--pp-palette-neutral-6);
-      --pp-tone-border: var(--pp-palette-neutral-7);
-      --pp-tone-border-strong: var(--pp-palette-neutral-8);
+      --pp-tone-border: var(--pp-palette-neutral-edge);
+      --pp-tone-border-strong: var(--pp-palette-neutral-edge-strong);
       --pp-tone-solid: var(--pp-palette-neutral-9);
       --pp-tone-solid-hover: var(--pp-palette-neutral-10);
       --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
@@ -172,8 +172,8 @@
 
     /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);
-    --pp-color-border: var(--pp-palette-neutral-7);
-    --pp-color-border-strong: var(--pp-palette-neutral-8);
+    --pp-color-border: var(--pp-palette-neutral-edge);
+    --pp-color-border-strong: var(--pp-palette-neutral-edge-strong);
 
     /* Focus */
     --pp-color-focus-ring: var(--pp-palette-accent-focus);
@@ -190,8 +190,8 @@
     --pp-tone-bg-hover: var(--pp-palette-neutral-4);
     --pp-tone-bg-active: var(--pp-palette-neutral-5);
     --pp-tone-border-subtle: var(--pp-palette-neutral-6);
-    --pp-tone-border: var(--pp-palette-neutral-7);
-    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-border: var(--pp-palette-neutral-edge);
+    --pp-tone-border-strong: var(--pp-palette-neutral-edge-strong);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
     --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
@@ -214,8 +214,8 @@
     --pp-tone-bg-hover: var(--pp-palette-neutral-4);
     --pp-tone-bg-active: var(--pp-palette-neutral-5);
     --pp-tone-border-subtle: var(--pp-palette-neutral-6);
-    --pp-tone-border: var(--pp-palette-neutral-7);
-    --pp-tone-border-strong: var(--pp-palette-neutral-8);
+    --pp-tone-border: var(--pp-palette-neutral-edge);
+    --pp-tone-border-strong: var(--pp-palette-neutral-edge-strong);
     --pp-tone-solid: var(--pp-palette-neutral-9);
     --pp-tone-solid-hover: var(--pp-palette-neutral-10);
     --pp-tone-solid-active: var(--pp-palette-neutral-solid-active);
@@ -231,8 +231,8 @@
     --pp-tone-bg-hover: var(--pp-palette-accent-4);
     --pp-tone-bg-active: var(--pp-palette-accent-5);
     --pp-tone-border-subtle: var(--pp-palette-accent-6);
-    --pp-tone-border: var(--pp-palette-accent-7);
-    --pp-tone-border-strong: var(--pp-palette-accent-8);
+    --pp-tone-border: var(--pp-palette-accent-edge);
+    --pp-tone-border-strong: var(--pp-palette-accent-edge-strong);
     --pp-tone-solid: var(--pp-palette-accent-9);
     --pp-tone-solid-hover: var(--pp-palette-accent-10);
     --pp-tone-solid-active: var(--pp-palette-accent-solid-active);
@@ -248,8 +248,8 @@
     --pp-tone-bg-hover: var(--pp-palette-danger-4);
     --pp-tone-bg-active: var(--pp-palette-danger-5);
     --pp-tone-border-subtle: var(--pp-palette-danger-6);
-    --pp-tone-border: var(--pp-palette-danger-7);
-    --pp-tone-border-strong: var(--pp-palette-danger-8);
+    --pp-tone-border: var(--pp-palette-danger-edge);
+    --pp-tone-border-strong: var(--pp-palette-danger-edge-strong);
     --pp-tone-solid: var(--pp-palette-danger-9);
     --pp-tone-solid-hover: var(--pp-palette-danger-10);
     --pp-tone-solid-active: var(--pp-palette-danger-solid-active);
@@ -265,8 +265,8 @@
     --pp-tone-bg-hover: var(--pp-palette-success-4);
     --pp-tone-bg-active: var(--pp-palette-success-5);
     --pp-tone-border-subtle: var(--pp-palette-success-6);
-    --pp-tone-border: var(--pp-palette-success-7);
-    --pp-tone-border-strong: var(--pp-palette-success-8);
+    --pp-tone-border: var(--pp-palette-success-edge);
+    --pp-tone-border-strong: var(--pp-palette-success-edge-strong);
     --pp-tone-solid: var(--pp-palette-success-9);
     --pp-tone-solid-hover: var(--pp-palette-success-10);
     --pp-tone-solid-active: var(--pp-palette-success-solid-active);
@@ -282,8 +282,8 @@
     --pp-tone-bg-hover: var(--pp-palette-warning-4);
     --pp-tone-bg-active: var(--pp-palette-warning-5);
     --pp-tone-border-subtle: var(--pp-palette-warning-6);
-    --pp-tone-border: var(--pp-palette-warning-7);
-    --pp-tone-border-strong: var(--pp-palette-warning-8);
+    --pp-tone-border: var(--pp-palette-warning-edge);
+    --pp-tone-border-strong: var(--pp-palette-warning-edge-strong);
     --pp-tone-solid: var(--pp-palette-warning-9);
     --pp-tone-solid-hover: var(--pp-palette-warning-10);
     --pp-tone-solid-active: var(--pp-palette-warning-solid-active);

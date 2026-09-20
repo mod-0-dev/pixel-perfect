@@ -19,10 +19,28 @@ export const BASE = {
     '--pp-color-text-disabled': 'var(--pp-palette-neutral-8)',
     '--pp-color-text-on-solid': 'var(--pp-palette-neutral-on-solid)',
   },
+  /*
+   * TWO OF THESE THREE CARRY A CONTRAST GUARANTEE AND ONE DOES NOT, AND THAT IS
+   * THE WHOLE DISTINCTION (D-050).
+   *
+   * `--pp-color-border` is what a CONTROL's boundary reads — an Input, a
+   * Checkbox, an outline Button — and WCAG 1.4.11 asks 3:1 of it, because in
+   * the light theme `bg-surface` IS `bg-page` and the edge is the only thing
+   * identifying the control. It resolves to the solved `-edge` step, not to
+   * ramp step 7, which measured 1.55:1.
+   *
+   * `--pp-color-border-subtle` is DECORATION — a Separator, a Skeleton, the
+   * seam inside a card. A divider is not a user interface component, 1.4.11
+   * does not reach it, and a 3:1 divider is a black line across the page. It
+   * stays on ramp step 6 deliberately.
+   *
+   * Which one a new component reaches for is therefore not a matter of taste:
+   * if the line is what tells you a control is there, it is `border`.
+   */
   'Borders': {
     '--pp-color-border-subtle': 'var(--pp-palette-neutral-6)',
-    '--pp-color-border': 'var(--pp-palette-neutral-7)',
-    '--pp-color-border-strong': 'var(--pp-palette-neutral-8)',
+    '--pp-color-border': 'var(--pp-palette-neutral-edge)',
+    '--pp-color-border-strong': 'var(--pp-palette-neutral-edge-strong)',
   },
   'Focus': {
     '--pp-color-focus-ring': 'var(--pp-palette-accent-focus)',
@@ -71,9 +89,11 @@ export function toneMap(hue) {
     '--pp-tone-bg': `var(--pp-palette-${hue}-3)`,
     '--pp-tone-bg-hover': `var(--pp-palette-${hue}-4)`,
     '--pp-tone-bg-active': `var(--pp-palette-${hue}-5)`,
+    // The same split as the neutral trio above: subtle is decoration on the
+    // ramp, the other two are solved control boundaries (D-050).
     '--pp-tone-border-subtle': `var(--pp-palette-${hue}-6)`,
-    '--pp-tone-border': `var(--pp-palette-${hue}-7)`,
-    '--pp-tone-border-strong': `var(--pp-palette-${hue}-8)`,
+    '--pp-tone-border': `var(--pp-palette-${hue}-edge)`,
+    '--pp-tone-border-strong': `var(--pp-palette-${hue}-edge-strong)`,
     '--pp-tone-solid': `var(--pp-palette-${hue}-9)`,
     '--pp-tone-solid-hover': `var(--pp-palette-${hue}-10)`,
     '--pp-tone-solid-active': `var(--pp-palette-${hue}-solid-active)`,

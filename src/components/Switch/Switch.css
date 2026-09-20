@@ -128,7 +128,10 @@
    */
   .pp-switch[data-disabled] {
     --_track-bg: var(--pp-color-bg-sunken);
-    --_track-border: var(--pp-color-border);
+    /* The DECORATIVE step: --pp-color-border now carries a 3:1 obligation that
+       1.4.11 exempts inactive components from, and a disabled track on the
+       live edge erases the very difference D-048 §1 relies on (D-050). */
+    --_track-border: var(--pp-color-border-subtle);
     --_thumb: var(--pp-color-text-disabled);
   }
 

@@ -8,12 +8,21 @@
  * Ramp step semantics:
  *   1-2   page and subtle backgrounds
  *   3-5   component backgrounds: rest, hover, active
- *   6-7   borders: subtle, interactive
- *   8     strong border and focus ring   (>= 3:1 on step 1)
- *   9-10  solid fill: rest, hover        (>= 4.5:1 against -on-solid)
- *   11    muted text                     (>= 4.5:1 on step 3)
- *   12    body text                      (fixed lightness, asserted >= 7:1 on step 3)
- *   -focus         focus ring            (>= 3:1 on step 1)
+ *   6-7   decorative borders and dividers  (NO contrast obligation)
+ *   8     a heavier decorative border       (NO contrast obligation)
+ *   9-10  solid fill: rest, hover           (>= 4.5:1 against -on-solid)
+ *   11    muted text                        (>= 4.5:1 on step 3)
+ *   12    body text                         (fixed lightness, asserted >= 7:1 on step 3)
+ *   -focus         focus ring               (>= 3:1 on step 1)
+ *   -edge          a control's boundary     (>= 3:1 on steps 1, 2 and 3)
+ *   -edge-strong   its strong/hover state   (>= 4.5:1 on steps 1, 2 and 3)
+ *
+ * The three lines above steps 9-10 were WRONG until D-050. They read
+ * "6-7 borders: subtle, interactive" and "8 strong border and focus ring
+ * (>= 3:1 on step 1)" — but step 8 is a fixed lightness at 1.97:1 on step 1,
+ * and the focus ring had already been moved to its own solved token precisely
+ * because step 8 could not carry the requirement. A generated file claimed a
+ * guarantee that nothing produced and nothing checked.
  *   -solid-active  pressed solid fill    (>= 4.5:1 against -on-solid)
  *   -on-solid      text/icon colour for steps 9-10 and -solid-active
  */
@@ -35,6 +44,8 @@
     --pp-palette-neutral-on-solid: oklch(100% 0 0);
     --pp-palette-neutral-solid-active: oklch(41% 0.0078 258);
     --pp-palette-neutral-focus: oklch(65.98% 0.0068 258);
+    --pp-palette-neutral-edge: oklch(63.3% 0.0038 258);
+    --pp-palette-neutral-edge-strong: oklch(53.42% 0.0038 258);
 
     --pp-palette-accent-1: oklch(99.4% 0.0028 258);
     --pp-palette-accent-2: oklch(98% 0.0095 258);
@@ -51,6 +62,8 @@
     --pp-palette-accent-on-solid: oklch(100% 0 0);
     --pp-palette-accent-solid-active: oklch(46% 0.1649 258);
     --pp-palette-accent-focus: oklch(66.18% 0.1445 258);
+    --pp-palette-accent-edge: oklch(63.32% 0.0816 258);
+    --pp-palette-accent-edge-strong: oklch(53.46% 0.0816 258);
 
     --pp-palette-danger-1: oklch(99.4% 0.0029 25);
     --pp-palette-danger-2: oklch(98% 0.0097 25);
@@ -67,6 +80,8 @@
     --pp-palette-danger-on-solid: oklch(100% 0 0);
     --pp-palette-danger-solid-active: oklch(48% 0.1843 25);
     --pp-palette-danger-focus: oklch(67.86% 0.1615 25);
+    --pp-palette-danger-edge: oklch(64.35% 0.0912 25);
+    --pp-palette-danger-edge-strong: oklch(54.47% 0.0912 25);
 
     --pp-palette-success-1: oklch(99.4% 0.0045 150);
     --pp-palette-success-2: oklch(98% 0.009 150);
@@ -83,6 +98,8 @@
     --pp-palette-success-on-solid: oklch(100% 0 0);
     --pp-palette-success-solid-active: oklch(44% 0.1213 150);
     --pp-palette-success-focus: oklch(64.62% 0.1275 150);
+    --pp-palette-success-edge: oklch(62.49% 0.072 150);
+    --pp-palette-success-edge-strong: oklch(52.61% 0.072 150);
 
     --pp-palette-warning-1: oklch(99.4% 0.0048 80);
     --pp-palette-warning-2: oklch(98% 0.0096 80);
@@ -99,6 +116,8 @@
     --pp-palette-warning-on-solid: oklch(22% 0.0462 80);
     --pp-palette-warning-solid-active: oklch(71% 0.1471 80);
     --pp-palette-warning-focus: oklch(66.4% 0.136 80);
+    --pp-palette-warning-edge: oklch(63.48% 0.0768 80);
+    --pp-palette-warning-edge-strong: oklch(53.61% 0.0768 80);
 
     /* ---- Dimension, type, motion. Theme-independent. ---- */
 
@@ -234,6 +253,8 @@
     --pp-palette-neutral-on-solid: oklch(100% 0 0);
     --pp-palette-neutral-solid-active: oklch(41% 0.0078 258);
     --pp-palette-neutral-focus: oklch(65.98% 0.0068 258);
+    --pp-palette-neutral-edge: oklch(63.3% 0.0038 258);
+    --pp-palette-neutral-edge-strong: oklch(53.42% 0.0038 258);
 
     --pp-palette-accent-1: oklch(99.4% 0.0028 258);
     --pp-palette-accent-2: oklch(98% 0.0095 258);
@@ -250,6 +271,8 @@
     --pp-palette-accent-on-solid: oklch(100% 0 0);
     --pp-palette-accent-solid-active: oklch(46% 0.1649 258);
     --pp-palette-accent-focus: oklch(66.18% 0.1445 258);
+    --pp-palette-accent-edge: oklch(63.32% 0.0816 258);
+    --pp-palette-accent-edge-strong: oklch(53.46% 0.0816 258);
 
     --pp-palette-danger-1: oklch(99.4% 0.0029 25);
     --pp-palette-danger-2: oklch(98% 0.0097 25);
@@ -266,6 +289,8 @@
     --pp-palette-danger-on-solid: oklch(100% 0 0);
     --pp-palette-danger-solid-active: oklch(48% 0.1843 25);
     --pp-palette-danger-focus: oklch(67.86% 0.1615 25);
+    --pp-palette-danger-edge: oklch(64.35% 0.0912 25);
+    --pp-palette-danger-edge-strong: oklch(54.47% 0.0912 25);
 
     --pp-palette-success-1: oklch(99.4% 0.0045 150);
     --pp-palette-success-2: oklch(98% 0.009 150);
@@ -282,6 +307,8 @@
     --pp-palette-success-on-solid: oklch(100% 0 0);
     --pp-palette-success-solid-active: oklch(44% 0.1213 150);
     --pp-palette-success-focus: oklch(64.62% 0.1275 150);
+    --pp-palette-success-edge: oklch(62.49% 0.072 150);
+    --pp-palette-success-edge-strong: oklch(52.61% 0.072 150);
 
     --pp-palette-warning-1: oklch(99.4% 0.0048 80);
     --pp-palette-warning-2: oklch(98% 0.0096 80);
@@ -298,6 +325,8 @@
     --pp-palette-warning-on-solid: oklch(22% 0.0462 80);
     --pp-palette-warning-solid-active: oklch(71% 0.1471 80);
     --pp-palette-warning-focus: oklch(66.4% 0.136 80);
+    --pp-palette-warning-edge: oklch(63.48% 0.0768 80);
+    --pp-palette-warning-edge-strong: oklch(53.61% 0.0768 80);
 
     --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.06), 0 1px 3px oklch(0% 0 0 / 0.08);
     --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.06), 0 4px 12px oklch(0% 0 0 / 0.1);
@@ -321,6 +350,8 @@
       --pp-palette-neutral-on-solid: oklch(20% 0.0032 258);
       --pp-palette-neutral-solid-active: oklch(79% 0.0078 258);
       --pp-palette-neutral-focus: oklch(49.35% 0.0068 258);
+      --pp-palette-neutral-edge: oklch(53.57% 0.0038 258);
+      --pp-palette-neutral-edge-strong: oklch(63.46% 0.0038 258);
 
       --pp-palette-accent-1: oklch(17.8% 0.0051 258);
       --pp-palette-accent-2: oklch(21.3% 0.0102 258);
@@ -337,6 +368,8 @@
       --pp-palette-accent-on-solid: oklch(20% 0.068 258);
       --pp-palette-accent-solid-active: oklch(79% 0.107 258);
       --pp-palette-accent-focus: oklch(49.7% 0.1445 258);
+      --pp-palette-accent-edge: oklch(53.61% 0.0816 258);
+      --pp-palette-accent-edge-strong: oklch(63.48% 0.0816 258);
 
       --pp-palette-danger-1: oklch(17.8% 0.0057 25);
       --pp-palette-danger-2: oklch(21.3% 0.0114 25);
@@ -353,6 +386,8 @@
       --pp-palette-danger-on-solid: oklch(20% 0.076 25);
       --pp-palette-danger-solid-active: oklch(77% 0.1356 25);
       --pp-palette-danger-focus: oklch(51.28% 0.1615 25);
+      --pp-palette-danger-edge: oklch(54.62% 0.0912 25);
+      --pp-palette-danger-edge-strong: oklch(64.51% 0.0912 25);
 
       --pp-palette-success-1: oklch(17.8% 0.0045 150);
       --pp-palette-success-2: oklch(21.3% 0.009 150);
@@ -369,6 +404,8 @@
       --pp-palette-success-on-solid: oklch(20% 0.0558 150);
       --pp-palette-success-solid-active: oklch(81% 0.1455 150);
       --pp-palette-success-focus: oklch(48% 0.1275 150);
+      --pp-palette-success-edge: oklch(52.77% 0.072 150);
+      --pp-palette-success-edge-strong: oklch(62.65% 0.072 150);
 
       --pp-palette-warning-1: oklch(17.8% 0.0048 80);
       --pp-palette-warning-2: oklch(21.3% 0.0096 80);
@@ -385,6 +422,8 @@
       --pp-palette-warning-on-solid: oklch(20% 0.0422 80);
       --pp-palette-warning-solid-active: oklch(91% 0.0841 80);
       --pp-palette-warning-focus: oklch(49.68% 0.103 80);
+      --pp-palette-warning-edge: oklch(53.76% 0.0768 80);
+      --pp-palette-warning-edge-strong: oklch(63.64% 0.0768 80);
 
       --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4);
       --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.32), 0 4px 12px oklch(0% 0 0 / 0.44);
@@ -408,6 +447,8 @@
     --pp-palette-neutral-on-solid: oklch(20% 0.0032 258);
     --pp-palette-neutral-solid-active: oklch(79% 0.0078 258);
     --pp-palette-neutral-focus: oklch(49.35% 0.0068 258);
+    --pp-palette-neutral-edge: oklch(53.57% 0.0038 258);
+    --pp-palette-neutral-edge-strong: oklch(63.46% 0.0038 258);
 
     --pp-palette-accent-1: oklch(17.8% 0.0051 258);
     --pp-palette-accent-2: oklch(21.3% 0.0102 258);
@@ -424,6 +465,8 @@
     --pp-palette-accent-on-solid: oklch(20% 0.068 258);
     --pp-palette-accent-solid-active: oklch(79% 0.107 258);
     --pp-palette-accent-focus: oklch(49.7% 0.1445 258);
+    --pp-palette-accent-edge: oklch(53.61% 0.0816 258);
+    --pp-palette-accent-edge-strong: oklch(63.48% 0.0816 258);
 
     --pp-palette-danger-1: oklch(17.8% 0.0057 25);
     --pp-palette-danger-2: oklch(21.3% 0.0114 25);
@@ -440,6 +483,8 @@
     --pp-palette-danger-on-solid: oklch(20% 0.076 25);
     --pp-palette-danger-solid-active: oklch(77% 0.1356 25);
     --pp-palette-danger-focus: oklch(51.28% 0.1615 25);
+    --pp-palette-danger-edge: oklch(54.62% 0.0912 25);
+    --pp-palette-danger-edge-strong: oklch(64.51% 0.0912 25);
 
     --pp-palette-success-1: oklch(17.8% 0.0045 150);
     --pp-palette-success-2: oklch(21.3% 0.009 150);
@@ -456,6 +501,8 @@
     --pp-palette-success-on-solid: oklch(20% 0.0558 150);
     --pp-palette-success-solid-active: oklch(81% 0.1455 150);
     --pp-palette-success-focus: oklch(48% 0.1275 150);
+    --pp-palette-success-edge: oklch(52.77% 0.072 150);
+    --pp-palette-success-edge-strong: oklch(62.65% 0.072 150);
 
     --pp-palette-warning-1: oklch(17.8% 0.0048 80);
     --pp-palette-warning-2: oklch(21.3% 0.0096 80);
@@ -472,6 +519,8 @@
     --pp-palette-warning-on-solid: oklch(20% 0.0422 80);
     --pp-palette-warning-solid-active: oklch(91% 0.0841 80);
     --pp-palette-warning-focus: oklch(49.68% 0.103 80);
+    --pp-palette-warning-edge: oklch(53.76% 0.0768 80);
+    --pp-palette-warning-edge-strong: oklch(63.64% 0.0768 80);
 
     --pp-shadow-1: 0 1px 2px oklch(0% 0 0 / 0.3), 0 1px 3px oklch(0% 0 0 / 0.4);
     --pp-shadow-2: 0 2px 4px oklch(0% 0 0 / 0.32), 0 4px 12px oklch(0% 0 0 / 0.44);

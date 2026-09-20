@@ -2533,3 +2533,187 @@ broken or the filter is: a wall of retry logging and no assertion. **Filter on a
 phrase that appears once**, and prefer one from the section's own argument over
 one from its heading, since a heading is the sentence most likely to be echoed
 elsewhere on the page. The section's `hasText` is `'no read-only'` now.
+
+---
+
+## D-050 — A control's boundary is a solved token, not a ramp step
+
+**Date:** 2026-09-20 · **Status:** accepted · **Amends:** `docs/RULES.md` §3
+(a new bullet); `src/styles/tokens/*` (generated); `Spinner`, `Skeleton`, and
+the disabled state of every control in Tier 3. **Closes:** D-048 §2.
+
+`--pp-color-border` was ramp step 7 and measured **1.55:1** against the page in
+the light theme. WCAG 1.4.11 asks 3:1 of "visual information required to
+identify user interface components", and in the light theme
+`--pp-color-bg-surface` **is** `--pp-color-bg-page` — both `neutral-1` — so a
+text field's fill is literally the page and the border is the only thing that
+identifies it. Every control in Tiers 3A–3C shipped below the floor.
+
+### 1. It could not be fixed inside the ramp, and the generator says why
+
+Steps 1–8 are a fixed, monotonic lightness ramp; only `focus`, 9, 11 and 12 are
+solved. Solving a neutral border for 3:1 in the light theme lands at **L 0.633**
+— *below* step 8's fixed **L 0.780**. Substituting it at position 7 inverts the
+ramp and trips the generator's own `assertMonotonic`, so there is no
+re-pointing of existing steps that works. That is D-048 §2's "no arrangement of
+the existing tokens fixes it", with the specific reason.
+
+The generator had already ruled on this shape, in its own words:
+
+> *Focus ring — its own token, not step 8. Hanging the 3:1 UI-contrast
+> requirement on a ramp step tears a hole in the ramp.*
+
+So two **off-ramp** solved primitives join `-focus`, `-on-solid` and
+`-solid-active`, one pair per hue per theme. **The 1–8 ramp is untouched.**
+
+| | light | dark | solved against |
+| --- | --- | --- | --- |
+| `--pp-palette-<hue>-edge` | L 0.633 | L 0.536 | ≥ 3:1 on steps 1, 2 **and** 3 |
+| `--pp-palette-<hue>-edge-strong` | L 0.534 | L 0.635 | ≥ 4.5:1 on the same three |
+
+Solved against all three surfaces rather than the hardest one today, because a
+border has two sides and the semantic layer puts a different neutral step on
+them per theme — page (1), surface (1 light / 2 dark), sunken (3 light / 1
+dark), raised (1 light / 3 dark). Solving against only the current worst case
+would go quietly wrong the first time `bg-surface` is re-pointed. The surfaces
+are always neutral, even for a toned border: a danger-toned input sits on the
+page, not on a red one.
+
+`direction` keeps as much of the old ramp's lightness as the target allows, so
+the edge is the least-dark conforming colour rather than the darkest the search
+range permits.
+
+### 2. The semantic names carry the split, and no fourth name was added
+
+`--pp-color-border` was **already** the control-edge token in practice — seven
+of its nine uses were control boundaries — and `--pp-color-border-subtle` was
+already the decorative one. So the existing names were re-pointed rather than
+joined by a `--pp-color-border-interactive`:
+
+| token | before | after | obligation |
+| --- | --- | --- | --- |
+| `--pp-color-border-subtle` | `neutral-6` | `neutral-6` | **none** — dividers, skeletons |
+| `--pp-color-border` | `neutral-7` | `neutral-edge` | **≥ 3:1** |
+| `--pp-color-border-strong` | `neutral-8` | `neutral-edge-strong` | **≥ 4.5:1** |
+
+…and the same three for `--pp-tone-border-*` in all five hues.
+
+**A fourth name was rejected**, and the reason is the failure mode rather than
+the tidiness: two tokens that sound alike, where one conforms and one does not,
+make every future component a silent coin-flip. Re-pointing makes the
+conforming value the *default* and leaves `-subtle` as the explicit opt-out for
+decoration. RULES §3 now states which is which, because it is no longer a
+matter of taste.
+
+**`border-strong` had to move too, or the names would invert.** A conforming
+`border` at 3.40:1 beside a step-8 `border-strong` at 1.97:1 makes "strong" the
+weaker of the two, and `Toggle`'s hover — which steps from one to the other —
+would *lighten* on hover. The generator now asserts `edge-strong` beats `edge`
+against every surface rather than trusting the targets to imply it.
+
+### 3. The check that was missing, and the half of it that was missing too
+
+D-048 §2 named the gap: "nothing in `check-contrast.mjs` pairs a border step
+with a surface". Six pairings are added — edge and edge-strong against steps 1,
+2 and 3 — taking the file from 170 assertions to 242.
+
+Run against the steps `--pp-color-border` resolved to *before* the fix, those
+six report **1.40 – 2.04:1** across every hue and both themes. The check was
+written first and watched go red on the real numbers, which is D-035 §3's rule
+applied at the token layer: a missing check class reads exactly like a passing
+one, and the only way to tell them apart is to make it fail.
+
+**The second half is new and is the one that would have caught the gap from the
+other direction.** Everything in that file verifies `primitives.css`, and
+components never name a primitive (RULES §3) — they read `--pp-color-border`,
+which is a *mapping* in `semantic.css` that the checker could not see. Re-point
+the mapping back at a ramp step and all 230 value assertions stay green while
+every control returns to 1.55:1. So the mapping is now asserted by name, for
+all four tokens across five hues. Verified by re-pointing `--pp-tone-border` at
+step 7 and watching five assertions fail.
+
+### 4. Four components opted out, each measured rather than assumed
+
+Re-pointing a token changes everything that reads it, so every non-control user
+was checked rather than left to inherit a decision made for controls.
+
+- **`Spinner`** → `--pp-tone-border-subtle`. The track went 1.55 → 3.40:1,
+  which puts it within a hair of the arc drawn over it: the component reads as
+  a ring with a slightly darker segment rather than as an arc going round. A
+  track is decoration behind a mark.
+- **`Skeleton`** → **kept, after the fix was built and rejected on sight.** Its
+  dark highlight reads `--pp-color-border`, so the sweep went from 1.30:1 to
+  **2.09:1** against the light theme's 1.24:1, and the obvious move was to put
+  both ends on decorative steps that swap roles per theme. That was written,
+  and it brought the sweep back to 1.46:1 — and left the dark bars barely
+  distinguishable from the surface, which is precisely what the file's own
+  comment had recorded years of nobody reading it ago: *"bg-sunken on a surface
+  was barely visible in light mode"*. **The right number, optimised against the
+  wrong constraint.** Shimmer symmetry between themes is not what governs
+  whether the component reads; the base's legibility is, and nothing requires a
+  decorative sweep to hit a ratio at all. Reverted, with the asymmetry recorded
+  where the next person will find it.
+
+  The general point is the one D-047 §3 and D-048 §1 make from the other
+  direction. Those computed a pairing too late; this computed one on time and
+  then optimised it without asking what it governed. **A measurement is only
+  useful once you have said what decision it is allowed to make** — and the way
+  to tell is to build the thing and look at it.
+- **`Badge` outline** → kept. 1.55 → 3.40:1 makes an outline badge that was
+  nearly invisible in the light theme actually visible, and it is what now
+  distinguishes `outline` from `subtle`. A look change, chosen rather than
+  inherited.
+- **`Kbd`** → kept. A keycap with a legible edge is more keycap-like, not less.
+
+**And every disabled control dropped to `--pp-color-border-subtle`.** This is
+not tidying: 1.4.11 exempts inactive components, and leaving a disabled control
+on the same edge as a live one erases the difference the exemption exists to
+allow — the same difference D-048 §1 relied on to tell an off switch from a
+disabled one. `Button` already did this for its disabled `outline` variant;
+`Input`, `Textarea`, `Select`, `Checkbox`, `Radio` and `Switch` now match it.
+The precedent existed and only one component was following it.
+
+### 5. Re-baselining 33 screenshots is a window in which nothing is verified
+
+A token change alters every pixel of every page, so all 34 baselines are deleted
+and CI **authors** the replacements (D-013, D-042) with nothing to compare
+against. For that one commit the visual suite verifies nothing, and a layout
+regression riding along with the colour change would be committed as the new
+truth, silently.
+
+Three things stand in for it:
+
+1. **The 128 functional browser assertions are not baseline-based** and all
+   pass. They cover heights, fill ratios, insets and overflow directly.
+2. **`lint:css` forbids a colour token in a length position**, so a
+   colour-only change structurally cannot move a box.
+3. **`tests/visual/__screenshots__/dimensions.json`**, recorded *before* the
+   deletion (including `select.png`, which merged to `main` as #19 while this
+   was in flight and had to be deleted with the rest), plus a unit test asserting every authored baseline matches the
+   geometry that existed beforehand. A pure colour change moves no pixel
+   boundary; if a page got taller, something other than colour moved.
+
+The third is redundant with `toHaveScreenshot` whenever baselines exist — it
+reports a size mismatch clearly on its own. Its entire value is in windows like
+this one, and those recur with every re-baseline, which is why it is committed
+rather than run once and thrown away.
+
+### 6. A generated file claimed a guarantee that nothing produced and nothing checked
+
+`primitives.css`'s header described its own ramp as:
+
+> `6-7   borders: subtle, interactive`
+> `8     strong border and focus ring   (>= 3:1 on step 1)`
+
+Step 8 is a fixed lightness at **1.97:1** on step 1, and the focus ring had
+already been moved to its own solved token *precisely because step 8 could not
+carry the requirement* — the generator says so twelve lines further up. So the
+header asserted a contrast guarantee that was wrong by a third, about a token
+that was no longer the focus ring, in the file every future token decision
+starts from.
+
+Nothing read it and nothing checked it, which is what let it survive from Tier 0
+through nine components. It is the D-045 class — prose disagreeing with code —
+in the one place where the prose is the specification. The header now says which
+steps carry an obligation and which explicitly do not, and the obligations it
+names are the ones `check-contrast.mjs` asserts.

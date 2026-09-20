@@ -1041,9 +1041,13 @@ native semantics and keyboard stay, the announced role becomes "switch".
 → `--pp-color-border-strong`", with the argument that an off switch has to read
 as *off* rather than as *disabled*, and that a sunken fill next to a genuinely
 disabled switch is indistinguishable from it. The argument stands; the colour
-does not. `--pp-color-border-strong` is **1.97:1** against the page in the light
-theme, and a surface thumb on it is 1.97:1 too — so the thumb, which is the
+does not. `--pp-color-border-strong` **was 1.97:1** against the page in the light
+theme, and a surface thumb on it 1.97:1 too — so the thumb, which is the
 thing that says which way the switch is set, was the part that failed 1.4.11.
+(That token resolves to a solved 5.10:1 step since D-050. The measurement above
+is what it was worth when this was decided; the ruling does not change, because
+a filled off track still reads as *disabled* and the thumb still carries the
+state.)
 
 The off track is now the library's resting control surface and the thumb is
 `--pp-color-text-muted` on it, which is 5.10:1 light and 5.49:1 dark and is a

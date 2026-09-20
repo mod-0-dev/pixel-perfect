@@ -9,11 +9,26 @@
 @layer pp.components {
   .pp-skeleton {
     --_radius: var(--pp-skeleton-radius, var(--pp-radius-2));
-    /* Base is a border step, not a background step: bg-sunken on a surface
-       was barely visible in light mode. The highlight must be lighter than the
-       base in BOTH themes, and the ramp runs the other way in dark, so no
-       single token pair can say "one step lighter" — light-dark() can, and the
-       library already sets color-scheme per theme scope (base.css). */
+    /*
+     * A BORDER STEP USED AS A LIGHTNESS STEP, NOT AS A BOUNDARY — WHICH IS WHY
+     * RULES §3's "a divider is border-subtle" DOES NOT APPLY HERE (D-050 §4).
+     *
+     * Base is a border step, not a background step: bg-sunken on a surface was
+     * barely visible in light mode. The highlight must be lighter than the base
+     * in BOTH themes, and the ramp runs the other way in dark, so no single
+     * token pair can say "one step lighter" — light-dark() can, and the library
+     * already sets color-scheme per theme scope (base.css).
+     *
+     * D-050 re-pointed --pp-color-border from ramp step 7 to a solved 3:1 step,
+     * so the dark sweep went from 1.30:1 to 2.09:1 against the base while light
+     * stayed at 1.24:1. That asymmetry was measured and ACCEPTED, after the
+     * alternative was built and looked at: moving the dark base to a background
+     * step brought the sweep back to 1.46:1 and left the bars barely
+     * distinguishable from the surface — the very problem the second sentence
+     * above records. The base's legibility governs; nothing requires a ratio of
+     * a decorative sweep, and a symmetric shimmer over invisible bars is the
+     * right number optimised against the wrong constraint.
+     */
     --_color: var(--pp-skeleton-color, var(--pp-color-border-subtle));
     --_highlight: var(--pp-skeleton-highlight, light-dark(var(--pp-color-bg-sunken), var(--pp-color-border)));
 

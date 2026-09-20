@@ -70,6 +70,17 @@ There is no `Spacer` component. `gap` exists.
 - **Two-tier tokens.** Primitives (`--pp-palette-blue-600`, `--pp-space-3`) are
   raw values. Semantics (`--pp-color-accent-bg`, `--pp-color-border-subtle`) map
   primitives to meaning.
+- **A control's boundary is `--pp-color-border`; a divider is
+  `--pp-color-border-subtle`.** The first carries a solved 3:1 guarantee because
+  WCAG 1.4.11 asks it of the line that tells you a control is there — and in the
+  light theme `bg-surface` *is* `bg-page`, so the edge is the only thing that
+  does. The second has no contrast obligation and must not acquire one: a 3:1
+  divider is a black line across the page. If the line is what identifies a
+  control, it is `border`; if it is decoration, it is `border-subtle`. Asserted
+  both ways in `npm run lint:contrast`, value and mapping (D-050). The rule is
+  about **boundaries**: a component reaching into the border family for a
+  lightness step rather than for a line — `Skeleton`'s sweep does — is not
+  choosing a boundary and is not covered.
 - **Colour is consumed through semantic tokens only.** A component never
   references `--pp-palette-*`; it reads `--pp-color-*` or, inside a tone
   context, `--pp-tone-*`. A colour must resolve differently per theme and per

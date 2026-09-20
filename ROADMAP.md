@@ -26,11 +26,50 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **3.13 `Select` is `done`, and with it the whole of
-  3C.** Thirty-two components across Tiers 1, 2 and 3A–3C. Next up is **Tier 0.2:
-  the border-contrast gap**, not a component — see the bullet below, which has
-  been the recorded answer to "what next" since 2026-09-19 and now has no
-  component left to widen
+- **In flight:** _none_ — **3C is complete (32 components) and the Tier 0.2
+  border-contrast gap is closed** (**D-050**). Next up is a component again:
+  3.14 `NumberInput`, or Tier 4.1, the overlay foundation
+- **A control's boundary is a solved token, not a ramp step** (**D-050 §1–2**).
+  `--pp-color-border` was step 7 at **1.55:1** against the page in light, and it
+  could not be fixed inside the ramp: a conforming neutral border lands at
+  L 0.633, *below* step 8's fixed L 0.780, so putting it at position 7 inverts
+  the ramp and trips the generator's own `assertMonotonic`. Two **off-ramp**
+  solved steps join `-focus` instead — `-edge` (≥3:1) and `-edge-strong`
+  (≥4.5:1), per hue, per theme — and the 1–8 ramp is untouched. The semantic
+  names were re-pointed rather than joined by a fourth: `border` and
+  `border-strong` now conform, `border-subtle` deliberately does not, and
+  **RULES §3 says which is which**, because two tokens that sound alike where
+  only one conforms make every future component a silent coin-flip
+- **The check was written first and watched go red** (**D-050 §3**). The six
+  missing border-vs-surface pairings report **1.40–2.04:1** against the steps
+  `--pp-color-border` resolved to before the fix. 170 → 242 assertions. The new
+  half worth knowing about: `check-contrast.mjs` only ever read
+  `primitives.css`, and components read *semantic* names — so the **mapping is
+  asserted by name too**, because re-pointing it back at a ramp step would
+  otherwise leave every value assertion green while every control returned to
+  1.55:1
+- **Four decorative users were measured; only one opted out** (**D-050 §4**).
+  `Spinner`'s track at 3.40:1 read as a ring rather than an arc, so it took the
+  subtle step. `Badge`'s outline and `Kbd`'s keycap kept the new edge on
+  purpose. **`Skeleton`'s "fix" was written and then rejected on sight**: it
+  brought the dark sweep from 2.09:1 back to 1.46:1 and left the bars barely
+  distinguishable from the surface, which is the exact problem the file's own
+  comment already recorded. The right number, optimised against the wrong
+  constraint — **a measurement is only useful once you have said what decision
+  it is allowed to make**, and the way to tell is to build it and look. And
+  **every disabled control dropped to `border-subtle`** — 1.4.11 exempts
+  inactive components, and leaving them on the live edge erases the very
+  difference D-048 §1 relied on. `Button` already did this and was the only one
+- **A generated file claimed a guarantee nothing produced** (**D-050 §6**).
+  `primitives.css`'s header said step 8 was "strong border and focus ring
+  (>= 3:1 on step 1)". Step 8 is 1.97:1, and the focus ring had been moved to
+  its own solved token *because* step 8 could not carry it — stated twelve lines
+  above. The D-045 class, in the one place where the prose is the specification
+- **The re-baseline window is guarded rather than trusted** (D-050 §5). All 34
+  baselines are deleted and CI authors them, so for one commit the visual suite
+  verifies nothing. `dimensions.json` is recorded beforehand and a unit test
+  asserts every authored baseline matches the geometry that existed then: a pure
+  colour change moves no pixel boundary
 - **A spec instruction that could not be carried out as written**
   (**D-049 §1**). §3.13 described `placeholder` as "a disabled, hidden,
   selected-by-default `<option value="">`". The HTML *ask for a reset* algorithm
@@ -87,11 +126,10 @@ is `done`.
   missing check class D-047 §3 named. The neutral ramp has nothing between
   `neutral-8` (1.97) and `neutral-9` (5.90), and `neutral-9` is the *on*
   colour, so no arrangement of existing tokens fixes it: it needs a token-layer
-  change plus the missing check plus a re-baseline of every screenshot. That is
-  Tier 0.2 work, now across **seven** shipped controls, and with 3C complete it
-  is both the next thing worth doing in this repository and the first time it
-  has no component in flight to widen. Re-measured on `Select` and unchanged
-  (D-049 §3)
+  change plus the missing check plus a re-baseline of every screenshot. **Closed
+  by D-050** on 2026-09-20, in exactly that shape — and the estimate was right
+  about the work and wrong about where the colour could live: it could not be a
+  re-pointed ramp step, because a conforming one inverts the ramp
 - **`translate` is physical, so the thumb is offset instead** (D-048 §4). A
   thumb moved with `translate` travels rightwards in every writing mode, so the
   switch would run backwards in RTL — on at the start of the track, off at the
@@ -388,7 +426,7 @@ Not components. Nothing else may start until this tier is `done`.
 | # | Item | Status | Deps | Notes |
 | --- | --- | --- | --- | --- |
 | 0.1 | Package scaffold (TS, build, exports, peer deps) | `done` | — | Standalone package (D-005). `tsc` for JS+types, lightningcss for CSS |
-| 0.2 | Token layer — primitives + semantics, light + dark | `done` | 0.1 | OKLCH ramps with contrast solved, not eyeballed. `--pp-tone-*` rewired by `[data-pp-tone]` (D-007). 160 assertions in `npm run lint:contrast` |
+| 0.2 | Token layer — primitives + semantics, light + dark | `done` | 0.1 | OKLCH ramps with contrast solved, not eyeballed. `--pp-tone-*` rewired by `[data-pp-tone]` (D-007). A control's boundary is an off-ramp solved step, because a conforming one inverts the ramp (D-050). **242** assertions in `npm run lint:contrast`, value **and** mapping |
 | 0.3 | Cascade layers + minimal reset | `done` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides`. Reset uses `:where()` so the app always wins |
 | 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths × 2 themes, each cell a query container, overflow flagged at runtime. `/tokens` gallery, `/harness` self-check |
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
