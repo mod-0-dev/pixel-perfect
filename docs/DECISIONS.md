@@ -2698,6 +2698,28 @@ reports a size mismatch clearly on its own. Its entire value is in windows like
 this one, and those recur with every re-baseline, which is why it is committed
 rather than run once and thrown away.
 
+**It fired on its first real use, and the answer was worth the trouble.** Of the
+34 baselines CI authored, 33 were pixel-identical in geometry and one was not:
+`input.png` came back **51px taller**. That is the shape of a layout regression
+hiding in a colour change, which is the exact thing this guard exists to refuse
+to wave through.
+
+It was not one. The input playground page's disabled/read-only paragraph is two
+lines longer in this diff, because §4 changed what that paragraph has to say.
+Proven rather than assumed, by rendering the page with the new prose and with
+the old one: **5090 against 5039 — 51px, to the pixel.** (The absolute heights
+differ from CI's 5118 and 5067 because glyph rasterisation differs between
+machines, which is why D-013 makes baselines CI's to author. The *delta* is
+identical in both places, which is the number the guard is actually about.)
+
+The manifest entry was then updated deliberately, which is the path the test's
+own comment describes. **The tension is real and worth naming:** the guard
+cannot tell "this page's content changed on purpose" from "this page's layout
+regressed", and neither can a screenshot baseline — so it adds a second thing to
+remember whenever a page changes height. It earns that by being the only thing
+in the repository that can say no during an authoring window, and by making the
+answer here a measurement instead of a shrug.
+
 ### 6. A generated file claimed a guarantee that nothing produced and nothing checked
 
 `primitives.css`'s header described its own ramp as:
