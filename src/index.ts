@@ -72,6 +72,7 @@ export {
   type ScrollerOverflow,
   type ScrollerProps,
 } from './components/Scroller/Scroller';
+export { Select, type SelectProps } from './components/Select/Select';
 export {
   Separator,
   type SeparatorOrientation,

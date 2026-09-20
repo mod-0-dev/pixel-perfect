@@ -2354,3 +2354,182 @@ differ for another reason.** D-040 §3 found it in a focus test, D-047 §5 in a
 pointer test, and it is worth stating as a thing to look for rather than a thing
 to rediscover — when an assertion says "A is not B", ask what else is different
 about A and B.
+
+---
+
+## D-049 — `Select` build findings: a disabled placeholder is never the default selection
+
+**Date:** 2026-09-20 · **Status:** accepted · **Amends:**
+`docs/specs/tier-3c-inputs.md` §3.13 (Props, State, Styling API)
+
+Six findings. The first is a spec instruction that cannot be carried out as
+written, and the second is the deviation it forces.
+
+### 1. "A disabled, hidden, selected-by-default `<option>`" is three attributes of which only two are attributes
+
+The spec's Props table describes `placeholder` as rendering "a disabled, hidden,
+selected-by-default `<option value="">`". Two of those three are attributes you
+write. The third is not, and the HTML standard actively prevents it: the *ask
+for a reset* algorithm sets the selectedness of
+
+> the first `option` element in the element's list of options in tree order
+> **that is not disabled**
+
+So a disabled placeholder is skipped and the browser selects the option after
+it. The control renders looking correct — there is a value in the box — and it
+is the wrong one, chosen by nobody, with no error anywhere. In plain HTML the
+usual fix is a literal `selected` attribute, which is not available here:
+React warns on `selected` and wants `value` / `defaultValue` on the `<select>`.
+
+**What ships:** the component seeds `defaultValue=""` when the caller has given
+neither `value` nor `defaultValue`. That routes through the `value` **setter**,
+whose definition has no disabled exclusion — it selects the first option whose
+value matches, full stop — so the placeholder is selected *and* unreachable
+afterwards, which is what the spec wanted. A caller who gives either prop keeps
+it; React errors on a `<select>` carrying both, so the seed has to be
+conditional rather than a default.
+
+**The same bug has a second door, and it was open.** `value` and `defaultValue`
+originally reached the element through the prop spread, which is written after
+the seed and therefore wins. `<Select placeholder="…" defaultValue={maybeUndefined} />`
+is an ordinary thing to write — an optional initial value — and there the key
+*exists* with the value `undefined`, so the spread overwrote the seed with
+`undefined` and handed the caller option two again. Both props are now
+destructured out and written back below the spread, where nothing can undo
+them. The guard that decides the seed and the guard that applies it have to
+read the same thing, and "absent" and "present and undefined" are not the same
+thing to a spread.
+
+The finding generalises past this component: **a spec sentence that mixes
+attributes with behaviour is worth re-reading as a list of things that must
+each be made true.** "Disabled" and "hidden" were free; "selected by default"
+was the work, twice.
+
+### 2. It paints the placeholder from `:checked`, and D-047 §2's shape transfers where D-048 §3's reasoning says it should
+
+`Radio` reads `:checked` in CSS because a radio's *deselection* fires nothing,
+so React cannot describe a bare radio's state. `Switch` does not, because every
+change to a switch is an event on that switch. D-048 §3 drew the rule from the
+pair: **a deviation is scoped to its cause, and the way to tell is whether the
+cause is present.**
+
+Here a different cause is present, and it is spec §2's own ruling. The text
+controls hold no state and pass `value` straight to the DOM, so an uncontrolled
+`Select`'s selection lives in the DOM and changes without this render being
+told. Three cases make a React-side mirror wrong rather than merely stale:
+
+| | fires a React change event |
+| --- | --- |
+| the user picks an option | yes |
+| `form.reset()` | **no** |
+| `ref.current.value = …` | **no** |
+
+An attribute written from the initial value is right until the first of those
+and wrong afterwards — and the second and third are the ones a consumer is least
+likely to suspect. So:
+
+- **The stylesheet paints from `:has(option[data-pp-placeholder]:checked)`**,
+  the platform's own state, which is correct in all three rows.
+- **`data-placeholder` is emitted only when the select is controlled**, where
+  React genuinely knows, and **omitted rather than guessed** otherwise. That is
+  D-047 §2's second half applied unchanged.
+
+`[data-pp-placeholder]` rather than `[value=""]`, because a caller's own
+`<option value="">None</option>` is a real choice and must not be painted as an
+absent one. The marker is on the option we render and nothing else.
+
+Proved by the only demo that can tell the two mechanisms apart: an uncontrolled
+select whose text is muted while its root carries no attribute at all. Swapping
+the `:has()` rule for `.pp-select[data-placeholder] .pp-select__input` fails
+exactly those two assertions and leaves the other eighteen green.
+
+### 3. The chevron's colour was computed at the gate, and the border gap under it is D-048 §2's, not a new one
+
+D-048 §1 ended with *compute the pairing before the gate, not after the build*.
+This is the first component to run that way, and the numbers came out before a
+line of CSS existed:
+
+| Pairing | light | dark | needs |
+| --- | --- | --- | --- |
+| **chevron `--pp-color-text-muted` on the surface** | **5.10** | **5.12** | 3.0 |
+| placeholder text, same pairing | 5.10 | 5.12 | 4.5 |
+| value text `--pp-color-text` on the surface | 15.73 | 14.32 | 4.5 |
+| `--pp-color-border` on the surface | 1.55 | 2.12 | 3.0 |
+| disabled text/chevron on the sunken fill | 1.77 | 3.28 | exempt |
+
+The chevron is the one new pairing, and it matters more here than a decorative
+glyph would: `appearance: none` takes the platform's own arrow away, so ours is
+the graphic that identifies the control as a select rather than a text field —
+squarely what WCAG 1.4.11 asks 3:1 of. `--pp-color-text-muted` on
+`--pp-color-bg-surface` is a pairing `check-contrast.mjs` **already asserts**
+in both themes ("muted text vs page bg" and "muted text vs subtle bg"), so this
+component adds no assertion and leans on none that is missing.
+
+Row four is **D-048 §2's library-wide gap, inherited rather than introduced**:
+the resting edge of every control in 3C is below 3:1 in the light theme, the
+neutral ramp has nothing between `neutral-8` (1.97) and `neutral-9` (5.90), and
+the fix is a token-layer change plus the missing border-vs-surface check plus a
+re-baseline of every screenshot. `Select` changes neither the token nor the
+check, and recording the number again here is so that a green `lint:contrast`
+on this component is not read as the gap having closed. With 3C now complete,
+that work has no component left to widen.
+
+Row five is exempt under 1.4.11's inactive-component clause, the same way every
+other disabled control in this tier is.
+
+### 4. No `readOnly`, and that is HTML's ruling rather than ours
+
+`Input` has a read-only state and the spec's State table for this component says
+the shared states behave "as `Input`". There is no read-only here, because
+**HTML has no `readonly` for `<select>`** — the attribute is not in the
+element's content model and does nothing. The two usual fakes both fail: a
+`pointer-events` block leaves the control fully operable from the keyboard, and
+`disabled` alone drops the value from the submitted form. A value the user may
+read but not change is a `disabled` select plus a hidden input, which is the
+caller's composition, not a prop.
+
+Stated because the absence otherwise reads as an oversight in a tier where five
+of six controls have the state.
+
+### 5. Ninth assertion that could not fail, and the same shape as the other eight
+
+Seventeen deliberate breaks — seven in the source, ten in the stylesheet, every
+stylesheet break verified present in the **served, minified** chunk before its
+result was read (D-037 §4), with Playwright's `webServer` owning the build and
+the server throughout (D-047 §5). Sixteen failed on the test named for them,
+one of them §1's second door: restoring the spread order failed both
+placeholder-selection assertions, which is what found it.
+
+The one that did not was the RTL test, and the test was the defect. It asserted
+which side of the control's centre the chevron sat on and called that proof of
+`inset-inline-end` over `right` — but which side is `place-self: center end`'s
+doing, and the grid mirrors that by itself. Swapping the declaration left the
+chevron on the correct side in RTL and every assertion green.
+
+What the offset actually decides is the direction the glyph is pulled back in:
+in RTL the box's inline end is its *left* edge, so `right` pulls the chevron
+further left, clean off the control, while `inset-inline-end` pulls it inward by
+the same distance the LTR layout gets. The test now measures the inset from the
+inline-end edge and requires it equal in both directions — and it keeps the
+side-of-centre check, because that one does fail if `place-self` changes, so the
+comment now claims what each half asserts rather than both claiming the same
+thing.
+
+Same shape as the eight before it (D-040 §3, D-047 §5, D-048 §5): **two things
+compared that already differ for another reason.** Here the second reason was a
+property nobody had thought to name.
+
+### 6. A Playwright section filter is a case-insensitive substring, and a wrong match waits out the clock
+
+The browser suite locates a matrix cell with
+`page.locator('section', { hasText: 'Disabled' })`. `hasText` with a string
+matches **case-insensitively**, and the section above it on the page says "the
+placeholder is disabled, hidden" — so the filter resolved to the wrong section,
+the selector inside it matched nothing, and the test failed on a 30-second
+timeout rather than on its message.
+
+A locator that finds nothing reports the same way whether the component is
+broken or the filter is: a wall of retry logging and no assertion. **Filter on a
+phrase that appears once**, and prefer one from the section's own argument over
+one from its heading, since a heading is the sentence most likely to be echoed
+elsewhere on the page. The section's `hasText` is `'no read-only'` now.

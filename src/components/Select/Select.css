@@ -1,0 +1,214 @@
+/*
+ * Select — spec docs/specs/tier-3c-inputs.md §3.13
+ *
+ * The third and last text surface. It does NOT share a base class with Input or
+ * Textarea: the agreement is already structural, because --pp-control-* is the
+ * one definition all three read (D-028), and a shared class would be a second
+ * mechanism doing the first one's job. Spec §1 predicted the seam and this file
+ * is it — a Select reserves inline-end room for its chevron and the other two
+ * reserve nothing.
+ *
+ * TWO ELEMENTS, for the reason Input is two (D-040): a form control carries an
+ * intrinsic inline size and does not fill. A native <select> is the worst of the
+ * three — 52px inside a 600px parent, because it sizes to its longest option —
+ * so the grid root the fill contract needs is also the wrapper the chevron
+ * needs, and neither costs the other anything.
+ *
+ * IT PAINTS THE PLACEHOLDER FROM `:checked`, NOT FROM `data-placeholder`
+ * (D-049 §2). Spec §2 ruled that this control holds no state and passes `value`
+ * to the DOM, so an uncontrolled select's selection changes without React being
+ * told — and a `form.reset()` or a write through the ref does not tell it
+ * either. `:has(option[data-pp-placeholder]:checked)` is the platform's own
+ * state and is right in all three cases. This is D-047 §2's shape with a
+ * different cause, which is the test for whether a deviation transfers: Radio
+ * reads `:checked` because a radio's DESELECTION fires nothing, and that
+ * reason is not this one.
+ */
+
+@layer pp.components {
+  .pp-select {
+    --_height: var(--pp-control-height-md);
+    --_padding-inline: var(--pp-control-padding-inline-md);
+    --_gap: var(--pp-control-gap-md);
+    --_font-size: var(--pp-control-font-size-md);
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_color: var(--pp-color-text);
+    /*
+     * 5.10:1 on the light surface and 5.12:1 on the dark one, against the 3:1
+     * WCAG 1.4.11 asks of the graphic that identifies a control — and the
+     * chevron is exactly that here, since `appearance: none` has taken the
+     * platform's own away. Both are pairings check-contrast.mjs already
+     * asserts ("muted text vs page bg", "muted text vs subtle bg"), so this
+     * component adds no assertion and leans on none that is missing.
+     *
+     * Computed at the gate rather than after the build, which is the rule
+     * D-047 §3 and D-048 §1 arrived at the hard way (D-049 §4).
+     */
+    --_indicator-color: var(--pp-color-text-muted);
+
+    /*
+     * RESOLVED ON OUR OWN ROOT, PER D-044 §1's OTHER HALF, and once rather
+     * than twice: a --pp-select-padding-inline override has to move the start
+     * edge, the end edge AND the room reserved for the chevron, or a caller
+     * who widens the padding gets text running under the glyph.
+     *
+     * The reserved end room is the edge gap, plus the chevron — which is 1em
+     * of --_font-size, because the root declares that font-size below and Icon
+     * defaults to 1em — plus the gap between the two. All tokens, no lengths.
+     */
+    --_pad-inline: var(--pp-select-padding-inline, var(--_padding-inline));
+    --_pad-inline-end: calc(var(--_pad-inline) + var(--_font-size) + var(--_gap));
+
+    /* fill: block-level with no width declaration. Grid, so the control
+       stretches — see the header. One cell; the chevron stacks over it. */
+    display: grid;
+    min-inline-size: 0;
+    /* The chevron's 1em. Declared here rather than on the indicator so the
+       indicator stays a plain .pp-icon reading its own default. */
+    font-size: var(--_font-size);
+  }
+
+  .pp-select[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_padding-inline: var(--pp-control-padding-inline-sm);
+    --_gap: var(--pp-control-gap-sm);
+    --_font-size: var(--pp-control-font-size-sm);
+  }
+
+  .pp-select[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_padding-inline: var(--pp-control-padding-inline-lg);
+    --_gap: var(--pp-control-gap-lg);
+    --_font-size: var(--pp-control-font-size-lg);
+  }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3). `.pp-select[data-invalid] .pp-select__input` is 0-3-0 and would
+   * outrank `.pp-select__input:focus-visible` at 0-2-0, which is exactly how
+   * Input shipped a focus border that never appeared on an invalid control. On
+   * the root the custom properties inherit down and the control's own
+   * pseudo-class wins for that element.
+   */
+  .pp-select[data-invalid] {
+    /* The root carries data-pp-tone="danger", so this resolves in the danger
+       ramp without this file naming a colour (D-007). */
+    --_border: var(--pp-tone-border);
+  }
+
+  /*
+   * pointer-events: none is deliberately NOT used, for the reason Button.css
+   * gives: it kills `title`, breaks a Tooltip (4.3) wrapping the control, and
+   * makes cursor: not-allowed impossible to show. The native attribute already
+   * suppresses interaction.
+   */
+  .pp-select[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+    --_indicator-color: var(--pp-color-text-disabled);
+  }
+
+  .pp-select__input {
+    grid-area: 1 / 1;
+    /* Lets the control shrink below its intrinsic size — which for a <select>
+       is its LONGEST OPTION, not a character count — instead of pushing the
+       container wide. The grid stretch handles the other direction. */
+    min-inline-size: 0;
+    block-size: var(--pp-select-height, var(--_height));
+    padding-inline-start: var(--_pad-inline);
+    padding-inline-end: var(--_pad-inline-end);
+    border: var(--pp-border-width-1) solid var(--pp-select-border-color, var(--_border));
+    border-radius: var(--pp-select-radius, var(--pp-control-radius));
+    background-color: var(--pp-select-bg, var(--_bg));
+    color: var(--pp-select-color, var(--_color));
+    /*
+     * No font-family here. reset.css already gives form controls `font:
+     * inherit` at :where() zero specificity, which is right: a consuming app
+     * that sets its own font on selects SHOULD win (D-037 §5).
+     */
+    font-size: var(--_font-size);
+    line-height: var(--pp-line-height-normal);
+    /* Takes the platform's own chevron away — which is why ours has to meet
+       1.4.11 on its own account, and why --_indicator-color is measured. */
+    appearance: none;
+    /* A long option is truncated rather than allowed to set the box's width.
+       min-inline-size above is what actually stops the overflow; this is what
+       makes the truncation readable. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
+    transition-property: border-color, background-color, color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /*
+   * THE PLACEHOLDER IS MUTED FROM THE PLATFORM'S STATE, NOT FROM AN ATTRIBUTE.
+   * See the file header. `[data-pp-placeholder]` rather than `[value=""]`
+   * because a caller's own `<option value="">None</option>` is a real choice
+   * and must not be painted as an absent one.
+   *
+   * Declared on the control rather than the root, because the closed select
+   * draws its text in the SELECT's colour and a value inherited to a child
+   * would not reach it. 5.10:1 light / 5.12:1 dark, the same pairing
+   * ::placeholder carries on Input (D-008).
+   */
+  .pp-select__input:has(option[data-pp-placeholder]:checked) {
+    color: var(--pp-select-placeholder-color, var(--pp-color-text-muted));
+  }
+
+  /* `:disabled` rather than a `[data-disabled] .pp-select__input` descendant
+     selector, which would be 0-3-0 and outrank the focus rule below it. */
+  .pp-select__input:disabled {
+    cursor: not-allowed;
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4). The outline is
+   * the focus affordance — one colour library-wide, outside the box, the only
+   * pairing lint:contrast asserts. The border shift is the control
+   * acknowledging focus in its own tone, inside the box, which is what keeps an
+   * invalid field visibly invalid while the user is fixing it.
+   *
+   * Declared on the INPUT, which is where the focus is: a declaration on the
+   * element beats a value inherited from the root, so focus beats invalid and
+   * disabled without either being reordered around it.
+   */
+  .pp-select__input:focus-visible {
+    --_border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-select__indicator {
+    grid-area: 1 / 1;
+    /* Centred on the block axis, at the inline END of the cell — then pulled
+       back off that edge by the same padding the text gets, with a LOGICAL
+       offset. `right` would put the chevron on the wrong side of an Arabic
+       layout, where the native popup opens from the other end (D-048 §4). */
+    place-self: center end;
+    position: relative;
+    inset-inline-end: var(--_pad-inline);
+    color: var(--pp-select-indicator-color, var(--_indicator-color));
+    /* The chevron sits over the control in the same grid cell, so without this
+       a click landing on it would hit a <span> and the popup would not open —
+       which reads as flakiness rather than as a bug. */
+    pointer-events: none;
+    transition-property: color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* The reset crushes durations in pp.reset and this file is in pp.components,
+     so ours would win. Every animated component answers for itself — the
+     mechanism Button.css and Spinner already document. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-select__input,
+    .pp-select__indicator {
+      transition-property: none;
+    }
+  }
+}

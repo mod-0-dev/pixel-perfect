@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3C |
-| **Status** | **approved** 2026-09-18 — Gate C passed, five open questions resolved (see §13) |
+| **Status** | **complete** 2026-09-20 — all six `done`. Approved 2026-09-18, Gate C passed, five open questions resolved (see §13); amended by D-040, D-043, D-044, D-047, D-048 and D-049 |
 | **Components** | 3.8 `Input` · 3.9 `Textarea` · 3.10 `Checkbox` · 3.11 `Radio`/`RadioGroup` · 3.12 `Switch` · 3.13 `Select` |
 | **Depends on** | 3.7 `Field` (`done`), 3.6 `Label` (`done`), Tier 3A (`done`), Tiers 0–2 (`done`) |
 | **Approval** | One gate for the group ([D-027](../DECISIONS.md#d-027)) |
@@ -15,7 +15,7 @@
 | --- | --- | --- | --- |
 | 3.8 `Input` | **`done`** | 3.11 `Radio`/`RadioGroup` | **`done`** |
 | 3.9 `Textarea` | **`done`** | 3.12 `Switch` | **`done`** |
-| 3.10 `Checkbox` | **`done`** | 3.13 `Select` | `spec` |
+| 3.10 `Checkbox` | **`done`** | 3.13 `Select` | **`done`** |
 
 ---
 
@@ -1172,7 +1172,7 @@ a 600px parent, against 600px as a grid item (§3.8, D-040).
 | --- | --- | --- | --- |
 | `size` | `'sm' \| 'md' \| 'lg'` | field, then `'md'` | |
 | `value` / `defaultValue` / `onChange` | native | — | Straight to the DOM (§2) |
-| `placeholder` | `string` | — | Renders a disabled, hidden, selected-by-default `<option value="">` |
+| `placeholder` | `string` | — | Renders a disabled, hidden `<option value="">` and **seeds `defaultValue=""` to select it** — "selected by default" does not follow from the other two (D-049 §1) |
 | `invalid` / `disabled` / `required` | `boolean` | field, then `false` | |
 | `multiple` | **`never`** | — | A type error (§9). Multi-select is 4.11 |
 | `children` | `ReactNode` | — | `<option>` / `<optgroup>` |
@@ -1184,17 +1184,44 @@ a 600px parent, against 600px as a grid item (§3.8, D-040).
 | State | Exposed as | Visual treatment |
 | --- | --- | --- |
 | Invalid / disabled / focus / required | As `Input` | |
-| Placeholder selected | `data-placeholder` | Text → `--pp-color-text-muted`, matching `::placeholder` on `Input` |
+| Placeholder selected | `:has(option[data-pp-placeholder]:checked)`, plus `data-placeholder` **when controlled** | Text → `--pp-color-text-muted`, matching `::placeholder` on `Input` |
 
 There is no `data-state="open"`. The native popup's openness is not observable
 from script, and inventing an attribute that is wrong half the time is worse
 than not having one.
 
+**There is no read-only either, and that is HTML's ruling rather than ours**
+(D-049 §4). `<select>` has no `readonly` attribute; a `pointer-events` fake
+leaves the control operable from the keyboard and `disabled` alone drops the
+value from the submitted form. The row above says the shared states behave "as
+`Input`" — read-only is the one that does not transfer.
+
+**The placeholder is painted from `:checked`, not from the attribute**
+(D-049 §2). §2 ruled that this control holds no state, so an uncontrolled
+select's selection changes without React being told — and `form.reset()` and a
+write through the ref do not tell it either. The attribute describes what React
+knows and is **omitted rather than guessed** when it does not, which is
+D-047 §2's second half on a different cause.
+
 ### Styling API
 
 `--pp-select-height`, `--pp-select-padding-inline`, `--pp-select-radius`,
 `--pp-select-bg`, `--pp-select-border-color`, `--pp-select-color`,
-`--pp-select-indicator-color`.
+`--pp-select-indicator-color`, and `--pp-select-placeholder-color` — added in
+the build, because the placeholder is a colour the component names and every
+other colour it names is overridable.
+
+`--pp-select-padding-inline` moves **three** things: both edges and the room
+reserved for the chevron, which is `padding + 1em of the control font size +
+the control gap`. It is resolved once on the root for that reason; resolved at
+the point of use it would move two of the three and run a long value under the
+glyph.
+
+The chevron is `--pp-color-text-muted`: 5.10:1 on the light surface and 5.12:1
+on the dark one, against the 3:1 WCAG 1.4.11 asks of the graphic that identifies
+a control — which this is, since `appearance: none` took the platform's own
+away. Computed at the gate rather than after the build, and both pairings are
+ones `check-contrast.mjs` already asserts (D-049 §3).
 
 ### Keyboard interaction
 
