@@ -5,6 +5,30 @@ import { expect, test } from '@playwright/test';
  * is broken, every sizing-contract result the playground ever reports is
  * meaningless, so it is checked before it is trusted.
  */
+/**
+ * Whether a focus ring is actually PAINTED on an element.
+ *
+ * `outline-width` alone cannot answer that, and believing it does is what put
+ * two assertions in this file on the wrong side of a Chromium version. CSS says
+ * the computed `outline-width` of an element whose `outline-style` is `none` is
+ * zero; Chromium reports the SPECIFIED width instead — `medium`, i.e. `3px` —
+ * so `expect(outlineWidth).toBe('0px')` on an unfocused control passes on one
+ * build and fails on another with nothing wrong with the component. It passed
+ * locally and failed in CI for exactly that reason, on `NumberInput` and
+ * `Slider`, and on `main` as well as on the branch.
+ *
+ * `outline-style` is the property that says whether a line is drawn, so that is
+ * what "no ring" is asserted on. The width is still checked where a ring IS
+ * expected, because a solid ring of zero width is D-052 §3's impossible
+ * combination and the thing that reads as a pass.
+ */
+async function ringOf(el: import('@playwright/test').Locator) {
+  return el.evaluate((n) => {
+    const style = getComputedStyle(n);
+    return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) };
+  });
+}
+
 test.describe('harness self-check', () => {
   test('a fill component is never flagged as overflowing', async ({ page }) => {
     await page.goto('/harness');
@@ -2960,17 +2984,17 @@ test.describe('NumberInput', () => {
     const control = scope.locator('.pp-number-input__control');
     const steppers = scope.locator('.pp-number-input__steppers');
 
-    const outlineWidth = (el: import('@playwright/test').Locator) =>
-      el.evaluate((n) => getComputedStyle(n).outlineWidth);
-
-    expect(await outlineWidth(control)).toBe('0px');
+    expect((await ringOf(control)).style, 'an unfocused control is already ringed').toBe('none');
     await control.focus();
     // Polled: the reset's reduced-motion crush is `all 0.00001s`, so a read in
     // the same frame can catch the pre-transition value (D-052 §3).
     await expect
-      .poll(() => outlineWidth(control), { message: 'the control did not take a ring' })
-      .not.toBe('0px');
-    expect(await outlineWidth(root), 'a second ring was drawn on the wrapper').toBe('0px');
+      .poll(async () => (await ringOf(control)).width, {
+        message: 'the control did not take a ring',
+      })
+      .toBeGreaterThan(0);
+    expect((await ringOf(control)).style, 'a zero-width solid ring is not a ring').toBe('solid');
+    expect((await ringOf(root)).style, 'a second ring was drawn on the wrapper').toBe('none');
 
     const [box, buttons] = await Promise.all([control.boundingBox(), steppers.boundingBox()]);
     expect(box).not.toBeNull();
@@ -3208,8 +3232,7 @@ test.describe('Slider', () => {
     const control = page.locator('[data-testid="slider-keyboard"] .pp-slider__control');
 
     await control.scrollIntoViewIfNeeded();
-    const outlineWidth = () => control.evaluate((n) => getComputedStyle(n).outlineWidth);
-    expect(await outlineWidth()).toBe('0px');
+    expect((await ringOf(control)).style, 'an unfocused control is already ringed').toBe('none');
     await control.focus();
 
     /*
@@ -3224,8 +3247,11 @@ test.describe('Slider', () => {
      * frame, which is what a latent flake looks like from the outside.
      */
     await expect
-      .poll(outlineWidth, { message: 'the control did not take a ring' })
-      .not.toBe('0px');
+      .poll(async () => (await ringOf(control)).width, {
+        message: 'the control did not take a ring',
+      })
+      .toBeGreaterThan(0);
+    expect((await ringOf(control)).style, 'a zero-width solid ring is not a ring').toBe('solid');
   });
 
   /*
