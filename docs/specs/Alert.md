@@ -3,14 +3,15 @@
 | | |
 | --- | --- |
 | **Tier** | 5 — Composition & Data |
-| **Status** | `spec` |
+| **Status** | `done` — 2026-09-21 (D-053) |
 | **Sizing contract** | `fill` |
 | **RSC** | `server` — no hooks, no state, no browser API (§8) |
-| **Depends on** | 1.3 `Icon` — composed (§5). 3.2 `IconButton` — composed, only when `onDismiss` is given (§4). 2.2 `Cluster` — **not** composed; see the note under Anatomy |
+| **Depends on** | 1.3 `Icon` — composed (§5). 3.2 `IconButton` — composed, only when `onDismiss` is given (§4). **Not** 2.2 `Cluster`; the roadmap's `Deps` was corrected from `1.3, 2.2` to `1.3, 3.2` at approval (D-053 §9) |
 | **APG pattern** | [Alert](https://www.w3.org/WAI/ARIA/apg/patterns/alert/) — deliberately **not** applied by default (§2) |
 
-Approved on its own gate. It is the first component of Tier 5 and it unblocks
-3.16 `Form`, whose error summary is an `Alert`.
+Approved on its own gate 2026-09-21. It is the first component of Tier 5 and it
+unblocks 3.16 `Form`, whose error summary is an `Alert`. Build findings are
+below and in [D-053](../DECISIONS.md).
 
 ## Purpose
 
@@ -328,10 +329,10 @@ No exception requested.
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | Root | `pp-alert` | `div` | The grid, the fill, the edge, the tone context. `className`, `style`, `ref` and the spread all land here |
-| Icon | `pp-alert__icon` | `Icon` → `span` | `decorative`, so `aria-hidden`. Optically aligned to the first line by construction, not by a nudge — see below |
+| Icon | `pp-alert__icon` | `span` wrapping `Icon` | A wrapper one line box tall, holding a `decorative` (therefore `aria-hidden`) `Icon`. The wrapper is what aligns the glyph without a nudge; `Icon` itself must stay square, because `.pp-icon > svg` is 100% of both axes and a taller box would stretch the drawing |
 | Content | `pp-alert__content` | `div` | Column 2. Exists so the optional title and the body stack as one grid item; without it, "no title" would have to be a second grid template |
 | Title | `pp-alert__title` | `div` | `--pp-tone-text-strong`, `--pp-font-weight-medium`. Not a heading (§6) |
-| Body | `pp-alert__body` | `div` | `--pp-tone-text`. Always present, even with no children, so the grid never collapses to a title-only row of a different height |
+| Body | `pp-alert__body` | `div` | `--pp-tone-text`. Rendered only when there are children — an always-present empty box is a flex item, so it would pay a row gap. `undefined`, `null` and `false` are all "no slot"; `0` and `''` are content |
 | Dismiss | `pp-alert__dismiss` | `IconButton` → `button` | Column 3, `align-self: start`, so it stays on the first line of a tall alert |
 
 **The icon sits on the first line without a nudge.** RULES §2 bans the
@@ -343,11 +344,19 @@ optical centre from the two tokens that define that line box. Nothing is tuned,
 and changing the type scale moves both together. This is D-052 §1's habit:
 derive it so the arithmetic is the documentation.
 
-**2.2 `Cluster` is not composed.** The roadmap lists it as a dependency and the
-layout turns out not to need it: the root is a three-column grid and the actions
-row is the caller's (`<Cluster gap="2">` inside `children`), which is RULES
-§5.6 working as intended. The dependency is real as ordering — an alert without
-layout primitives has nowhere to put its buttons — and not as an import.
+**Corrected at build: the root is flex, not a three-column grid (D-053 §3).**
+Built as `grid-template-columns: auto minmax(0, 1fr) auto` with the parts placed
+in those columns, an alert with **no icon** starts 12px in from its own padding
+edge — one `--pp-alert-gap`, paid for the empty track it left behind. A grid
+gaps between *tracks*; whether anything is in them is not part of the question.
+Flex gaps only between items that exist, so an absent slot costs nothing and
+nothing needs explicit placement. Measured both ways in the browser suite.
+
+**2.2 `Cluster` is not composed.** The roadmap listed it as a dependency and the
+layout turns out not to need it: the actions row is the caller's
+(`<Cluster gap="2">` inside `children`), which is RULES §5.6 working as
+intended. The dependency is real as ordering — an alert without layout
+primitives has nowhere to put its buttons — and not as an import.
 
 ## Props
 
@@ -442,17 +451,22 @@ alert is the caller's, and is a documented "don't" below.
 
 None, and that is deliberate: there is no `@container` rule in `Alert.css`.
 
-The grid is `auto minmax(0, 1fr) auto` — an icon column that sizes to the glyph,
-a content column that takes what is left and may shrink to nothing, and a
-dismiss column that sizes to a 32px button. At a narrow container the content
+The row is three flex items — an icon box that sizes to the glyph, a content box
+that takes what is left and may shrink to nothing, and a 32px dismiss button. At a narrow container the content
 column simply gets narrow and the prose wraps; the icon and the dismiss button
 are both fixed and small, and together they are under 4rem, so there is no width
 at which the arrangement stops working. Moving the dismiss button below the
 content at some breakpoint would be a change with no problem behind it.
 
-`min-inline-size: 0` on the root and `minmax(0, 1fr)` on the content column are
-what make that true for an unbreakable string — a URL in the body — rather than
-merely true for prose.
+**Corrected at build (D-053 §4): `min-inline-size: 0` sizes the box and nothing
+else.** This paragraph originally claimed it made the arrangement true for an
+unbreakable string rather than merely true for prose. It does not. It lets the
+flex item shrink below its automatic minimum, so the alert's own *edges* stay
+inside its parent — and the *glyphs* of a long URL go right on painting past
+them. The box measurement passed on the browser suite's first run while the
+playground harness flagged four of six cells. `overflow-wrap: anywhere` on the
+root is what makes it true, and it is inherited, so the title is covered by the
+same declaration.
 
 Checked at Gate D in the playground at all three container widths, both themes.
 
@@ -543,18 +557,45 @@ return showBanner ? (
 // ✓ That is Toast (4.12).
 ```
 
+## Build findings
+
+Full reasoning in [D-053](../DECISIONS.md). The short version:
+
+1. **The root is flex, not the three-column grid this spec drew** (§3 of D-053).
+   A grid gaps between tracks, so an alert with no icon paid 12px for the empty
+   one. Corrected in Anatomy above.
+2. **`min-inline-size: 0` sizes the box and nothing else** (§4). The glyphs of
+   an unbreakable URL went on painting past the edges it kept in place;
+   `overflow-wrap: anywhere` is what this spec should have specified.
+   Corrected in Container behavior above.
+3. **Seventeen breaks were run; fifteen failed on the test named for them**
+   (§5). Of the two that did not: the focus-ring assertion was pointed at the
+   page's `accent` alert, whose `--pp-tone-focus` *is* the value
+   `--pp-color-focus-ring` resolves to — so it compared a colour with itself
+   and survived being given a tone. It reads the `danger` alert now. And
+   `min-inline-size: 0` is observed by no assertion at all, which the test now
+   says out loud instead of implying a guarantee it does not carry.
+4. **Nothing else in §1–§9 changed.** The contrast table in §9 was computed
+   before the build and the browser suite confirmed every figure in it; the
+   legibility of a caller's `plain` `Button` against the fill is now an
+   assertion rather than an argument, and it is the only place in the library
+   where a tone step is paired with a caller's control.
+
+The visual baseline is authored by CI on this branch (D-013, D-042); it is
+deliberately absent from the commit that adds the page.
+
 ## Open questions
 
-Resolve at Gate C.
+All three were resolved at approval on 2026-09-21.
 
-1. **Default per-tone icons — ship them or not?** §5 argues not, and it is the
-   call I am least certain of. Say the word and five defaults land with the
-   build, keyed off `tone`, overridden by `icon`, removed with `icon={null}`.
-2. **The focus ring on a tinted surface** (§9) is 2.74–2.77:1 light and
-   2.54–2.57:1 dark, against 3:1. It is not this component's defect and it
-   cannot be fixed here. Build `Alert` now and schedule the token-layer fix plus
-   the two missing `check-contrast.mjs` assertions as their own item — the
-   D-048 §2 → D-050 path — or hold 5.2 until the ring is redesigned?
-3. **`ROADMAP.md`'s `Deps` for 5.2** should read `1.3, 3.2` rather than
-   `1.3, 2.2` (§4). Correcting it on the transition to `build`, unless you'd
-   rather it stay as written.
+1. **Default per-tone icons — shipped or not?** *Not.* `icon` is a slot taking
+   the caller's SVG, and the library ships none of its own (§5, D-053 §9).
+2. **The focus ring on a tinted surface** (§9), 2.74–2.77:1 light and
+   2.54–2.57:1 dark against 3:1. *Build now, fix at the token layer next* — the
+   D-048 §2 → D-050 path. It is recorded in D-053 §2 and in `ROADMAP.md`'s
+   **Current state**, and it goes on the roadmap as its own item with the two
+   missing `check-contrast.mjs` assertions landing beside the token change.
+   Nothing in `Alert.css` touches the ring, and a browser assertion holds the
+   line that there is still exactly one ring colour.
+3. **`ROADMAP.md`'s `Deps` for 5.2.** *Corrected to `1.3, 3.2`* on the move to
+   `build`.

@@ -26,11 +26,10 @@ is `done`.
 
 ### Current state
 
-- **In flight:** 5.2 `Alert` — `build`, approved 2026-09-21
-  ([`Alert.md`](docs/specs/Alert.md)). The first component of Tier 5, taken
-  ahead of the rest of it because 3.16 `Form`'s error summary is an `Alert` and
-  nothing else in Tier 3 is eligible. Next up after it is 3.16 `Form` on its own
-  gate, then 3.17 `RangeSlider`; Tier 4.1 unlocks once both are `done`
+- **In flight:** _none_ — **5.2 `Alert` is `done`** (D-053), the first component
+  of Tier 5 and the one 3.16 `Form` was waiting for. Next up is **3.16 `Form`**
+  on its own gate, then 3.17 `RangeSlider`; Tier 4.1 unlocks once both are
+  `done`. **0.11** is new and is not a blocker: the focus ring below
 - **The focus ring has only ever been verified against the page, and Alert is
   the first component to put a focusable control somewhere else** (Alert spec
   §9, open question 2). `--pp-color-focus-ring` is one colour library-wide
@@ -44,7 +43,10 @@ is `done`.
   background out of three. Not fixable inside a component — the ring's value is
   identical in both themes, so moving it darker fixes light and breaks dark, and
   a second ring colour in `.pp-alert` is the one thing D-029 exists to prevent.
-  **D-048 §2's shape, found before the build rather than after it**
+  **D-048 §2's shape, found before the build rather than after it** — and
+  unlike D-048 §2 it is on the roadmap rather than only in prose: **0.11**,
+  with the two missing `check-contrast.mjs` pairings landing beside the token
+  change so the fix and the assertion arrive together (the D-050 pattern)
 - **Every pairing `Alert` itself introduces was computed at the gate and every
   one is already asserted** (spec §9) — title 14.02–14.35 / 12.76–12.98, body
   and dismiss glyph 4.59 in both themes, edge 3.04–3.08 against its own fill and
@@ -59,6 +61,33 @@ is `done`.
   variant puts them on step 9, where `--pp-tone-text` is **1.04–1.16:1** in
   light — not low contrast, invisible. `plain` is 1.10–1.12:1 against the page,
   which is not a block at all. One treatment ships
+- **A layout whose parts are optional wants a container that spaces items, not
+  one that reserves tracks** (**D-053 §3**). The spec drew a three-column grid.
+  Built that way, an alert with **no icon** starts 12px in from its own padding
+  edge — one `--pp-alert-gap`, paid for the empty track it left behind, because
+  a grid gaps between *tracks* and whether anything is in them is not part of
+  the question. The root is flex. Measured both ways, and the alert that does
+  have an icon is inset by exactly the icon plus the gap, which is what says the
+  measurement is reading the right thing rather than reading zero for a
+  different reason
+- **`min-inline-size: 0` sizes the box and nothing else** (**D-053 §4**). The
+  browser suite's box measurement passed on its first run while the playground
+  harness flagged four of six cells: the alert's own *edges* stayed inside its
+  parent and the *glyphs* of an unbreakable URL went on painting past them. Two
+  separate guarantees the spec had treated as one. `overflow-wrap: anywhere` is
+  what makes it true — `anywhere` rather than `break-word` because it also
+  shrinks the min-content size. `Badge` and `Button` do the opposite and are
+  right to: they hug their own content, and this one holds someone else's prose
+- **An assertion pointed at the one hue where its two colours are the same**
+  (**D-053 §5**). "The focus ring inside an alert is the one library-wide ring"
+  took `.first()`, which is the page's `accent` alert — and `--pp-tone-focus`
+  for `accent` **is** the value `--pp-color-focus-ring` resolves to. It compared
+  a colour with itself, and giving the ring a tone left it green. D-048 §5 from
+  the other side: **when an assertion says A equals B, ask what would make them
+  differ.** Seventeen breaks in total, fifteen failing on exactly the test named
+  for them — and the seventeenth is a declaration nothing observes,
+  `min-inline-size: 0`, which the test now says out loud instead of implying a
+  guarantee it does not carry
 - **The gradient that was never written** (**D-052 §1**). Spec §8 expected the
   slider's fill to be a `linear-gradient` on the native track. That is
   *physical* — a range input reverses in RTL, so the fill would run from the
@@ -524,10 +553,11 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 43 / 79 tracked items (10 foundations + 69 components) — 9
-  foundations + 34 components. The denominator moved from 78 to 79 when
-  3.17 `RangeSlider` was added (D-052 §5). The one foundation not `done` is
-  0.10 docs site, deferred and not blocking
+- **Done:** 44 / 80 tracked items (11 foundations + 69 components) — 9
+  foundations + 35 components. The denominator moved from 79 to 80 when **0.11**
+  (the focus ring off the page) was added by D-053 §2; it had moved from 78 to
+  79 when 3.17 `RangeSlider` was added (D-052 §5). The two foundations not
+  `done` are 0.10 docs site, deferred, and 0.11, which blocks nothing
 
 ---
 
@@ -547,6 +577,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
+| 0.11 | **Focus ring off the page** | `planned` | 0.2 | `--pp-color-focus-ring` is asserted against `neutral-1` only, where it is 3.06:1. It is **2.94 / 2.85** on `--pp-color-bg-surface` and **2.74–2.77 / 2.54–2.57** on a tinted step 3, against 1.4.11's 3:1 (D-053 §2). One colour for both themes cannot clear it — needs a per-theme or two-tone ring, the two missing `check-contrast.mjs` pairings landing beside the token change, and a re-baseline of all 35 screenshots. Opened by `Alert`, which is the first component with a surface of its own |
 
 ---
 
@@ -654,7 +685,7 @@ Behavior from Radix / Base UI. We own every DOM node and every pixel.
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 5.1 | `Card` | `planned` | fill | server | T2 | Compound: `Card.Header` / `.Body` / `.Footer` |
-| 5.2 | `Alert` | `build` | fill | server | 1.3, 3.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Holds no state, so `onDismiss` reports the intent and the caller unmounts it — which is what keeps it `server` (§4). **Deps corrected from 2.2 to 3.2 at approval**: it composes `IconButton` and does not compose `Cluster` |
+| 5.2 | `Alert` | `done` | fill | server | 1.3, 3.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Holds no state, so `onDismiss` reports the intent and the caller unmounts it — which is what keeps it `server` (§4). **Deps corrected from 2.2 to 3.2 at approval**: it composes `IconButton` and does not compose `Cluster`. The root is flex, not a grid — a grid gaps between *tracks*, so an alert with no icon paid 12px for the empty one (D-053 §3) |
 | 5.3 | `Progress` | `planned` | fill | server | T0 | Determinate + indeterminate |
 | 5.4 | `Table` | `planned` | fill | server | T2 | Semantic table; sorting/selection hooks, no data layer |
 | 5.5 | `Pagination` | `planned` | fill | client | 3.1 | |
