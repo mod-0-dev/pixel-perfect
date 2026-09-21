@@ -57,13 +57,16 @@ is `done`.
   against 1.4.11's 3:1. `Button.css`'s header already said the five
   `--pp-tone-focus` values "are asserted against nothing"; the half nobody
   measured is that the ring that *is* asserted is asserted against one
-  background out of three. Not fixable inside a component — the ring's value is
-  identical in both themes, so moving it darker fixes light and breaks dark, and
-  a second ring colour in `.pp-alert` is the one thing D-029 exists to prevent.
+  background out of three. Not fixable inside a component: a second ring colour
+  in `.pp-alert` is the one thing D-029 exists to prevent.
   **D-048 §2's shape, found before the build rather than after it** — and
   unlike D-048 §2 it is on the roadmap rather than only in prose: **0.11**,
   with the two missing `check-contrast.mjs` pairings landing beside the token
-  change so the fix and the assertion arrive together (the D-050 pattern)
+  change so the fix and the assertion arrive together (the D-050 pattern).
+  **The sizing of that item was wrong and D-055 corrects it**: this bullet said
+  the ring's value was identical in both themes and that the fix needed a
+  per-theme or two-tone ring plus a re-baseline. It has been per theme since
+  0.2, and solving both against steps 1-3 is the whole of it
 - **Every pairing `Alert` itself introduces was computed at the gate and every
   one is already asserted** (spec §9) — title 14.02–14.35 / 12.76–12.98, body
   and dismiss glyph 4.59 in both themes, edge 3.04–3.08 against its own fill and
@@ -594,7 +597,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
-| 0.11 | **Focus ring off the page** | `planned` | 0.2 | `--pp-color-focus-ring` is asserted against `neutral-1` only, where it is 3.06:1. It is **2.94 / 2.85** on `--pp-color-bg-surface` and **2.74–2.77 / 2.54–2.57** on a tinted step 3, against 1.4.11's 3:1 (D-053 §2). One colour for both themes cannot clear it — needs a per-theme or two-tone ring, the two missing `check-contrast.mjs` pairings landing beside the token change, and a re-baseline of all 35 screenshots. Opened by `Alert`, which is the first component with a surface of its own |
+| 0.11 | **Focus ring off the page** | `planned` | 0.2 | `--pp-color-focus-ring` is asserted against `neutral-1` only, where it is 3.06:1. It is **2.94 / 2.85** on `--pp-color-bg-surface` and **2.74–2.77 / 2.54–2.57** on a tinted step 3, against 1.4.11's 3:1 (D-053 §2). Both themes already have their OWN solved value (light L 66.18%, dark L 49.70%) and both were solved against step 1 alone — so the fix is to solve them against steps 1, 2 and 3 of every hue, and nothing else (D-055 corrects this row's first estimate, which claimed one shared colour and a re-baseline). Opened by `Alert`, the first component with a surface of its own |
 
 ---
 

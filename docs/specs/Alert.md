@@ -283,12 +283,21 @@ header says the five `--pp-tone-focus` values "are asserted against nothing" —
 the half nobody measured is that the one ring that *is* asserted is asserted
 against one background out of three.
 
-It cannot be fixed inside this component. The ring's colour is identical in both
-themes by design, so moving it darker fixes light and breaks dark; the real
-fixes are a per-theme ring or a two-tone ring, both of which are Tier 0.2 work
-plus a re-baseline of every screenshot. Overriding `--pp-color-focus-ring`
+It cannot be fixed inside this component: overriding `--pp-color-focus-ring`
 inside `.pp-alert` would be a second ring colour in the library, which is the
 one thing D-029 exists to prevent.
+
+**Corrected 2026-09-21, while building 0.11 (D-055).** This paragraph first
+said the ring's colour was "identical in both themes by design, so moving it
+darker fixes light and breaks dark", and that the fix needed a per-theme or
+two-tone ring plus a re-baseline of every screenshot. All of that was wrong,
+and it was wrong because a `grep` matched two `:root`-shaped blocks and the
+second was `[data-pp-theme="light"]`, not the dark one. **The ring has been per
+theme since 0.2** — light L 66.18%, dark L 49.70% — and both were merely solved
+against step 1. Solving them against steps 1, 2 and 3 of every hue is the whole
+fix: light moves to 63.34%, dark to 53.99%, and the worst pairing in the library
+goes from 2.54 to 3.06. No new mechanism, and no re-baseline, because no
+baseline page renders a focused element.
 
 **What this spec proposes:** build `Alert` now, record the measurement in
 DECISIONS, and add the missing checks (`focus vs 2`, `focus vs 3`) to
@@ -592,10 +601,9 @@ All three were resolved at approval on 2026-09-21.
    the caller's SVG, and the library ships none of its own (§5, D-053 §9).
 2. **The focus ring on a tinted surface** (§9), 2.74–2.77:1 light and
    2.54–2.57:1 dark against 3:1. *Build now, fix at the token layer next* — the
-   D-048 §2 → D-050 path. It is recorded in D-053 §2 and in `ROADMAP.md`'s
-   **Current state**, and it goes on the roadmap as its own item with the two
-   missing `check-contrast.mjs` assertions landing beside the token change.
-   Nothing in `Alert.css` touches the ring, and a browser assertion holds the
-   line that there is still exactly one ring colour.
+   D-048 §2 → D-050 path. It became roadmap item **0.11** and was fixed the
+   same day; it turned out to be far smaller than this spec estimated, for the
+   reason §9 now records. Nothing in `Alert.css` touches the ring, and a browser
+   assertion holds the line that there is still exactly one ring colour.
 3. **`ROADMAP.md`'s `Deps` for 5.2.** *Corrected to `1.3, 3.2`* on the move to
    `build`.
