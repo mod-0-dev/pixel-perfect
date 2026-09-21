@@ -3326,3 +3326,65 @@ The estimate was wrong in the expensive direction — it made a contained token
 fix look like a tier-level project, and it was published in a spec, a decisions
 entry, a roadmap row and a pull request before anyone tried it. **The rule:
 prose that sizes a piece of work is a claim, and it gets checked like one.**
+
+---
+
+## D-056 — 0.11: the ring's surfaces are every hue's, and a gallery that did not draw what it called solved
+
+**Date:** 2026-09-21 · **Status:** accepted · **Amends:** Tier 0.2 token layer;
+`scripts/generate-tokens.mjs`; `scripts/check-contrast.mjs`;
+`playground/app/tokens` · **Corrected by its own investigation:** D-055
+
+Roadmap item **0.11**, opened by `Alert` (D-053 §2). The gap: the focus ring was
+solved and asserted against **step 1 only**, three lines above an `edge` that
+D-050 had already taught to solve against steps 1, 2 and 3.
+
+### 1. The check was written first and watched go red
+
+D-050 §3's habit. Two per-hue pairings (`focus vs 2`, `focus vs 3`) and one
+cross-hue set, added before the generator was touched: **40 violations**, at
+2.94 / 2.85 on step 2 and 2.74–2.77 / 2.54–2.57 on step 3, which are the figures
+D-053 §2 predicted at `Alert`'s gate. 242 assertions → **293**.
+
+### 2. The ring's surfaces are every hue's; a border's are neutral
+
+`solveEdge` takes a neutral-only surface set, and its comment explains why: "a
+danger-toned input sits on the page, not on a red one." That is true of a
+**border**, which sits between a control and the page. It is false of a **ring**,
+which is drawn on whatever the focused thing is sitting on — and since `Alert`
+(5.2) that can be a red one.
+
+So the ring solves against all five hues' steps 1–3 rather than neutral's. The
+spread is 0.03 between hues, which is small and is the difference between 2.74
+and 2.77 — between failing and failing by more. The cross-hue assertion in
+`check-contrast.mjs` describes what actually ships: `--pp-color-focus-ring` is
+accent's step (D-029), and the pairing that decides whether a focused control is
+visible inside a **danger** alert is accent's ring on danger's surface, which no
+per-hue loop can see.
+
+**Result:** light 66.18% → 63.34%, dark 49.70% → 53.99%. Worst pairing in the
+library **2.54:1 → 3.06:1**, both themes, all five hues, all three surfaces.
+
+### 3. The one thing that made this look expensive was never measured
+
+See **D-055**. The estimate in D-053 §2 — a per-theme or two-tone ring, plus a
+re-baseline of 35 screenshots — came from reading a `grep` rather than the file,
+and was wrong in the expensive direction. The ring had been per theme since 0.2.
+
+### 4. The token gallery rendered every step except the ones with an obligation
+
+`/tokens` draws steps 1–12 and `on-solid`. `focus`, `edge` and `edge-strong` —
+the three steps that carry an explicit WCAG target, and the only three that are
+deliberately **off-ramp** — were drawn by nothing. Its own prose said "the focus
+ring are solved for their contrast targets" above a page that did not show it.
+
+The practical consequence: a change to any of the three moved **zero pixels in
+37 screenshots**, so the visual suite could not regress the only tokens with a
+stated guarantee. That is 0.11's own failure mode one layer up — a value nothing
+looked at — and it is why this item changes a playground page as well as a
+generator.
+
+They are drawn on **step 3**, the surface each is hardest against, and as a
+line, because a line is what all three are. `tokens.png` is the single baseline
+this item re-authors; every other screenshot is untouched, which is the claim
+the manifest now guards rather than the claim this entry makes.

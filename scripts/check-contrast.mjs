@@ -65,6 +65,19 @@ const CHECKS = [
   { name: 'solid-hover vs on-solid', a: '10', b: 'on-solid', min: 4.5 },
   { name: 'solid-active vs on-solid', a: 'solid-active', b: 'on-solid', min: 4.5 },
   { name: 'focus ring vs page bg', a: 'focus', b: '1', min: 3.0 },
+  /*
+   * AND THE TWO SURFACES THE RING WAS NEVER CHECKED AGAINST (0.11, D-053 §2).
+   *
+   * Until `Alert` there was one pairing here, against step 1, and it read like
+   * a solved ring. It is not the ring's only neighbour: `--pp-color-bg-surface`
+   * is step 2 and has been shipping since 3A at 2.94 / 2.85, and any toned
+   * surface is step 3, where the ring measured 2.74-2.77 light and 2.54-2.57
+   * dark. `edge` three lines above has been solved against all three since
+   * D-050; the ring simply never was, and the generator's own header said so
+   * in a line nobody read as a claim.
+   */
+  { name: 'focus ring vs subtle bg', a: 'focus', b: '2', min: 3.0 },
+  { name: 'focus ring vs component bg', a: 'focus', b: '3', min: 3.0 },
   { name: 'muted text vs subtle bg', a: '11', b: '2', min: 4.5 },
   { name: 'muted text vs page bg', a: '11', b: '1', min: 4.5 },
   { name: 'body text vs subtle bg', a: '12', b: '2', min: 7.0 },
@@ -137,6 +150,9 @@ const MAPPINGS = [
   ['--pp-color-border-strong', '--pp-palette-neutral-edge-strong'],
   ['--pp-tone-border', '--pp-palette-<hue>-edge'],
   ['--pp-tone-border-strong', '--pp-palette-<hue>-edge-strong'],
+  // The ring the whole library draws. Re-point this at a ramp step and every
+  // value assertion above stays green while every focus ring goes unverified.
+  ['--pp-color-focus-ring', '--pp-palette-accent-focus'],
 ];
 
 for (const [token, expected] of MAPPINGS) {
@@ -155,6 +171,46 @@ for (const [token, expected] of MAPPINGS) {
     if (!declared) {
       console.error(`✗ semantic.css: ${token} does not resolve to ${want}`);
       failures++;
+    }
+  }
+}
+
+/*
+ * THE RING THAT SHIPS IS ONE COLOUR ON FIVE HUES' SURFACES.
+ *
+ * Everything above is per hue: accent's focus against accent's steps. That is
+ * not what a browser draws. `--pp-color-focus-ring` is `accent-focus` for the
+ * whole library (D-029), and `Alert` put it on a DANGER surface — so the
+ * pairing that decides whether a focused control is visible inside a danger
+ * alert is accent's ring against danger's step 3, which no per-hue loop can
+ * see. The spread is small and it is not zero: 2.74 on danger against 2.77 on
+ * success, which is the difference between failing and failing by more.
+ *
+ * This is also the check that would have caught the assertion `Alert`'s
+ * browser suite got wrong, from the other end: pointed at the accent alert,
+ * where the tone ring and the library ring are the same value, nothing is
+ * being compared at all (D-053 §5).
+ */
+const RING_SURFACES = ['1', '2', '3'];
+for (const [theme, hues] of Object.entries(THEMES)) {
+  const ring = hues.accent?.focus;
+  if (!ring) {
+    console.error(`✗ ${theme}: no accent focus step to check the shipped ring against`);
+    failures++;
+    continue;
+  }
+  for (const [hue, steps] of Object.entries(hues)) {
+    for (const step of RING_SURFACES) {
+      const against = steps[step];
+      if (!against) continue;
+      const ratio = contrastOklch(ring, against);
+      checked++;
+      if (ratio < 3.0) {
+        console.error(
+          `✗ ${theme}: the shipped ring (accent focus) vs ${hue} step ${step} is ${ratio.toFixed(2)}:1, below 3:1`,
+        );
+        failures++;
+      }
     }
   }
 }

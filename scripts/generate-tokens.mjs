@@ -4,7 +4,8 @@
 // Twelve-step ramps per hue, per theme. Steps that carry an accessibility
 // obligation are SOLVED for their contrast target rather than eyeballed:
 //
-//   focus        focus ring              >= 3.0:1 against step 1
+//   focus        focus ring              >= 3.0:1 against steps 1, 2 and 3,
+//                                        of EVERY hue (0.11, D-053 §2)
 //   edge         a control's boundary    >= 3.0:1 against steps 1, 2 AND 3
 //   edge-strong  its hover/strong state  >= 4.5:1 against steps 1, 2 AND 3
 //   step 9       solid background        >= 4.5:1 against its on-solid text
@@ -120,26 +121,33 @@ function solveSolid(name, themeName, hue, peak, solidL, t) {
  * in dark — so the edge is as close to the old step 7 as WCAG permits rather
  * than as far from it as the search range allows.
  */
-function solveEdge(name, themeName, hue, peak, surfaces, target, t) {
-  // Step-8 chroma: this is a border, not a fill. A fill's chroma on a 1px
-  // edge reads as a coloured line rather than as a tinted boundary.
-  const chroma = chromaAt(8, peak);
-  const search = t.descending
-    ? { lo: 0.2, hi: 0.85, direction: 'lightest' }
-    : { lo: 0.42, hi: 0.98, direction: 'darkest' };
-
+function solveAgainstAll({ label, surfaces, target, hue, chroma, search, descending }) {
   let pick = null;
   for (const against of surfaces) {
     const L = solveLightness({ against, target: target * MARGIN, hue, chroma, ...search });
     if (L === null) {
-      throw new Error(
-        `${name}/${themeName}: edge cannot reach ${target}:1 against every surface at this chroma`,
-      );
+      throw new Error(`${label} cannot reach ${target}:1 against every surface at this chroma`);
     }
     // "Most demanding" is darker in light and lighter in dark.
-    pick = pick === null ? L : t.descending ? Math.min(pick, L) : Math.max(pick, L);
+    pick = pick === null ? L : descending ? Math.min(pick, L) : Math.max(pick, L);
   }
   return [pick, clampChroma(pick, chroma, hue), hue];
+}
+
+function solveEdge(name, themeName, hue, peak, surfaces, target, t) {
+  // Step-8 chroma: this is a border, not a fill. A fill's chroma on a 1px
+  // edge reads as a coloured line rather than as a tinted boundary.
+  return solveAgainstAll({
+    label: `${name}/${themeName}: edge`,
+    surfaces,
+    target,
+    hue,
+    chroma: chromaAt(8, peak),
+    search: t.descending
+      ? { lo: 0.2, hi: 0.85, direction: 'lightest' }
+      : { lo: 0.42, hi: 0.98, direction: 'darkest' },
+    descending: t.descending,
+  });
 }
 
 /** Lightness must move in one direction across steps 1-8. Catches ramp inversions. */
@@ -164,7 +172,7 @@ function assertMonotonic(name, themeName, steps, descending) {
 }
 const chromaAt = (step, peak) => peak * CHROMA_CURVE[step - 1];
 
-function buildRamp(name, { hue, peak, solidL }, themeName, surfaces) {
+function buildRamp(name, { hue, peak, solidL }, themeName, surfaces, ringSurfaces) {
   const t = THEMES[themeName];
   const steps = {};
   const notes = {};
@@ -173,15 +181,35 @@ function buildRamp(name, { hue, peak, solidL }, themeName, surfaces) {
     steps[step] = [L, clampChroma(L, chromaAt(Number(step), peak), hue), hue];
   }
 
-  const step1 = steps[1];
-  const step2 = steps[2];
-
-  // Focus ring — its own token, not step 8. Hanging the 3:1 UI-contrast
-  // requirement on a ramp step tears a hole in the ramp.
+  /*
+   * Focus ring — its own token, not step 8. Hanging the 3:1 UI-contrast
+   * requirement on a ramp step tears a hole in the ramp.
+   *
+   * SOLVED AGAINST EVERY SURFACE, NOT AGAINST STEP 1 (0.11, D-053 §2).
+   * It used to take `step1` alone, and the line at the top of this file said
+   * so — three lines above `edge`, which has been solved against steps 1, 2
+   * AND 3 since D-050. The ring's other neighbours were real the whole time:
+   * `--pp-color-bg-surface` is step 2 and shipped at 2.94 / 2.85 from Tier 3A,
+   * and `Alert` (5.2) put a focusable control on a TONED step 3 at 2.74-2.77
+   * light and 2.54-2.57 dark. The accurate header of a file nobody re-reads is
+   * worth exactly as much as the wrong one D-050 §6 found.
+   *
+   * `ringSurfaces` is every hue's steps 1-3, not just the neutral ones
+   * `solveEdge` takes. Its comment — "a danger-toned input sits on the page,
+   * not on a red one" — is true of a border and false of a ring: a ring is
+   * drawn on whatever the component is sitting on, and since 5.2 that can be
+   * a red one.
+   */
   const cFocus = peak * 0.85;
-  const LFocus = solveLightness({ against: step1, target: 3.0 * MARGIN, hue, chroma: cFocus, ...t.focusSearch });
-  if (LFocus === null) throw new Error(`${name}/${themeName}: focus ring cannot reach 3:1`);
-  notes.focus = [LFocus, clampChroma(LFocus, cFocus, hue), hue];
+  notes.focus = solveAgainstAll({
+    label: `${name}/${themeName}: focus ring`,
+    surfaces: ringSurfaces,
+    target: 3.0,
+    hue,
+    chroma: cFocus,
+    search: t.focusSearch,
+    descending: t.descending,
+  });
 
   /*
    * The control boundary and its strong state. Solved here rather than taken
@@ -299,8 +327,29 @@ function build(themeName, indent = '    ') {
     return [L, clampChroma(L, chromaAt(n, HUES.neutral.peak), HUES.neutral.hue), HUES.neutral.hue];
   });
 
+  /*
+   * THE RING'S SURFACES ARE EVERY HUE'S, NOT ONLY NEUTRAL (0.11, D-053 §2).
+   *
+   * A border sits between a control and the page, and the page is neutral —
+   * which is why `surfaces` above is neutral-only and right to be. A focus
+   * ring is drawn on whatever the focused thing is sitting on, and since
+   * `Alert` (5.2) that is a toned step 3: the ring on a DANGER alert is
+   * accent's ring on danger's surface, a pairing no per-hue solve can see.
+   *
+   * Computable before any ramp is built, because steps 1-3 are fixed
+   * lightness; only the chroma differs by hue, and that is the 0.03 between
+   * 2.74 and 2.77 — small, and the difference between failing and failing by
+   * more.
+   */
+  const ringSurfaces = Object.values(HUES).flatMap(({ hue, peak }) =>
+    [1, 2, 3].map((n) => {
+      const L = t.fixed[n];
+      return [L, clampChroma(L, chromaAt(n, peak), hue), hue];
+    }),
+  );
+
   for (const [name, spec] of Object.entries(HUES)) {
-    const ramp = buildRamp(name, spec, themeName, surfaces);
+    const ramp = buildRamp(name, spec, themeName, surfaces, ringSurfaces);
     out.push(rampCss(name, ramp, indent));
     report.push({
       hue: name,
@@ -308,7 +357,7 @@ function build(themeName, indent = '    ') {
       onSolid: ramp.notes.onSolid,
       solidVsText: contrastOklch(ramp.steps[9], ramp.notes.onSolidValue),
       activeVsText: contrastOklch(ramp.notes.solidActive, ramp.notes.onSolidValue),
-      focusVs1: contrastOklch(ramp.notes.focus, ramp.steps[1]),
+      focusWorst: Math.min(...ringSurfaces.map((s) => contrastOklch(ramp.notes.focus, s))),
       edgeWorst: Math.min(...surfaces.map((s) => contrastOklch(ramp.notes.edge, s))),
       edgeStrongWorst: Math.min(...surfaces.map((s) => contrastOklch(ramp.notes.edgeStrong, s))),
       step11Vs3: contrastOklch(ramp.steps[11], ramp.steps[3]),
@@ -338,7 +387,7 @@ const header = `/*
  *   9-10  solid fill: rest, hover           (>= 4.5:1 against -on-solid)
  *   11    muted text                        (>= 4.5:1 on step 3)
  *   12    body text                         (fixed lightness, asserted >= 7:1 on step 3)
- *   -focus         focus ring               (>= 3:1 on step 1)
+ *   -focus         focus ring               (>= 3:1 on steps 1, 2 and 3, EVERY hue)
  *   -edge          a control's boundary     (>= 3:1 on steps 1, 2 and 3)
  *   -edge-strong   its strong/hover state   (>= 4.5:1 on steps 1, 2 and 3)
  *
@@ -348,6 +397,12 @@ const header = `/*
  * and the focus ring had already been moved to its own solved token precisely
  * because step 8 could not carry the requirement. A generated file claimed a
  * guarantee that nothing produced and nothing checked.
+ *
+ * The -focus line was then ACCURATE and still incomplete until 0.11. It said
+ * "on step 1" and meant it; what nobody read it as was a statement that the
+ * ring's other two neighbours were unchecked: --pp-color-bg-surface (step 2)
+ * since Tier 3A, and any toned surface (step 3) since Alert (5.2). An accurate
+ * line in a file nobody re-reads is worth what the wrong one was (D-053 §2).
  *   -solid-active  pressed solid fill    (>= 4.5:1 against -on-solid)
  *   -on-solid      text/icon colour for steps 9-10 and -solid-active
  */
@@ -510,7 +565,7 @@ const rows = [...light.report, ...dark.report];
 const w = (s, n) => String(s).padEnd(n);
 console.log('Generated src/styles/tokens/primitives.css\n');
 console.log(
-  `${w('hue', 9)}${w('theme', 7)}${w('on-solid', 10)}${w('9/text', 9)}${w('focus/1', 9)}${w('11/3', 8)}12/3`,
+  `${w('hue', 9)}${w('theme', 7)}${w('on-solid', 10)}${w('9/text', 9)}${w('focus/w', 9)}${w('11/3', 8)}12/3`,
 );
 for (const r of rows) {
   console.log(
@@ -518,7 +573,7 @@ for (const r of rows) {
       w(r.theme, 7) +
       w(r.onSolid, 10) +
       w(r.solidVsText.toFixed(2), 9) +
-      w(r.focusVs1.toFixed(2), 9) +
+      w(r.focusWorst.toFixed(2), 9) +
       w(r.step11Vs3.toFixed(2), 8) +
       r.step12Vs3.toFixed(2),
   );
