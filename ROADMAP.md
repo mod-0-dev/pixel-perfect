@@ -26,7 +26,7 @@ is `done`.
 
 ### Current state
 
-- **In flight:** 5.2 `Alert` — `spec`, awaiting Gate C
+- **In flight:** 5.2 `Alert` — `build`, approved 2026-09-21
   ([`Alert.md`](docs/specs/Alert.md)). The first component of Tier 5, taken
   ahead of the rest of it because 3.16 `Form`'s error summary is an `Alert` and
   nothing else in Tier 3 is eligible. Next up after it is 3.16 `Form` on its own
@@ -654,7 +654,7 @@ Behavior from Radix / Base UI. We own every DOM node and every pixel.
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 5.1 | `Card` | `planned` | fill | server | T2 | Compound: `Card.Header` / `.Body` / `.Footer` |
-| 5.2 | `Alert` | `spec` | fill | server | 1.3, 2.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Deps want 3.2 `IconButton` in place of 2.2, which it does not compose (§4) |
+| 5.2 | `Alert` | `build` | fill | server | 1.3, 3.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Holds no state, so `onDismiss` reports the intent and the caller unmounts it — which is what keeps it `server` (§4). **Deps corrected from 2.2 to 3.2 at approval**: it composes `IconButton` and does not compose `Cluster` |
 | 5.3 | `Progress` | `planned` | fill | server | T0 | Determinate + indeterminate |
 | 5.4 | `Table` | `planned` | fill | server | T2 | Semantic table; sorting/selection hooks, no data layer |
 | 5.5 | `Pagination` | `planned` | fill | client | 3.1 | |

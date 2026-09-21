@@ -1,0 +1,102 @@
+/*
+ * Alert — spec docs/specs/Alert.md
+ *
+ * ONE TREATMENT, AND THE THREE REJECTIONS WERE MEASURED (spec §1).
+ * An Alert is the only component in the library whose children are arbitrary,
+ * so the tone context (D-007) inherits into a caller's Buttons and Links. A
+ * `solid` variant would put them on --pp-tone-solid, where --pp-tone-text —
+ * what a plain Button and a Link resolve to inside that context — is 1.04:1 in
+ * the light theme. Not low contrast: invisible. And --pp-tone-bg against the
+ * page is 1.10:1, so without the border there is no block at all, only slightly
+ * tinted prose. Hence: the tint AND the edge, always, with `tone` the only axis.
+ *
+ * Every pairing here is one `npm run lint:contrast` already asserts, computed
+ * at the gate rather than after the build (D-048 §1): the fill is step 3, which
+ * is the step the existing "vs component bg" checks are named after, so the
+ * title (14.02–14.35 light / 12.76–12.98 dark), the body and the dismiss glyph
+ * (4.59 in both) and the edge (3.04–3.08 against its own fill, 3.40 / 3.66
+ * against the page) are all covered without this component adding a check.
+ *
+ * FLEX RATHER THAN THE THREE-COLUMN GRID THE SPEC DREW. A grid gaps between
+ * TRACKS, so an alert with no icon still pays a column gap for the empty track
+ * it left behind; flex gaps only between items that exist. See the build
+ * findings in the spec.
+ *
+ * No transition and no animation, so there is no `prefers-reduced-motion`
+ * block: nothing here moves.
+ */
+
+@layer pp.components {
+  .pp-alert {
+    /* Block-level, no width declaration: the fill contract (RULES §1). */
+    display: flex;
+    align-items: flex-start;
+    gap: var(--pp-alert-gap, var(--pp-space-3));
+    /* So a URL in the body cannot push the box past its parent. */
+    min-inline-size: 0;
+    padding-block: var(--pp-alert-padding-block, var(--pp-space-3));
+    padding-inline: var(--pp-alert-padding-inline, var(--pp-space-4));
+    border: var(--pp-border-width-1) solid var(--pp-alert-border-color, var(--pp-tone-border));
+    border-radius: var(--pp-alert-radius, var(--pp-radius-3));
+    background-color: var(--pp-alert-bg, var(--pp-tone-bg));
+    color: var(--pp-alert-color, var(--pp-tone-text));
+    font-size: var(--pp-font-size-3);
+    line-height: var(--pp-line-height-snug);
+    /*
+     * `min-inline-size: 0` FIXES THE BOX AND NOTHING ELSE. It lets the flex
+     * item shrink below its automatic minimum, so the alert's own edges stay
+     * inside its parent — and the glyphs of an unbreakable string go right on
+     * painting past them. The playground harness flagged four of six cells
+     * while the box measurement it sits beside read exactly correct.
+     *
+     * `anywhere` rather than `break-word` because it also shrinks the
+     * min-content size, so the flex item can actually reach the width the line
+     * above lets it have. Inherited, so the title is covered by the same
+     * declaration. A Badge and a Button do the opposite (`white-space: nowrap`)
+     * and are right to: they hug their own content. This one fills a column and
+     * holds someone else's prose.
+     */
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * ONE LINE BOX TALL, so the 1em glyph inside centres on the first line of
+   * text with no nudge. Composed from the two tokens that define that line box
+   * — change the type and both move together — which is D-052 §1's habit:
+   * derive it, and the arithmetic is the documentation.
+   */
+  .pp-alert__icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    block-size: calc(var(--pp-font-size-3) * var(--pp-line-height-snug));
+  }
+
+  .pp-alert__content {
+    /* Takes the room the icon and the dismiss button leave. */
+    flex: 1;
+    min-inline-size: 0;
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--pp-alert-row-gap, var(--pp-space-1));
+  }
+
+  .pp-alert__title {
+    color: var(--pp-alert-title-color, var(--pp-tone-text-strong));
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-alert__body {
+    min-inline-size: 0;
+  }
+
+  /*
+   * Top-aligned rather than centred: on a three-line alert a centred close
+   * button floats beside nothing. It is 32px against a 22.4px first line, so it
+   * overhangs — which is invisible, because `plain` is transparent until it is
+   * hovered or focused.
+   */
+  .pp-alert__dismiss {
+    flex-shrink: 0;
+  }
+}

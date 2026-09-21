@@ -3335,3 +3335,272 @@ test.describe('Slider', () => {
     await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
   });
 });
+
+/*
+ * Alert (5.2). The first component of Tier 5, and the first whose own surface
+ * is a tinted step 3 with other people's controls sitting on it.
+ *
+ * Three of the assertions below exist because of a ruling rather than a
+ * feature. Spec §1 rejected a `solid` variant after measuring a plain Button's
+ * text at 1.04:1 against --pp-tone-solid, so the legibility of a caller's
+ * control against the alert's fill is asserted here rather than trusted — from
+ * the colours the browser actually resolved, which is the only place that
+ * argument can be checked. The icon sits on the first line by construction
+ * rather than by a negative margin (RULES §2), which is a claim about layout
+ * and therefore invisible to jsdom. And the root is flex rather than the
+ * three-column grid the spec drew, because a grid gaps between TRACKS — an
+ * alert with no icon would pay a column gap for the empty track it left
+ * behind — so there is an assertion that measures exactly that.
+ */
+test.describe('Alert', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  test('fills the box its parent gives it, at every width, with no width declared', async ({ page }) => {
+    await page.goto('/components/alert');
+    const section = page.locator('section', { hasText: 'fill — it takes the column it is given' });
+    const widths: number[] = [];
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const measured = await section
+        .locator('.matrix__cell')
+        .filter({ hasText: width })
+        .first()
+        .locator('.pp-alert')
+        .first()
+        .evaluate((el) => {
+          const parent = el.parentElement as HTMLElement;
+          const style = getComputedStyle(parent);
+          return {
+            root: Math.round(el.getBoundingClientRect().width),
+            available: Math.round(
+              parent.clientWidth -
+                parseFloat(style.paddingInlineStart) -
+                parseFloat(style.paddingInlineEnd),
+            ),
+            declared: el.style.width,
+          };
+        });
+
+      expect(measured.root, `did not fill at ${width}`).toBe(measured.available);
+      expect(measured.declared).toBe('');
+      widths.push(measured.root);
+    }
+
+    expect(new Set(widths).size, 'the box did not track its container').toBe(3);
+    await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+  });
+
+  test('the icon is centred on the first line of text, with no negative margin', async ({ page }) => {
+    await page.goto('/components/alert');
+    const alert = cell(page, 'Anatomy', 'wide · 960px')
+      .locator('.pp-alert')
+      .filter({ hasText: 'Payment method expires soon' })
+      .first();
+
+    const measured = await alert.evaluate((el) => {
+      const icon = el.querySelector('.pp-alert__icon') as HTMLElement;
+      const title = el.querySelector('.pp-alert__title') as HTMLElement;
+      /* The FIRST LINE BOX, not the title element: on a narrow container the
+         title wraps and the element's centre stops being the line's centre.
+         A Range over the text node reports the line boxes themselves. */
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      const line = range.getClientRects()[0] as DOMRect;
+      const box = icon.getBoundingClientRect();
+      return {
+        iconCentre: box.top + box.height / 2,
+        lineCentre: line.top + line.height / 2,
+        // RULES §2 bans the usual fix. If this is ever non-zero the alignment
+        // came from a nudge rather than from the box being one line box tall.
+        marginBlockStart: getComputedStyle(icon).marginBlockStart,
+      };
+    });
+
+    expect(Math.abs(measured.iconCentre - measured.lineCentre)).toBeLessThan(1);
+    expect(measured.marginBlockStart).toBe('0px');
+  });
+
+  test('an alert with no icon pays no gap for the slot it does not have', async ({ page }) => {
+    await page.goto('/components/alert');
+    const anatomy = cell(page, 'Anatomy', 'wide · 960px');
+
+    const inset = (text: string) =>
+      anatomy
+        .locator('.pp-alert')
+        .filter({ hasText: text })
+        .first()
+        .evaluate((el) => {
+          const content = el.querySelector('.pp-alert__content') as HTMLElement;
+          const style = getComputedStyle(el);
+          return (
+            content.getBoundingClientRect().left -
+            el.getBoundingClientRect().left -
+            parseFloat(style.borderInlineStartWidth) -
+            parseFloat(style.paddingInlineStart)
+          );
+        });
+
+    /* THE REASON THE ROOT IS FLEX AND NOT A GRID. A three-column grid gaps
+       between tracks whether or not anything is in them, so this alert would
+       start one --pp-alert-gap in from the padding edge with nothing to show
+       for it. Flex gaps only between items that exist. */
+    expect(await inset('Body only'), 'the absent icon left a gap behind').toBeCloseTo(0, 0);
+
+    // ...and the one WITH an icon is inset by exactly the icon plus the gap,
+    // which is what says the measurement above is reading the right thing.
+    const withIcon = await inset('Payment method expires soon');
+    const iconWidth = await anatomy
+      .locator('.pp-alert')
+      .filter({ hasText: 'Payment method expires soon' })
+      .first()
+      .evaluate((el) => {
+        const icon = el.querySelector('.pp-alert__icon') as HTMLElement;
+        return icon.getBoundingClientRect().width + parseFloat(getComputedStyle(el).columnGap);
+      });
+    expect(withIcon).toBeCloseTo(iconWidth, 0);
+  });
+
+  test("a caller's plain Button is legible against the alert's fill", async ({ page }) => {
+    await page.goto('/components/alert');
+    const alert = cell(page, 'Arbitrary children', 'wide · 960px').locator('.pp-alert').first();
+
+    const ratio = await alert.evaluate((root) => {
+      /* Painted and read back rather than parsed, for the reason the Switch
+         helper above gives: getComputedStyle returns the colour in the space
+         the token was authored in, and one pixel of image data is always sRGB
+         bytes. */
+      const srgb = (color: string) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d', {
+          willReadFrequently: true,
+        }) as CanvasRenderingContext2D;
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        return Array.from(ctx.getImageData(0, 0, 1, 1).data)
+          .slice(0, 3)
+          .map((v) => v / 255);
+      };
+      const luminance = (c: number[]) => {
+        const [r, g, b] = c.map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+        return 0.2126 * (r as number) + 0.7152 * (g as number) + 0.0722 * (b as number);
+      };
+      const button = root.querySelector('.pp-button[data-variant="plain"]') as HTMLElement;
+      const la = luminance(srgb(getComputedStyle(button).color));
+      const lb = luminance(srgb(getComputedStyle(root).backgroundColor));
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    });
+
+    /* THE ASSERTION THAT WOULD HAVE CAUGHT A `solid` VARIANT (spec §1).
+       An Alert is the only component whose children are arbitrary, so the tone
+       context inherits into them — and a plain Button's text resolves to
+       --pp-tone-text, which is 1.04:1 on --pp-tone-solid and 4.59:1 on the
+       --pp-tone-bg this component actually uses. Nothing in `lint:contrast`
+       pairs a tone step with a caller's control, so this is the only place the
+       ruling is checked. */
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('the focus ring inside an alert is the one library-wide ring', async ({ page }) => {
+    await page.goto('/components/alert');
+    /*
+     * THE DANGER ALERT, NOT THE FIRST ONE ON THE PAGE, AND THAT IS THE WHOLE
+     * TEST. The first dismissible alert is `accent`, whose --pp-tone-focus IS
+     * --pp-palette-accent-focus — the same value --pp-color-focus-ring resolves
+     * to. Pointed there, this assertion compared a colour with itself: giving
+     * the ring `var(--pp-tone-focus)` changed nothing and the test stayed
+     * green. Found by running the break, which is the only way this kind of
+     * thing is ever found (D-009). `danger` is a hue where the two differ.
+     */
+    const dismiss = page
+      .locator('.pp-alert[data-pp-tone="danger"] .pp-alert__dismiss')
+      .first();
+    await dismiss.scrollIntoViewIfNeeded();
+    await dismiss.focus();
+
+    const ring = await dismiss.evaluate((el) => {
+      const srgb = (color: string) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d', {
+          willReadFrequently: true,
+        }) as CanvasRenderingContext2D;
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, 1, 1);
+        return Array.from(ctx.getImageData(0, 0, 1, 1).data).slice(0, 3);
+      };
+      const alert = el.closest('.pp-alert') as HTMLElement;
+      const style = getComputedStyle(el);
+      return {
+        declared: srgb(getComputedStyle(alert).getPropertyValue('--pp-color-focus-ring').trim()),
+        drawn: srgb(style.outlineColor),
+        // READ ALONGSIDE THE COLOUR, because `outline-width` is reported for an
+        // element whose `outline-style` is `none` too, and "solid, 0px" is the
+        // impossible combination D-052 §3 spent a debugging session on.
+        style: style.outlineStyle,
+        width: parseFloat(style.outlineWidth),
+      };
+    });
+
+    /* D-029: one ring colour, library-wide. An alert is the first component
+       with a tinted surface of its own, so it is the first place anyone would
+       be tempted to give the ring a tone — and `lint:contrast` asserts exactly
+       one ring pairing, so a second colour here would be an unverified one.
+       The ring's contrast AGAINST this surface is a known token-layer gap
+       (2.74–2.77 light, 2.54–2.57 dark); it is recorded in spec §9 and
+       ROADMAP's Current state rather than papered over here. */
+    expect(ring.drawn).toEqual(ring.declared);
+    expect(ring.style).toBe('solid');
+    expect(ring.width).toBeGreaterThan(0);
+  });
+
+  test('a string with no break opportunity breaks rather than escaping the box', async ({ page }) => {
+    await page.goto('/components/alert');
+    const section = page.locator('section', { hasText: 'min-inline-size: 0' });
+    const narrow = section.locator('.matrix__cell').filter({ hasText: 'narrow · 240px' }).first();
+
+    const measured = await narrow.locator('.pp-alert').first().evaluate((el) => {
+      const parent = el.parentElement as HTMLElement;
+      const style = getComputedStyle(parent);
+      return {
+        root: Math.round(el.getBoundingClientRect().width),
+        available: Math.round(
+          parent.clientWidth -
+            parseFloat(style.paddingInlineStart) -
+            parseFloat(style.paddingInlineEnd),
+        ),
+      };
+    });
+
+    /*
+     * WHAT EACH HALF ACTUALLY PROVES, because they were written believing the
+     * same thing and they do not check the same thing.
+     *
+     * The box measurement passed on the very first run, while the harness
+     * flagged four of six cells: `min-inline-size: 0` sizes the BOX and the
+     * glyphs went on painting past its edges regardless. `overflow-wrap:
+     * anywhere` is what makes the second expectation true, and breaking it is
+     * what turns this test red.
+     *
+     * `min-inline-size: 0` itself is asserted by NOTHING here, and the break
+     * check says so plainly — removing it changes not one of these numbers.
+     * With `overflow-wrap: anywhere` the text's min-content size is one
+     * character, and every alert on the page sits in a COLUMN flex container,
+     * where the automatic minimum size does not apply on the inline axis
+     * anyway. It stays because RULES §1 defines `fill` as including it, and it
+     * earns its keep in the arrangements this page does not contain — a row
+     * flex item, a grid cell, content that cannot break. Claiming otherwise
+     * would be the D-051 §4 shape: an assertion that reads like a guarantee
+     * and checks nothing.
+     */
+    expect(measured.root).toBe(measured.available);
+    await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+  });
+});
