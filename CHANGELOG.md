@@ -1,5 +1,149 @@
 # pixel-perfect
 
+## 0.6.0
+
+### Minor Changes
+
+- 934f578: **A control's boundary now meets WCAG 1.4.11.** `--pp-color-border` measured
+  1.55:1 against the page in the light theme, where `--pp-color-bg-surface` *is*
+  `--pp-color-bg-page` — so a text field's fill is literally the page and the
+  border was the only thing identifying the control. Every control in Tiers 3A–3C
+  shipped below the 3:1 floor.
+  
+  - Two **off-ramp** solved primitives per hue, joining `-focus`, `-on-solid` and
+    `-solid-active`: `--pp-palette-<hue>-edge` (≥3:1 against every neutral
+    surface) and `-edge-strong` (≥4.5:1). The 1–8 ramp is untouched, because a
+    conforming neutral border lands at L 0.633 — below step 8's fixed L 0.780 —
+    so putting it at step 7 inverts the ramp.
+  - `--pp-color-border` and `--pp-color-border-strong` (and their `--pp-tone-*`
+    counterparts, in all five hues) re-point at those steps.
+    `--pp-color-border-subtle` deliberately does **not**: a divider is not a user
+    interface component, and a 3:1 divider is a black line across the page. RULES
+    §3 now states which to reach for.
+  - `npm run lint:contrast` gains the border-vs-surface pairings it never had —
+    170 → 242 assertions — and now also asserts the semantic **mapping** by name,
+    so re-pointing a token back at a ramp step fails the build instead of
+    silently returning every control to 1.55:1.
+  - `Spinner`'s track moves to the decorative step — at 3:1 it read as a ring
+    rather than an arc. `Skeleton`'s sweep, `Badge`'s outline and `Kbd`'s keycap
+    keep the new edge on purpose; the skeleton's dark sweep is wider than its
+    light one as a result, which is recorded rather than "fixed", because the
+    symmetric version left the dark bars barely visible.
+  - Every **disabled** control drops to `--pp-color-border-subtle`. WCAG exempts
+    inactive components, and leaving them on the live edge erases the difference
+    the exemption exists to allow.
+  
+  **Visually breaking in a minor release:** every bordered control has a darker,
+  clearly visible edge in both themes. Override `--pp-<component>-border-color`
+  per component, or re-point `--pp-color-border` in your own layer, if you were
+  relying on the old hairline.
+- 23b7551: Add `NumberInput` (3.14) — a numeric text field with steppers, bounds, a step,
+  and formatting that is correct outside en-US. The first component of Tier 3D.
+  
+  - **`type="text"` with `role="spinbutton"`, never `type="number"`.** That input
+    mutates its value on a scroll wheel over a focused field, rejects a locale
+    decimal comma, and reports `value === ''` for anything it cannot parse, so
+    `1,5` in a German locale is silently lost. It also cannot hold `1.234,5`,
+    which rules it out a second time the moment formatting exists.
+  - **`null` is empty; `undefined` is uncontrolled.** `value={undefined}` already
+    means "uncontrolled" to the shared state hook, so an empty *controlled* field
+    spelled that way switches modes silently and stops answering to its owner.
+    `number | null` makes it a type error at the call site instead.
+  - **`min`, `max` and `step` are applied on commit — blur, a stepper, an arrow
+    key, Enter — and never while you are typing.** At `step={10}`, snapping per
+    keystroke turns `1` into `10` before the `5` arrives, so `15` cannot be typed
+    at all. The snap is rounded to `step`'s own precision, so a `step={0.1}` field
+    produces `0.3` rather than `0.30000000000000004`. Text that is not a number
+    reverts rather than clearing: a typo should not destroy data nobody asked to
+    delete.
+  - **Formatting is opt-in, and that is a hydration ruling.** `Intl.NumberFormat`
+    with no locale resolves the runtime's — Node's on the server, the user's in
+    the browser — so an ambient locale breaks server/client agreement in a
+    component that never mentions the viewport. Without `locale` the display is
+    `String(value)`. With one, parsing is derived from the *same* formatter via
+    `formatToParts`, so separators and non-Latin digits round-trip without a
+    hardcoded list.
+  - **The steppers are plain buttons and are not tab stops.** `IconButton` is
+    square on the control scale, so two stacked is 80px of button in a 40px
+    control — the reuse is arithmetically impossible. `type="button"` is set and
+    tested, because a `<button>` in a `<form>` defaults to `submit`. They disable
+    at the bound they reach, and on an empty field the first press commits the
+    bound that exists rather than starting from an invisible zero.
+  - **The control is the surface and the steppers overlay it**, which is `Select`'s
+    structure with two buttons instead of one chevron. The first build put the
+    surface on the wrapper and drew the ring with `:has()`, which rendered two
+    concentric focus rings — the reset draws one on the inner input too. Four
+    components now read `--pp-control-*` and are the same height in a row.
+  
+  `Intl.NumberFormat` is constructed during render with an explicit locale or not
+  at all, so the markup is identical on the server and the client.
+- f78db62: Add `Select` (3.13) — the native `<select>` on the shared control surface, with
+  our chevron. Tier 3C is complete.
+  
+  - **The platform popup is kept.** `appearance: none` repaints the closed box and
+    nothing else, so the open list stays the operating system's: a wheel on iOS, a
+    listbox on desktop, correct with a screen reader and in a right-to-left locale
+    with no code of ours involved. The custom listbox — typeahead, async options,
+    multi-select — is `Combobox` (4.11). `multiple` is a type error, and is
+    stripped at runtime for the caller who ignores the type.
+  - **`placeholder` seeds `defaultValue=""` rather than relying on `selected`.**
+    The HTML *ask for a reset* algorithm picks the first option **that is not
+    disabled**, so a disabled placeholder is skipped and the browser silently
+    selects option two. Seeding routes through the `value` setter, which has no
+    such exclusion. Give `value` or `defaultValue` and yours wins.
+  - **The placeholder is painted from `:has(option[data-pp-placeholder]:checked)`,
+    not from an attribute.** This control holds no state, so an uncontrolled
+    select's selection changes without React being told — as do `form.reset()` and
+    a write through the ref. `data-placeholder` is on the root for consumers to
+    style off, and only when the select is controlled; it is omitted rather than
+    guessed otherwise.
+  - The chevron is `--pp-color-text-muted`: 5.10:1 on the light surface, 5.12:1 on
+    the dark one, against the 3:1 WCAG 1.4.11 asks of the graphic that identifies
+    a control — which it is, now that the platform's own arrow is gone. Measured
+    before the component was written; both pairings are ones the token layer
+    already verifies.
+  - Options are `children`, so `<optgroup>` and disabled options are just markup.
+    `--pp-select-padding-inline` moves both edges and the chevron's reserved room
+    together, so a long value truncates before it reaches the glyph.
+  - No `readOnly`: HTML has none for `<select>`, a `pointer-events` fake leaves the
+    control operable from the keyboard, and `disabled` alone drops the value from
+    the form.
+- 23b7551: Add `Slider` (3.15) — a single-thumb range control on `<input type="range">`.
+  Tier 3D's second and last component.
+  
+  - **The native element is the painted control.** Arrow keys, Home/End,
+    Page Up/Down, step-on-drag, pointer capture including drag-outside-and-back,
+    touch, `role="slider"` with the value attributes, and right-to-left reversal
+    all come from the platform; the component installs no key handler at all. That
+    is what keeps Tier 3 at zero runtime dependencies.
+  - **The track is ours and the thumb is the platform's.** The filled portion is a
+    **grid column**, not a `linear-gradient`: a gradient needs `to right`, which
+    fills from the wrong end in an RTL layout where the native control reverses,
+    and it would have to be written twice because the WebKit and Firefox track
+    pseudo-elements cannot share a selector list. Grid columns follow the inline
+    axis, so RTL is correct with nothing declared about it.
+  - **`onValueCommit`, because React does not expose the native `change` event for
+    a range input.** `onChange` maps to *input*, so it fires on every pixel of a
+    drag; without a commit callback the only way to avoid a request per pixel is
+    to reimplement pointer and key release handling. A commit fires only when the
+    value actually changed, so tabbing past a slider sends nothing.
+  - **Single-thumb only.** A two-thumb range is a separate component: two
+    overlapping inputs each draw `:focus-visible` across the whole track, and
+    moving the ring onto the thumb pseudo-element needs `outline: none`, which
+    this library bans outright.
+  - **No `readOnly`** — the attribute is defined for text-like controls and the
+    browser ignores it on a range, so offering it would be a promise the platform
+    refuses to keep. No `required` either: a slider always has a value.
+  - `min`, `max`, `step`, `locale`, `formatOptions`, `value`, `defaultValue` and
+    `onValueChange` mean exactly what they mean on `NumberInput` — one numeric
+    contract, two controls, shared in one internal module rather than implemented
+    twice.
+  
+  The rule lint gains a rule with this component: **no selector list may mix a
+  `-webkit-` and a `-moz-` pseudo-element.** An unknown pseudo-element invalidates
+  the entire list in the engine that does not know it, so grouping the two thumb
+  blocks silently unstyles Firefox while looking correct in Chrome.
+
 ## 0.5.0
 
 ### Minor Changes
