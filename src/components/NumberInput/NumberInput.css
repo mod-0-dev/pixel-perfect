@@ -1,0 +1,261 @@
+/*
+ * NumberInput — spec docs/specs/tier-3d-composite.md §3.14
+ *
+ * THE CONTROL IS THE SURFACE, AND THE STEPPERS OVERLAY IT — WHICH IS SELECT'S
+ * STRUCTURE, NOT A NEW ONE (D-051 §3).
+ *
+ * Spec §9 had the wrapper carry the border, the fill and the radius, with the
+ * <input> transparent inside it and the focus ring drawn on the root by
+ * `:has()`. That was re-solving a solved problem and it shipped a defect while
+ * doing it: reset.css draws `:where(:focus-visible)` on every focusable
+ * element, so the inner input took a ring of its own and the control rendered
+ * with TWO concentric accent outlines. The only way out was `outline-width: 0`
+ * on the input — a value-level dodge around a property-level ban, which is
+ * D-025's shape for the third time.
+ *
+ * Select (3.13) had already answered this: one grid cell, the control in it
+ * carrying the surface with `padding-inline-end` reserved for the thing at its
+ * end, and that thing placed over the reserved room. So the ring is the
+ * control's own, it surrounds exactly the box the user sees, and no rule here
+ * has to undo one in the reset.
+ *
+ * The conclusion spec §9 reached still holds, by Select's reasoning rather than
+ * its own: 3C §1's rejected `.pp-control` base class stays rejected, because
+ * the three surfaces differ in exactly the way 3C predicted — Textarea has no
+ * block-size, Select reserves room for a chevron, this one reserves room for
+ * two buttons, and Input reserves nothing.
+ *
+ * TWO ELEMENTS, because a form control carries an intrinsic inline size and
+ * does not fill (D-040). The grid root the fill contract needs is also the
+ * wrapper the steppers need, and neither costs the other anything. No width is
+ * declared anywhere.
+ */
+
+@layer pp.components {
+  .pp-number-input {
+    --_height: var(--pp-control-height-md);
+    --_padding-inline: var(--pp-control-padding-inline-md);
+    --_gap: var(--pp-control-gap-md);
+    --_font-size: var(--pp-control-font-size-md);
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_color: var(--pp-color-text);
+    /*
+     * 5.10:1 on the light surface and 5.12:1 on the dark one, against the 3:1
+     * WCAG 1.4.11 asks of a control's own graphics. Both are pairings
+     * check-contrast.mjs already asserts ("muted text vs page bg", "muted text
+     * vs subtle bg"), so this component adds no assertion and leans on none
+     * that is missing — computed at the gate, which is the rule D-047 §3,
+     * D-048 §1 and D-049 §3 arrived at the hard way.
+     */
+    --_stepper-color: var(--pp-color-text-muted);
+
+    /*
+     * HALF THE CONTROL HEIGHT, WHICH IS 16 / 20 / 24 — the same scale the
+     * checkable three use (D-039 §8), reached by construction rather than by
+     * being written down again. Two steppers stack to exactly the control's
+     * height, and each is square.
+     */
+    --_stepper-size: calc(var(--_height) / 2);
+
+    /*
+     * RESOLVED ON OUR OWN ROOT, ONCE RATHER THAN TWICE (D-044 §1, D-049's
+     * Select before it): a --pp-number-input-padding-inline override has to
+     * move the start edge, the end edge AND the room reserved for the
+     * steppers, or a caller who widens the padding gets digits running under
+     * the buttons.
+     */
+    --_pad-inline: var(--pp-number-input-padding-inline, var(--_padding-inline));
+    --_pad-inline-end: calc(var(--_pad-inline) + var(--_stepper-size) + var(--_gap));
+
+    /* fill: block-level with no width declaration. One cell; the steppers
+       stack over the room the control reserves at its end. */
+    display: grid;
+    min-inline-size: 0;
+    /* The chevrons are 1em of this, because Icon defaults to 1em — so they
+       track the size step without this file naming the step. */
+    font-size: var(--_font-size);
+  }
+
+  .pp-number-input[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_padding-inline: var(--pp-control-padding-inline-sm);
+    --_gap: var(--pp-control-gap-sm);
+    --_font-size: var(--pp-control-font-size-sm);
+  }
+
+  .pp-number-input[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_padding-inline: var(--pp-control-padding-inline-lg);
+    --_gap: var(--pp-control-gap-lg);
+    --_font-size: var(--pp-control-font-size-lg);
+  }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3). `.pp-number-input[data-invalid] .pp-number-input__control` is
+   * 0-3-0 and would outrank `.pp-number-input__control:focus-visible` at
+   * 0-2-0 — which is exactly how Input shipped a focus border that never
+   * appeared on an invalid control. On the root the custom property inherits
+   * down and the control's own pseudo-class wins for that element.
+   */
+  .pp-number-input[data-invalid] {
+    /* The root carries data-pp-tone="danger", so this resolves in the danger
+       ramp without this file naming a colour (D-007). */
+    --_border: var(--pp-tone-border);
+  }
+
+  /* Read-only is not disabled: the value is still selectable, focusable and
+     submitted, so only the fill says "not yours to change". The border stays
+     put, which is what distinguishes it from disabled at a glance. */
+  .pp-number-input[data-readonly] {
+    --_bg: var(--pp-color-bg-sunken);
+  }
+
+  /*
+   * pointer-events: none is deliberately NOT used, for the reason Button.css
+   * gives: it kills `title`, breaks a Tooltip (4.3) wrapping the control, and
+   * makes cursor: not-allowed impossible to show.
+   */
+  .pp-number-input[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+    --_stepper-color: var(--pp-color-text-disabled);
+    /*
+     * DROPS TO THE DECORATIVE STEP, BECAUSE A DISABLED CONTROL IS EXEMPT AND
+     * SHOULD LOOK IT (D-050). WCAG 1.4.11 exempts inactive components from the
+     * 3:1 --pp-color-border now carries, and leaving a disabled control on the
+     * live edge erases the difference the exemption exists to allow.
+     */
+    --_border: var(--pp-color-border-subtle);
+  }
+
+  .pp-number-input__control {
+    grid-area: 1 / 1;
+    /* Lets the control shrink below its intrinsic size instead of pushing the
+       container wide. The grid stretch handles the other direction. */
+    min-inline-size: 0;
+    block-size: var(--pp-number-input-height, var(--_height));
+    padding-inline-start: var(--_pad-inline);
+    padding-inline-end: var(--_pad-inline-end);
+    border: var(--pp-border-width-1) solid var(--pp-number-input-border-color, var(--_border));
+    border-radius: var(--pp-number-input-radius, var(--pp-control-radius));
+    background-color: var(--pp-number-input-bg, var(--_bg));
+    color: var(--pp-number-input-color, var(--_color));
+    /*
+     * No font-family. reset.css gives form controls `font: inherit` at
+     * :where() zero specificity, which is right — a consuming app that sets
+     * its own font on inputs SHOULD win (D-037 §5).
+     */
+    font-size: var(--_font-size);
+    line-height: var(--pp-line-height-normal);
+    /* Kills the UA chrome that survives a background declaration, and the
+       inner shadow iOS draws on text fields. */
+    appearance: none;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  .pp-number-input__control::placeholder {
+    /* Carries a solved 4.5:1 guarantee (D-008). A placeholder is still not a
+       label — see the component's docs page. */
+    color: var(--pp-number-input-placeholder-color, var(--pp-color-text-muted));
+    /* Safari applies the UA's opacity on top of the colour, which drops a
+       solved ratio below the thing it was solved for. */
+    opacity: 1;
+  }
+
+  /* `:disabled` rather than a `[data-disabled] .pp-number-input__control`
+     descendant selector, which would be 0-3-0 and outrank the focus rule. */
+  .pp-number-input__control:disabled {
+    cursor: not-allowed;
+  }
+
+  /*
+   * TWO RINGS, AND THEY ARE DIFFERENT THINGS (D-029, D-039 §4). The outline is
+   * the focus affordance — one colour library-wide, outside the box, the only
+   * pairing lint:contrast asserts. The border shift is the control
+   * acknowledging focus in its own tone, inside the box, which is what keeps an
+   * invalid field visibly invalid while the user is fixing it.
+   *
+   * Declared on the CONTROL, which is where the focus is and which is also the
+   * whole box — so one ring, around the thing the user sees, with the steppers
+   * inside it. A declaration on the element beats a value inherited from the
+   * root, so focus beats invalid without either being reordered around it.
+   */
+  .pp-number-input__control:focus-visible {
+    --_border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-number-input__steppers {
+    grid-area: 1 / 1;
+    /* Centred on the block axis, at the inline END of the cell — then pulled
+       back off that edge by the same padding the digits get, with a LOGICAL
+       offset. `right` would put the buttons on the wrong side of an Arabic
+       layout (D-048 §4). */
+    place-self: center end;
+    position: relative;
+    inset-inline-end: var(--_pad-inline);
+    display: grid;
+    /*
+     * The WRAPPER lets clicks through and the BUTTONS take them. Without this
+     * the span would swallow a click that lands in the grid gap between the
+     * two, and a click in a control's own padding that does nothing reads as
+     * flakiness rather than as a bug (D-049's chevron, same shape).
+     */
+    pointer-events: none;
+  }
+
+  .pp-number-input__stepper {
+    display: grid;
+    place-items: center;
+    /* Square, at half the control height — 16 / 20 / 24 by construction. */
+    block-size: var(--_stepper-size);
+    aspect-ratio: 1;
+    padding-block: 0;
+    padding-inline: 0;
+    border: none;
+    background-color: transparent;
+    color: var(--pp-number-input-stepper-color, var(--_stepper-color));
+    /* The chevrons are two to a control height, so they are a step down from
+       the control's own type. Still a token. */
+    font-size: var(--pp-font-size-1);
+    cursor: pointer;
+    pointer-events: auto;
+    transition-property: color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  .pp-number-input__stepper:hover:not(:disabled) {
+    color: var(--pp-color-text);
+  }
+
+  .pp-number-input__stepper:disabled {
+    /* SAYS STEPPING HAS STOPPED WORKING, rather than appearing to ignore the
+       press. A bound reached in silence reads as a broken button. */
+    color: var(--pp-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  /*
+   * The steppers are never tab stops (spec §6), so they draw no ring of their
+   * own — the ring belongs to the control, and a second one inside the box
+   * would say the wrong thing about where the keyboard is. The hover above is
+   * what acknowledges the pointer.
+   */
+
+  /* The reset crushes durations in pp.reset and this file is in pp.components,
+     so ours would win. Every animated component answers for itself — the
+     mechanism Button.css and Spinner already document. */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-number-input__control,
+    .pp-number-input__stepper {
+      transition-property: none;
+    }
+  }
+}

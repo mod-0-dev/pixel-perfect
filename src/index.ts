@@ -57,6 +57,10 @@ export { IconButton, type IconButtonProps } from './components/IconButton/IconBu
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
 export { Label, type LabelProps } from './components/Label/Label';
 export { Link, type LinkProps, type LinkUnderline } from './components/Link/Link';
+export {
+  NumberInput,
+  type NumberInputProps,
+} from './components/NumberInput/NumberInput';
 export { Radio, type RadioProps } from './components/Radio/Radio';
 export {
   RadioGroup,
@@ -78,6 +82,7 @@ export {
   type SeparatorOrientation,
   type SeparatorProps,
 } from './components/Separator/Separator';
+export { Slider, type SliderProps } from './components/Slider/Slider';
 export {
   Skeleton,
   type SkeletonProps,

@@ -6,6 +6,7 @@
 //   3. No banned prop names in any *Props type
 //   4. Files using client-only React have the 'use client' directive
 //   5. The built stylesheet establishes cascade layers in the declared order
+//   6. No selector list mixes a -webkit- and a -moz- pseudo-element
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -48,6 +49,38 @@ for (const file of walk(join(SRC, 'components'), ['.css'])) {
   }
   for (const m of css.matchAll(/--pp-palette-[a-z0-9-]+/g)) {
     fail(rel, `references the raw palette token \`${m[0]}\` — components consume semantic or --pp-tone-* tokens only (RULES §3)`);
+  }
+
+  /*
+   * 6. NO SELECTOR LIST MIXES A -webkit- AND A -moz- PSEUDO-ELEMENT.
+   *
+   * An unknown pseudo-element invalidates the ENTIRE selector list in the
+   * engine that does not know it, so
+   *
+   *     .x::-webkit-slider-thumb,
+   *     .x::-moz-range-thumb { … }
+   *
+   * silently unstyles the thumb in Firefox while looking correct in Chrome —
+   * no console warning, no visual signal on the machine of the person who
+   * wrote it, and the two blocks look like copy-paste begging to be tidied
+   * away. Stylelint cannot see this: each selector is individually valid.
+   *
+   * This exists instead of the browser assertion `tier-3d-composite.md` §8
+   * promised. That assertion was to compare the thumb "in both Chromium and
+   * Firefox projects"; `playwright.config.ts` defines ONE project and the
+   * environment ships one browser, so it could never have run — and a test
+   * that silently does not exist reads exactly like one that passes
+   * (D-051 §4). A static check of the precise failure mode runs everywhere.
+   */
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  for (const m of withoutComments.matchAll(/([^{}]+)\{/g)) {
+    const selector = m[1];
+    if (/::-webkit-/.test(selector) && /::-moz-/.test(selector)) {
+      fail(
+        rel,
+        `one selector list mixes \`::-webkit-\` and \`::-moz-\` pseudo-elements — an unknown pseudo-element invalidates the WHOLE list, so this unstyles one engine silently. Write the blocks out separately (tier-3d-composite.md §8, D-051 §4)`,
+      );
+    }
   }
 }
 
