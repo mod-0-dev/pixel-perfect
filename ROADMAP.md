@@ -26,11 +26,39 @@ is `done`.
 
 ### Current state
 
-- **In flight:** _none_ — **Tier 3D is complete (34 components)**. Next up is
-  3.16 `Form` on its own gate, which needs 5.2 `Alert` first (spec §0), or
-  Tier 4.1, the overlay foundation, which Gate B now permits for the first time
-  only once 3.16 and 3.17 are `done` — so in practice the next eligible
-  component is 5.2 `Alert`
+- **In flight:** 5.2 `Alert` — `spec`, awaiting Gate C
+  ([`Alert.md`](docs/specs/Alert.md)). The first component of Tier 5, taken
+  ahead of the rest of it because 3.16 `Form`'s error summary is an `Alert` and
+  nothing else in Tier 3 is eligible. Next up after it is 3.16 `Form` on its own
+  gate, then 3.17 `RangeSlider`; Tier 4.1 unlocks once both are `done`
+- **The focus ring has only ever been verified against the page, and Alert is
+  the first component to put a focusable control somewhere else** (Alert spec
+  §9, open question 2). `--pp-color-focus-ring` is one colour library-wide
+  (D-029) and `lint:contrast` asserts exactly one pairing for it — 3.06:1
+  against `neutral-1`. Measured at the gate against the surfaces that actually
+  exist: **2.94 light / 2.85 dark on `neutral-2`** (`--pp-color-bg-surface`,
+  already shipping) and **2.74–2.77 light / 2.54–2.57 dark on a tinted step 3**,
+  against 1.4.11's 3:1. `Button.css`'s header already said the five
+  `--pp-tone-focus` values "are asserted against nothing"; the half nobody
+  measured is that the ring that *is* asserted is asserted against one
+  background out of three. Not fixable inside a component — the ring's value is
+  identical in both themes, so moving it darker fixes light and breaks dark, and
+  a second ring colour in `.pp-alert` is the one thing D-029 exists to prevent.
+  **D-048 §2's shape, found before the build rather than after it**
+- **Every pairing `Alert` itself introduces was computed at the gate and every
+  one is already asserted** (spec §9) — title 14.02–14.35 / 12.76–12.98, body
+  and dismiss glyph 4.59 in both themes, edge 3.04–3.08 against its own fill and
+  3.40 / 3.66 against the page. The fill is `--pp-tone-bg` (step 3) rather than
+  `--pp-tone-surface` (step 2) *because* step 3 is the step the existing checks
+  are named after. This is what D-048 §1 asked for after `Switch` failed it
+  twice, and the first spec to arrive at the gate with the table already filled
+  in
+- **A variant table was rejected on measurement, not on taste** (spec §1). An
+  `Alert` is the only component whose children are arbitrary, so the tone
+  context (D-007) inherits into a caller's `Button`s and `Link`s. A `solid`
+  variant puts them on step 9, where `--pp-tone-text` is **1.04–1.16:1** in
+  light — not low contrast, invisible. `plain` is 1.10–1.12:1 against the page,
+  which is not a block at all. One treatment ships
 - **The gradient that was never written** (**D-052 §1**). Spec §8 expected the
   slider's fill to be a `linear-gradient` on the native track. That is
   *physical* — a range input reverses in RTL, so the fill would run from the
@@ -626,7 +654,7 @@ Behavior from Radix / Base UI. We own every DOM node and every pixel.
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
 | 5.1 | `Card` | `planned` | fill | server | T2 | Compound: `Card.Header` / `.Body` / `.Footer` |
-| 5.2 | `Alert` | `planned` | fill | server | 1.3, 2.2 | |
+| 5.2 | `Alert` | `spec` | fill | server | 1.3, 2.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Deps want 3.2 `IconButton` in place of 2.2, which it does not compose (§4) |
 | 5.3 | `Progress` | `planned` | fill | server | T0 | Determinate + indeterminate |
 | 5.4 | `Table` | `planned` | fill | server | T2 | Semantic table; sorting/selection hooks, no data layer |
 | 5.5 | `Pagination` | `planned` | fill | client | 3.1 | |
