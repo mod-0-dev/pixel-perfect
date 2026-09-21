@@ -26,8 +26,45 @@ is `done`.
 
 ### Current state
 
-- **In flight:** 3.15 `Slider` (`build`). 3.14 `NumberInput` is **`done`**, the
-  first component of Tier 3D
+- **In flight:** _none_ — **Tier 3D is complete (34 components)**. Next up is
+  3.16 `Form` on its own gate, which needs 5.2 `Alert` first (spec §0), or
+  Tier 4.1, the overlay foundation, which Gate B now permits for the first time
+  only once 3.16 and 3.17 are `done` — so in practice the next eligible
+  component is 5.2 `Alert`
+- **The gradient that was never written** (**D-052 §1**). Spec §8 expected the
+  slider's fill to be a `linear-gradient` on the native track. That is
+  *physical* — a range input reverses in RTL, so the fill would run from the
+  wrong end — it would have to be written **twice** because the two engines'
+  track pseudo-elements cannot share a selector list, and Firefox's
+  `::-moz-range-progress` would be a third treatment of the same idea in one
+  engine. The track and fill are two spans of ours instead, and the fill is a
+  grid **column**: columns follow the inline axis, so RTL is right with nothing
+  declared and the gradient is written **zero** times. The thumb is also centred
+  with no negative margin — giving the native track box the thumb's own block
+  size does what every recipe uses `margin-block-start: -Npx` for, which RULES
+  §2 forbids outright
+- **A duration crushed to almost zero is not the same as no transition**
+  (**D-052 §3**). The focus-ring assertion failed with `:focus-visible`
+  matching, `outline-style: solid` and `outline-width: 0px` — an impossible
+  combination. `reset.css` crushes transitions under `prefers-reduced-motion` to
+  `all 0.00001s` rather than removing them, and the Playwright config pins
+  `reducedMotion: 'reduce'`, so a `getComputedStyle` in the same frame reads the
+  **old** value. Measured 0px immediately and 2px fifty milliseconds later. It
+  surfaced only because an unrelated `scrollIntoViewIfNeeded` moved the timing
+  by a frame — which is what a latent flake looks like from outside. The four
+  affected assertions are now `expect.poll`
+- **A third assertion that could not fail, found by running the break**
+  (**D-052 §4**). "The thumb is centred on the track it draws" compared the
+  control's centre with the track span's — both ours, neither the thumb — and
+  survived the deliberate break that drops the thumb off the line. **The thumb's
+  box is not observable from script**: Chromium's
+  `getComputedStyle(el, '::-webkit-slider-thumb')` returns the host element's
+  metrics, and there is no PNG decoder in the tree for a pixel probe. The test
+  was renamed and scoped to the half it can check. Three such assertions in two
+  components — **the break check is not a formality**
+- **`page.mouse` takes viewport coordinates and does not scroll** (D-052 §2).
+  Two assertions reported the slider as inert; the clicks had landed 6,000px
+  off-screen. `locator.click()` scrolls, the raw mouse API does not
 - **The structure the previous component had already solved** (**D-051 §3**).
   Spec §9 claimed `NumberInput` *inverts* the control surface — steppers inside
   the box, therefore border, fill and radius on the wrapper and the ring drawn
@@ -459,9 +496,10 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 42 / 78 tracked items (10 foundations + 68 components) — 9
-  foundations + 33 components. The one foundation not `done` is 0.10 docs site,
-  deferred and not blocking
+- **Done:** 43 / 79 tracked items (10 foundations + 69 components) — 9
+  foundations + 34 components. The denominator moved from 78 to 79 when
+  3.17 `RangeSlider` was added (D-052 §5). The one foundation not `done` is
+  0.10 docs site, deferred and not blocking
 
 ---
 
@@ -536,7 +574,7 @@ to the component it was written about — see
 | **3A — Action core** | 3.1–3.5 | [`tier-3a-action.md`](docs/specs/tier-3a-action.md) — **`done`** 2026-09-17 (D-027 … D-033) |
 | **3B — Field foundation** | 3.6–3.7 | individually approved; `Field` is what D-014 protects |
 | **3C — Native inputs** | 3.8–3.13 | [`tier-3c-inputs.md`](docs/specs/tier-3c-inputs.md) — **complete** 2026-09-20, all six `done`. Approved 2026-09-18 (D-039) |
-| **3D — Composite inputs** | 3.14–3.15 | [`tier-3d-composite.md`](docs/specs/tier-3d-composite.md) — approved 2026-09-21 (D-051); 3.16 `Form` moved to its own gate. 3.14 `done` |
+| **3D — Composite inputs** | 3.14–3.15 | [`tier-3d-composite.md`](docs/specs/tier-3d-composite.md) — **complete** 2026-09-21, both `done` (D-051, D-052). 3.16 `Form` moved to its own gate; 3.17 `RangeSlider` added by D-052 §5 |
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -554,8 +592,9 @@ to the component it was written about — see
 | 3.12 | `Switch` | `done` | hug | client | 3.7 | A 2:1 track, and the only member of the checkable three that is not square. Paints from `data-state`, because every change to a switch is an event on it — D-047 §2's deviation does not transfer. Off is the resting control surface with a muted thumb; the specified `--pp-color-border-strong` track was 1.97:1 (D-048) |
 | 3.13 | `Select` | `done` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11. The placeholder is seeded with `defaultValue=""`, because the HTML reset algorithm skips a disabled option; painted from `:checked` and `data-placeholder` is emitted only when controlled (D-049) |
 | 3.14 | `NumberInput` | `done` | fill | client | 3.8 | `type="text"` with `role="spinbutton"`, never `type="number"` (3C §13.5). `null` is empty, `undefined` is uncontrolled. Clamp and snap on commit, never on a keystroke. Formatting is opt-in because an ambient locale cannot hydrate |
-| 3.15 | `Slider` | `spec` | fill | client | 3.7 | Native `<input type="range">`. **Single-thumb only** — the two-thumb case is deferred, because two overlapping inputs cannot place a focus ring without `outline: none` (spec §7) |
-| 3.16 | `Form` | `planned` | fill | client | 3.7, **5.2?** | Error summary, submission state; validation stays the app's job. Not a composite input, and its error summary is an `Alert` (5.2, `planned`) — spec §0 asks to move it out of the 3D gate |
+| 3.15 | `Slider` | `done` | fill | client | 3.7 | Native `<input type="range">`, **single-thumb**. The track is ours and the thumb is the platform's: the fill is a grid **column**, not a gradient, so RTL needs no declaration (D-052 §1). `onValueCommit`, because React maps `onChange` to *input*. No `readOnly` — HTML's ruling (D-049 §4's shape) |
+| 3.16 | `Form` | `planned` | fill | client | 3.7, 5.2 | Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
+| 3.17 | `RangeSlider` | `planned` | fill | client | 3.15 | The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
 
 ---
 

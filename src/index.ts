@@ -82,6 +82,7 @@ export {
   type SeparatorOrientation,
   type SeparatorProps,
 } from './components/Separator/Separator';
+export { Slider, type SliderProps } from './components/Slider/Slider';
 export {
   Skeleton,
   type SkeletonProps,

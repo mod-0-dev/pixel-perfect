@@ -1,0 +1,209 @@
+/*
+ * Slider — spec docs/specs/tier-3d-composite.md §3.15
+ *
+ * THE NATIVE ELEMENT IS THE PAINTED CONTROL (3C §6, one tier later). Every
+ * keyboard row, pointer capture, touch behaviour and RTL reversal in the APG
+ * Slider pattern comes from `<input type="range">` and none of it is here.
+ *
+ * THE TRACK IS OURS AND THE THUMB IS THE PLATFORM'S, AND THAT SPLIT IS WHAT
+ * KEEPS THIS FILE SHORT (D-052 §1).
+ *
+ * The obvious build paints the filled portion with a `linear-gradient` on the
+ * native track. That needs `to right` — physical, so it fills from the wrong
+ * end in an RTL layout, where the native control reverses — and it has to be
+ * written twice, because ::-webkit-slider-runnable-track and ::-moz-range-track
+ * cannot share a selector list (see below). Firefox's ::-moz-range-progress
+ * would then be a third way of saying the same thing in one engine only.
+ *
+ * So the track and its fill are two spans in the root's grid cell, and the fill
+ * is a GRID COLUMN sized by the percentage. The inline axis is whatever the
+ * writing mode says it is, so RTL is correct with nothing declared about it,
+ * and the gradient is written zero times instead of twice.
+ *
+ * What remains vendor-specific is the thumb, plus making the native track
+ * invisible so ours shows through.
+ *
+ * THE VENDOR PSEUDO-ELEMENTS ARE DUPLICATED ON PURPOSE (spec §8). An unknown
+ * pseudo-element invalidates the ENTIRE selector list in the engine that does
+ * not know it, so
+ *
+ *     .pp-slider__control::-webkit-slider-thumb,
+ *     .pp-slider__control::-moz-range-thumb { … }
+ *
+ * silently unstyles the thumb in Firefox while looking correct in Chrome — no
+ * console warning, no visual signal on the machine of the person who wrote it.
+ * The blocks below are therefore written out separately with identical bodies.
+ * Anyone tidying the duplication away breaks one engine, so `lint:rules`
+ * refuses a selector list that mixes the two prefixes (D-051 §4).
+ */
+
+@layer pp.components {
+  .pp-slider {
+    --_height: var(--pp-control-height-md);
+    /* 16 / 20 / 24 — the checkable three's scale (D-039 §8). */
+    --_thumb-size: var(--pp-size-5);
+    --_track-size: var(--pp-space-1);
+    --_track-color: var(--pp-color-bg-sunken);
+    --_fill-color: var(--pp-tone-solid);
+    --_thumb-color: var(--pp-color-bg-surface);
+    --_thumb-border: var(--pp-color-border);
+
+    /* fill: block-level with no width declaration. One cell — the track, then
+       the control over it. */
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .pp-slider[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_thumb-size: var(--pp-size-4);
+  }
+
+  .pp-slider[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_thumb-size: var(--pp-size-6);
+    /* A track is a line rather than a box, so it does not earn three steps —
+       sm and md share one, which is the shape control.css already uses for
+       font size. */
+    --_track-size: var(--pp-space-2);
+  }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3). A descendant selector outranks the focus rule and silently
+   * removes the tone shift from exactly the controls that need it.
+   */
+  .pp-slider[data-invalid] {
+    /* The root carries data-pp-tone="danger", so this resolves in the danger
+       ramp without this file naming a colour (D-007). */
+    --_fill-color: var(--pp-tone-solid);
+    --_thumb-border: var(--pp-tone-border);
+  }
+
+  .pp-slider[data-disabled] {
+    /*
+     * DROPS TO THE DECORATIVE STEP, BECAUSE A DISABLED CONTROL IS EXEMPT AND
+     * SHOULD LOOK IT (D-050). WCAG 1.4.11 exempts inactive components from the
+     * 3:1 --pp-color-border carries, and leaving a disabled control on the live
+     * edge erases the difference the exemption exists to allow.
+     */
+    --_fill-color: var(--pp-color-border-subtle);
+    --_thumb-border: var(--pp-color-border-subtle);
+    --_thumb-color: var(--pp-color-bg-sunken);
+  }
+
+  .pp-slider__track {
+    grid-area: 1 / 1;
+    /* Centred on the block axis of the control's own height, and stretched
+       across it. `stretch` rather than a width declaration (RULES §1). */
+    place-self: center stretch;
+    display: grid;
+    /* The fill is column one. Grid columns follow the INLINE axis, so this is
+       correct in an RTL layout with nothing said about direction. */
+    grid-template-columns: var(--_pp-slider-fill, 0%) 1fr;
+    block-size: var(--pp-slider-track-size, var(--_track-size));
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-slider-track-color, var(--_track-color));
+    /* Clips the fill's corners to the track's own rounding, so the filled end
+       is a cap rather than a square. */
+    overflow: hidden;
+    /* The control sits over this in the same cell and must take every click;
+       the track is decoration. */
+    pointer-events: none;
+  }
+
+  /*
+   * THE FILL IS A PERCENTAGE OF THE WHOLE TRACK, AND THE THUMB TRAVELS A TRACK
+   * SHORTER BY ITS OWN WIDTH — so the two disagree by up to half a thumb. That
+   * is deliberate and it is bounded: the error is `(0.5 - p) * thumb`, largest
+   * at p = 0 and p = 1 where the fill is empty or complete, and never larger
+   * than the thumb's radius — so the seam is always underneath the thumb.
+   *
+   * The alternative is insetting the track by half a thumb at each end, which
+   * makes the line stop short of the control's edges. Every native slider
+   * spans the full width and insets only the thumb, so this matches the thing
+   * we are replacing (spec §7's standing argument).
+   */
+  .pp-slider__fill {
+    grid-area: 1 / 1;
+    background-color: var(--pp-slider-fill-color, var(--_fill-color));
+  }
+
+  .pp-slider__control {
+    grid-area: 1 / 1;
+    /* Lets the control shrink instead of pushing the container wide; the grid
+       stretch handles the other direction. */
+    min-inline-size: 0;
+    /* The same height as an Input or a Button at this size, so a row of
+       controls lines up (D-028) — and a pointer target the full height of the
+       control rather than the height of the line it draws. */
+    block-size: var(--pp-slider-height, var(--_height));
+    margin: 0;
+    /* Takes the platform's own track and thumb away; ours follow below. */
+    appearance: none;
+    background-color: transparent;
+    cursor: pointer;
+  }
+
+  .pp-slider__control:disabled {
+    cursor: not-allowed;
+  }
+
+  /*
+   * ONE RING, AROUND THE WHOLE CONTROL, WHICH IS THE PLATFORM'S OWN PLACEMENT
+   * FOR A SINGLE-THUMB SLIDER (D-029). It is also the reason the two-thumb case
+   * is a separate component: two overlapping inputs would each ring the whole
+   * track, and moving the ring onto the thumb needs `outline: none`.
+   */
+  .pp-slider__control:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  /* --- the native track, made invisible so ours shows through --------------
+     Three blocks, not one selector list. See the file header. */
+
+  .pp-slider__control::-webkit-slider-runnable-track {
+    /* The same block size as the thumb, which is what removes the need for a
+       negative margin: WebKit aligns the thumb to the TOP of the track box, so
+       a thinner track would push the thumb off centre and the usual fix is a
+       negative `margin-block-start` — which RULES §2 forbids outright. */
+    block-size: var(--_thumb-size);
+    background-color: transparent;
+  }
+
+  .pp-slider__control::-moz-range-track {
+    block-size: var(--_thumb-size);
+    background-color: transparent;
+  }
+
+  /* Firefox paints the filled portion itself. Ours is the one that is correct
+     in RTL, so this one is turned off rather than styled. */
+  .pp-slider__control::-moz-range-progress {
+    background-color: transparent;
+  }
+
+  /* --- the thumb ----------------------------------------------------------
+     Two blocks with identical bodies, and that is the point. */
+
+  .pp-slider__control::-webkit-slider-thumb {
+    /* Without this WebKit keeps its own thumb and ignores everything below. */
+    appearance: none;
+    block-size: var(--pp-slider-thumb-size, var(--_thumb-size));
+    aspect-ratio: 1;
+    border: var(--pp-border-width-1) solid
+      var(--pp-slider-thumb-border-color, var(--_thumb-border));
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-slider-thumb-color, var(--_thumb-color));
+  }
+
+  .pp-slider__control::-moz-range-thumb {
+    appearance: none;
+    block-size: var(--pp-slider-thumb-size, var(--_thumb-size));
+    aspect-ratio: 1;
+    border: var(--pp-border-width-1) solid
+      var(--pp-slider-thumb-border-color, var(--_thumb-border));
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-slider-thumb-color, var(--_thumb-color));
+  }
+}

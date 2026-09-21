@@ -2890,3 +2890,121 @@ wrong reference. The standing lesson from D-035 §3 is "break it and watch the
 test fail"; this adds the mirror — **when a test fails, establish which of the
 two is wrong before changing either.** Here the score was one component defect
 to four test defects.
+
+## D-052 — `Slider` build findings: the gradient that was never written, and a flake the reset had been hiding
+
+**Date:** 2026-09-21 · **Status:** accepted · **Amends:** `tier-3d-composite.md`
+§8, §3.15; Tier 0.7 lint (rule 6); `ROADMAP.md` (3.17)
+
+### 1. The track is ours and the thumb is the platform's, and that split deleted most of §8
+
+Spec §8 was written expecting the filled portion of the track to be a
+`linear-gradient` on the native track pseudo-element. Three problems, all
+visible before a line was written:
+
+- `linear-gradient(to right, …)` is **physical**. A native range input reverses
+  in an RTL layout — the value increases leftward — so the fill would run from
+  the wrong end, in the one place the component otherwise gets RTL for free.
+- It would have to be **written twice**, because
+  `::-webkit-slider-runnable-track` and `::-moz-range-track` cannot share a
+  selector list.
+- Firefox has `::-moz-range-progress` and paints the filled portion itself, so
+  there would be a third treatment of the same idea in one engine only.
+
+**So the track and the fill are two spans of ours in the root's grid cell, and
+the fill is a grid COLUMN sized by the percentage.** Grid columns follow the
+inline axis, so RTL is correct with nothing declared about direction, and the
+gradient is written zero times instead of twice.
+
+What is left of the vendor surface is the thumb, plus making the native track
+invisible so ours shows through. §8's duplication ruling still governs those
+and is still right; it simply governs a third of what it was written for.
+
+Two consequences worth keeping:
+
+- **The thumb is centred without a negative margin**, which RULES §2 forbids
+  outright. WebKit aligns the thumb to the *top* of the native track box, so
+  every recipe on the internet reaches for a negative `margin-block-start`.
+  Giving that box the thumb's own block size centres it with no margin at all.
+- **The fill and the thumb disagree by up to the thumb's radius**, because the
+  fill is a percentage of the whole track and the thumb travels a track shorter
+  by its own width. The error is `(0.5 - p) × thumb`, largest at p = 0 and p = 1
+  where the fill is empty or complete, so the seam is always underneath the
+  thumb. Left as is, deliberately: insetting the track by half a thumb makes the
+  line stop short of the control's edges, and every native slider spans the full
+  width and insets only the thumb.
+
+### 2. `page.mouse` takes viewport coordinates and does not scroll
+
+Two browser assertions — a click on the track, and a drag that should commit
+once — reported the component as inert. `locator.click()` scrolls the element
+into view first; the raw `page.mouse` API does not, and `boundingBox()` on an
+element 6,000px down a playground page returns a y that is simply off-screen.
+The clicks landed on nothing.
+
+The component was correct throughout: the same click, after
+`scrollIntoViewIfNeeded()`, moves the value from 5 to 9. Filed as a finding
+rather than a fixed typo because the failure reads exactly like a real defect —
+"clicking the track does nothing" is the first thing anyone would believe about
+a slider whose native input might be covered.
+
+### 3. The reset's reduced-motion crush is a transition, and a same-frame read loses the race
+
+The focus-ring assertion failed with `:focus-visible` matching, `outline-style:
+solid`, and `outline-width: 0px` — a combination that should be impossible.
+
+`reset.css` crushes transitions under `prefers-reduced-motion` to
+`all 0.00001s` rather than removing them, and `playwright.config.ts` pins
+`reducedMotion: 'reduce'` for every run. **Ten microseconds is still a
+transition**, so `outline-width` is briefly its previous value, and a
+`getComputedStyle` in the same frame reads the *old* number. Measured: 0px
+immediately after `focus()`, 2px fifty milliseconds later.
+
+It only reproduced once an unrelated `scrollIntoViewIfNeeded()` shifted the
+timing by a frame — which is what a latent flake looks like from outside: green
+for weeks, then red on a change that had nothing to do with it.
+
+**Every one-shot `getComputedStyle` read immediately after a state change in
+this suite is exposed to this.** The four added in D-051 and this entry are now
+`expect.poll`, which retries. The pre-existing ones were left alone rather than
+rewritten blind; they are named here so the next person who sees an
+impossible-looking computed value knows where to look first.
+
+A narrower lesson than "tests are flaky": **a duration crushed to almost zero is
+not the same as no transition**, and the difference is invisible until something
+reads a computed value synchronously.
+
+### 4. A third assertion that could not fail, found by breaking the thing it named
+
+`the thumb is centred on the track it draws` compared the control's centre with
+the track span's. Both are ours; neither involves the thumb. The deliberate
+break that should have caught it — `block-size: var(--_track-size)` on
+`::-webkit-slider-runnable-track`, which drops the thumb off the line — left the
+test green.
+
+**The thumb's box is not observable from script.** Chromium's
+`getComputedStyle(el, '::-webkit-slider-thumb')` returns the HOST element's
+metrics (measured: 40 × 1200, which is the input's own box), and no layout API
+reaches a UA-painted pseudo-element. There is no PNG decoder in the dependency
+tree either, so a pixel probe is not available.
+
+So the test was **renamed and scoped to the half it can check** — the line is
+centred on the control — and thumb centring is covered by the screenshot
+baseline, with the break that would catch it recorded in the test's own comment.
+Scoping an assertion to what it actually proves is the honest repair; leaving
+the name would have been the D-045 class of bug inside a test.
+
+That is the third assertion in two components (D-051 §6 had two) found by
+running the break rather than by review. The break check is not a formality.
+
+### 5. `RangeSlider` is now a roadmap item, with its blockers written down
+
+Spec §7 deferred the two-thumb case and said it should become its own item. It
+is **3.17**, `planned`, and its Notes cell names both unsolved problems so the
+deferral does not have to be rediscovered: two overlapping inputs each draw
+`:focus-visible` across the whole track, and moving the ring onto the thumb
+pseudo-element requires `outline: none`, which Tier 0.7 bans and D-029 banned on
+purpose; and the `pointer-events` layering that makes both thumbs draggable is
+what takes a track click away.
+
+The tracked-item denominator moves from **78 to 79**.

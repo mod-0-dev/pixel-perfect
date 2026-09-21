@@ -2965,7 +2965,11 @@ test.describe('NumberInput', () => {
 
     expect(await outlineWidth(control)).toBe('0px');
     await control.focus();
-    expect(await outlineWidth(control), 'the control did not take a ring').not.toBe('0px');
+    // Polled: the reset's reduced-motion crush is `all 0.00001s`, so a read in
+    // the same frame can catch the pre-transition value (D-052 §3).
+    await expect
+      .poll(() => outlineWidth(control), { message: 'the control did not take a ring' })
+      .not.toBe('0px');
     expect(await outlineWidth(root), 'a second ring was drawn on the wrapper').toBe('0px');
 
     const [box, buttons] = await Promise.all([control.boundingBox(), steppers.boundingBox()]);
@@ -2996,7 +3000,11 @@ test.describe('NumberInput', () => {
 
     const resting = await border(valid);
     await valid.locator('.pp-number-input__control').focus();
-    expect(await border(valid), 'the border did not shift on focus').not.toBe(resting);
+    // Polled for the reason above: border-color IS transitioned here, so the
+    // first frame after focus still reports the resting colour (D-052 §3).
+    await expect
+      .poll(() => border(valid), { message: 'the border did not shift on focus' })
+      .not.toBe(resting);
 
     /*
      * The CONTRACT IS THE TONE, NOT THE STEP (D-039 §4). Focus moves the border
@@ -3007,10 +3015,11 @@ test.describe('NumberInput', () => {
      */
     const validFocused = await border(valid);
     await invalid.locator('.pp-number-input__control').focus();
-    expect(
-      await border(invalid),
-      'the danger tone vanished the moment the user went to fix it',
-    ).not.toBe(validFocused);
+    await expect
+      .poll(() => border(invalid), {
+        message: 'the danger tone vanished the moment the user went to fix it',
+      })
+      .not.toBe(validFocused);
   });
 
   /*
@@ -3100,6 +3109,228 @@ test.describe('NumberInput', () => {
 
     // Three different containers, three different widths — otherwise the three
     // assertions above could all pass on a component that ignores its parent.
+    expect(new Set(widths).size, 'the control did not track its container').toBe(3);
+    await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+  });
+});
+
+/*
+ * Slider (3.15) — spec docs/specs/tier-3d-composite.md §3.15.
+ *
+ * The vendor pseudo-elements are the reason most of this needs a browser:
+ * jsdom does not implement ::-webkit-slider-thumb, does not lay out a range
+ * input, and has no cascade to resolve the track's grid columns against.
+ */
+test.describe('Slider', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  /*
+   * THE LINE IS CENTRED ON THE CONTROL — AND THIS TEST DOES NOT COVER THE
+   * THUMB, WHICH IS THE POINT OF SAYING SO (D-052 §4).
+   *
+   * Its first draft was called "the thumb is centred on the track it draws" and
+   * compared the control's centre with the track span's. Both are ours; neither
+   * involves the thumb. Breaking the centring mechanism deliberately —
+   * `block-size: var(--_track-size)` on ::-webkit-slider-runnable-track, which
+   * drops the thumb off the line — left it green. D-035 §3's failure exactly.
+   *
+   * The thumb's own box is NOT observable from script: Chromium's
+   * `getComputedStyle(el, '::-webkit-slider-thumb')` returns the HOST element's
+   * metrics (measured: 40 x 1200, the input's own box), and no layout API
+   * reaches a UA-painted pseudo-element. So thumb centring is covered by the
+   * screenshot baseline, and this assertion is scoped to the half it can
+   * actually check.
+   */
+  test('the track line is centred on the control', async ({ page }) => {
+    await page.goto('/components/slider');
+    const scope = page.locator('[data-testid="slider-keyboard"]');
+    const control = scope.locator('.pp-slider__control');
+    const track = scope.locator('.pp-slider__track');
+
+    const [box, line] = await Promise.all([control.boundingBox(), track.boundingBox()]);
+    expect(box).not.toBeNull();
+    expect(line).not.toBeNull();
+
+    const controlCentre = box!.y + box!.height / 2;
+    const trackCentre = line!.y + line!.height / 2;
+    expect(Math.abs(controlCentre - trackCentre), 'the line is off the control centre').toBeLessThanOrEqual(1);
+  });
+
+  /*
+   * The fill is a GRID COLUMN rather than a `linear-gradient`, so it follows the
+   * inline axis and needs nothing said about direction. Asserted as a resolved
+   * track listing, which is what proves the percentage reached CSS.
+   */
+  test('the fill column tracks the value', async ({ page }) => {
+    await page.goto('/components/slider');
+    const section = page.locator('section', { hasText: 'The fill tracks the value' });
+    const wide = section.locator('.matrix__cell').filter({ hasText: 'wide · 960px' }).first();
+
+    const columns = async (labelText: string) => {
+      const track = wide
+        .locator('.pp-field', { hasText: labelText })
+        .locator('.pp-slider__track')
+        .first();
+      const raw = await track.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+      const [first, second] = raw.split(' ').map(parseFloat);
+      return (first as number) / ((first as number) + (second as number));
+    };
+
+    expect(await columns('At the minimum')).toBeCloseTo(0, 2);
+    expect(await columns('A quarter')).toBeCloseTo(0.25, 2);
+    expect(await columns('At the maximum')).toBeCloseTo(1, 2);
+  });
+
+  /* The control is the same height as an Input at the same size, so a row of
+     controls lines up (D-028). Read off both pages rather than restated. */
+  test('the control scale agrees with Input', async ({ page }) => {
+    await page.goto('/components/input');
+    const inputHeight = await page
+      .locator('.pp-input[data-size="md"] .pp-input__control')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    await page.goto('/components/slider');
+    const sliderHeight = await page
+      .locator('[data-testid="slider-keyboard"] .pp-slider__control')
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    expect(sliderHeight, 'a Slider beside an Input is a pixel crooked').toBe(inputHeight);
+  });
+
+  test('the ring surrounds the whole control, which is the pointer target', async ({ page }) => {
+    await page.goto('/components/slider');
+    const control = page.locator('[data-testid="slider-keyboard"] .pp-slider__control');
+
+    await control.scrollIntoViewIfNeeded();
+    const outlineWidth = () => control.evaluate((n) => getComputedStyle(n).outlineWidth);
+    expect(await outlineWidth()).toBe('0px');
+    await control.focus();
+
+    /*
+     * POLLED, NOT READ ONCE, AND THE REASON IS IN reset.css (D-052 §3).
+     *
+     * Under `reducedMotion: 'reduce'` — which playwright.config.ts pins for
+     * every run — the reset crushes transitions to `all 0.00001s` rather than
+     * removing them. A transition of ten microseconds is still a transition, so
+     * `outline-width` is briefly its old value, and a `getComputedStyle` in the
+     * same frame reads 0px on a control that took the ring correctly. It
+     * reproduced only once `scrollIntoViewIfNeeded` shifted the timing by a
+     * frame, which is what a latent flake looks like from the outside.
+     */
+    await expect
+      .poll(outlineWidth, { message: 'the control did not take a ring' })
+      .not.toBe('0px');
+  });
+
+  /*
+   * EVERY KEYBOARD ROW IS THE BROWSER'S — the component installs no key
+   * handler at all (spec §7). Asserted rather than claimed, because "the
+   * platform does it" is exactly the kind of prose D-045 was written about.
+   */
+  test('arrows, Home and End are the platform\'s, with no handler of ours', async ({ page }) => {
+    await page.goto('/components/slider');
+    const control = page.locator('[data-testid="slider-keyboard"] .pp-slider__control');
+
+    await control.focus();
+    await expect(control).toHaveValue('5');
+    await page.keyboard.press('ArrowRight');
+    await expect(control).toHaveValue('6');
+    await page.keyboard.press('ArrowDown');
+    await expect(control).toHaveValue('5');
+    await page.keyboard.press('Home');
+    await expect(control).toHaveValue('0');
+    await page.keyboard.press('End');
+    await expect(control).toHaveValue('10');
+  });
+
+  /* Clicking the track moves the thumb, which is the behaviour a hand-built
+     slider has to reimplement and the reason the native element is kept. */
+  test('a click on the track moves the thumb', async ({ page }) => {
+    await page.goto('/components/slider');
+    const control = page.locator('[data-testid="slider-keyboard"] .pp-slider__control');
+    await expect(control).toHaveValue('5');
+
+    /*
+     * SCROLLED IN FIRST, BECAUSE `page.mouse` TAKES VIEWPORT COORDINATES AND
+     * DOES NOT SCROLL. `locator.click()` auto-scrolls; the raw mouse API does
+     * not, and `boundingBox()` on an element 6,000px down returns a y that is
+     * simply off-screen — so the click lands on nothing and the assertion reads
+     * as "the track is not clickable" (D-052 §2).
+     */
+    await control.scrollIntoViewIfNeeded();
+    const box = (await control.boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.9, box.y + box.height / 2);
+    expect(Number(await control.inputValue())).toBeGreaterThan(5);
+  });
+
+  test('aria-valuetext is the formatted value, and the platform owns the rest', async ({ page }) => {
+    await page.goto('/components/slider');
+    const control = page.locator('[data-testid="slider-valuetext"] .pp-slider__control');
+
+    await expect(control).toHaveAttribute('aria-valuetext', '£250');
+    // Not ours: ARIA requires aria-valuenow for `slider` and the element
+    // supplies it, unlike `spinbutton` where 1.2 relaxed it.
+    await expect(control).not.toHaveAttribute('aria-valuenow', /.*/);
+    await expect(control).toHaveAccessibleName('Budget');
+  });
+
+  test('onValueCommit fires once for a drag that fires many changes', async ({ page }) => {
+    await page.goto('/components/slider');
+    const scope = page.locator('[data-testid="slider-controlled"]');
+    const control = scope.locator('.pp-slider__control');
+    const readout = scope.locator('p, .pp-text').last();
+
+    await control.scrollIntoViewIfNeeded();
+    const box = (await control.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2);
+    await page.mouse.down();
+    for (const fraction of [0.4, 0.5, 0.6, 0.7]) {
+      await page.mouse.move(box.x + box.width * fraction, box.y + box.height / 2);
+    }
+    await page.mouse.up();
+
+    const text = await readout.textContent();
+    const changes = Number(/onValueChange fired (\d+)/.exec(text ?? '')?.[1]);
+    const commits = Number(/onValueCommit fired (\d+)/.exec(text ?? '')?.[1]);
+
+    expect(changes, 'the drag produced no continuous updates').toBeGreaterThan(1);
+    expect(commits, 'a drag committed more than once').toBe(1);
+  });
+
+  test('fills the box its parent gives it, at every width, with no width declared', async ({ page }) => {
+    await page.goto('/components/slider');
+    const section = page.locator('section', { hasText: 'It fills, at every container width' });
+    const widths: number[] = [];
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const box = section.locator('.matrix__cell').filter({ hasText: width }).first();
+      const root = box.locator('.pp-slider').first();
+
+      const measured = await root.evaluate((el) => {
+        const parent = el.parentElement as HTMLElement;
+        const style = getComputedStyle(parent);
+        return {
+          root: Math.round(el.getBoundingClientRect().width),
+          available: Math.round(
+            parent.clientWidth -
+              parseFloat(style.paddingInlineStart) -
+              parseFloat(style.paddingInlineEnd),
+          ),
+          declared: el.style.width,
+        };
+      });
+
+      expect(measured.root, `did not fill at ${width}`).toBe(measured.available);
+      expect(measured.declared).toBe('');
+      widths.push(measured.root);
+    }
+
     expect(new Set(widths).size, 'the control did not track its container').toBe(3);
     await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
   });

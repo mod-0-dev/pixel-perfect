@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3D |
-| **Status** | `build` — approved 2026-09-21; amended by D-051. 3.14 `done`, 3.15 in flight |
+| **Status** | **complete** 2026-09-21 — both `done`. Approved 2026-09-21; amended by D-051 and D-052 |
 | **Components** | 3.14 `NumberInput` · 3.15 `Slider` |
 | **Depends on** | 3.8 `Input` (`done`), 3.7 `Field` (`done`), Tier 3A (`done`), Tiers 0–2 (`done`) |
 | **Approval** | One gate for the group ([D-027](../DECISIONS.md#d-027)), minus `Form` — §0 |
@@ -14,7 +14,7 @@
 | Component | Status |
 | --- | --- |
 | 3.14 `NumberInput` | **`done`** 2026-09-21 |
-| 3.15 `Slider` | `spec` |
+| 3.15 `Slider` | **`done`** 2026-09-21 |
 | 3.16 `Form` | `planned` — moved out of this gate, §0 |
 
 ---
@@ -340,6 +340,15 @@ person who wrote it. The blocks are therefore written out separately, with
 identical bodies, and the file carries a comment saying why. Anyone tidying the
 duplication away breaks one engine.
 
+**Amended by D-051 §4 and D-052 §1.** Two things changed in the build. The
+*filled* portion is no longer painted on the native track at all — it is a grid
+column in a span of ours, which is RTL-correct for free and deletes the
+`linear-gradient` this section assumed would have to be written twice — so the
+vendor surface shrank to the thumb and to making the native track invisible.
+And the guard is a **source rule** in `lint:rules` rather than the browser
+assertion promised below, because there is one Playwright project and one
+browser, so that assertion could never have run.
+
 `Slider.css` is the first file in the library with a reason to look like
 copy-paste. The Definition of Done's rule-lint box covers whether the values are
 tokens; it says nothing about this, so the duplication is guarded by a browser
@@ -657,17 +666,41 @@ exemption `Checkbox`, `Radio` and `Switch` already hold in `.stylelintrc.json`.
 
 ```
 <span class="pp-slider" data-size data-invalid? data-disabled? data-pp-tone? style="--_pp-slider-fill: 42%">
-  └── <input type="range" class="pp-slider__control">
-        ├── ::-webkit-slider-runnable-track / ::-moz-range-track
-        ├── ::-moz-range-progress          (Firefox only — the fill)
-        └── ::-webkit-slider-thumb / ::-moz-range-thumb
+  ├── <span class="pp-slider__track" aria-hidden="true">       (grid 1/1, center stretch)
+  │     └── <span class="pp-slider__fill">                     (grid column one)
+  └── <input type="range" class="pp-slider__control">          (grid 1/1)
+        ├── ::-webkit-slider-runnable-track / ::-moz-range-track   (made invisible)
+        ├── ::-moz-range-progress                                   (turned off)
+        └── ::-webkit-slider-thumb / ::-moz-range-thumb             (the thumb)
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | Root | `pp-slider` | `<span>` | `display: grid`, one cell. State attributes, the tone context, and the fill percentage. `className` / `style` land here |
-| Control | `pp-slider__control` | `<input type="range">` | The painted control. `ref` target, prop target |
-| Track / thumb / fill | — | vendor pseudo-elements | Not classes and not parts consumers can select. §8 says why the blocks are duplicated |
+| Track | `pp-slider__track` | `<span>` | **Ours.** `pointer-events: none`, `aria-hidden`, `overflow: hidden` so the fill takes its rounding |
+| Fill | `pp-slider__fill` | `<span>` | Grid column one, sized by `--_pp-slider-fill` |
+| Control | `pp-slider__control` | `<input type="range">` | Transparent. The `ref` target, the prop target, the focus ring and the pointer target |
+| Thumb | — | vendor pseudo-elements | Not a class and not a part consumers can select. §8 says why the blocks are duplicated |
+
+**The track is ours and the thumb is the platform's (D-052 §1).** This section
+originally had the fill painted on the native track. That needs a
+`linear-gradient(to right, …)` — physical, so it fills from the wrong end in an
+RTL layout where the native control reverses — written twice, because the two
+engines' track pseudo-elements cannot share a selector list, plus a third
+treatment for Firefox's `::-moz-range-progress`. Two grid columns instead: the
+inline axis is whatever the writing mode says it is, so the gradient is written
+zero times and RTL needs no declaration.
+
+**The thumb is centred without a negative margin**, which RULES §2 forbids
+outright. WebKit aligns the thumb to the *top* of the native track box, so the
+usual fix is a negative `margin-block-start`; giving that box the thumb's own
+block size centres it instead.
+
+**The fill is a percentage of the whole track while the thumb travels a track
+shorter by its own width.** The two therefore disagree by `(0.5 - p) × thumb`,
+which is largest where the fill is empty or complete and never exceeds the
+thumb's radius — so the seam is always underneath the thumb. Every native slider
+makes the same approximation.
 
 **The fill percentage is a private custom property written inline** —
 `--_pp-slider-fill` — per D-024: private, so D-024's "a component never writes
@@ -736,6 +769,7 @@ move is `disabled`.
 | `--pp-slider-thumb-border-color` | `--pp-color-border` | Thumb edge |
 | `--pp-slider-thumb-size` | `--pp-size-4 / -5 / -6` | Thumb, by size step |
 | `--pp-slider-track-size` | `--pp-space-1`, `--pp-space-2` at `lg` | Track thickness |
+| `--pp-slider-height` | `--pp-control-height-<size>` | Block size of the control, which is also the pointer target |
 
 **The thumb is a filled circle with a 3:1 edge, not a tone-solid dot.** D-047 §3
 measured a tone-9 dot on the surface at 1.87:1 and made `Radio` fill instead;

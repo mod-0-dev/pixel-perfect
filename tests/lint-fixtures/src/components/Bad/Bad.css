@@ -3,3 +3,10 @@
   color: var(--pp-palette-accent-9);
   background-color: var(--pp-palette-neutral-3);
 }
+
+/* Rule 6: an unknown pseudo-element invalidates the whole selector list, so
+   grouping these silently unstyles one engine. Added with Slider (3.15). */
+.pp-bad__control::-webkit-slider-thumb,
+.pp-bad__control::-moz-range-thumb {
+  background-color: var(--pp-color-bg-surface);
+}

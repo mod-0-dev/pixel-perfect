@@ -75,6 +75,7 @@ const EXPECTED_RULE_LINT = [
   'declares banned prop `mt`',
   'declares banned prop `as`',
   '`window` is accessed at module scope',
+  'mixes `::-webkit-` and `::-moz-` pseudo-elements',
 ];
 
 const raw = execFileSync(
@@ -128,4 +129,4 @@ if (failures > 0) {
 
 const total =
   Object.values(EXPECTED).reduce((n, s) => n + s.length, 0) + EXPECTED_RULE_LINT.length;
-console.log(`✓ linter self-test: ${total} violations caught across ${Object.keys(EXPECTED).length} CSS rules and 5 source rules`);
+console.log(`✓ linter self-test: ${total} violations caught across ${Object.keys(EXPECTED).length} CSS rules and 6 source rules`);
