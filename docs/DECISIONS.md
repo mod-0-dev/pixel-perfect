@@ -2739,3 +2739,154 @@ through nine components. It is the D-045 class — prose disagreeing with code �
 in the one place where the prose is the specification. The header now says which
 steps carry an obligation and which explicitly do not, and the obligations it
 names are the ones `check-contrast.mjs` asserts.
+
+## D-051 — `NumberInput` build findings: the structure Select had already solved, and a keypad with no minus key
+
+**Date:** 2026-09-21 · **Status:** accepted · **Amends:** `tier-3d-composite.md`
+§5, §8, §9, §3.14; Definition of Done (§5)
+
+### 1. The empty value had to be `null`, and the type is what enforces it
+
+Spec §2 ruled it and the build confirmed the mechanism is real rather than
+theoretical. `useControllableState` (D-032) reads `value !== undefined` as
+"controlled", so `value={undefined}` cannot also mean "empty" — an empty
+controlled field spelled that way silently becomes uncontrolled, and the
+component stops answering to its owner with no error.
+
+D-032 already warns about this at runtime. The finding worth recording is that
+**the type removes the need for the warning**: with `value?: number | null`,
+`value={form.quantity}` on an optional field is a compile error at the call
+site, which is the same bug caught a build earlier and without a console.
+
+### 2. The spec's `inputMode` rule was wrong in the direction it was warning about
+
+§5 improved on 3C §13.5's fixed `inputMode="numeric"` by deriving it, and the
+derivation it wrote down was:
+
+```
+Number.isInteger(step) && (min === undefined || min >= 0)   // ✗
+```
+
+That makes an **unbounded** integer field `numeric`. An unbounded field accepts
+negatives, and the iOS numeric keypad has no minus key — so the one field that
+most needs a sign is the one the rule hands a keypad that cannot produce it.
+The paragraph immediately above it makes exactly this argument about the decimal
+separator and then fails to apply it to the sign.
+
+Shipped as `Number.isInteger(step) && min !== undefined && min >= 0`: `numeric`
+is claimed only when a bound says the value cannot be negative.
+
+**The general shape:** a condition written as a list of exemptions (`undefined
+|| >= 0`) reads as generous and is actually a claim. "Unknown" and "known to be
+non-negative" are not the same case, and `||` had quietly merged them.
+
+### 3. The surface belongs on the control, and Select had already said so
+
+Spec §9's headline claim was that `NumberInput` *inverts* the control surface:
+the steppers sit inside the box, therefore the border, the fill and the radius
+move to the wrapper, the `<input>` goes transparent, and the focus ring is drawn
+on the root with `:has(.pp-number-input__control:focus-visible)`.
+
+Built that way, **the control rendered with two concentric focus rings.**
+`reset.css` declares `:where(:focus-visible) { outline: … }` on every focusable
+element, so the inner input took a ring of its own inside the one on the root.
+No unit test could see it: jsdom implements neither `:has()` nor the cascade
+that produces the second outline. It was found by a browser assertion written
+to check the ring was on the root, which reported the root's ring correctly and
+the input's ring as a surprise.
+
+The only way to keep the inverted structure was `outline-width: 0` on the inner
+input — legal, because the stylelint ban covers the `outline` **shorthand** at
+`none | 0` and the raw-unit rule only catches `outline-width` with a unit. That
+is **D-025's shape for the third time**: a ban expressed at the property level
+hiding the absence of one at the value level, reachable as soon as a component
+has a reason to go there.
+
+**So the structure was replaced rather than the ban worked around.** `Select`
+(3.13) had already solved "a control with something at its inline end": one grid
+cell, the control in it carrying the surface and reserving room with
+`padding-inline-end`, and the thing at the end placed over that room.
+`NumberInput` is that, with two buttons instead of one chevron and
+`pointer-events: auto` on them where the chevron took `none`.
+
+The ring is then the control's own, it surrounds exactly the box the user sees,
+the steppers are inside it, and nothing in this component has to undo anything
+in the reset.
+
+**§9's conclusion survived and its reasoning did not.** A shared `.pp-control`
+base class is still rejected — because the four surfaces differ in what each
+reserves at its inline end, which is the reason 3C §1 itself gave — not because
+this one inverts. The lesson is narrower than "look before you specify": the
+spec reached for a novel mechanism (`:has()` on a wrapper) for a problem the
+previous component in the same tier had a working answer to, and the novelty is
+what carried the defect. **Check whether the last component solved it before
+deciding that this one is different.**
+
+A consequence worth keeping: the stepper is square at `calc(height / 2)`, which
+is 16 / 20 / 24 — the checkable three's scale from D-039 §8, arrived at by
+construction rather than by being written down a second time.
+
+### 4. A browser assertion that cannot run is worse than none
+
+Spec §8 said the Slider vendor-pseudo-element duplication would be guarded by
+reading "the thumb's computed size at `md` … in both Chromium and Firefox
+projects". `playwright.config.ts` defines **one** project, chromium, and this
+environment ships one browser. The assertion as specified could never have run,
+and a test that silently does not exist reads exactly like a test that passes.
+
+Replaced with a **source rule** in `lint:rules`: no selector list in component
+CSS may mix a `-webkit-` and a `-moz-` pseudo-element. That is a static check of
+the precise failure mode — an unknown pseudo-element invalidates the entire
+selector list in the engine that does not know it — it runs everywhere, and it
+gets a fixture in the linter's own self-test (D-009). Landing with `Slider`.
+
+**The rule of thumb this yields:** before a spec promises a guard, name the
+mechanism that runs it. "Asserted in both engines" was a sentence, not a plan.
+
+### 5. One Definition of Done line is attested by reasoning, not by evidence
+
+§5 took `role="spinbutton"` knowingly — it replaces the implicit `textbox` role,
+and some screen reader / browser pairs announce character-by-character editing
+less well in a spinbutton. Open question 2 said the decision should be made from
+a VoiceOver/NVDA walkthrough rather than from the paragraph arguing for it.
+
+**No screen reader is available in this environment, so that walkthrough has not
+happened.** The Definition of Done's "keyboard interaction … walkthrough
+recorded in the spec" is recorded; the *screen-reader* half of §5's stated cost
+is not measured. It is written here rather than ticked, because the difference
+between "checked" and "argued for" is the whole reason the checklist exists.
+
+What was checked in a real browser: the computed role, the accessible name, the
+presence of `aria-valuemin` / `aria-valuemax` only when bounded, and the absence
+of `aria-valuenow` while the box holds no number.
+
+### 6. Three test bugs, and two of them were assertions that could not fail
+
+The browser suite failed five of nine on its first run. One was the defect in §3
+above. The other four were the tests:
+
+- **The height comparison took `.first()`** on each page and compared an `sm`
+  `Input` with an `md` `NumberInput`, reporting 32-vs-40 as a violation of the
+  D-028 agreement it was written to protect. Now selects `[data-size="md"]` on
+  both sides.
+- **The border assertion read `borderTopColor` from the wrapper**, which after
+  §3 has no border — so it returned `currentColor` and reported "unchanged on
+  focus" for a border that was shifting correctly one node down. **An assertion
+  pointed at the wrong element is D-035 §3's failure in the other direction:**
+  it cannot fail for the right reason, and it happened to fail for the wrong
+  one only because the structure changed underneath it.
+- **The invalid-tone assertion claimed the colour was unchanged on focus.** The
+  contract (D-039 §4) is that the *tone* is unchanged — `--pp-tone-border` to
+  `--pp-tone-focus` is a different step in the same ramp. Now asserts that a
+  focused invalid control does not look like a focused valid one.
+- **The fill assertion measured against `.matrix__viewport`'s `clientWidth`**,
+  which excludes a border and **keeps padding** — so the harness's own 12px
+  inline padding read as a component that filled 214 of 238. Now measures the
+  parent's content box, and additionally asserts the three cells produce three
+  different widths, so it cannot pass on a control that ignores its container.
+
+Two of the four would have passed forever against a correct component and a
+wrong reference. The standing lesson from D-035 §3 is "break it and watch the
+test fail"; this adds the mirror — **when a test fails, establish which of the
+two is wrong before changing either.** Here the score was one component defect
+to four test defects.

@@ -2867,3 +2867,240 @@ test.describe('Select', () => {
     await expect(control).toHaveAttribute('id', 'billing-region');
   });
 });
+
+/*
+ * NumberInput (3.14) — spec docs/specs/tier-3d-composite.md §3.14.
+ *
+ * Everything here needs a real browser: a computed role, a `:has()` selector
+ * jsdom does not implement, and an outline drawn on an element other than the
+ * focused one. D-030 §2 is the standing reason — a `visibility: hidden` label
+ * passed `toHaveAccessibleName` in jsdom and was announced as nothing in a real
+ * browser.
+ */
+test.describe('NumberInput', () => {
+  const cell = (page: import('@playwright/test').Page, section: string, width: string) =>
+    page
+      .locator('section', { hasText: section })
+      .locator('.matrix__cell')
+      .filter({ hasText: width })
+      .first();
+
+  test('the control scale agrees with Input, which is what D-028 exists for', async ({ page }) => {
+    /*
+     * D-045: a claim about ANOTHER component is asserted, never restated. The
+     * stylesheet, the spec, the docs page and the changeset all say a
+     * NumberInput and an Input at the same size are the same height. It is read
+     * off both components, on their own pages, rather than written down twice.
+     */
+    /*
+     * `[data-size="md"]`, not `.first()`. The first draft took whichever
+     * control came first in the document — an `sm` one on the Input page — and
+     * reported a 32-vs-40 disagreement that was the test comparing two
+     * different size steps.
+     */
+    await page.goto('/components/input');
+    const inputHeight = await page
+      .locator('.pp-input[data-size="md"] .pp-input__control')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    await page.goto('/components/number-input');
+    const numberHeight = await page
+      .locator('.pp-number-input[data-size="md"] .pp-number-input__control')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    expect(numberHeight, 'a form of Inputs and NumberInputs is a pixel crooked').toBe(inputHeight);
+  });
+
+  test('is announced as a spinbutton, with the bounds it was given', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const control = page.locator('[data-testid="number-input-association"] .pp-number-input__control').first();
+
+    // The COMPUTED role, from the browser's own accessibility tree.
+    expect(await control.evaluate((el) => el.getAttribute('role'))).toBe('spinbutton');
+    await expect(control).toHaveAccessibleName('Nights');
+    await expect(control).toHaveAttribute('aria-valuemin', '1');
+    await expect(control).toHaveAttribute('aria-valuemax', '30');
+  });
+
+  /*
+   * ARIA 1.2 relaxed aria-valuenow from required to optional for spinbutton —
+   * verified against axe-core 4.13 (allowedAttrs, not requiredAttrs) and
+   * aria-query 5.3 (requiredProps {}). Announcing a stale number is worse than
+   * announcing none, and this is the assertion that the omission is real.
+   */
+  test('omits aria-valuenow while the box holds no number', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const control = page.locator('[data-testid="number-input-commit"] .pp-number-input__control');
+
+    await expect(control).not.toHaveAttribute('aria-valuenow', /.*/);
+    await control.fill('-');
+    await expect(control).not.toHaveAttribute('aria-valuenow', /.*/);
+    await control.fill('40');
+    await expect(control).toHaveAttribute('aria-valuenow', '40');
+  });
+
+  /*
+   * ONE RING, AND IT SURROUNDS THE STEPPERS (D-051 §3).
+   *
+   * The first build drew it on the ROOT with `:has()` and left the inner input
+   * to take the reset's own `:where(:focus-visible)` ring — two concentric
+   * accent outlines, invisible to every unit test because jsdom implements
+   * neither `:has()` nor a cascade. The control is the surface now, so the ring
+   * is its own and the buttons sit inside it.
+   *
+   * Break it by moving the steppers outside the control's reserved
+   * padding-inline-end and the containment assertion fails.
+   */
+  test('draws one focus ring, around a box that contains the steppers', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const scope = page.locator('[data-testid="number-input-commit"]');
+    const root = scope.locator('.pp-number-input');
+    const control = scope.locator('.pp-number-input__control');
+    const steppers = scope.locator('.pp-number-input__steppers');
+
+    const outlineWidth = (el: import('@playwright/test').Locator) =>
+      el.evaluate((n) => getComputedStyle(n).outlineWidth);
+
+    expect(await outlineWidth(control)).toBe('0px');
+    await control.focus();
+    expect(await outlineWidth(control), 'the control did not take a ring').not.toBe('0px');
+    expect(await outlineWidth(root), 'a second ring was drawn on the wrapper').toBe('0px');
+
+    const [box, buttons] = await Promise.all([control.boundingBox(), steppers.boundingBox()]);
+    expect(box).not.toBeNull();
+    expect(buttons).not.toBeNull();
+    expect(buttons!.x, 'the steppers start before the ringed box does').toBeGreaterThanOrEqual(box!.x);
+    expect(
+      buttons!.x + buttons!.width,
+      'the steppers reach past the box the ring is drawn around',
+    ).toBeLessThanOrEqual(box!.x + box!.width + 1);
+  });
+
+  test('focus shifts the border, and an invalid control stays in the danger tone', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const wide = cell(page, 'Description, required, and error', 'wide · 960px');
+    const valid = wide.locator('.pp-number-input:not([data-invalid])').first();
+    const invalid = wide.locator('.pp-number-input[data-invalid]').first();
+
+    /*
+     * READ OFF THE CONTROL, NOT THE ROOT. The first draft read `borderTopColor`
+     * from the wrapper, which after D-051 §3 has no border at all — so it
+     * returned `currentColor` and reported "unchanged on focus" for a border
+     * that was shifting correctly two nodes down. An assertion pointed at the
+     * wrong element is the assertion that cannot fail, in the other direction.
+     */
+    const border = (el: import('@playwright/test').Locator) =>
+      el.locator('.pp-number-input__control').evaluate((n) => getComputedStyle(n).borderTopColor);
+
+    const resting = await border(valid);
+    await valid.locator('.pp-number-input__control').focus();
+    expect(await border(valid), 'the border did not shift on focus').not.toBe(resting);
+
+    /*
+     * The CONTRACT IS THE TONE, NOT THE STEP (D-039 §4). Focus moves the border
+     * from --pp-tone-border to --pp-tone-focus, and on an invalid control both
+     * resolve in the danger ramp. The first draft asserted the colour was
+     * unchanged, which is a different and false claim — what must hold is that
+     * a focused invalid control does not look like a focused valid one.
+     */
+    const validFocused = await border(valid);
+    await invalid.locator('.pp-number-input__control').focus();
+    expect(
+      await border(invalid),
+      'the danger tone vanished the moment the user went to fix it',
+    ).not.toBe(validFocused);
+  });
+
+  /*
+   * Not a tab stop (spec §6). Six number fields must be six stops, not
+   * eighteen. Break `tabIndex={-1}` and the second Tab lands on a chevron.
+   */
+  test('one field is one tab stop', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const scope = page.locator('[data-testid="number-input-association"]');
+    const first = scope.locator('.pp-number-input__control').first();
+    const second = scope.locator('.pp-number-input__control').nth(1);
+
+    await first.focus();
+    await page.keyboard.press('Tab');
+    await expect(second).toBeFocused();
+  });
+
+  /* The steppers keep their accessible names even though they are unreachable
+     by Tab: a pointer user and a screen reader user in browse mode both keep
+     them. */
+  test('the steppers are named, and pressing one keeps focus in the input', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const scope = page.locator('[data-testid="number-input-commit"]');
+    const control = scope.locator('.pp-number-input__control');
+    const increase = scope.locator('.pp-number-input__stepper[data-direction="increment"]');
+
+    await expect(increase).toHaveAccessibleName('Increase');
+    await control.focus();
+    await increase.click();
+    await expect(control).toBeFocused();
+    /* Empty, and min is 0, so the first press commits the bound that exists
+       rather than stepping from an invisible zero (spec §6). */
+    await expect(control).toHaveValue('0');
+    await increase.click();
+    await expect(control).toHaveValue('10');
+  });
+
+  /* Typing never clamps or snaps (spec §3). At step=10 the `1` would become
+     `10` before the `5` arrived, and `15` could not be typed at all. */
+  test('lets a step-forbidden value be typed, and snaps it on blur', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const control = page.locator('[data-testid="number-input-commit"] .pp-number-input__control');
+
+    await control.click();
+    await page.keyboard.type('15');
+    await expect(control).toHaveValue('15');
+    await control.blur();
+    await expect(control).toHaveValue('20');
+  });
+
+  /*
+   * MEASURED AGAINST THE BOX ITS PARENT GIVES IT, NOT AGAINST `.matrix__viewport`.
+   * The first draft compared the root with the viewport's `clientWidth`, which
+   * includes the harness's own 12px inline padding — so a component that filled
+   * correctly reported 214 of 238 and the test read as a sizing bug in the
+   * component. `clientWidth` excludes a border and keeps padding, which is the
+   * trap.
+   */
+  test('fills the box its parent gives it, at every width, with no width declared', async ({ page }) => {
+    await page.goto('/components/number-input');
+    const section = page.locator('section', { hasText: 'It fills, at every container width' });
+    const widths: number[] = [];
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const box = section.locator('.matrix__cell').filter({ hasText: width }).first();
+      const root = box.locator('.pp-number-input').first();
+
+      const measured = await root.evaluate((el) => {
+        const parent = el.parentElement as HTMLElement;
+        const style = getComputedStyle(parent);
+        const content =
+          parent.clientWidth -
+          parseFloat(style.paddingInlineStart) -
+          parseFloat(style.paddingInlineEnd);
+        return {
+          root: Math.round(el.getBoundingClientRect().width),
+          available: Math.round(content),
+          // The fill comes from the grid, not from a width declaration.
+          declared: el.style.width,
+        };
+      });
+
+      expect(measured.root, `did not fill at ${width}`).toBe(measured.available);
+      expect(measured.declared).toBe('');
+      widths.push(measured.root);
+    }
+
+    // Three different containers, three different widths — otherwise the three
+    // assertions above could all pass on a component that ignores its parent.
+    expect(new Set(widths).size, 'the control did not track its container').toBe(3);
+    await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+  });
+});

@@ -44,6 +44,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'radio', path: '/components/radio' },
   { name: 'switch', path: '/components/switch' },
   { name: 'select', path: '/components/select' },
+  { name: 'number-input', path: '/components/number-input' },
 ];
 
 /**

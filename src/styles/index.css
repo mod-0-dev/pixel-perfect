@@ -69,3 +69,6 @@
 @import "../components/Radio/Radio.css";
 @import "../components/Switch/Switch.css";
 @import "../components/Select/Select.css";
+
+/* Tier 3D — composite inputs. */
+@import "../components/NumberInput/NumberInput.css";

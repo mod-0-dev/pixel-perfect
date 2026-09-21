@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3D |
-| **Status** | `spec` — awaiting Gate C |
+| **Status** | `build` — approved 2026-09-21; amended by D-051. 3.14 `done`, 3.15 in flight |
 | **Components** | 3.14 `NumberInput` · 3.15 `Slider` |
 | **Depends on** | 3.8 `Input` (`done`), 3.7 `Field` (`done`), Tier 3A (`done`), Tiers 0–2 (`done`) |
 | **Approval** | One gate for the group ([D-027](../DECISIONS.md#d-027)), minus `Form` — §0 |
@@ -13,7 +13,7 @@
 
 | Component | Status |
 | --- | --- |
-| 3.14 `NumberInput` | `spec` |
+| 3.14 `NumberInput` | **`done`** 2026-09-21 |
 | 3.15 `Slider` | `spec` |
 | 3.16 `Form` | `planned` — moved out of this gate, §0 |
 
@@ -222,10 +222,17 @@ separator and no minus key**, so a `step={0.5}` field would be untypeable on a
 phone. The rule:
 
 ```
-inputMode = (Number.isInteger(step) && (min === undefined || min >= 0))
+inputMode = (Number.isInteger(step) && min !== undefined && min >= 0)
   ? 'numeric'
   : 'decimal'
 ```
+
+**Amended by D-051 §2.** This rule first read `min === undefined || min >= 0`,
+which makes an *unbounded* integer field `numeric` — and an unbounded field
+accepts negatives, so it is exactly the field that needs the minus key the
+numeric keypad does not have. The condition was wrong in the direction the
+paragraph above it was warning about. `numeric` is claimed only when a `min`
+says the value cannot be negative.
 
 **`role="spinbutton"`, with the value attributes.** This is the APG pattern, and
 the announcement it buys is the entire point of the component: "Quantity, spin
@@ -338,29 +345,38 @@ copy-paste. The Definition of Done's rule-lint box covers whether the values are
 tokens; it says nothing about this, so the duplication is guarded by a browser
 assertion instead (§Testing notes).
 
-### 9. 3C §1 re-tested: still no shared control surface, and `NumberInput` is the evidence it asked for
+### 9. 3C §1 re-tested: still no shared control surface — by Select's reasoning, not by this section's
 
 3C §1 rejected a shared `.pp-control` base class and closed with: "Revisit only
 if a fourth and fifth text-surface control appear and the blocks are still
 identical, which **`NumberInput` (3.14) will test within the tier**."
 
-Tested. **The answer is a firmer no than 3C's**, because `NumberInput`'s surface
-is not merely a variation on `Input`'s — it is structurally inverted. The
-steppers sit inside the box, so the border, the background and the radius move
-off the `<input>` and onto the **wrapper**, and the `<input>` is transparent,
-borderless and unpadded on one side. A shared base class would have to be
-overridden in every declaration it contains.
-
-The focus ring follows the border: `.pp-number-input:has(.pp-number-input__control:focus-visible)`
-draws the outline on the wrapper, so the ring surrounds the control the user
-perceives rather than a borderless box two thirds of its width. `Input` cannot
-use that selector and `NumberInput` cannot use `Input`'s.
+Tested. **The answer is no**, and it is no for the reason 3C actually gave: the
+surfaces differ in what each reserves at its inline end. `Textarea` has no
+`block-size`, `Select` reserves room for a chevron, `NumberInput` reserves room
+for two buttons, and `Input` reserves nothing. A base class would be a base plus
+four override blocks.
 
 What *is* shared is what D-028 already made shared: `--pp-control-height-*`,
-`--pp-control-padding-inline-*`, `--pp-control-font-size-*`, `--pp-control-radius`.
-Four components now read that set and are the same height in a row. The
-agreement is structural; the declarations are local. 3C §1 stands, and the
-revisit it asked for is recorded here so nobody has to run it a third time.
+`--pp-control-padding-inline-*`, `--pp-control-font-size-*` and
+`--pp-control-radius`. Four components now read that set and are the same height
+in a row — asserted across two playground pages rather than restated (D-045).
+
+**This section originally argued something else, and the something else was
+wrong (D-051 §3).** It claimed the surface *inverts*: that the steppers force
+the border, the fill and the radius onto the wrapper, leaving the `<input>`
+transparent, with the focus ring drawn on the root by `:has()`. Built that way,
+the control rendered with **two concentric focus rings** — `reset.css` draws
+`:where(:focus-visible)` on every focusable element, so the inner input took one
+of its own, and the only way to remove it was `outline-width: 0`, a value-level
+dodge around a property-level ban (D-025's shape, third occurrence).
+
+`Select` (3.13) had already solved this: one grid cell, the control in it
+carrying the surface with `padding-inline-end` reserving room, and the thing at
+the end placed over that room. `NumberInput` is that structure with two buttons
+instead of one chevron, and the buttons take `pointer-events: auto` where the
+chevron took `none`. The conclusion survived; the mechanism was replaced by one
+that already existed.
 
 ### 10. Both use `useControllableState`, and 3C §2's rule is what says so
 
@@ -425,8 +441,8 @@ rule would not think to look).
 
 ```
 <span class="pp-number-input" data-size data-invalid? data-disabled? data-readonly? data-pp-tone?>
-  ├── <input class="pp-number-input__control" role="spinbutton" type="text" inputmode>
-  └── <span class="pp-number-input__steppers">
+  ├── <input class="pp-number-input__control" role="spinbutton" type="text" inputmode>   (grid 1/1)
+  └── <span class="pp-number-input__steppers">                                            (grid 1/1, center end)
         ├── <button class="pp-number-input__stepper" data-direction="increment" type="button" tabindex="-1">
         │     └── <svg aria-hidden="true">
         └── <button class="pp-number-input__stepper" data-direction="decrement" type="button" tabindex="-1">
@@ -435,10 +451,20 @@ rule would not think to look).
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
-| Root | `pp-number-input` | `<span>` | **The surface** — border, fill, radius, focus ring (§9). `display: grid`, two tracks. State attributes and the tone context. `className` / `style` land here (D-039 §1) |
-| Control | `pp-number-input__control` | `<input>` | Transparent, borderless. The `ref` target and the prop target |
-| Steppers | `pp-number-input__steppers` | `<span>` | A two-row grid inside the box |
-| Stepper | `pp-number-input__stepper` | `<button>` | `data-direction`, `tabindex="-1"`, `type="button"`, an accessible name, `disabled` at the bound (§6) |
+| Root | `pp-number-input` | `<span>` | `display: grid`, one cell. State attributes and the tone context. `className` / `style` land here (D-039 §1) |
+| Control | `pp-number-input__control` | `<input>` | **The surface** — border, fill, radius and the focus ring, with `padding-inline-end` reserving room for the steppers. The `ref` target and the prop target |
+| Steppers | `pp-number-input__steppers` | `<span>` | Over the reserved room, `place-self: center end`, `pointer-events: none` so a click in the gap between the two reaches the control |
+| Stepper | `pp-number-input__stepper` | `<button>` | `data-direction`, `tabindex="-1"`, `type="button"`, an accessible name, `disabled` at the bound (§6). Square at **half the control height** — 16 / 20 / 24, the checkable three's scale reached by construction |
+
+Amended by D-051 §3; the original had the wrapper carrying the surface.
+
+**WCAG 2.2 SC 2.5.8 for the steppers.** Two to a control height is 16 / 20 / 24
+on the block axis, which is under 24 at `sm` and `md`. The relief is 2.5.8's
+**Equivalent** exception — "the function can be achieved through a different
+control on the same page that meets this criterion" — and here that control is
+the text field itself, which sets the same value, is a full-size target, and
+fills its container. D-039 §8 reached for the *spacing* exception; this one does
+not apply, because the two steppers are adjacent targets to each other.
 
 **State is declared on the root, never on a descendant selector** — D-040's
 specificity finding, which applies unchanged.
@@ -483,7 +509,7 @@ side.
 | Disabled | `data-disabled`, `disabled` on input and both buttons | Fill → `--pp-color-bg-sunken`, text → `--pp-color-text-disabled`, border → `--pp-color-border-subtle` (D-050), `cursor: not-allowed` |
 | Read-only | `data-readonly`, `readonly`, buttons `disabled` | Fill → `--pp-color-bg-sunken`, border unchanged |
 | Required | `required` | None — the `Label` carries the glyph |
-| Focus | `:has(…__control:focus-visible)` on the root | Ring outside (`--pp-color-focus-ring`), root border → `--pp-tone-focus` (D-039 §4) |
+| Focus | `:focus-visible` on the control | One ring outside the box (`--pp-color-focus-ring`), border → `--pp-tone-focus` inside it (D-039 §4). The steppers sit inside the ring |
 | At a bound | `disabled` + `data-disabled` on one stepper | That stepper → `--pp-color-text-disabled` |
 | Empty | `aria-valuenow` omitted (§5) | `::placeholder` at `--pp-color-text-muted` |
 
@@ -497,6 +523,7 @@ side.
 | `--pp-number-input-bg` | `--pp-color-bg-surface` | Fill |
 | `--pp-number-input-border-color` | `--pp-color-border` | Edge |
 | `--pp-number-input-color` | `--pp-color-text` | Text |
+| `--pp-number-input-placeholder-color` | `--pp-color-text-muted` | Placeholder |
 | `--pp-number-input-stepper-color` | `--pp-color-text-muted` | Stepper glyphs |
 
 Per D-024: the stylesheet reads the public property first and falls back to a
@@ -879,30 +906,43 @@ Beyond the Definition of Done's standing requirements:
   `aria-valuenow`'s omission while empty.
 - **The `Matrix` id constraint** (3C §12) applies to both playground pages.
 
-## Open questions
+## Open questions — resolved at Gate C, 2026-09-21
 
-Resolve before Gate C.
+**1. `aria-valuenow` on a `spinbutton` with no value — omission stands.**
+ARIA 1.2 did relax it from required to optional. Verified against two local
+sources rather than from memory, because `w3.org` and MDN are both unreachable
+from this environment: **axe-core 4.13** lists `aria-valuenow` in `spinbutton`'s
+`allowedAttrs` and gives the role no `requiredAttrs` at all, and **aria-query
+5.3** reports `requiredProps: {}` for it. Both list it as *required* for
+`slider`, which is the control that confirms the two roles really are treated
+differently rather than the data simply being thin. axe-core is also the gate
+the Definition of Done runs, so the check and the standard are the same source.
 
-1. **`aria-valuenow` on a `spinbutton` with no value.** §5 omits it while the
-   field is empty or mid-edit, which depends on ARIA 1.2 having relaxed it from
-   required to optional. Verify against the published ARIA 1.2 specification and
-   against what NVDA and VoiceOver actually announce. If it is still required,
-   the fallback is to emit the last committed value and accept that a
-   half-typed field announces staleness — worse, and it should be a deliberate
-   worse rather than an accident.
-2. **`role="spinbutton"` at all.** §5 takes the trade knowingly. If the
-   VoiceOver/NVDA walkthrough shows editing announcements degrade badly, the
-   alternative is a plain textbox whose bounds live in `Field`'s `description`,
-   and that decision should be made from the walkthrough rather than from this
-   paragraph.
-3. **Does `Slider` belong in this gate at all, or does §7's deferral mean 3.15
-   should wait for the range case to be designed with it?** The argument for
-   shipping single-thumb now is that a single-thumb slider is a complete, useful
-   control and the range case is additive. The argument against is that
-   designing `RangeSlider` later may want a different DOM, and a shipped
-   `Slider` constrains it.
-4. **lightningcss and the vendor pseudo-elements** (§8). `build:css` runs
-   `lightningcss --bundle --targets 'defaults'`. Confirm it passes
-   `::-moz-range-progress` and friends through untouched rather than dropping
-   them as unknown, before the CSS is written around them.
-5. **§0 — is `Form` moved out of this gate?** Everything above assumes yes.
+**2. `role="spinbutton"` at all — kept, with the walkthrough NOT run.** The
+spec said the decision should be made from a VoiceOver/NVDA walkthrough rather
+than from a paragraph. No screen reader is available in this environment, so
+that walkthrough has not happened and this is the one Definition of Done line
+that is attested by reasoning rather than by evidence. Recorded as such in
+D-051 §5 rather than ticked. What *was* checked in a real browser: the computed
+role, the accessible name, and the presence and absence of each value attribute.
+
+**3. `Slider` in this gate — yes, single-thumb.** No change.
+
+**4. lightningcss and the vendor pseudo-elements — passes them through.**
+Measured: all five of `::-webkit-slider-runnable-track`,
+`::-webkit-slider-thumb`, `::-moz-range-track`, `::-moz-range-progress` and
+`::-moz-range-thumb` survive `--bundle --targets 'defaults'` byte for byte. It
+also leaves `appearance: none` unprefixed, which is what the existing build
+already ships for `Input` and `Select`, so the target set needs no `-webkit-`
+companion.
+
+**5. §0 — `Form` moved out of this gate.** Approved.
+
+**A sixth, found rather than asked (D-051 §4): §8's Firefox guard cannot
+exist.** The spec said the vendor-pseudo-element duplication would be "read in
+both Chromium and Firefox projects". `playwright.config.ts` defines **one**
+project, chromium, and the environment ships one browser. A browser assertion
+that cannot run is worse than none, because it reads as covered. The guard is a
+**source rule** in `lint:rules` instead — no selector list may mix a `-webkit-`
+and a `-moz-` pseudo-element — which is a static check of the exact failure
+mode, runs everywhere, and gets a fixture in the linter's own self-test (D-009).
