@@ -28,3 +28,16 @@ class ResizeObserverStub implements ResizeObserver {
 }
 
 globalThis.ResizeObserver ??= ResizeObserverStub;
+
+/**
+ * jsdom implements no `scrollIntoView` either, and `Form` (3.16) calls it when
+ * a summary link is followed. Same reasoning as above: it is in every browser
+ * the library targets, so the stub lives here rather than a guard in the
+ * component. A no-op, because jsdom has no layout to scroll; which element is
+ * scrolled is asserted with a spy in Form.test.tsx, and that the scroll lands
+ * the label in view is asserted in tests/visual/harness.spec.ts.
+ *
+ * **Consumers testing in jsdom need the same stub.** Documented on the Form
+ * docs page.
+ */
+Element.prototype.scrollIntoView ??= function scrollIntoView() {};

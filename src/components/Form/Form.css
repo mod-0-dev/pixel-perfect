@@ -1,0 +1,36 @@
+/*
+ * Form — spec docs/specs/Form.md
+ *
+ * A flex column and a gap, exactly Stack's shape, because a form is a column —
+ * summary, fields, actions — and RULES §2 leaves the form as the only thing
+ * that can space its own children. The gap comes from D-020's shared scale in
+ * _shared/layout.css, and `data-pp-gap` is always emitted so a Stack inside
+ * does not inherit the form's rhythm.
+ *
+ * The summary is an Alert and is styled as one. Nothing here restyles it:
+ * `--pp-alert-*` reach it through `.pp-form__summary` already, and every
+ * colour in it is a pairing Alert's own gate computed (spec §2).
+ *
+ * No transition and no animation, so no `prefers-reduced-motion` block.
+ */
+
+@layer pp.components {
+  .pp-form {
+    /* Block-level, no width declaration: the fill contract (RULES §1). */
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    gap: var(--pp-form-gap, var(--_pp-gap));
+  }
+
+  /* A list, so a screen reader announces the count; unstyled, because the
+     links are what carry it visually. `margin: 0` is the reset's zero (D-018). */
+  .pp-form__errors {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pp-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}

@@ -83,6 +83,7 @@ export {
   type SeparatorOrientation,
   type SeparatorProps,
 } from './components/Separator/Separator';
+export { Form, type FormError, type FormProps } from './components/Form/Form';
 export { Slider, type SliderProps } from './components/Slider/Slider';
 export {
   Skeleton,

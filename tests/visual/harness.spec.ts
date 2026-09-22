@@ -3630,3 +3630,176 @@ test.describe('Alert', () => {
     await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
   });
 });
+
+/*
+ * 3.16 `Form`. The describe title is deliberately not the bare word "Form":
+ * `-g` is a case-insensitive substring (D-049 §6), and "form" is inside
+ * "transform", "platform" and "formatted" in this file.
+ */
+test.describe('Form summary and submission', () => {
+  const demo = (page: import('@playwright/test').Page, name: string) =>
+    page.locator(`form[data-demo="${name}"]`);
+
+  test('fills the box its parent gives it, at every width, with no width declared', async ({ page }) => {
+    await page.goto('/components/form');
+    const section = page.locator('section', { hasText: 'fill — the summary, the fields, the gap' }).first();
+    const widths: number[] = [];
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const measured = await section
+        .locator('.matrix__cell')
+        .filter({ hasText: width })
+        .first()
+        .locator('.pp-form')
+        .evaluate((el) => {
+          const parent = el.parentElement as HTMLElement;
+          const style = getComputedStyle(parent);
+          return {
+            root: Math.round(el.getBoundingClientRect().width),
+            available: Math.round(
+              parent.clientWidth - parseFloat(style.paddingInlineStart) - parseFloat(style.paddingInlineEnd),
+            ),
+            declared: (el as HTMLElement).style.width,
+          };
+        });
+      expect(measured.root, `did not fill at ${width}`).toBe(measured.available);
+      expect(measured.declared).toBe('');
+      widths.push(measured.root);
+    }
+
+    expect(new Set(widths).size, 'the box did not track its container').toBe(3);
+    await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+  });
+
+  test('the summary is first, and the gap between children is --pp-space-5', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = page
+      .locator('section', { hasText: 'fill — the summary, the fields, the gap' })
+      .first()
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first()
+      .locator('.pp-form');
+
+    const measured = await form.evaluate((el) => {
+      const [first, second] = Array.from(el.children) as HTMLElement[];
+      const probe = document.createElement('div');
+      probe.style.blockSize = 'var(--pp-space-5)';
+      el.appendChild(probe);
+      const space5 = probe.getBoundingClientRect().height;
+      probe.remove();
+      return {
+        firstIsSummary: first!.classList.contains('pp-form__summary'),
+        gap: second!.getBoundingClientRect().top - first!.getBoundingClientRect().bottom,
+        space5,
+      };
+    });
+
+    expect(measured.firstIsSummary).toBe(true);
+    // Proves the shared scale reached the form: a missing data-pp-gap, or a
+    // gap read from the wrong property, reads as 0 here.
+    expect(measured.space5).toBeGreaterThan(0);
+    expect(measured.gap).toBeCloseTo(measured.space5, 0);
+  });
+
+  test('the summary links are in the danger tone, the pairing Alert asserts', async ({ page }) => {
+    await page.goto('/components/form');
+    const summary = page.locator('.pp-form__summary').first();
+    const colours = await summary.evaluate((el) => ({
+      link: getComputedStyle(el.querySelector('.pp-form__error-link') as Element).color,
+      body: getComputedStyle(el.querySelector('.pp-alert__body') as Element).color,
+    }));
+    /* Link's own default is accent. Equal to the body text means the link is
+       danger's step 11 on danger's step 3 — Alert's body pairing, asserted per
+       hue by lint:contrast — and not a cross-hue pairing nothing checks. */
+    expect(colours.link).toBe(colours.body);
+  });
+
+  test('a keyboard submit that fails moves focus to the summary', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = demo(page, 'signup');
+    await form.getByRole('textbox', { name: 'Name', exact: true }).focus();
+    await page.keyboard.press('Enter');
+
+    const summary = form.locator('.pp-form__summary');
+    await expect(summary).toBeFocused();
+    await expect(summary.getByRole('link')).toHaveCount(3);
+  });
+
+  test('following a link focuses the control with its label in view', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = demo(page, 'signup');
+    await form.getByRole('button', { name: 'Create account' }).click();
+    await form.getByRole('link', { name: /email address/ }).click();
+
+    /* getByRole, not getByLabel: a required Field's label text includes its
+       aria-hidden asterisk, so an exact label match finds nothing. */
+    await expect(form.getByRole('textbox', { name: 'Email', exact: true })).toBeFocused();
+    const labelTop = await form
+      .locator('label', { hasText: 'Email' })
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().top);
+    // Spec §4: fragment navigation puts the CONTROL at the top and the label
+    // above the fold. The field is scrolled instead.
+    expect(labelTop).toBeGreaterThanOrEqual(0);
+    expect(labelTop).toBeLessThan(page.viewportSize()!.height);
+  });
+
+  test('a group target focuses a radio inside it', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = demo(page, 'signup');
+    await form.getByRole('button', { name: 'Create account' }).click();
+    await form.getByRole('link', { name: 'Choose a plan' }).click();
+    await expect(form.getByRole('radio', { name: 'Free' })).toBeFocused();
+  });
+
+  test('an error set on blur does not move focus', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = demo(page, 'signup');
+    await form.getByRole('textbox', { name: 'Nickname' }).fill('a');
+    await form.getByRole('textbox', { name: 'Email', exact: true }).click();
+
+    await expect(form.locator('.pp-form__summary')).toBeVisible();
+    await expect(form.getByRole('textbox', { name: 'Email', exact: true })).toBeFocused();
+  });
+
+  test('pending blocks a second submit, and focus waits for the slow result', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = demo(page, 'signup');
+    await form.getByLabel('Slow server').check();
+    await form.getByRole('textbox', { name: 'Name', exact: true }).focus();
+    await page.keyboard.press('Enter');
+    await expect(form).toHaveAttribute('data-pending');
+    await page.keyboard.press('Enter');
+    await page.keyboard.press('Enter');
+
+    await expect(form.locator('.pp-form__summary')).toBeFocused();
+    await expect(form.getByTestId('submissions')).toHaveText('Submissions: 1');
+  });
+
+  test('pending blocks a second React action', async ({ page }) => {
+    await page.goto('/components/form');
+    const form = demo(page, 'action');
+    await form.getByLabel('Code').fill('0000');
+    await page.keyboard.press('Enter');
+    await expect(form).toHaveAttribute('data-pending');
+    await page.keyboard.press('Enter');
+
+    await expect(form.locator('.pp-form__summary')).toBeFocused();
+    await expect(form.getByTestId('action-calls')).toHaveText('Action calls: 1');
+  });
+
+  test('the summary link works with JavaScript disabled', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/components/form');
+    const form = page.locator('form[data-demo="roundtrip"]');
+
+    await expect(form.locator('.pp-form__summary')).toBeVisible();
+    await form.getByRole('link', { name: 'Enter an email address' }).click();
+    // No handler ran; the fragment did the work.
+    expect(new URL(page.url()).hash).toBe('#roundtrip-email');
+    await expect(form.locator('#roundtrip-email')).toBeInViewport();
+    await context.close();
+  });
+});

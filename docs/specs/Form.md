@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3 — Form & Action Core |
-| **Status** | `spec` — awaiting Gate C |
+| **Status** | `review` — built 2026-09-22. Gate C passed **by delegation** (D-057); build findings in D-058. `done` waits on one Definition of Done box: the CI-authored screenshot baseline (D-013) |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — a submit handler, a ref and one effect (§5) |
 | **Depends on** | 3.7 `Field` — its `controlId` is what the summary links to (§3). 5.2 `Alert` — composed, as the error summary (§2). 3.3 `Link` — composed, one per summary entry; **added to Deps at this gate**, see §9 |
@@ -157,9 +157,12 @@ link away. Getting *when* right is the whole design:
 | A submit fires and `errors` stays empty | No | Success is the app's to announce, usually by navigating |
 
 Mechanism: the submit handler sets a ref flag (not state — nothing re-renders
-because of it); a layout effect keyed on `errors` checks the flag, focuses the
+because of it); an effect keyed on `errors` checks the flag, focuses the
 summary if it is set and `errors` is non-empty, and clears it. The flag is
-also cleared when `pending` goes from `true` to `false` with no errors. The
+also cleared when `pending` goes from `true` to `false` with no errors, **and by
+a `setTimeout(0)` after the submit handler returns unless `pending` is now set**
+— without which a synchronous success left the flag set and the next blur error
+stole focus (D-058 §1). The
 summary root takes `tabIndex={-1}` so it can be focused programmatically and is
 never a tab stop.
 
@@ -232,7 +235,7 @@ identity. A horizontal row of fields is a `Cluster` inside the form, not a
 ## Sizing contract justification
 
 `fill`. A `<form>` is a block element and fills its parent with no declaration.
-The root is `display: grid` with `min-inline-size: 0`, so a long unbreakable
+The root is a flex column (built that way rather than the grid first drawn here — D-058 §2) with `min-inline-size: 0`, so a long unbreakable
 string in a summary message cannot widen it — and `Alert` already carries
 `overflow-wrap: anywhere` for its own content (D-053 §4). No width anywhere.
 

@@ -46,6 +46,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'select', path: '/components/select' },
   { name: 'number-input', path: '/components/number-input' },
   { name: 'slider', path: '/components/slider' },
+  { name: 'form', path: '/components/form' },
   { name: 'alert', path: '/components/alert' },
 ];
 
