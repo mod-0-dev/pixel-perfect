@@ -58,7 +58,10 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** _none_ — **0.11 is `done`** (D-056) and **5.2 `Alert` is
+- **In flight:** **3.16 `Form` is in `spec`** — [`Form.md`](docs/specs/Form.md),
+  on its own Gate C. It proposes **no change to `Field`**: the summary links to
+  `controlId`, which already exists for exactly this, at the cost of each message
+  being passed twice (spec §3). Before that: **0.11 is `done`** (D-056) and **5.2 `Alert` is
   `done`** (D-053), the first component
   of Tier 5 and the one 3.16 `Form` was waiting for. Next up is **3.16 `Form`**
   on its own gate, then 3.17 `RangeSlider`; Tier 4.1 unlocks once both are
@@ -690,7 +693,7 @@ to the component it was written about — see
 | 3.13 | `Select` | `done` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11. The placeholder is seeded with `defaultValue=""`, because the HTML reset algorithm skips a disabled option; painted from `:checked` and `data-placeholder` is emitted only when controlled (D-049) |
 | 3.14 | `NumberInput` | `done` | fill | client | 3.8 | `type="text"` with `role="spinbutton"`, never `type="number"` (3C §13.5). `null` is empty, `undefined` is uncontrolled. Clamp and snap on commit, never on a keystroke. Formatting is opt-in because an ambient locale cannot hydrate |
 | 3.15 | `Slider` | `done` | fill | client | 3.7 | Native `<input type="range">`, **single-thumb**. The track is ours and the thumb is the platform's: the fill is a grid **column**, not a gradient, so RTL needs no declaration (D-052 §1). `onValueCommit`, because React maps `onChange` to *input*. No `readOnly` — HTML's ruling (D-049 §4's shape) |
-| 3.16 | `Form` | `planned` | fill | client | 3.7, 5.2 | Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
+| 3.16 | `Form` | `spec` | fill | client | 3.7, 5.2, 3.3 | [`Form.md`](docs/specs/Form.md), awaiting Gate C. Deps gained 3.3 `Link`, which the summary composes (spec §9). Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
 | 3.17 | `RangeSlider` | `planned` | fill | client | 3.15 | The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
 
 ---
