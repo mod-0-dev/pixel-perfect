@@ -3484,3 +3484,26 @@ Removing `tone="danger"` from the links, scrolling the control instead of its
 field, and removing the `gap` declaration each failed the one test named for it,
 with the break confirmed in the served build (D-037 §4) and the other seven
 tests still passing.
+
+### Addendum, 2026-09-22 — D-057's two assumptions, checked before the `RangeSlider` build
+
+Checked with throwaway probes outside the repo while `Form` sits in `review`
+(Gate A holds the `RangeSlider` build itself):
+
+- **A transparent native thumb still takes a drag — in Chromium.** Two stacked
+  `<input type="range">`, `opacity: 0`, `pointer-events: none`, with
+  `pointer-events: auto` on `::-webkit-slider-thumb`: dragging at the start
+  thumb's position moved only the start input (20 → 50) and focused it;
+  dragging at the end thumb's moved only the end input (80 → 60); and a press on
+  bare track hit-tested to the **root**, not to either input — which is exactly
+  the event spec §2 routes by hand. **Firefox is unverified**: the environment
+  ships one browser (D-051 §4), so the `-moz-` half rests on the technique's
+  wide use and on `lint:rules`' mixed-prefix rule, not on a run.
+- **React restores a clamped controlled range input, including when the clamp
+  leaves state unchanged.** Clamping a change of 90 to 50 wrote 50 back to the
+  DOM; a second change of 95, clamped to the same 50 so that no state update
+  happened at all, still left the element at 50. That is the case spec §3 relied
+  on and the one a hand-rolled controlled input usually gets wrong. Checked in
+  jsdom; the build re-asserts it in the browser.
+
+Neither is a stop. The build proceeds as specified once `Form` is `done`.
