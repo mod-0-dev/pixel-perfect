@@ -3008,3 +3008,321 @@ purpose; and the `pointer-events` layering that makes both thumbs draggable is
 what takes a track click away.
 
 The tracked-item denominator moves from **78 to 79**.
+
+---
+
+## D-053 — `Alert` build findings: the first surface that is not the page, and the ring nobody had measured off it
+
+**Date:** 2026-09-21 · **Status:** accepted · **Amends:** `docs/specs/Alert.md`
+§Anatomy, §Container behavior; `ROADMAP.md` (5.2 `Deps`)
+
+Tier 5's first component, and the first in the library whose own surface is a
+tinted step 3 with other people's controls sitting on it. That one structural
+fact produced most of what follows.
+
+### 1. A variant table was rejected on measurement, and the measurement was taken at the gate
+
+`Badge` and `Button` share a four-variant table and reusing it a third time was
+the obvious move. `Alert` takes none, and the argument is numbers.
+
+**An `Alert` is the only component in the library whose children are
+arbitrary.** A `Badge` holds a word; a `Button` holds a label; an `Alert` holds
+whatever the caller writes, which in practice is prose with a `Link` in it and
+a `Cluster` of `Button`s under it. The tone context (D-007) inherits into all
+of it. So the question is not how the box should look but what each box does to
+the controls inside it:
+
+| Rejected | Measured |
+| --- | --- |
+| `solid` (`--pp-tone-solid` fill) | `--pp-tone-text` — what a `plain` `Button` and a `Link` resolve to inside the inherited context — is **1.04–1.16:1** light, **1.10–1.46:1** dark. Not low contrast: invisible |
+| `plain` (no fill, no border) | `--pp-tone-bg` against the page is **1.10–1.12:1** light, **1.19–1.20:1** dark. Without the edge there is no block, only slightly tinted prose |
+| `outline` (no fill) | Nothing carries the tone at a glance, which is the tone's only job |
+
+One treatment ships: the tint **and** the edge, with `tone` the only axis. The
+precedent is D-030 §6, where `Link` was given neither `variant` nor `size` — a
+fixed vocabulary says what a prop must be *called* when it exists, not that
+every component must have one.
+
+This is D-048 §1's rule finally applied on the first try: the pairing computed
+before the build rather than discovered after it. Every pairing the component
+introduces is one `lint:contrast` already asserts, and the fill is
+`--pp-tone-bg` (step 3) rather than `--pp-tone-surface` (step 2) **because**
+step 3 is the step those checks are named after.
+
+### 2. The focus ring has only ever been verified against the page
+
+`--pp-color-focus-ring` is one colour library-wide (D-029) and
+`check-contrast.mjs` asserts exactly one pairing for it — against `neutral-1`,
+where it is 3.06:1. Against the surfaces that actually exist:
+
+| Ring against | Light | Dark |
+| --- | --- | --- |
+| `neutral-1` (page) — the asserted pairing | 3.06 | 3.06 |
+| `neutral-2` (`--pp-color-bg-surface`) — already shipping | 2.94 | 2.85 |
+| `<hue>-3` (`Alert`'s fill) | **2.74–2.77** | **2.54–2.57** |
+
+Against 1.4.11's 3:1. `Button.css`'s header already recorded that the five
+`--pp-tone-focus` values "are asserted against nothing"; the half nobody had
+noticed is that the ring that *is* asserted is asserted against one background
+out of three, and that `bg-surface` was already below the line before this
+component existed.
+
+**Recorded and deliberately not fixed here**, which is D-048 §2's shape with
+the timing corrected — measured before the build rather than after. It cannot
+be fixed inside a component: overriding `--pp-color-focus-ring` inside
+`.pp-alert` would put a second, unverified ring colour in the library, which is
+the one thing D-029 exists to prevent. It goes on the roadmap as its own item,
+**0.11**, with the two missing checks (`focus vs 2`, `focus vs 3`) landing
+beside the token change so the fix and the assertion arrive together — the
+D-050 pattern.
+
+**One sentence of this section was wrong and is corrected by D-055.** It said
+the ring's value was "identical in both themes", and concluded from that that
+the fix needed a per-theme or two-tone ring plus a re-baseline of all 35
+screenshots. The ring has been per theme since 0.2 — light L 66.18%, dark
+L 49.70% — and the sizing of the work that followed from the error was wrong in
+the same direction. The measurements in the table above are unaffected; they
+were taken from the parsed theme blocks, which were right. The claim about the
+*cause* came from reading a grep, and that is the difference between the two.
+
+### 3. The root is flex, not the three-column grid the spec drew
+
+Spec §Anatomy specified `grid-template-columns: auto minmax(0, 1fr) auto` with
+the parts placed in those columns. Built that way, **an alert with no icon
+starts 12px in from its own padding edge** — `--pp-alert-gap`, paid for the
+empty track it left behind. A grid gaps between *tracks*; whether anything is
+in them is not part of the question.
+
+Flex gaps only between items that exist, so an absent slot costs nothing, and
+the arrangement needs no explicit placement and no `:has()`. Measured both
+ways: the faithful grid returns 12px where the flex row returns 0, and the
+alert that *does* have an icon is inset by exactly the icon plus the gap —
+which is what says the measurement is reading the right thing rather than
+reading zero for a different reason.
+
+**The generalisation:** a layout whose parts are optional wants a container
+that spaces *items*, not one that reserves *tracks*.
+
+### 4. `min-inline-size: 0` sizes the box and nothing else
+
+The browser suite's first run failed one of six. The box measurement beside it
+— the alert's width against its parent's — passed, and the playground harness
+flagged four of six cells as overflowing.
+
+Both were right. `min-inline-size: 0` lets the flex item shrink below its
+automatic minimum, so the alert's own **edges** stayed inside its parent; the
+**glyphs** of an unbreakable URL went on painting past them. The two are
+separate guarantees and the spec's §Container behavior had treated them as one,
+claiming the declaration made the arrangement "true for an unbreakable string
+rather than merely true for prose".
+
+`overflow-wrap: anywhere` on the root is what makes it true — `anywhere` rather
+than `break-word` because it also shrinks the min-content size, and inherited,
+so the title is covered by the same declaration. `Badge` and `Button` do the
+opposite (`white-space: nowrap`) and are right to: they hug their own content.
+This one fills a column and holds someone else's prose.
+
+D-051 §6's mirror, exercised: **when a test fails, establish which of the two is
+wrong before changing either.** Here the component was.
+
+### 5. Seventeen breaks, and the two that taught something
+
+Eleven source breaks and six CSS breaks. Fifteen failed on exactly the test
+named for them. The other two:
+
+**An assertion pointed at the one hue where its two colours are the same.**
+"The focus ring inside an alert is the one library-wide ring" read
+`.pp-alert__dismiss` with `.first()`, which is the page's `accent` alert — and
+`--pp-tone-focus` for `accent` **is** `--pp-palette-accent-focus`, the value
+`--pp-color-focus-ring` resolves to. It compared a colour with itself. Giving
+the ring `var(--pp-tone-focus)` changed nothing and the test stayed green. It
+reads the `danger` alert now, where the two differ, and `outline-style` is
+asserted beside the width because "solid, 0px" is D-052 §3's impossible
+combination. This is D-048 §5's rule from the other side: **when an assertion
+says A equals B, ask what would make them differ.**
+
+**And one declaration that nothing observes, stated rather than claimed.**
+Removing `min-inline-size: 0` changes not one number in the suite. With
+`overflow-wrap: anywhere` the text's min-content size is one character, and
+every alert on the playground page sits in a *column* flex container, where the
+automatic minimum size does not apply on the inline axis at all. It stays
+because RULES §1 defines `fill` as including it, and it earns its keep in the
+arrangements the page does not contain — a row flex item, a grid cell, content
+that cannot break. What changed is the comment: the test now says what it
+checks instead of implying a guarantee it does not carry, which is D-051 §4's
+lesson applied to prose rather than to a missing project.
+
+### 6. `role="alert"` is opt-in, and the component is named after the thing it does not do by default
+
+An assertive live region interrupts whatever the screen reader is saying. Three
+facts pushed the default to `off`:
+
+- **A live region announces changes to a region that already existed.** An
+  `Alert` server-rendered into the initial HTML has no change to announce; the
+  behaviour ranges from silence to a double read.
+- **A region that is always present is never news** — a permanent "test mode"
+  banner would re-announce on every navigation that re-mounts it.
+- **`Field` already ruled on this shape** (`Field.md` §5): no `role`, no
+  `aria-live` on the error, because a string that is both live and referenced
+  by `aria-describedby` is announced twice by several screen readers.
+
+`live` takes ARIA's own words — `off` / `polite` / `assertive` — and maps to no
+role / `role="status"` / `role="alert"`. Roles rather than a bare `aria-live`
+attribute, because both roles also imply `aria-atomic`. And `off` is the
+*absence* of a role rather than `aria-live="off"`, which is still a live region
+that happens to be muted.
+
+The cost is named rather than hidden, as `Field` §5 named its own: mounting an
+element that already carries `role="alert"` is the *less* reliable way to
+announce something. The reliable mechanism is a region that exists first and
+receives text afterwards, which is `Toast`'s (4.12) architecture. For `Form`'s
+error summary the fallback is focus, which needs no new API — `ref` is
+forwarded and `tabIndex` spreads.
+
+### 7. The component holds no state, and that is what keeps it `server`
+
+`onDismiss` is an event-handler prop, not a state prop: it renders the close
+button and calls back, and the caller unmounts the alert. Nothing is stored, so
+RULES §5.5's controlled/uncontrolled pair is not triggered — the cheapest way
+to satisfy it is not to be stateful — and no `'use client'` is needed.
+
+Rejected: `open` / `defaultOpen` / `onOpenChange`. More API, client-only, and it
+puts the alert's visibility somewhere the app cannot see, which is wrong for the
+case that actually matters: a dismissed banner has to stay dismissed across a
+reload.
+
+Rendering `IconButton` (which is `'use client'`) does not change the ruling —
+D-032 already scoped the lint rule to what ships rather than to what is
+imported. The consequence is documented rather than prevented: the component
+passing `onDismiss` must itself be a client component, because a function
+cannot cross the RSC boundary. The playground page proves both halves — every
+example is rendered by the Server Component page except the dismissible ones,
+which live in a client child.
+
+### 8. `title` is reclaimed from HTML's tooltip attribute, and renders a `<div>`
+
+`ComponentPropsWithoutRef<'div'>` already has a `title: string` — the tooltip.
+Two props cannot share a name, so it is `Omit`ed and redeclared as a
+`ReactNode`. A tooltip on a block of prose is not a pattern; a heading line is.
+Asserted in both directions: the title renders in `.pp-alert__title`, and the
+root never grows a `title` attribute.
+
+A `<div>` and not a heading, because the right level is `h2` in a page banner
+and `h3` inside a card and the component knows neither — `Heading` (1.2) exists
+precisely because visual level and semantic level are different decisions.
+`title={<Heading level={3}>…</Heading>}` is the opt-in, and needs no extra prop.
+
+### 9. Two tracking corrections
+
+`ROADMAP.md` listed 5.2's **Deps** as `1.3, 2.2`. It composes `Icon` (1.3) and
+`IconButton` (3.2), and does **not** compose `Cluster` — actions are `children`
+spaced by a layout primitive the caller chooses, which is RULES §5.6 working as
+intended. Corrected to `1.3, 3.2` at approval.
+
+And the library ships no tone icons. `icon` is a slot taking the caller's SVG,
+wrapped in `<Icon decorative>` here so sizing and `aria-hidden` are guaranteed
+rather than requested. The apparent counter-example is `Select`'s chevron
+(D-039 §3) and it is not one: `appearance: none` *deletes* the arrow the
+platform drew, and a select without one is not identifiable as a select. An
+alert loses nothing by having no glyph. The dismiss X is the same case as the
+chevron — `IconButton` cannot be constructed without children — and not a
+fourth opinion about what "danger" looks like.
+
+---
+
+## D-054 — `outline-width` is not the property that says a ring is drawn, and a guard with no way to be regenerated stops guarding
+
+**Date:** 2026-09-21 · **Status:** accepted · **Amends:** D-050 §5 (the
+dimensions manifest); `tests/visual/harness.spec.ts` (NumberInput, Slider)
+
+Two CI failures on `Alert`'s pull request, neither of them `Alert`'s.
+
+### 1. Two assertions that passed here and failed in CI, and the component was right both times
+
+`NumberInput` and `Slider` each asserted that an **unfocused** control carries
+no ring, as `expect(getComputedStyle(el).outlineWidth).toBe('0px')`. CI returned
+`3px`. Both also fail on `main`, so they predate the branch they surfaced on.
+
+CSS says the computed `outline-width` of an element whose `outline-style` is
+`none` is zero. Chromium reports the **specified** width instead — `medium`,
+which is `3px` — and whether it does depends on the build. This container
+returns `0px` and the runner returns `3px`, with nothing different about the
+component in between.
+
+So `outline-width` answers "how thick would the line be", not "is there a line".
+The property that answers the second question is `outline-style`, and that is
+what "no ring" is asserted on now. Where a ring **is** expected both are
+checked, because a `solid` ring of zero width is D-052 §3's impossible
+combination and is exactly the shape that reads as a pass.
+
+The same trap was caught three hours earlier in `Alert`'s own ring assertion
+(D-053 §5) and the generalisation was not made then. It is now: **a focus-ring
+assertion reads `outline-style`; the width is a second question, never the
+first.**
+
+### 2. The drift guard fired at the limit it was given, and was the only thing that noticed
+
+`tests/unit/screenshot-dimensions.test.ts` counts baselines with no recorded
+geometry and fails at three, on the stated reasoning that "an unrecorded page is
+unguarded, and the count going up silently is how a guard stops guarding".
+`number-input.png` and `slider.png` shipped unrecorded with Tier 3D;
+`alert.png` made three.
+
+The guard was right and the manifest had no way to be updated. D-050 §5 says to
+"regenerate the manifest deliberately", and regenerating it meant hand-editing
+JSON — so it was not edited at all for two components. `scripts/record-dimensions.mjs`
+(`npm run dimensions`) is that missing half.
+
+It **adds missing entries only**. Overwriting an existing one is how a guard is
+made to bless the drift it exists to catch, so `--all` is an explicit flag and
+belongs immediately *before* a deliberate re-baseline, never after one. It reads
+committed baselines, because those are CI's (D-013) — a locally rendered PNG is
+a different Chromium build and two to four pixels shorter, and recording one
+writes this machine's geometry in as the truth.
+
+**The rule:** a guard whose manifest cannot be regenerated by a command will
+stop being regenerated. Ship the command with the guard.
+
+---
+
+## D-055 — The ring was already per theme. A grep was read as a fact
+
+**Date:** 2026-09-21 · **Status:** accepted · **Corrects:** D-053 §2;
+`docs/specs/Alert.md` §9; `ROADMAP.md` (0.11)
+
+D-053 §2 measured the focus ring against three surfaces and reported the
+numbers correctly. It then explained *why* the gap could not be closed cheaply:
+
+> the ring's value is identical in both themes, so moving it darker fixes light
+> and breaks dark; the real fixes are a per-theme ring or a two-tone ring, both
+> Tier 0.2 work plus a re-baseline of all 35 screenshots.
+
+Every clause after the comma is false.
+
+`--pp-palette-accent-focus` is **L 66.18% in the light theme and L 49.70% in the
+dark one**, and has been since 0.2 — the generator solves it per theme, with its
+own search direction for each. What both themes had in common was not a value;
+it was a *target*: each was solved against **step 1 only**, three lines above an
+`edge` that D-050 had already taught to solve against steps 1, 2 and 3.
+
+So the fix is to give the ring the same treatment `edge` already had, and
+nothing else. Light moves 66.18% → 63.34%, dark 49.70% → 53.99%, and the worst
+pairing in the library goes from 2.54:1 to 3.06:1. No per-theme mechanism was
+needed, because it was already per theme. No two-tone ring. And **no
+re-baseline**: a focus ring paints only on `:focus-visible`, no baseline page
+holds a focused element, and the token gallery renders steps 1-12 and nothing
+else — so the change moves zero pixels in 37 screenshots.
+
+**Where the error came from, because that is the part worth keeping.** The
+measurements were taken by parsing the theme blocks and were right. The causal
+claim came from a `grep -n` that printed two matching lines, at 64 and 273, with
+the same value — and 273 was read as "the dark block" when it was
+`[data-pp-theme="light"]`. A grep shows you lines; it does not show you which
+scope they are in. **Every number in D-053 §2 was measured; the one sentence
+that was not measured is the one that was wrong**, and it was the sentence that
+sized the work.
+
+The estimate was wrong in the expensive direction — it made a contained token
+fix look like a tier-level project, and it was published in a spec, a decisions
+entry, a roadmap row and a pull request before anyone tried it. **The rule:
+prose that sizes a piece of work is a claim, and it gets checked like one.**

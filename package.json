@@ -23,6 +23,7 @@
     "build:css": "lightningcss --bundle --targets 'defaults' src/styles/index.css -o dist/pixel-perfect.css",
     "prepare": "npm run build",
     "tokens": "node scripts/generate-tokens.mjs",
+    "dimensions": "node scripts/record-dimensions.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -5,6 +5,7 @@ export {
   type AspectRatioProps,
 } from './components/AspectRatio/AspectRatio';
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
+export { Alert, type AlertLive, type AlertProps } from './components/Alert/Alert';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
 export { Button, type ButtonProps } from './components/Button/Button';
 export {

@@ -73,3 +73,6 @@
 /* Tier 3D — composite inputs. */
 @import "../components/NumberInput/NumberInput.css";
 @import "../components/Slider/Slider.css";
+
+/* Tier 5 — composition & data. */
+@import "../components/Alert/Alert.css";

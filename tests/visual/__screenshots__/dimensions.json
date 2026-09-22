@@ -1,4 +1,8 @@
 {
+  "alert.png": {
+    "width": 1280,
+    "height": 9327
+  },
   "aspect-ratio.png": {
     "width": 1280,
     "height": 11530
@@ -79,6 +83,10 @@
     "width": 1280,
     "height": 3353
   },
+  "number-input.png": {
+    "width": 1280,
+    "height": 8247
+  },
   "radio.png": {
     "width": 1280,
     "height": 7503
@@ -98,6 +106,10 @@
   "skeleton.png": {
     "width": 1280,
     "height": 2404
+  },
+  "slider.png": {
+    "width": 1280,
+    "height": 6445
   },
   "spinner.png": {
     "width": 1280,
