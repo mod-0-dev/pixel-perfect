@@ -26,6 +26,21 @@ is `done`.
 
 ### Current state
 
+- **A border's surfaces are neutral; a ring's are not** (**D-056 §2**). The
+  generator solved the focus ring against neutral's step 1 while `edge` three
+  lines below it solved against steps 1, 2 and 3 — and `solveEdge`'s comment
+  says why its own set is neutral-only: "a danger-toned input sits on the page,
+  not on a red one." True of a border, which sits between a control and the
+  page. False of a ring, which is drawn on whatever the focused thing is
+  sitting on, and since `Alert` that can be a red one. Worst pairing in the
+  library **2.54 → 3.06**; 242 assertions → **293**
+- **A gallery that drew every step except the ones with an obligation**
+  (**D-056 §4**). `/tokens` renders steps 1-12 and `on-solid`, so `focus`,
+  `edge` and `edge-strong` — the only three carrying an explicit WCAG target,
+  and the only three deliberately off-ramp — were drawn by nothing, above prose
+  saying "the focus ring are solved for their contrast targets". A change to any
+  of them moved **zero pixels in 37 screenshots**. 0.11's own failure mode one
+  layer up: a value nothing looked at
 - **`outline-width` is not the property that says a ring is drawn** (**D-054
   §1**). Two assertions in `NumberInput` and `Slider` read it on an *unfocused*
   control and expected `0px`. Chromium reports the **specified** width —
@@ -43,7 +58,8 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** _none_ — **5.2 `Alert` is `done`** (D-053), the first component
+- **In flight:** _none_ — **0.11 is `done`** (D-056) and **5.2 `Alert` is
+  `done`** (D-053), the first component
   of Tier 5 and the one 3.16 `Form` was waiting for. Next up is **3.16 `Form`**
   on its own gate, then 3.17 `RangeSlider`; Tier 4.1 unlocks once both are
   `done`. **0.11** is new and is not a blocker: the focus ring below
@@ -573,11 +589,13 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 44 / 80 tracked items (11 foundations + 69 components) — 9
+- **Done:** 45 / 80 tracked items (11 foundations + 69 components) — 10
   foundations + 35 components. The denominator moved from 79 to 80 when **0.11**
-  (the focus ring off the page) was added by D-053 §2; it had moved from 78 to
-  79 when 3.17 `RangeSlider` was added (D-052 §5). The two foundations not
-  `done` are 0.10 docs site, deferred, and 0.11, which blocks nothing
+  (the focus ring off the page) was added by D-053 §2 and closed the same day by
+  D-056; it had moved from 78 to 79 when 3.17 `RangeSlider` was added (D-052
+  §5). The one foundation not `done` is 0.10 docs site, deferred since there
+  were no components worth documenting — there are now 35, so that reasoning has
+  expired
 
 ---
 
@@ -597,7 +615,7 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
 | 0.10 | Docs site | `planned` | 0.4 | Deferred until there are components worth documenting |
-| 0.11 | **Focus ring off the page** | `planned` | 0.2 | `--pp-color-focus-ring` is asserted against `neutral-1` only, where it is 3.06:1. It is **2.94 / 2.85** on `--pp-color-bg-surface` and **2.74–2.77 / 2.54–2.57** on a tinted step 3, against 1.4.11's 3:1 (D-053 §2). Both themes already have their OWN solved value (light L 66.18%, dark L 49.70%) and both were solved against step 1 alone — so the fix is to solve them against steps 1, 2 and 3 of every hue, and nothing else (D-055 corrects this row's first estimate, which claimed one shared colour and a re-baseline). Opened by `Alert`, the first component with a surface of its own |
+| 0.11 | **Focus ring off the page** | `done` | 0.2 | `--pp-color-focus-ring` is asserted against `neutral-1` only, where it is 3.06:1. It is **2.94 / 2.85** on `--pp-color-bg-surface` and **2.74–2.77 / 2.54–2.57** on a tinted step 3, against 1.4.11's 3:1 (D-053 §2). **Done** 2026-09-21 (D-056). Solved against steps 1, 2 and 3 of **every hue** rather than neutral's step 1 — a border's surfaces are neutral, a ring's are not. Light 66.18% → 63.34%, dark 49.70% → 53.99%; worst pairing **2.54 → 3.06**. **293** assertions in `lint:contrast`, up from 242, including a cross-hue set for the one ring colour that ships. `/tokens` now draws `focus`, `edge` and `edge-strong`, which it never had — one baseline re-authored, no component CSS touched. D-055 corrects this row's first estimate, which claimed one shared colour and a re-baseline of 35 |
 
 ---
 

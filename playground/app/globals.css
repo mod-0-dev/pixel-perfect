@@ -255,3 +255,42 @@ body {
   color: var(--pp-color-text-disabled);
   cursor: not-allowed;
 }
+
+/* The solved off-ramp steps (0.11). One row per hue: focus, edge, edge-strong,
+   each drawn on step 3 — the surface each is hardest against. */
+.solved {
+  display: grid;
+  grid-template-columns: 7rem repeat(3, 1fr);
+  gap: var(--pp-space-2);
+  align-items: stretch;
+}
+
+.solved__cell {
+  display: grid;
+  place-items: center;
+  gap: var(--pp-space-1);
+  padding: var(--pp-space-3);
+  border-radius: var(--pp-radius-2);
+}
+
+.solved__mark {
+  inline-size: var(--pp-size-8);
+  block-size: var(--pp-size-6);
+  border-radius: var(--pp-radius-1);
+  background-color: var(--pp-color-bg-surface);
+}
+
+.solved__mark[data-kind="ring"] {
+  outline: var(--pp-focus-ring-width) solid;
+  outline-offset: var(--pp-focus-ring-offset);
+}
+
+.solved__mark[data-kind="line"] {
+  border: var(--pp-border-width-1) solid;
+}
+
+.solved__label {
+  font-family: var(--pp-font-family-mono);
+  font-size: 10px;
+  color: var(--pp-color-text-muted);
+}

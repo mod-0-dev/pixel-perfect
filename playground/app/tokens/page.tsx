@@ -1,4 +1,13 @@
 const HUES = ['neutral', 'accent', 'danger', 'success', 'warning'] as const;
+
+/* The three steps solved for a contrast target that are NOT ramp positions.
+   `focus` is >= 3:1 on steps 1, 2 and 3 of every hue since 0.11; the two edges
+   have been >= 3:1 and >= 4.5:1 on steps 1-3 since D-050. */
+const SOLVED = [
+  { step: 'focus', label: 'focus  >= 3:1', kind: 'ring' },
+  { step: 'edge', label: 'edge  >= 3:1', kind: 'line' },
+  { step: 'edge-strong', label: 'edge-strong  >= 4.5:1', kind: 'line' },
+] as const;
 const STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
 
 const SPACE = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
@@ -38,6 +47,50 @@ function Ramps({ theme }: { theme: 'light' | 'dark' }) {
   );
 }
 
+/**
+ * THE SOLVED OFF-RAMP STEPS, WHICH THIS PAGE HAS NEVER DRAWN (0.11).
+ *
+ * The paragraph above says "the focus ring are solved for their contrast
+ * targets" and the ramps below render steps 1-12 and `on-solid` — so the three
+ * steps that carry an explicit WCAG obligation were the only ones the token
+ * gallery did not show. A change to any of them moved no pixel in any of the 37
+ * screenshots, which is the same failure mode 0.11 itself was about: a value
+ * nothing looked at.
+ *
+ * Each swatch is drawn ON STEP 3, the surface each step is hardest against, and
+ * as a line rather than a fill, because a line is what all three of them are.
+ */
+function SolvedSteps({ theme }: { theme: 'light' | 'dark' }) {
+  return (
+    <div className="panel" data-pp-theme={theme}>
+      <h3 className="panel__name">{theme}</h3>
+      {HUES.map((hue) => (
+        <div className="solved" key={hue}>
+          <div className="ramp__name">{hue}</div>
+          {SOLVED.map(({ step, label, kind }) => (
+            <div
+              className="solved__cell"
+              key={step}
+              style={{ backgroundColor: `var(--pp-palette-${hue}-3)` }}
+            >
+              <span
+                className="solved__mark"
+                data-kind={kind}
+                style={
+                  kind === 'ring'
+                    ? { outlineColor: `var(--pp-palette-${hue}-${step})` }
+                    : { borderColor: `var(--pp-palette-${hue}-${step})` }
+                }
+              />
+              <span className="solved__label">{label}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function TokensPage() {
   return (
     <>
@@ -53,6 +106,22 @@ export default function TokensPage() {
         <div className="stack">
           <Ramps theme="light" />
           <Ramps theme="dark" />
+        </div>
+      </section>
+
+      <section>
+        <h2>Solved steps</h2>
+        <p>
+          Three steps carry an explicit WCAG obligation and none of them is a ramp
+          position — hanging a contrast requirement on a ramp step tears a hole in the
+          ramp (D-050). Each is drawn on <code>step 3</code>, the surface it is hardest
+          against, and as a line, because a line is what all three are. Until{' '}
+          <strong>0.11</strong> this page rendered none of them, so the only tokens with
+          a stated obligation were the only ones no screenshot could regress.
+        </p>
+        <div className="scales">
+          <SolvedSteps theme="light" />
+          <SolvedSteps theme="dark" />
         </div>
       </section>
 
