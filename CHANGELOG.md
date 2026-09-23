@@ -1,5 +1,90 @@
 # pixel-perfect
 
+## 0.7.0
+
+### Minor Changes
+
+- 26c8334: Add `Alert` (5.2) — a bordered, tone-coloured block for something that happened
+  or something that is true. The first component of Tier 5, and what 3.16 `Form`'s
+  error summary is built from.
+  
+  - **`role="alert"` is opt-in.** The component is named `Alert` and is not an
+    ARIA alert until you say so: an assertive live region interrupts, and a live
+    region announces *changes* to a region that already existed — so one rendered
+    into the initial HTML has no change to announce and may be read twice or not
+    at all. `live` is `off` (no role), `polite` (`role="status"`) or `assertive`
+    (`role="alert"`). `role` rather than a bare `aria-live` attribute, because
+    both roles also imply `aria-atomic`.
+  - **`onDismiss` reports the intent and hides nothing.** No `open`, no internal
+    state, so the component stays a Server Component and a dismissed banner is
+    something your app can remember across a reload. The caller unmounts it, and
+    owns where focus goes next.
+  - **No `variant`, and the rejections were measured.** An `Alert` is the only
+    component whose children are arbitrary, so the tone context inherits into
+    your `Button`s and `Link`s. A `solid` fill puts `--pp-tone-text` at
+    **1.04–1.16:1** in the light theme — not low contrast, invisible — and a
+    `plain` one is 1.10:1 against the page, which is not a block at all. One
+    treatment ships: `--pp-tone-bg` with a `--pp-tone-border` edge.
+  - **Every pairing was computed before the build and every one is already
+    asserted by `lint:contrast`**: title 14.02–14.35 light / 12.76–12.98 dark,
+    body and dismiss glyph 4.59 in both themes, edge 3.04–3.08 against its own
+    fill and 3.40 / 3.66 against the page. The fill is step 3 *because* that is
+    the step those checks are named after.
+  - **No default icons.** `icon` takes your SVG and wraps it in
+    `<Icon decorative>`; the library ships none of its own.
+  - **`title` renders a `<div>`, not a heading** — the right level is `h2` in a
+    page banner and `h3` inside a card, and the component knows neither. Pass a
+    `Heading` as `title` when the alert really is a section of the document. It
+    also reclaims the name from HTML's `title` tooltip attribute, which is
+    omitted from the props type.
+  - No `size`; `--pp-alert-padding-block` / `-inline` are the escape.
+- 253eed7: Add `Form` (3.16): a `<form>` that summarises the errors your app found and
+  refuses a second submission while the first is pending. It does not validate
+  and holds no field values.
+  
+  - **Error summary.** `errors: FormError[]` (`{ target, message }`) renders a
+    danger `Alert` as the form's first child, with one link per error. Each link
+    is a real `#target` href, so it works without JavaScript. With JavaScript,
+    following a link focuses the control and scrolls its whole field, label
+    included, into view. A group `Field` is targeted by its own `id`, and the
+    checked radio (or the first one) gets focus.
+  - **`Field` is unchanged.** Targets are `Field`'s existing `controlId`, so each
+    message is passed twice: to the `Field` and to the summary.
+  - **Focus moves to the summary after a submit that produced errors**, including
+    one that resolves after `pending`, and when the form mounts with errors. It
+    never moves for errors set without a submit, such as validation on blur.
+  - **`pending` cancels any submit while set**, including a React 19 `action`, and
+    disables nothing, so focus stays on the button that was pressed.
+  - **`noValidate` defaults to `true`.** Native validation would cancel the submit
+    for an empty required field before your `onSubmit` ran.
+  - `gap` uses the shared space scale (default `'5'`), and `--pp-form-gap` overrides it.
+  - Test setups on jsdom need an `Element.prototype.scrollIntoView` stub.
+
+### Patch Changes
+
+- 6e97ea8: **The focus ring is now solved against every surface it can be drawn on, not
+  just the page** (roadmap 0.11, D-056).
+  
+  `--pp-color-focus-ring` was solved and asserted against step 1 alone, three
+  lines above an `edge` that has been solved against steps 1, 2 **and** 3 since
+  D-050. Its other neighbours were real the whole time: `--pp-color-bg-surface` is
+  step 2 and shipped at 2.94 / 2.85 from Tier 3A, and any toned surface is step 3,
+  where `Alert` (5.2) put a focusable control at 2.74–2.77 light and 2.54–2.57
+  dark — against WCAG 1.4.11's 3:1.
+  
+  - The ring solves against all five hues' steps 1–3, not only neutral's. A
+    border's surfaces are neutral, because a danger-toned input sits on the page;
+    a ring's are not, because it is drawn on whatever the focused thing sits on.
+  - Light moves L 66.18% → 63.34%, dark L 49.70% → 53.99%. **Worst pairing in the
+    library: 2.54:1 → 3.06:1**, both themes, all five hues, all three surfaces.
+  - `npm run lint:contrast` goes from 242 assertions to **293**, including a
+    cross-hue set for the one ring colour that actually ships.
+  - The `/tokens` gallery now renders `focus`, `edge` and `edge-strong` — the
+    three solved off-ramp steps it had never drawn, so a change to the only tokens
+    with a stated contrast obligation moved no pixel in any screenshot.
+  
+  Nothing but the ring's colour changes. No component CSS was touched.
+
 ## 0.6.0
 
 ### Minor Changes
