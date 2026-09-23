@@ -3388,3 +3388,122 @@ They are drawn on **step 3**, the surface each is hardest against, and as a
 line, because a line is what all three are. `tokens.png` is the single baseline
 this item re-authors; every other screenshot is untouched, which is the claim
 the manifest now guards rather than the claim this entry makes.
+
+---
+
+## D-057 — Gate C for 3.16 `Form` and 3.17 `RangeSlider`: approved by delegation
+
+**Date:** 2026-09-22 · **Status:** accepted · **Amends:** `docs/specs/Form.md`,
+`docs/specs/RangeSlider.md` (status lines)
+
+Both specs were brought to Gate C together, each with its own open questions and
+a recommendation on every one. The approval was **"you know best"**: the user
+delegated the decisions rather than reviewing them.
+
+Recorded as that, and not as a review, because the difference is the whole
+reason the gate exists. Gate C is a second pair of eyes on an API before it is
+permanent; a delegated approval is one pair of eyes. What that means for the
+builds that follow:
+
+- **Every recommendation in both specs is adopted as written.** `Form`: each
+  message passed twice rather than a `Field` change (§3); focus on mount with
+  errors (§5); an English `errorTitle` default. `RangeSlider`: the ~5% of ring
+  below 3:1 where it crosses the fill is accepted with its numbers (§6); ring
+  placement differs from `Slider`'s and `Slider` is left alone (§1); a track
+  press continues dragging (§2).
+- **An assumption the spec made that the build falsifies is a stop, not a
+  workaround.** Two are unverified at the gate and named here so they are
+  checked first: that a transparent native thumb with `pointer-events: auto`
+  under `pointer-events: none` on its input still takes a drag in Chromium
+  (RangeSlider §1–§2), and that React restores a controlled range input whose
+  change was clamped to the same state value (§3). If either fails, the build
+  reports it and returns to the user before choosing an alternative.
+- **Any ruling made during the build that the specs did not anticipate is
+  written here as a finding**, as every build so far has done — delegation widens
+  what has to be written down, it does not narrow it.
+
+---
+
+## D-058 — `Form` build findings: a successful submit that no effect could see
+
+**Date:** 2026-09-22 · **Status:** accepted · **Amends:** `docs/specs/Form.md`
+§5, Sizing contract justification; `src/test/setup.ts`
+
+### 1. Spec §5's mechanism leaked on the one outcome nobody tests: success
+
+§5 said the "awaiting a result" flag is cleared when an effect sees errors, or
+when `pending` goes from `true` to `false`. A **synchronous submit that
+succeeds** does neither: `errors` stays empty, `pending` is never set, no
+effect has anything to react to — so the flag stays set, and the next error
+from **blur validation** is taken for that submit's answer and steals focus.
+That is §5's second row, the one the spec called the case that fails
+silently, reached by a route the table did not list.
+
+Found by writing that row's test, not by review. The fix: after the caller's
+`onSubmit` returns, a `setTimeout(0)` clears the flag unless `pending` is now
+set. A task, not a microtask, so it runs after React has flushed whatever the
+handler scheduled; `pending` is read from a ref synced in a layout effect.
+
+**The race this opens was measured, not reasoned about.** `useActionState`'s
+`isPending` must already be `true` by the time the timer fires, or an action's
+errors would arrive after the flag was cleared and focus would not move. The
+browser suite submits a real React 19 action twice and asserts one call **and**
+focus on the summary afterwards; it passes. Four unit breaks were run (no flag,
+no timer, timer ignoring `pending`, focusing a group root directly) and each
+failed exactly the test named for it.
+
+### 2. Flex column, not the grid the spec drew
+
+The Sizing section said `display: grid`. A form is `Stack`'s shape — a column
+with a gap from D-020's scale — and `Stack` is a flex column, so `Form` is one
+too. With single-column content the two lay out identically; the difference is
+which primitive a reader compares it to. The browser suite measures the gap
+between the summary and the first field against `--pp-space-5`, and fails when
+the `gap` declaration is removed.
+
+### 3. A second jsdom stub, documented for consumers
+
+jsdom has no `Element.prototype.scrollIntoView`, and following a summary link
+calls it. Stubbed in `src/test/setup.ts` beside the `ResizeObserver` stub, for
+the same reason: the API exists in every targeted browser, and guarding
+production code against a test environment's gap has it backwards. The Form docs
+page tells consumers testing in jsdom to add the same stub.
+
+### 4. A required field's label cannot be found by an exact label match
+
+`getByLabel('Email', { exact: true })` finds nothing for a `required` `Field`,
+because Playwright matches the label's text, and that text includes the
+`aria-hidden` asterisk. The accessible name is correct (`textbox "Email"`,
+checked with an ARIA snapshot); the browser tests use `getByRole` with a name.
+Recorded because it reads exactly like a broken label association, which is the
+first thing anyone would believe about it.
+
+### 5. Three browser breaks, each caught by its own test
+
+Removing `tone="danger"` from the links, scrolling the control instead of its
+field, and removing the `gap` declaration each failed the one test named for it,
+with the break confirmed in the served build (D-037 §4) and the other seven
+tests still passing.
+
+### Addendum, 2026-09-22 — D-057's two assumptions, checked before the `RangeSlider` build
+
+Checked with throwaway probes outside the repo while `Form` sits in `review`
+(Gate A holds the `RangeSlider` build itself):
+
+- **A transparent native thumb still takes a drag — in Chromium.** Two stacked
+  `<input type="range">`, `opacity: 0`, `pointer-events: none`, with
+  `pointer-events: auto` on `::-webkit-slider-thumb`: dragging at the start
+  thumb's position moved only the start input (20 → 50) and focused it;
+  dragging at the end thumb's moved only the end input (80 → 60); and a press on
+  bare track hit-tested to the **root**, not to either input — which is exactly
+  the event spec §2 routes by hand. **Firefox is unverified**: the environment
+  ships one browser (D-051 §4), so the `-moz-` half rests on the technique's
+  wide use and on `lint:rules`' mixed-prefix rule, not on a run.
+- **React restores a clamped controlled range input, including when the clamp
+  leaves state unchanged.** Clamping a change of 90 to 50 wrote 50 back to the
+  DOM; a second change of 95, clamped to the same 50 so that no state update
+  happened at all, still left the element at 50. That is the case spec §3 relied
+  on and the one a hand-rolled controlled input usually gets wrong. Checked in
+  jsdom; the build re-asserts it in the browser.
+
+Neither is a stop. The build proceeds as specified once `Form` is `done`.

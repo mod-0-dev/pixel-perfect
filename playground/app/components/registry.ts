@@ -48,5 +48,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'select', name: 'Select', tier: '3.13' },
   { slug: 'number-input', name: 'NumberInput', tier: '3.14' },
   { slug: 'slider', name: 'Slider', tier: '3.15' },
+  { slug: 'form', name: 'Form', tier: '3.16' },
   { slug: 'alert', name: 'Alert', tier: '5.2' },
 ];

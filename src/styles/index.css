@@ -74,5 +74,10 @@
 @import "../components/NumberInput/NumberInput.css";
 @import "../components/Slider/Slider.css";
 
+/* Tier 3 — form container, gated on its own (D-057). After Alert's file would
+   be roadmap order by tier number, but it composes Alert and restyles none of
+   it, so the order does not matter to the cascade. */
+@import "../components/Form/Form.css";
+
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";
