@@ -3959,3 +3959,76 @@ for that one is the `Space` type and the docs page's "don't", as D-061 §5
 said. One break had to be run twice: removing the attribute outright left an
 unused variable, the build's `noUnusedLocals` refused it, and the first run
 proved nothing about the test. A break that does not compile is not a break.
+
+---
+
+## D-063 — The playground shows one theme at a time, chosen by a switcher; the screenshot suite captures both
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** Tier 0.4
+(playground), Tier 0.6 (visual regression); `.claude/skills/component/SKILL.md`
+(the playground line of the build step); `tests/visual/harness.spec.ts`,
+`tests/visual/screenshots.spec.ts`; every screenshot baseline
+
+Asked for directly: a way back to the component list from a component page,
+an index that is not a bare list of names, and a theme switcher in place of
+the side-by-side light and dark columns. Done as one change because the
+three touch one file set — the playground's chrome — and one baseline set.
+
+### 1. One theme at a time is how an app is themed
+
+The Matrix rendered every subtree six times: three widths in a light column
+and the same three in a dark one, each column a `[data-pp-theme]` scope. That
+was honest coverage and it doubled every page, put every "wide" cell in a
+column that scrolled, and showed the library in a way no app ever does. An app
+sets `data-pp-theme` once, on `<html>` or on a wrapper (D-010), and the
+whole page follows.
+
+The playground now does the same. The chrome carries a `ButtonGroup` of
+three `Toggle`s — System, Light, Dark — that sets or clears the attribute on
+`<html>` and stores the choice under one key; a `beforeInteractive` script in
+the layout applies the stored choice before the first paint, so a dark page
+never flashes light, and `<html>` takes `suppressHydrationWarning` for the
+one attribute React must not correct. `System` sets nothing and lets
+`:root:not([data-pp-theme])` follow `prefers-color-scheme`, which is the
+library's own default. The Matrix renders the three widths once.
+
+### 2. Coverage moves, it does not shrink
+
+- **Screenshots: two per page.** `screenshots.spec.ts` stores the choice
+  before each page loads — the way a returning user's browser would — and
+  captures `<page>.light.png` and `<page>.dark.png`. The Definition of Done's
+  "correct in light and dark themes" is met by the pair, and a page that is
+  wrong in one theme fails exactly one baseline, which names the theme.
+- **Browser assertions that compared the two columns now switch.** A
+  `setTheme` helper presses the switcher and waits for `<html>` to carry the
+  attribute; the `Switch` contrast test, the harness self-check and the
+  Popover gallery use it. The self-check's D-010 guard is stronger than
+  before: it asserts the background changes on switching, survives a reload
+  from the stored choice, and clears under System.
+- **Counts halve.** Every assertion that counted six cells, six groups or six
+  panels counts three, and its comment says why.
+
+### 3. Every baseline is re-authored, and the manifest is recorded afterwards
+
+Every page's geometry changes, so every baseline is deleted and CI authors
+the new set on this branch (D-013); the filenames change with the theme
+suffix. `dimensions.json` is **left as it was** rather than emptied: the
+guard passes locally against zero present files, and `npm run dimensions`
+records the new set from the committed PNGs once they exist and drops the
+stale entries — which means one CI run between the authoring commit and the
+recording commit fails the guard's unguarded count, exactly as D-054 §2 and
+D-060 §7 describe. Recorded here so the red run is read as the procedure,
+not as a regression. D-050 §5's geometry guard cannot protect this
+transition, because the geometry is meant to move.
+
+### 4. The index and the chrome
+
+The home page groups the components by tier, with the tier's one-line
+argument above each group and a card per component: number, name, a summary
+of what it is. The cards are links styled with the library's tokens and
+nothing else — the raised surface, a subtle edge that becomes the control
+boundary on hover, and the reset's focus ring. A hero above states what the
+library is and four facts about it. The chrome on every page carries the
+wordmark, the three places, the switcher, and on a component page a
+breadcrumb back to the index and links to the previous and next component
+in roadmap order. Nothing in the chrome writes an id (D-035 §1).

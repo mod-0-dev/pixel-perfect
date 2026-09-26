@@ -29,12 +29,26 @@ async function ringOf(el: import('@playwright/test').Locator) {
   });
 }
 
+/**
+ * Picks a theme through the playground's own switcher (D-063). The Matrix
+ * renders one theme at a time, so an assertion that compares themes switches
+ * here rather than reading two columns. Waits for `<html>` to carry the
+ * attribute, which is what the library's tokens resolve against.
+ */
+async function setTheme(page: import('@playwright/test').Page, theme: 'system' | 'light' | 'dark') {
+  const label = theme.charAt(0).toUpperCase() + theme.slice(1);
+  await page.getByTestId('theme-switcher').getByRole('button', { name: label }).click();
+  const html = page.locator('html');
+  if (theme === 'system') await expect(html).not.toHaveAttribute('data-pp-theme', /.*/);
+  else await expect(html).toHaveAttribute('data-pp-theme', theme);
+}
+
 test.describe('harness self-check', () => {
   test('a fill component is never flagged as overflowing', async ({ page }) => {
     await page.goto('/harness');
 
     const cells = page.locator('section', { hasText: 'Well-behaved' }).locator('.matrix__viewport');
-    await expect(cells).toHaveCount(6); // 3 widths × 2 themes
+    await expect(cells).toHaveCount(3); // 3 widths, in the theme the switcher picked (D-063)
 
     for (const cell of await cells.all()) {
       await expect(cell).not.toHaveAttribute('data-overflowing', /.*/);
@@ -46,25 +60,36 @@ test.describe('harness self-check', () => {
 
     const broken = page.locator('section', { hasText: 'Deliberately broken' });
     const cells = broken.locator('.matrix__viewport');
-    await expect(cells).toHaveCount(6);
+    await expect(cells).toHaveCount(3);
 
     // 720px content in 240px and 480px cells overflows; the 960px cell does not.
     const flagged = broken.locator('.matrix__viewport[data-overflowing]');
-    await expect(flagged).toHaveCount(4); // 240 and 480 overflow; 960 does not
+    await expect(flagged).toHaveCount(2); // 240 and 480 overflow; 960 does not
     await expect(broken.locator('.matrix__overflow').first()).toBeVisible();
   });
 
-  test('both themes render distinct backgrounds side by side', async ({ page }) => {
+  test('the theme switcher changes the resolved background, and the choice survives a reload', async ({
+    page,
+  }) => {
     await page.goto('/harness');
+    const bg = () => page.locator('.matrix').first().evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    const bg = (theme: string) =>
-      page
-        .locator(`.matrix__theme[data-pp-theme="${theme}"]`)
-        .first()
-        .evaluate((el) => getComputedStyle(el).backgroundColor);
+    await setTheme(page, 'light');
+    const light = await bg();
+    await setTheme(page, 'dark');
+    const dark = await bg();
+    // Regression guard for D-010 and D-011: a token that resolved once at
+    // :root and inherited as a colour would read the same in both.
+    expect(light).not.toBe(dark);
 
-    // Regression guard for D-010: with themes pinned to :root these were equal.
-    expect(await bg('light')).not.toBe(await bg('dark'));
+    // Applied before first paint by the layout's script, from the stored choice.
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'dark');
+    expect(await bg()).toBe(dark);
+
+    await setTheme(page, 'system');
+    await page.reload();
+    await expect(page.locator('html')).not.toHaveAttribute('data-pp-theme', /.*/);
   });
 });
 
@@ -323,9 +348,9 @@ test.describe('layout primitives', () => {
       .locator('.pp-aspect-ratio')
       .evaluateAll((els) => els.map((el) => el.clientWidth / el.clientHeight));
 
-    // Six cells: 3 widths x 2 themes, all 21/9. Different sizes, one shape,
-    // which is the component choosing a shape and never a size.
-    expect(ratios).toHaveLength(6);
+    // Three cells, one per width, all 21/9. Different sizes, one shape,
+    // which is the component choosing a shape and never a size (D-063).
+    expect(ratios).toHaveLength(3);
     for (const r of ratios) expect(r).toBeCloseTo(21 / 9, 1);
   });
 
@@ -2024,14 +2049,14 @@ test.describe('Radio', () => {
   });
 
   /* The same claim one level up, and the reason nothing in a Matrix passes a
-     `name`: the harness renders its subtree six times, so a shared name would
-     make six cells one group. */
-  test('six copies of a group in the Matrix are six groups', async ({ page }) => {
+     `name`: the harness renders its subtree three times, so a shared name would
+     make three cells one group. */
+  test('three copies of a group in the Matrix are three groups', async ({ page }) => {
     await page.goto('/components/radio');
     const section = page.locator('section', { hasText: 'Spacing is how an undersized target passes' });
 
-    await expect(section.locator('.pp-radio-group')).toHaveCount(6);
-    await expect(section.locator('input:checked')).toHaveCount(6);
+    await expect(section.locator('.pp-radio-group')).toHaveCount(3);
+    await expect(section.locator('input:checked')).toHaveCount(3);
   });
 
   /*
@@ -2336,13 +2361,11 @@ test.describe('Switch', () => {
     await page.goto('/components/switch');
 
     for (const width of ['wide · 960px']) {
-      for (const theme of ['light', 'dark']) {
-        /* Theme OUTSIDE cell: the harness renders one <section
-           class="matrix__theme"> per theme and the three width cells inside
-           it, not the other way round. */
+      for (const theme of ['light', 'dark'] as const) {
+        /* One theme at a time (D-063): switch, then read the same cell. */
+        await setTheme(page, theme);
         const scope = page
           .locator('section', { hasText: 'The thumb is the state indicator' })
-          .locator(`.matrix__theme[data-pp-theme="${theme}"]`)
           .locator('.matrix__cell')
           .filter({ hasText: width })
           .first();
@@ -4330,15 +4353,28 @@ test.describe('Popover', () => {
     expect(name, 'the entry animation ran under reduced motion').toBe('none');
   });
 
-  test('the Matrix opens one popover per cell, each in its cell\'s theme, none wider than the measure', async ({
+  test('the Matrix opens one popover per cell, in the theme the page loaded with, none wider than the measure', async ({
     page,
   }) => {
     await page.goto('/components/popover');
     const panels = page.locator('.pp-popover[data-gallery]');
-    await expect(panels).toHaveCount(6);
-    const themes = await panels.evaluateAll((els) => els.map((el) => el.getAttribute('data-pp-theme')));
-    expect(themes.filter((t) => t === 'light')).toHaveLength(3);
-    expect(themes.filter((t) => t === 'dark')).toHaveLength(3);
+    await expect(panels).toHaveCount(3);
+    // No stored choice: no scope, no attribute (D-062 §3).
+    expect(await panels.evaluateAll((els) => els.map((el) => el.getAttribute('data-pp-theme')))).toEqual([
+      null,
+      null,
+      null,
+    ]);
+
+    // A stored dark choice is on <html> before the popovers mount, and they copy it.
+    await page.addInitScript(() => window.localStorage.setItem('pp-theme', 'dark'));
+    await page.goto('/components/popover');
+    await expect(panels).toHaveCount(3);
+    expect(await panels.evaluateAll((els) => els.map((el) => el.getAttribute('data-pp-theme')))).toEqual([
+      'dark',
+      'dark',
+      'dark',
+    ]);
     const widths = await panels.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
     const measure = await page.evaluate(
       () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pp-measure-xs')) * 16,

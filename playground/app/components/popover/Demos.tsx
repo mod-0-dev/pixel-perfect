@@ -41,21 +41,19 @@ export function Gallery() {
         <PopoverTrigger asChild>
           <Button variant="outline">Open by default</Button>
         </PopoverTrigger>
+        {/* Beside the trigger rather than below it: three cells are stacked
+            105px apart, and a panel below each would cover the next cell. */}
         <PopoverContent
+          side="end"
           align="start"
           data-gallery=""
           onOpenAutoFocus={(event) => event.preventDefault()}
           onFocusOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
         >
-          <Stack gap="2">
-            <div>
-              <PopoverTitle>A titled popover</PopoverTitle>
-              <PopoverDescription>The title names the dialog.</PopoverDescription>
-            </div>
-            <PopoverClose asChild>
-              <Button variant="ghost">Done</Button>
-            </PopoverClose>
+          <Stack gap="1">
+            <PopoverTitle>A titled popover</PopoverTitle>
+            <PopoverDescription>The title names the dialog; the theme came across the portal.</PopoverDescription>
           </Stack>
         </PopoverContent>
       </Popover>

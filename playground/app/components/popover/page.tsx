@@ -23,10 +23,11 @@ export default function PopoverPage() {
       </p>
 
       <section>
-        <h2>Open, in both themes, at every width</h2>
+        <h2>Open, at every width</h2>
         <p>
-          Each cell&rsquo;s popover is portalled to the body and still paints in its cell&rsquo;s
-          theme — that is the copy at work. The panel hugs its content up to{' '}
+          Each cell&rsquo;s popover is portalled to the body and paints in the theme the page
+          loaded with, read from its trigger — flip the switcher and reload to see it follow. The
+          panel hugs its content up to{' '}
           <code>--pp-measure-xs</code> or the space available, whichever is less, so it never
           overflows the viewport (D-061 §3).
         </p>

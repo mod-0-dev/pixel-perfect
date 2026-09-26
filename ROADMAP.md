@@ -26,6 +26,16 @@ is `done`.
 
 ### Current state
 
+- **The playground shows one theme at a time, and the index is a page**
+  (**D-063**). The Matrix rendered every subtree six times, three widths in
+  each of two theme columns; it now renders three, in the theme a switcher in
+  the page chrome set on `<html>` — the way an app is themed (D-010). The
+  screenshot suite captures every page twice instead, one per theme, and the
+  browser assertions that compared columns switch explicitly. Every baseline
+  is re-authored; the dimensions manifest is recorded from the authored set
+  afterwards, so one CI run in between fails its unguarded count by design
+  (§3). The home page groups the components by tier with a summary each, and
+  every component page carries a way back and its neighbours
 - **A safety net that hid the wire** (**D-060 §1**). `RangeSlider`'s spec
   promised the assertion its thumb-placement formula is for: press the visible
   thumb, drag, and the value that moves must be that thumb's. Written that way
@@ -670,9 +680,9 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.1 | Package scaffold (TS, build, exports, peer deps) | `done` | — | Standalone package (D-005). `tsc` for JS+types, lightningcss for CSS |
 | 0.2 | Token layer — primitives + semantics, light + dark | `done` | 0.1 | OKLCH ramps with contrast solved, not eyeballed. `--pp-tone-*` rewired by `[data-pp-tone]` (D-007). A control's boundary is an off-ramp solved step, because a conforming one inverts the ramp (D-050). **242** assertions in `npm run lint:contrast`, value **and** mapping |
 | 0.3 | Cascade layers + minimal reset | `done` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides`. Reset uses `:where()` so the app always wins |
-| 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths × 2 themes, each cell a query container, overflow flagged at runtime. `/tokens` gallery, `/harness` self-check |
+| 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths in the theme the chrome's switcher set on `<html>` (D-063; it rendered both themes side by side until then), each cell a query container, overflow flagged at runtime. An index grouped by tier, `/tokens` gallery, `/harness` self-check |
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
-| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013), on a PR branch only (D-042). Functional harness assertions run anywhere |
+| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013), on a PR branch only (D-042). Two per page since D-063, one per theme, through the playground's switcher. Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
