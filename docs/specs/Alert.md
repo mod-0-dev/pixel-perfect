@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 5 — Composition & Data |
-| **Status** | `done` — 2026-09-21 (D-053) |
+| **Status** | `done` — 2026-09-21 (D-053); amended by D-059 |
 | **Sizing contract** | `fill` |
 | **RSC** | `server` — no hooks, no state, no browser API (§8) |
 | **Depends on** | 1.3 `Icon` — composed (§5). 3.2 `IconButton` — composed, only when `onDismiss` is given (§4). **Not** 2.2 `Cluster`; the roadmap's `Deps` was corrected from `1.3, 2.2` to `1.3, 3.2` at approval (D-053 §9) |
@@ -53,13 +53,17 @@ first, across all five hues.
 **An `Alert` is the only component in the library whose children are
 arbitrary.** A `Badge` holds a word. A `Button` holds a label. An `Alert` holds
 whatever the caller writes, and in practice that is prose with a `Link` in it
-and a `Cluster` of `Button`s under it. The tone context (`data-pp-tone`, D-007)
-inherits into all of it. So the variant question is not "how should the box
-look" but "what does each box do to the controls inside it".
+and a `Cluster` of `Button`s under it. So the variant question is not "how
+should the box look" but "what does each box do to the controls inside it".
+
+(**Amended by D-059.** This paragraph first said the tone context "inherits
+into all of it". It does not: `Button` and `Link` write their own
+`data-pp-tone` from a default, so they keep their own hue inside an alert. The
+rejection below survives, re-measured against what they actually resolve to.)
 
 | Rejected variant | What it does to the block | Measured |
 | --- | --- | --- |
-| `solid` (`--pp-tone-solid` fill) | Puts caller content on step 9. `--pp-tone-text` — what a `plain` `Button` and a `Link` resolve to inside the inherited context — lands at **1.04–1.16:1** in light and **1.10–1.46:1** in dark. Not "low contrast": invisible | `text(11)` vs `solid(9)` |
+| `solid` (`--pp-tone-solid` fill) | Puts caller content on step 9. Prose reads `--pp-tone-text` there: **1.04–1.16:1** in light and **1.10–1.46:1** in dark. A `plain` `Button` (its own neutral step 11) and a `Link` (its own accent step 11) land at **1.05–1.16:1** and **1.09–1.47:1**, because step 11 sits at one lightness in every hue. Not "low contrast": invisible. `warning`, whose step 9 is light, is the outlier at **2.73** / **1.94** — still under 4.5:1, and left out of the ranges above (D-059) | `text(11)` vs `solid(9)` |
 | `outline` (no fill) | The border alone. It reads as a generic box; nothing carries the tone at a glance, which is the one job the tone has | — |
 | `plain` (no fill, no border) | `--pp-tone-bg` against the page is **1.10–1.12:1** light, **1.19–1.20:1** dark. Without a border there is no block, only slightly tinted prose | `bg(3)` vs `neutral-1` |
 
@@ -100,7 +104,7 @@ So `live` is a prop, defaulting to `off`:
 | `live` | Root gets | For |
 | --- | --- | --- |
 | `off` *(default)* | no role, no `aria-live` | Anything present when the page renders |
-| `polite` | `role="status"` | Something that appeared because the user did something, and can wait for a pause |
+| `polite` | `role="status"` | An alert that stays mounted while its content changes, and can wait for a pause (**amended by D-059** — was "something that appeared because the user did something", which in React means mounting it, the case the paragraph below says is not reliable) |
 | `assertive` | `role="alert"` | Something that must interrupt |
 
 The values are ARIA's own words on purpose: a caller who knows what
@@ -151,7 +155,8 @@ somewhere the app cannot see — which is wrong for the case that actually
 matters, where dismissing a banner has to be remembered across a reload.
 
 The dismiss control is `IconButton` (3.2), `variant="plain"`, `size="sm"`,
-`tone` inherited from the alert:
+`tone` passed through from the alert — explicitly, because an `IconButton`
+writes its own tone from a default and would not inherit one (D-059):
 
 - `plain` and not `IconButton`'s `ghost` default, because `ghost`'s fill is
   `--pp-tone-bg` — the alert's own surface — over a `--pp-tone-border-subtle`
@@ -371,7 +376,7 @@ primitives has nowhere to put its buttons — and not as an import.
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `tone` | `Tone` | `'neutral'` | The fixed vocabulary. Sets `data-pp-tone` on the root, so everything inside inherits the context (D-007) |
+| `tone` | `Tone` | `'neutral'` | The fixed vocabulary. Sets `data-pp-tone` on the root (D-007). Reaches bare text and `currentColor`; a `Button`, `Link`, `Badge` or `Code` inside keeps its own (D-059) |
 | `title` | `ReactNode` | — | Rendered in `.pp-alert__title`. Omit it and the body is the whole alert (§6) |
 | `icon` | `ReactNode` | — | The **SVG**, not an `<Icon>`. Wrapped in `<Icon decorative>` (§5) |
 | `onDismiss` | `() => void` | — | Its presence renders the dismiss button. The component does not hide itself (§4) |
@@ -401,7 +406,7 @@ would be an attribute that restates the presence of a button.
 | Custom property | Default token | Affects |
 | --- | --- | --- |
 | `--pp-alert-bg` | `--pp-tone-bg` | Root fill |
-| `--pp-alert-color` | `--pp-tone-text` | Body text, and the dismiss glyph through inheritance |
+| `--pp-alert-color` | `--pp-tone-text` | Body text. The dismiss glyph is the same token, reached through the tone passed to its `IconButton` |
 | `--pp-alert-title-color` | `--pp-tone-text-strong` | Title |
 | `--pp-alert-border-color` | `--pp-tone-border` | The edge |
 | `--pp-alert-radius` | `--pp-radius-3` | Corner radius |
@@ -490,12 +495,16 @@ Checked at Gate D in the playground at all three container widths, both themes.
   The report could not be generated. Try again in a few minutes.
 </Alert>
 
-// Appearing in response to something the user did.
-{saved && (
-  <Alert tone="success" live="polite" title="Saved">
-    Your changes are live.
-  </Alert>
-)}
+// Appearing in response to something the user did. The region is the
+// caller's and is always mounted, so the alert's arrival is the change it
+// announces; `live` stays off (D-059).
+<div role="status">
+  {saved && (
+    <Alert tone="success" title="Saved">
+      Your changes are live.
+    </Alert>
+  )}
+</div>
 
 // Actions go in children, spaced by a layout primitive (RULES §5.6).
 <Alert tone="warning" title="Payment method expires soon">

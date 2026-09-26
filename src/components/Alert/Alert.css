@@ -2,11 +2,12 @@
  * Alert — spec docs/specs/Alert.md
  *
  * ONE TREATMENT, AND THE THREE REJECTIONS WERE MEASURED (spec §1).
- * An Alert is the only component in the library whose children are arbitrary,
- * so the tone context (D-007) inherits into a caller's Buttons and Links. A
- * `solid` variant would put them on --pp-tone-solid, where --pp-tone-text —
- * what a plain Button and a Link resolve to inside that context — is 1.04:1 in
- * the light theme. Not low contrast: invisible. And --pp-tone-bg against the
+ * An Alert is the only component in the library whose children are arbitrary.
+ * A `solid` variant would put the caller's prose, and the Buttons and Links
+ * under it, on --pp-tone-solid. Prose reads --pp-tone-text there, 1.04:1 in the
+ * light theme. A Button or Link does NOT inherit the alert's tone — each writes
+ * its own default (D-059) — but step 11 sits at one lightness across every hue,
+ * so its own text lands at the same 1.05:1. Not low contrast: invisible. And --pp-tone-bg against the
  * page is 1.10:1, so without the border there is no block at all, only slightly
  * tinted prose. Hence: the tint AND the edge, always, with `tone` the only axis.
  *

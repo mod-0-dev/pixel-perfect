@@ -166,6 +166,20 @@ default is a conformance floor, not taste**, and it is asserted in a test.
 The selected fill is `--pp-tone-solid` and is not separately overridable: set
 the tone, or set `--pp-radio-bg` inside a `:checked` scope of your own.
 
+There is **no `tone` prop**, and that is deliberate: the root's own
+`data-pp-tone` is reserved for `invalid`, which sets it to `danger` ([tier-3c
+§4](../specs/tier-3c-inputs.md)). To colour the selected fill, set the tone on an
+ancestor — the group `Field` takes it, and it touches nothing else there, because the
+label and description do not read the tone and the error sets its own:
+
+```tsx
+<Field label="Plan" group data-pp-tone="accent">
+  <RadioGroup>…</RadioGroup>
+</Field>
+```
+
+`invalid` still wins, because the control's root is the nearer context (D-059).
+
 `RadioGroup` has no stylesheet. It renders a `Stack` or a `Cluster` and adds a
 role, so its spacing is the `gap` prop and its layout is theirs.
 

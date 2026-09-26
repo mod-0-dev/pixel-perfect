@@ -85,6 +85,13 @@ function DismissGlyph() {
 }
 
 export interface AlertProps extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
+  /**
+   * The alert's own hue: fill, edge, title, body text and the dismiss button.
+   *
+   * It does NOT reach a `Button`, `Link`, `Badge` or `Code` you put inside.
+   * Each of those defaults its own `tone` and writes its own `data-pp-tone`,
+   * and the nearest context wins — so pass the tone to them yourself (D-059).
+   */
   tone?: Tone;
   /**
    * The heading line.
@@ -114,7 +121,16 @@ export interface AlertProps extends Omit<ComponentPropsWithoutRef<'div'>, 'title
   onDismiss?: () => void;
   /** The dismiss button's accessible name. Ignored when `onDismiss` is absent. */
   dismissLabel?: string;
-  /** `polite` → `role="status"`, `assertive` → `role="alert"`. Default `off`. */
+  /**
+   * `polite` → `role="status"`, `assertive` → `role="alert"`. Default `off`.
+   *
+   * The role lands on THIS element, so it only announces reliably when this
+   * element is already mounted and its content changes. `{saved && <Alert
+   * live="polite">…}` mounts the region and its text together, and may be
+   * read twice or not at all. For a message that arrives by mounting, keep a
+   * `role="status"` element mounted yourself and render the alert inside it
+   * with `live` off (D-059).
+   */
   live?: AlertLive;
 }
 
@@ -140,9 +156,13 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
     <div
       ref={ref}
       className={cx('pp-alert', className)}
-      // The tone context (D-007). It is on the root rather than on a part
-      // because everything the caller puts inside — a Link in the prose, a
-      // Cluster of Buttons under it — should inherit the hue.
+      // The tone context (D-007), on the root rather than on a part so that
+      // every part of the alert reads one hue. It reaches the caller's bare
+      // text and anything that paints from `currentColor`, and it stops at any
+      // component that writes its own `data-pp-tone` — `Button`, `Link`,
+      // `Badge` and `Code` all do, from a default, so they keep their own hue
+      // unless the caller passes one (D-059). The dismiss button gets `tone`
+      // below explicitly for the same reason.
       data-pp-tone={tone}
       // Written BEFORE the spread, so a caller's explicit `role` still wins.
       role={LIVE_ROLE[live]}

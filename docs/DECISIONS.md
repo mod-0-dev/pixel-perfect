@@ -3507,3 +3507,90 @@ Checked with throwaway probes outside the repo while `Form` sits in `review`
   jsdom; the build re-asserts it in the browser.
 
 Neither is a stop. The build proceeds as specified once `Form` is `done`.
+
+---
+
+## D-059 — Nothing interactive inherits an `Alert`'s tone, `live` was recommended for the case it cannot serve, and "set the tone" says where
+
+**Date:** 2026-09-26 · **Status:** accepted · **Corrects:** `docs/specs/Alert.md`
+§1, §2, §4, the props and Styling tables and the usage example;
+`docs/components/Alert.md`; `Alert.tsx` and `Alert.css` comments; `ROADMAP.md`
+(Current state); the 0.7.0 changelog entry, by a patch changeset ·
+**Extends:** `docs/components/{Checkbox,Radio,Switch}.md`,
+`docs/specs/tier-3c-inputs.md` §3.10
+
+Three findings from Launchpad consuming `Select`, `Switch` and `Alert`. None
+changes shipped behaviour; all three corrected text that described behaviour
+the library does not have.
+
+### 1. `Button` and `Link` keep their own tone inside an `Alert`
+
+The spec, the stylesheet's header, the source comment on the root's
+`data-pp-tone`, the docs' props table, the roadmap and the 0.7.0 changelog all
+said the alert's tone context "inherits into" the caller's `Button`s and
+`Link`s. It does not. `Button` defaults `tone` to `neutral` and `Link` to
+`accent`, and both write `data-pp-tone` from that default on every render —
+as do `Badge`, `Code`, `Spinner` and `Avatar`. D-007's mechanism is inheritance,
+and the nearest `[data-pp-tone]` wins, so the component's own default beats the
+alert's context every time. What does inherit is bare text and anything
+painting from `currentColor`. `Text` and `Heading` write a context only for a
+coloured tone, so at their default they paint `--pp-color-text`, not the
+alert's hue either.
+
+Launchpad found it: a danger `Alert` with a "Try again" `Button` inside, which
+rendered grey. Grey was the right answer there, so the app passes nothing — but
+the library had promised red.
+
+**The fix is the text, not the behaviour.** Making `Button` inherit when `tone`
+is absent would recolour every `Button` and `Link` in every consumer that ever
+sits inside any tone context — a `Field` error, a `Badge`, an invalid control's
+root — and is an API change for Gate C, not a correction. It is not proposed.
+A test now pins the real behaviour (`Alert.test.tsx`, "does NOT tone the
+Buttons and Links a caller puts inside it"), so if it ever changes, the docs
+fail with it. The existing dismiss test was renamed from "inherits" to "is
+passed" the alert tone, which is what `Alert` does.
+
+**§1's `solid` rejection survives re-measurement**, with a new premise. A
+`plain` `Button`'s own neutral step 11 and a `Link`'s own accent step 11 land
+on each hue's step 9 at **1.05–1.16:1** light and **1.09–1.47:1** dark, because
+step 11 is solved to one lightness in every hue — the same figures as the
+alert's own `--pp-tone-text`. And the re-measurement found the spec's ranges
+silently left out `warning`, whose light step 9 puts step 11 at **2.73** /
+**1.94**: still under 4.5:1, so the conclusion is unchanged, but "across all
+five hues" was false and now says which hue is outside the range.
+
+### 2. `live="polite"` was recommended for a mount
+
+Spec §2 and the docs page both said, correctly, that a live region announces
+changes to a region that already existed and that mounting one is the less
+reliable way to announce anything. The table two lines above recommended
+`polite` for "something that appeared because the user did something" — which
+in React means `{done && <Alert live="polite">}`, the case the paragraph had
+just ruled out — and the spec's usage example was exactly that.
+
+Launchpad's reset confirmation is that case. It keeps a `<div role="status">`
+mounted and renders the alert inside it with `live` off, so the alert's arrival
+is the change. The table now recommends `polite` and `assertive` for an alert
+that stays mounted while its content changes; the example, the prop's JSDoc and
+a new "don't" show the persistent region. The component cannot fix this itself:
+announcing on mount would need an effect that inserts the text after the region
+exists, and that makes a Server Component a client one. `Toast` (4.12) is the
+real answer and stays planned.
+
+No screen reader was available to measure the mount case, so the docs keep the
+existing wording — "may be read twice or not at all" — and claim nothing more.
+
+### 3. "Set the tone" on the checkable three now says where
+
+`Checkbox` and `Radio` docs said the checked fill follows the tone: "set the
+tone". There is no `tone` prop on either, or on `Switch`, and there should not
+be: tier-3c §4 reserves each control root's `data-pp-tone` for `invalid`, so a
+`tone` prop would need a precedence rule against `invalid` — an API question for
+a gate, and one Gate A would refuse while `Form` sits in `review`.
+
+The docs now say: the tone goes on an ancestor, and the `Field` takes it (it
+spreads onto its root). Nothing else in the field reads it — the label and
+description use text tokens and the error sets its own `danger` — and `invalid`
+still wins because the control's root is the nearer context. Launchpad met this
+as a visible change: its `role="switch"` stand-in was accent, `Switch` is
+neutral by default, and the app kept neutral to match its radios.

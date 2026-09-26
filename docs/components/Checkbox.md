@@ -121,6 +121,20 @@ The checked fill is `--pp-tone-solid` and is not separately overridable: set the
 tone, or set `--pp-checkbox-bg` inside a `[data-state="checked"]` scope of your
 own.
 
+There is **no `tone` prop**, and that is deliberate: the root's own
+`data-pp-tone` is reserved for `invalid`, which sets it to `danger` ([tier-3c
+§4](../specs/tier-3c-inputs.md)). To colour the checked fill, set the tone on an
+ancestor — the `Field` takes it, and it touches nothing else there, because the
+label and description do not read the tone and the error sets its own:
+
+```tsx
+<Field label="Email me updates" data-pp-tone="accent">
+  <Checkbox />
+</Field>
+```
+
+`invalid` still wins, because the control's root is the nearer context (D-059).
+
 ## Anatomy
 
 ```

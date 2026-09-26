@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 
 import { expectNoA11yViolations, renderWithTheme } from '../../test';
+import { Button } from '../Button/Button';
+import { Link } from '../Link/Link';
 import { Alert } from './Alert';
 
 describe('Alert', () => {
@@ -46,6 +48,25 @@ describe('Alert', () => {
       </Alert>,
     );
     expect(container.querySelector('.pp-alert')).toHaveAttribute('role', 'region');
+  });
+
+  it('does NOT tone the Buttons and Links a caller puts inside it', () => {
+    // D-059. The root's data-pp-tone is a context, and the nearest context
+    // wins. Button and Link each write their own from a default, so a danger
+    // alert holds a neutral Button and an accent Link unless the caller passes
+    // a tone. This pins the behaviour the docs used to contradict: if it ever
+    // changes, it changes every Button and Link in the library, and the docs
+    // have to change with it.
+    const { getByRole } = renderWithTheme(
+      <Alert tone="danger">
+        <Link href="#x">Details</Link>
+        <Button>Retry</Button>
+        <Button tone="danger">Delete</Button>
+      </Alert>,
+    );
+    expect(getByRole('link', { name: 'Details' })).toHaveAttribute('data-pp-tone', 'accent');
+    expect(getByRole('button', { name: 'Retry' })).toHaveAttribute('data-pp-tone', 'neutral');
+    expect(getByRole('button', { name: 'Delete' })).toHaveAttribute('data-pp-tone', 'danger');
   });
 
   describe('title', () => {
@@ -128,7 +149,7 @@ describe('Alert', () => {
       expect(container.querySelector('.pp-alert')).not.toBeNull();
     });
 
-    it('takes a replaceable label and inherits the alert tone', () => {
+    it('takes a replaceable label and is passed the alert tone', () => {
       const { getByRole } = renderWithTheme(
         <Alert tone="danger" onDismiss={() => {}} dismissLabel="Close">
           x
