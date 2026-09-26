@@ -47,6 +47,10 @@
     "width": 1280,
     "height": 8572
   },
+  "form.png": {
+    "width": 1280,
+    "height": 4090
+  },
   "grid.png": {
     "width": 1280,
     "height": 6510
@@ -90,6 +94,10 @@
   "radio.png": {
     "width": 1280,
     "height": 7503
+  },
+  "range-slider.png": {
+    "width": 1280,
+    "height": 6158
   },
   "scroller.png": {
     "width": 1280,
@@ -138,6 +146,10 @@
   "toggle.png": {
     "width": 1280,
     "height": 3418
+  },
+  "tokens.png": {
+    "width": 1280,
+    "height": 3144
   },
   "visually-hidden.png": {
     "width": 1280,

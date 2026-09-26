@@ -3738,6 +3738,13 @@ established. The assertion is already polled (D-052 §3) and reads
   component" and points here; `Slider.tsx`'s header no longer says the
   two-thumb case is deferred. D-045's rule: a claim about another component is
   a link to where it is asserted, not a restatement.
-- `range-slider.png` is unrecorded in `dimensions.json` until CI authors it;
-  `npm run dimensions` records it then (D-054 §2). The guard's tolerance is
-  three unrecorded baselines and this makes one.
+- `range-slider.png` was unrecorded in `dimensions.json` until CI authored
+  it. **This entry first said "the guard's tolerance is three unrecorded
+  baselines and this makes one"; it made three.** `form.png` and `tokens.png`
+  were already unrecorded — `Form`'s baseline was authored after D-054 §2's
+  manifest and `/tokens` was re-baselined by 0.11 — so the authored file was
+  the third and the guard failed the first CI run after the authoring commit,
+  exactly as D-054 §2 says it should. `npm run dimensions` recorded all three
+  from the committed PNGs (form 4090, range-slider 6158, tokens 3144 tall).
+  The count in the first draft was read off the manifest without counting
+  the directory against it, which is the check the guard exists to make.
