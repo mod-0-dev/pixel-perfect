@@ -90,10 +90,11 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** **4.1 Overlay foundation and 4.2 `Popover` are in `review`**:
-  built 2026-09-26, every Definition of Done box passing except the
-  screenshot baseline, which CI authors on the PR branch (D-013). Both were
-  approved by delegation (D-061) — 4.2's spec written after the
+- **In flight:** nothing. **4.1 Overlay foundation and 4.2 `Popover` are
+  `done`** (2026-09-26): built the same day, their baselines CI-authored on
+  the PR branch and compared green (run 123, D-013). Next up is **4.3
+  `Tooltip`**, the first component to build on 4.1 alone. Both were approved
+  by delegation (D-061) — 4.2's spec written after the
   delegation was given, so its decisions are listed in the PR for reversal
   before merge. Built together, 4.1 tested through 4.2 (4.1 §9); findings in
   **D-062**, three of which corrected the specs: the parts are named exports
@@ -660,13 +661,13 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 47 / 80 tracked items (11 foundations + 69 components) — 10
-  foundations + 37 components, 3.17 `RangeSlider` the 37th and the last of
-  Tier 3. The denominator moved from 79 to 80 when **0.11**
+- **Done:** 49 / 80 tracked items (11 foundations + 69 components) — 10
+  foundations + 39 components, 4.1 the overlay foundation and 4.2 `Popover`
+  the first of Tier 4, 3.17 `RangeSlider` the last of Tier 3. The denominator moved from 79 to 80 when **0.11**
   (the focus ring off the page) was added by D-053 §2 and closed the same day by
   D-056; it had moved from 78 to 79 when 3.17 `RangeSlider` was added (D-052
   §5). The one foundation not `done` is 0.10 docs site, deferred since there
-  were no components worth documenting — there are now 37, so that reasoning has
+  were no components worth documenting — there are now 39, so that reasoning has
   expired
 
 ---
@@ -773,8 +774,8 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 4.1 | Overlay foundation | `review` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
-| 4.2 | `Popover` | `review` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
+| 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
+| 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
 | 4.3 | `Tooltip` | `planned` | hug | client | 4.1 | |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
