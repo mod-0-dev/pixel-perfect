@@ -26,6 +26,16 @@ is `done`.
 
 ### Current state
 
+- **The playground shows one theme at a time, and the index is a page**
+  (**D-063**). The Matrix rendered every subtree six times, three widths in
+  each of two theme columns; it now renders three, in the theme a switcher in
+  the page chrome set on `<html>` — the way an app is themed (D-010). The
+  screenshot suite captures every page twice instead, one per theme, and the
+  browser assertions that compared columns switch explicitly. Every baseline
+  is re-authored; the dimensions manifest is recorded from the authored set
+  afterwards, so one CI run in between fails its unguarded count by design
+  (§3). The home page groups the components by tier with a summary each, and
+  every component page carries a way back and its neighbours
 - **A safety net that hid the wire** (**D-060 §1**). `RangeSlider`'s spec
   promised the assertion its thumb-placement formula is for: press the visible
   thumb, drag, and the value that moves must be that thumb's. Written that way
@@ -80,7 +90,30 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** nothing. **3.17 `RangeSlider` is `done`** (2026-09-26):
+- **In flight:** nothing. **4.1 Overlay foundation and 4.2 `Popover` are
+  `done`** (2026-09-26): built the same day, their baselines CI-authored on
+  the PR branch and compared green (run 123, D-013). Next up is **4.3
+  `Tooltip`**, the first component to build on 4.1 alone. Both were approved
+  by delegation (D-061) — 4.2's spec written after the
+  delegation was given, so its decisions are listed in the PR for reversal
+  before merge. Built together, 4.1 tested through 4.2 (4.1 §9); findings in
+  **D-062**, three of which corrected the specs: the parts are named exports
+  because React forbids dotting into a client module from a Server Component
+  (§1); a modal popover closes on an outside press and swallows it (§4); and
+  the reset's reduced-motion crush does not reach an animation declared in
+  `pp.components`, so each overlay carries its own rule (§5). Tier 4 is
+  **Radix Primitives**, decided (D-061 §1). 4.1 is the first foundation
+  with a spec document, because its choices are the dependency and the
+  vocabulary every Tier 4 component inherits. It measures
+  Radix against Base UI and against the platform (`<dialog>`, `popover`, CSS
+  anchor positioning: 25 of 35 target browsers) and recommends Radix, on
+  vocabulary as much as stability: `asChild` and `data-state` / `data-side` /
+  `data-align` are Radix's names and already RULES §4's. It also names the
+  problem the roadmap row did not: a portal leaves the `[data-pp-theme]`
+  subtree, so the theme must be carried across and the tone must not. The
+  4.2 spec adds the tier's sizing exception (D-061 §3): an overlay has no
+  parent in flow, so it takes its ceiling from a new `--pp-measure-xs`.
+  **3.17 `RangeSlider` is `done`** (2026-09-26):
   built the day Gate A opened, its baseline CI-authored on the PR branch and
   compared green on the re-run (D-013), and the last box closed the same day
   once the dimensions guard — tripped at its limit by that baseline plus two
@@ -628,13 +661,13 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 47 / 80 tracked items (11 foundations + 69 components) — 10
-  foundations + 37 components, 3.17 `RangeSlider` the 37th and the last of
-  Tier 3. The denominator moved from 79 to 80 when **0.11**
+- **Done:** 49 / 80 tracked items (11 foundations + 69 components) — 10
+  foundations + 39 components, 4.1 the overlay foundation and 4.2 `Popover`
+  the first of Tier 4, 3.17 `RangeSlider` the last of Tier 3. The denominator moved from 79 to 80 when **0.11**
   (the focus ring off the page) was added by D-053 §2 and closed the same day by
   D-056; it had moved from 78 to 79 when 3.17 `RangeSlider` was added (D-052
   §5). The one foundation not `done` is 0.10 docs site, deferred since there
-  were no components worth documenting — there are now 37, so that reasoning has
+  were no components worth documenting — there are now 39, so that reasoning has
   expired
 
 ---
@@ -648,9 +681,9 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.1 | Package scaffold (TS, build, exports, peer deps) | `done` | — | Standalone package (D-005). `tsc` for JS+types, lightningcss for CSS |
 | 0.2 | Token layer — primitives + semantics, light + dark | `done` | 0.1 | OKLCH ramps with contrast solved, not eyeballed. `--pp-tone-*` rewired by `[data-pp-tone]` (D-007). A control's boundary is an off-ramp solved step, because a conforming one inverts the ramp (D-050). **242** assertions in `npm run lint:contrast`, value **and** mapping |
 | 0.3 | Cascade layers + minimal reset | `done` | 0.2 | `@layer pp.reset, pp.tokens, pp.base, pp.components, pp.overrides`. Reset uses `:where()` so the app always wins |
-| 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths × 2 themes, each cell a query container, overflow flagged at runtime. `/tokens` gallery, `/harness` self-check |
+| 0.4 | Playground app (Next.js, container-width harness) | `done` | 0.1 | `Matrix` renders 3 widths in the theme the chrome's switcher set on `<html>` (D-063; it rendered both themes side by side until then), each cell a query container, overflow flagged at runtime. An index grouped by tier, `/tokens` gallery, `/harness` self-check |
 | 0.5 | Test harness — Vitest + Testing Library + axe | `done` | 0.1 | `npm test`. jsdom for behaviour/a11y/API; anything CSS-dependent belongs in `tests/visual`. Includes an axe canary and a D-011 regression guard |
-| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013), on a PR branch only (D-042). Functional harness assertions run anywhere |
+| 0.6 | Visual regression (Playwright screenshots) | `done` | 0.4 | `npm run test:visual`. Baselines authored by CI only (D-013), on a PR branch only (D-042). Two per page since D-063, one per theme, through the playground's switcher. Functional harness assertions run anywhere |
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
@@ -737,12 +770,12 @@ to the component it was written about — see
 
 ## Tier 4 — Overlays & Disclosure
 
-Behavior from Radix / Base UI. We own every DOM node and every pixel.
+Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We own every DOM node and every pixel.
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 4.1 | Overlay foundation | `planned` | n/a | client | T3 | Portal, dismissable layer, focus scope, z-index tokens, floating positioning |
-| 4.2 | `Popover` | `planned` | hug | client | 4.1 | Sizing contract exception — documented in spec |
+| 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
+| 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
 | 4.3 | `Tooltip` | `planned` | hug | client | 4.1 | |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |

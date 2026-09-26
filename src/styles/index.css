@@ -80,5 +80,8 @@
    it, so the order does not matter to the cascade. */
 @import "../components/Form/Form.css";
 
+/* Tier 4 — overlays & disclosure, on Radix Primitives (D-061). */
+@import "../components/Popover/Popover.css";
+
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";

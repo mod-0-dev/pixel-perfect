@@ -1,0 +1,112 @@
+/*
+ * Popover — spec docs/specs/Popover.md
+ *
+ * THE PANEL IS THE ONE ELEMENT HERE, AND IT IS RADIX'S CONTENT NODE WITH OUR
+ * CLASS ON IT. Radix's positioned wrapper sits above it in the DOM, unstyled,
+ * and reads this element's computed `z-index` onto itself — which is how the
+ * token below reaches the element that actually stacks (overlay-foundation.md
+ * §4; checked at the build, not assumed).
+ *
+ * THE OVERLAY EXCEPTION TO RULES §1 (D-061 §3). A popover has no parent in
+ * flow — its parent is <body> — so nothing can size it but itself. It takes
+ * its ceiling from the measure scale, logically, and from the space
+ * floating-ui reports as available, so a panel near a viewport edge shrinks
+ * rather than clips and a tall one scrolls inside itself. `.stylelintrc.json`
+ * names this file for `max-inline-size`, the way it names Switch for
+ * `inline-size`. Nothing in flow ever qualifies.
+ *
+ * THE THEME IS ON THIS ELEMENT (4.1 §3). The panel is portalled out of the
+ * app's `[data-pp-theme]` subtree; the component writes the trigger's theme
+ * here, and every token below resolves as it would have in place. `color` is
+ * declared for the same reason: whatever the app set on a wrapper is left
+ * behind with the wrapper.
+ *
+ * The vendor custom properties read below — `--radix-popper-*` — are Radix's
+ * positioning data. They are consumed here and named nowhere a consumer would
+ * write them (4.1 §5).
+ */
+
+@layer pp.components {
+  .pp-popover {
+    --_bg: var(--pp-color-bg-raised);
+    /* Decoration, not a control boundary: the shadow carries the elevation,
+       so the edge takes the token with no contrast obligation (RULES §3). */
+    --_border: var(--pp-color-border-subtle);
+
+    /* Stacks above everything in flow and below a modal's scrim (4.1 §4). */
+    z-index: var(--pp-z-popover);
+
+    /* hug: sized by content, up to the ceiling. Logical, from the measure
+       scale, and never past what fits (D-061 §3). */
+    max-inline-size: min(
+      var(--pp-popover-max-inline-size, var(--pp-measure-xs)),
+      var(--radix-popper-available-width)
+    );
+    max-block-size: var(--radix-popper-available-height);
+    overflow: auto;
+    padding: var(--pp-popover-padding, var(--pp-space-4));
+    border: var(--pp-border-width-1) solid var(--pp-popover-border-color, var(--_border));
+    border-radius: var(--pp-popover-radius, var(--pp-radius-3));
+    background-color: var(--pp-popover-bg, var(--_bg));
+    color: var(--pp-color-text);
+    box-shadow: var(--pp-popover-shadow, var(--pp-shadow-3));
+
+    /* The motion grows out of the anchor: Radix writes the origin for the
+       side it placed the panel on. */
+    transform-origin: var(--radix-popper-transform-origin);
+    animation: pp-popover-in var(--pp-duration-fast) var(--pp-easing-decelerate);
+  }
+
+  /* Radix keeps the closing panel mounted until this animation ends
+     (Presence reads `animation-name`), which is what makes an exit visible. */
+  .pp-popover[data-state="closed"] {
+    animation: pp-popover-out var(--pp-duration-fast) var(--pp-easing-accelerate);
+  }
+
+  /*
+   * THE RESET'S CRUSH DOES NOT REACH THIS LAYER (D-062 §5). reset.css sets
+   * `animation-duration: 0.01ms` under reduced motion at zero specificity in
+   * the lowest layer, and the `animation` shorthand above, in pp.components,
+   * outranks it — measured: 0.14s under `prefers-reduced-motion: reduce`.
+   * RULES §3 puts the obligation on every animated component, and this is
+   * it. `none` rather than a crushed duration, so Radix's Presence unmounts a
+   * closing panel at once instead of waiting a hundredth of a millisecond.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-popover,
+    .pp-popover[data-state="closed"] {
+      animation: none;
+    }
+  }
+
+  .pp-popover:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-popover__title {
+    font-weight: var(--pp-font-weight-semibold);
+    line-height: var(--pp-line-height-tight);
+  }
+
+  .pp-popover__description {
+    margin: 0;
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-2);
+    line-height: var(--pp-line-height-normal);
+  }
+
+  @keyframes pp-popover-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+
+  @keyframes pp-popover-out {
+    to {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+}

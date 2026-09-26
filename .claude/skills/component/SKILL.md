@@ -82,7 +82,9 @@ On approval, set status to `build` and implement:
 
 - Component, CSS, and types
 - Unit tests + axe test
-- Playground entry rendering the component at 3 container widths × light/dark
+- Playground entry rendering the component at 3 container widths; the
+  screenshot suite captures it in both themes through the playground's theme
+  switcher (D-063)
 - Docs page with usage plus at least one explicit "don't"
 - Changeset
 

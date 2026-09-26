@@ -1,15 +1,16 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * One full-page baseline per playground page. Component pages render every
- * variant at three container widths in both themes, so a single screenshot per
- * component covers the whole matrix.
+ * Two full-page baselines per playground page, one per theme. Component pages
+ * render every variant at three container widths in the theme the switcher
+ * picked, so the pair covers the whole matrix.
  *
  * Keep this list in step with playground/app/components/registry.ts. The two
  * cannot share a module — the playground is not a workspace member (D-012) —
  * so a component page without a screenshot here is a Definition of Done miss.
  */
 const PAGES: Array<{ name: string; path: string }> = [
+  { name: 'index', path: '/' },
   { name: 'tokens', path: '/tokens' },
   { name: 'harness', path: '/harness' },
   { name: 'text', path: '/components/text' },
@@ -48,6 +49,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'slider', path: '/components/slider' },
   { name: 'form', path: '/components/form' },
   { name: 'range-slider', path: '/components/range-slider' },
+  { name: 'popover', path: '/components/popover' },
   { name: 'alert', path: '/components/alert' },
 ];
 
@@ -99,11 +101,25 @@ async function ready(page: import('@playwright/test').Page, path: string) {
   await settle(page);
 }
 
+/*
+ * EVERY PAGE, IN BOTH THEMES (D-063). The Matrix renders one theme at a time
+ * — the one the playground's switcher stored — so the suite sets that choice
+ * before the page loads, the way a returning user's browser would, and
+ * captures each page twice. The stored key and values are the switcher's.
+ */
+const THEMES = ['light', 'dark'] as const;
+
 test.describe('visual baselines', () => {
   for (const { name, path } of PAGES) {
-    test(name, async ({ page }) => {
-      await ready(page, path);
-      await expect(page).toHaveScreenshot(`${name}.png`, { fullPage: true });
-    });
+    for (const theme of THEMES) {
+      test(`${name} (${theme})`, async ({ page }) => {
+        await page.addInitScript((choice) => {
+          window.localStorage.setItem('pp-theme', choice);
+        }, theme);
+        await ready(page, path);
+        // Playwright writes the file as `<name>-<theme>.png`: a dot in the name is sanitised.
+        await expect(page).toHaveScreenshot(`${name}-${theme}.png`, { fullPage: true });
+      });
+    }
   }
 });

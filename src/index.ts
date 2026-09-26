@@ -62,6 +62,22 @@ export {
   NumberInput,
   type NumberInputProps,
 } from './components/NumberInput/NumberInput';
+export {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverDescription,
+  PopoverTitle,
+  PopoverTrigger,
+  type PopoverAlign,
+  type PopoverCloseProps,
+  type PopoverContentProps,
+  type PopoverDescriptionProps,
+  type PopoverProps,
+  type PopoverSide,
+  type PopoverTitleProps,
+  type PopoverTriggerProps,
+} from './components/Popover/Popover';
 export { Radio, type RadioProps } from './components/Radio/Radio';
 export {
   RadioGroup,

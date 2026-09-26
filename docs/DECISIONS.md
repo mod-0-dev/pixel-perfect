@@ -3748,3 +3748,288 @@ established. The assertion is already polled (D-052 §3) and reads
   from the committed PNGs (form 4090, range-slider 6158, tokens 3144 tall).
   The count in the first draft was read off the manifest without counting
   the directory against it, which is the check the guard exists to make.
+
+---
+
+## D-061 — Tier 4 is built on Radix Primitives; Gate C for 4.1 and 4.2 approved by delegation; the overlay exception to RULES §1
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** D-002 (the slash
+comes out); RULES §1 (the `Container` consequence), §8; Tier 0.2 tokens
+(`--pp-measure-xs`); `.stylelintrc.json`; `docs/specs/overlay-foundation.md`
+§3, §5, §9, Anatomy; `docs/specs/Popover.md` (status)
+
+### 1. Radix Primitives, decided
+
+D-002 said "Radix / Base UI". The 4.1 spec measured both against the registry
+and the platform on 2026-09-26 (spec §1, with the table) and chose Radix:
+stable 1.x/2.x packages, small per package, React 19 peers, and — the
+deciding reason — its `asChild` and `data-state` / `data-side` / `data-align`
+are the names D-003 and RULES §4 fixed for this library before Tier 4
+existed, so a component built on it emits the library's vocabulary with no
+translation. Base UI is `1.0.0-rc.0` and broke its own API in that release;
+the platform's anchor positioning is in 25 of the 35 `browserslist` targets
+and jsdom implements none of `showModal`, `showPopover` or `inert`.
+
+RULES §8 now says Radix Primitives. Revisit when CSS anchor positioning reaches
+the `defaults` set; 4.1 §5's logical vocabulary is what makes that revisit
+cheap.
+
+### 2. Approved by delegation, twice, and the second one before the spec existed
+
+The 4.1 spec went to Gate C with four open questions and a recommendation on
+each. The approval was **"do it so that it is pixel perfect"** — a
+delegation, recorded as D-057 recorded the last one: one pair of eyes, every
+recommendation adopted as written.
+
+4.1 §9 says the foundation is built with 4.2 `Popover`, tested through it, in
+one PR. So the 4.2 spec was written **after** that message and approved under
+the same delegation, which is a step further than D-057 went: the user has
+not seen it. Two things follow. Every decision in `Popover.md` is listed in
+the closing report as something to revert before merge, not after. And the
+spec stays inside rulings that already exist — Radix's own compound shape,
+RULES §5.5's controlled pair, D-020's `Space` for its offsets — so that a
+reversal is a reversal of a default, not of an invention.
+
+### 3. An overlay has no parent in flow, so it takes its ceiling from the measure scale
+
+RULES §1's rule is that the parent sizes the child, and a Tier 4 panel's
+parent is `<body>`. A popover holding a `Field` — every control in this
+library fills — would grow to the viewport. The roadmap row for 4.2 promised
+"sizing contract exception — documented in spec"; this is it, stated once for
+the tier rather than once per component:
+
+- An overlay panel may declare `max-inline-size` (logical, never
+  `max-width`), and its default comes from the **measure scale** — the
+  vocabulary for "how wide may content run" — which gains
+  `--pp-measure-xs: 20rem` for this class of box. The token comment said
+  "only `Container` may consume these"; it now names the overlays too.
+- `max-block-size` is the available height floating-ui reports, so a tall
+  panel scrolls inside itself.
+- `.stylelintrc.json` gains a per-file override for `max-inline-size`, the
+  shape D-019's `inline-size` exemption already has. Nothing in flow ever
+  qualifies, and the RULES §1 consequence says so.
+
+### 4. Two corrections to the 4.1 spec, made at the 4.2 spec and before any build
+
+- **The theme goes on the overlay's own root, not on a `.pp-portal` wrapper.**
+  Radix's `Portal` composes `Presence`, which keeps its single child mounted
+  only while that child's own animation runs. A wrapper of ours with no
+  animation would unmount the instant `open` turned false and take the
+  content's exit animation with it. `data-pp-theme` on the content root
+  resolves every token identically and adds no element.
+- **`data-side` stays physical.** Radix spreads consumer props after its own,
+  so a logical `data-side` of ours would win — and lose the placed side,
+  since `onPlaced` is not on the composed primitives. The attribute is a
+  paint-time fact for paint-time rules; the `side` *prop* is the logical
+  half, and that is the half RULES §1 asks for.
+
+Both are in the spec text with "amended" markers rather than rewritten, so
+the reasoning that was wrong stays readable.
+
+### 5. Offsets are steps of the space scale
+
+Radix's `sideOffset` and `collisionPadding` are pixel numbers. A `8` in a
+component's JavaScript is the `8px` RULES §3 bans in its CSS, one file over.
+Both are typed `Space` (D-020's index) and resolved to pixels on the trigger
+element at open time by `resolveSpace`, which reads the token's computed value
+and converts its unit. The break check for this one is recorded in advance as
+**not observable** — the token resolves to the number the hardcode would have
+been — so the guard is the type, and the docs page's "don't" shows the pixel
+form so a reviewer knows what to reject.
+
+---
+
+## D-062 — `Popover` build findings: a compound you cannot dot into from the server, a gallery that dismissed itself, and a reset that does not reach the component layer
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** RULES §5.6;
+`docs/specs/Popover.md` §1, §5, §6; `docs/specs/overlay-foundation.md` §6;
+`docs/components/Popover.md`
+
+The first Tier 4 build, and 4.1's Gate D walked through it (4.1 §9). Five
+findings, three of which corrected the spec.
+
+### 1. The parts are named exports, because React forbids dotting into a client module from a Server Component
+
+The spec's shape was `<Popover><Popover.Trigger/>…</Popover>`, built with
+`Object.assign(Root, { Trigger, … })` as `Split` is. The playground's Popover
+page — a Server Component, as every Next App Router page is by default —
+failed to prerender with "Element type is invalid … got: undefined". The
+cause is in React's flight proxy, in its own words: **"You cannot dot into a
+client module from a server component. You can only pass the imported name
+through."** A client reference is resolved on the other side as
+`module[name]`, and `Popover.Trigger` has no name of its own to resolve.
+
+`Split` gets away with it because it is a Server Component. Every Tier 4
+component is `'use client'`, so for the whole tier the parts are **named
+exports** — `Popover`, `PopoverTrigger`, `PopoverContent`, `PopoverTitle`,
+`PopoverDescription`, `PopoverClose` — one spelling that works on both sides
+of the boundary. RULES §5.6 now says so. The `Card.Header` example it still
+opens with is right for a server compound and wrong for a client one, which
+is the distinction the rule was missing.
+
+### 2. Six non-modal popovers open at once dismiss each other, by design
+
+The gallery section opens one popover per Matrix cell with `defaultOpen`.
+Built plainly, all six were closed by the time the page settled: each one's
+auto-focus on mount is a "focus outside" for the one before it, and the last
+one's unmount cascade returns focus to a trigger, which is outside the last.
+That is the dismissable layer doing its job — a non-modal popover is a
+one-at-a-time thing — and the gallery is not a use, it is a gallery. Its six
+take Radix's three escape hatches through `PopoverContent` (`onOpenAutoFocus`,
+`onFocusOutside`, `onInteractOutside`, each `preventDefault`ed) and are marked
+`data-gallery` so the interactive tests can find the one panel they opened.
+An app never needs those handlers for one popover; the docs page does not
+mention them, and that is deliberate.
+
+**Found through a stale server, and the detour is worth recording.** The
+first probe reported the six triggers `open` and no panel in the DOM, with a
+500 on a JavaScript chunk — a `next start` from an earlier probe was still
+serving an older build under the new one. Two probes were spent on a
+"defect" that was a port. The probe script now kills its server's process
+group; the lesson is D-051 §6's: when a test fails, establish which of the two
+is wrong before changing either — and "the two" includes the harness.
+
+### 3. No scope, no attribute
+
+A popover opened on the playground page proper carries no `data-pp-theme`:
+the page sets no scope, the default theme is `:root:not([data-pp-theme])`,
+and there is nothing to copy. The attribute is written only when a scope
+exists — an invented `light` would be a claim the trigger's DOM does not
+make, and would shadow an app that themes through `prefers-color-scheme`.
+The browser test asserts the absence on the page and the presence in the
+Matrix's dark cells and the dark region.
+
+### 4. A modal popover closes on an outside press, and swallows it
+
+Spec §6 said outside pointer events are disabled for `modal`, and implied the
+press was blocked outright. Radix's modal popover *closes* on it — a dialog
+overlay's behaviour — while the press never reaches what was under it
+(`pointer-events: none` on the body). The test that expected the panel to
+stay open was wrong on the first half and right on the second; it now asserts
+both: the panel closes, and the button under the press was not pressed. The
+spec, the docs page and the playground copy say the same.
+
+### 5. The reset's reduced-motion crush does not reach an animation declared in `pp.components`
+
+The 4.1 and 4.2 specs both said the reset would make open and close instant
+under `prefers-reduced-motion`. Measured under Playwright's pinned
+`reducedMotion: 'reduce'`: **0.14s**. `reset.css` sets `animation-duration:
+0.01ms` at zero specificity in the lowest layer; the `animation` shorthand in
+`Popover.css`, in `pp.components`, outranks it. That is what the reset's own
+comment says — components "opt into essential motion by declaring their own
+transition inside pp.components" — and it is why RULES §3 puts the obligation
+on every animated component rather than on the reset. `Popover.css` now
+declares `animation: none` under reduced motion — `none` rather than a
+crushed duration, so Radix's `Presence` unmounts a closing panel at once.
+`Slider`'s D-052 §3 case was a *transition on the reset's own rule*, which is
+why the crush reached it; the generalisation the specs made from it was
+wrong, and both are amended with markers.
+
+### 6. Verified, as promised in the 4.1 spec rather than assumed
+
+- **The z-index token reaches the element that stacks.** Radix's positioned
+  wrapper reads the panel's computed `z-index` and carries the same value:
+  1200 on both, asserted.
+- **Tree-shaking.** In the playground's production build the chunk holding
+  Radix's popover code (70,635 bytes) is referenced by the Popover page's
+  payload and by neither the Button page's nor the RangeSlider page's.
+  Checked by chunk name in the prerendered HTML, because Next loads
+  page-specific client chunks through the flight payload rather than
+  `<script>` tags — the first draft of this check grepped the tags and
+  proved nothing.
+- **`resolveSpace`.** `sideOffset="2"` measured 8px between trigger and
+  panel; the token's computed value, converted, is 8.
+- **A `position: fixed` panel captures correctly in a full-page screenshot**
+  (the 4.2 spec's stated unknown): the page is not scrolled when captured,
+  so viewport coordinates are document coordinates. Collision avoidance is
+  computed against the *viewport*, so a trigger near the bottom of the
+  first screen flips its panel upward; the gallery sits above that line and
+  the panels are placed below their triggers.
+
+### 7. Five browser breaks and one unit break, each caught by the test named for it
+
+`directionOf` pinned to `ltr` (the RTL test); the theme attribute dropped
+from the panel (the theme test, and the gallery test with it); the `z-index`
+line (the stacking test); the reduced-motion rule (the reduced-motion test);
+and, in the unit suite, the `aria-labelledby` wiring (the name test, and axe
+with it). The break the spec predicted would **not** be observable — a
+hardcoded `8` in place of `resolveSpace` — was run and was not: ten of ten
+passed, because the token resolves to the number the hardcode is. The guard
+for that one is the `Space` type and the docs page's "don't", as D-061 §5
+said. One break had to be run twice: removing the attribute outright left an
+unused variable, the build's `noUnusedLocals` refused it, and the first run
+proved nothing about the test. A break that does not compile is not a break.
+
+---
+
+## D-063 — The playground shows one theme at a time, chosen by a switcher; the screenshot suite captures both
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** Tier 0.4
+(playground), Tier 0.6 (visual regression); `.claude/skills/component/SKILL.md`
+(the playground line of the build step); `tests/visual/harness.spec.ts`,
+`tests/visual/screenshots.spec.ts`; every screenshot baseline
+
+Asked for directly: a way back to the component list from a component page,
+an index that is not a bare list of names, and a theme switcher in place of
+the side-by-side light and dark columns. Done as one change because the
+three touch one file set — the playground's chrome — and one baseline set.
+
+### 1. One theme at a time is how an app is themed
+
+The Matrix rendered every subtree six times: three widths in a light column
+and the same three in a dark one, each column a `[data-pp-theme]` scope. That
+was honest coverage and it doubled every page, put every "wide" cell in a
+column that scrolled, and showed the library in a way no app ever does. An app
+sets `data-pp-theme` once, on `<html>` or on a wrapper (D-010), and the
+whole page follows.
+
+The playground now does the same. The chrome carries a `ButtonGroup` of
+three `Toggle`s — System, Light, Dark — that sets or clears the attribute on
+`<html>` and stores the choice under one key; a `beforeInteractive` script in
+the layout applies the stored choice before the first paint, so a dark page
+never flashes light, and `<html>` takes `suppressHydrationWarning` for the
+one attribute React must not correct. `System` sets nothing and lets
+`:root:not([data-pp-theme])` follow `prefers-color-scheme`, which is the
+library's own default. The Matrix renders the three widths once.
+
+### 2. Coverage moves, it does not shrink
+
+- **Screenshots: two per page.** `screenshots.spec.ts` stores the choice
+  before each page loads — the way a returning user's browser would — and
+  captures `<page>-light.png` and `<page>-dark.png` — the index included,
+  since it is now a page worth looking at. The Definition of Done's
+  "correct in light and dark themes" is met by the pair, and a page that is
+  wrong in one theme fails exactly one baseline, which names the theme.
+- **Browser assertions that compared the two columns now switch.** A
+  `setTheme` helper presses the switcher and waits for `<html>` to carry the
+  attribute; the `Switch` contrast test, the harness self-check and the
+  Popover gallery use it. The self-check's D-010 guard is stronger than
+  before: it asserts the background changes on switching, survives a reload
+  from the stored choice, and clears under System.
+- **Counts halve.** Every assertion that counted six cells, six groups or six
+  panels counts three, and its comment says why.
+
+### 3. Every baseline is re-authored, and the manifest is recorded afterwards
+
+Every page's geometry changes, so every baseline is deleted and CI authors
+the new set on this branch (D-013); the filenames change with the theme
+suffix. `dimensions.json` is **left as it was** rather than emptied: the
+guard passes locally against zero present files, and `npm run dimensions`
+records the new set from the committed PNGs once they exist and drops the
+stale entries — which means one CI run between the authoring commit and the
+recording commit fails the guard's unguarded count, exactly as D-054 §2 and
+D-060 §7 describe. Recorded here so the red run is read as the procedure,
+not as a regression. D-050 §5's geometry guard cannot protect this
+transition, because the geometry is meant to move.
+
+### 4. The index and the chrome
+
+The home page groups the components by tier, with the tier's one-line
+argument above each group and a card per component: number, name, a summary
+of what it is. The cards are links styled with the library's tokens and
+nothing else — the raised surface, a subtle edge that becomes the control
+boundary on hover, and the reset's focus ring. A hero above states what the
+library is and four facts about it. The chrome on every page carries the
+wordmark, the three places, the switcher, and on a component page a
+breadcrumb back to the index and links to the previous and next component
+in roadmap order. Nothing in the chrome writes an id (D-035 §1).

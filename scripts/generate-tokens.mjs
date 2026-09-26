@@ -448,9 +448,12 @@ ${light.css}
        measure is how wide content may run before it stops being readable.
        Expressing 40rem on the size scale would make it --pp-size-160.
 
-       Only Container may consume these (RULES §1, D-001). They are exported
-       so a consuming app can align its own full-bleed sections to the same
-       measures without hardcoding them. */
+       Container consumes them (RULES §1, D-001), and so do the overlays of
+       Tier 4, which have no parent in flow to size them (D-061 §3) — xs is
+       theirs: a popover, a menu, a toast. They are exported so a consuming
+       app can align its own full-bleed sections to the same measures without
+       hardcoding them. */
+    --pp-measure-xs: 20rem;
     --pp-measure-sm: 40rem;
     --pp-measure-md: 64rem;
     --pp-measure-lg: 80rem;
