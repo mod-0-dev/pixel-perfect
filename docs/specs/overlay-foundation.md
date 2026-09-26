@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `spec` — written 2026-09-26. **Gate C is individual** (D-014's carve-out, narrowed by 3A to `Field` and this) |
+| **Status** | `spec`, approved — Gate C passed 2026-09-26 **by delegation** (D-061), every recommendation adopted as written. Built with 4.2 `Popover` (§9) |
 | **Sizing contract** | `n/a` — a foundation, not a component. Every overlay built on it declares its own |
 | **RSC** | `client` — everything here runs after hydration (§7) |
 | **Depends on** | Tier 3 `done` (it is). Tier 0.2 tokens: `--pp-z-*`, `--pp-shadow-*`, `--pp-duration-*`, `--pp-easing-*`, `--pp-color-bg-scrim` all exist and none is added |
@@ -112,10 +112,17 @@ resolved by inheritance from the nearest `[data-pp-theme]` and
 in a light-themed app would paint light — or, in the playground's Matrix,
 every popover in the `dark` cells would render in `light`.
 
-**Theme is carried.** The foundation's internal `Portal` copies
+**Theme is carried.** The foundation's `useInheritedTheme` reads
 `data-pp-theme` from the nearest scope of the element the overlay is anchored
-to (the trigger; for a `Dialog`, the trigger or the element that opened it)
-onto the portal's own root element, once, when the overlay mounts. Overlays
+to (the trigger; for a `Dialog`, the trigger or the element that opened it),
+once, when the overlay mounts, and the component writes it **on its own
+root** — the popover panel, the dialog. *Amended at the 4.2 spec (D-061 §4):*
+this section first put the copy on a `.pp-portal` wrapper of ours between
+Radix's portal and the content. Radix's `Portal` keeps its child mounted only
+while the child's own exit animation runs, and a wrapper with no animation
+unmounts the instant the overlay closes, taking the content's exit with it.
+The attribute on the content root resolves every token identically and adds
+no element. Overlays
 are transient, so a theme toggled while one is open is not tracked; the next
 open reads the new value. When the app's theme lives on `<html>`, the copy
 finds it and nothing changes.
@@ -179,10 +186,15 @@ the anchor's `direction`); only the side axis is physical.
 `start` and `end` resolve to `left` / `right` from the trigger's computed
 `direction` at open time — never at module scope (RULES §7) — by one internal
 function, `resolveSide`, that every component calls. Radix may then *flip*
-the side to avoid a collision; the side it settled on is written by Radix as
-`data-side` in physical terms on its content node, and **the component's root
-carries `data-side` in this table's terms**, mapped back through the same
-direction. RULES §4's `data-side` and `data-align` mean the logical values.
+the side to avoid a collision, and writes the side it settled on as
+`data-side` on the content root, in physical terms. **`data-side` stays
+physical.** *Amended at the 4.2 spec (D-061 §4):* this section first said the
+root would carry the logical value. Radix spreads consumer props after its
+own, so ours would win — and the placed side would be lost with it, because
+`onPlaced` is not exposed on the composed primitives. More to the point, a
+`data-side` is a paint-time fact read by a paint-time rule (a transform
+origin, an arrow), and paint is physical. The *prop* is logical, which is
+what RULES §1 asks; the attribute reports where the panel is.
 
 `top` and `bottom` are kept as they are rather than renamed `block-start` /
 `block-end`: no target has a vertical writing mode use for a popover, and the
@@ -246,8 +258,12 @@ must exist in the HTML — a no-JS error summary — is not an overlay, it is
 
 Code, all under `src/internal/overlay/` and none of it exported:
 
-- `Portal.tsx` — Radix's portal with §3's theme copy.
-- `side.ts` — `resolveSide(element, side)` and its inverse for `data-side`.
+- `theme.ts` — `useInheritedTheme(ref)`, §3's copy (amended from a `Portal.tsx`).
+- `side.ts` — `resolveSide(element, side)`; no inverse, `data-side` stays physical (§5).
+- `space.ts` — `resolveSpace(element, step)`: a `Space` index to the pixels the
+  token resolves to on that element, so `sideOffset` and `collisionPadding`
+  are steps of the space scale (D-020) rather than bare numbers handed to
+  floating-ui.
 - `stubs` in `src/test/setup.ts` for what Radix needs and jsdom lacks, found
   at the 4.2 build rather than guessed here (the `ResizeObserver` stub is
   already there).
@@ -265,7 +281,7 @@ box ticked by reasoning (D-051 §5).
 
 | Definition of Done box | For 4.1 |
 | --- | --- |
-| Spec, sizing contract, props, anatomy | This document; contract `n/a`; no props of its own; anatomy is `.pp-portal` |
+| Spec, sizing contract, props, anatomy | This document; contract `n/a`; no props of its own; no element of its own (§Anatomy) |
 | Sizing & spacing, styling | The portal root declares nothing but `data-pp-theme`; no CSS file |
 | API | `resolveSide` is internal; RULES §5 applies to what 4.2 exports |
 | Accessibility | Inherited from Radix and asserted per component |
@@ -279,13 +295,14 @@ box ticked by reasoning (D-051 §5).
 ## Anatomy
 
 ```
-<div class="pp-portal" data-pp-theme="light|dark">      (appended to body, or to `container`)
-  └── … the overlay component's own root, with data-state / data-side / data-align
+body                                                   (or `container`)
+  └── <div>  Radix's positioned wrapper — unstyled, carries the z-index it reads from the root below
+        └── … the overlay component's own root: data-pp-theme, data-state, data-side, data-align
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
-| Portal root | `pp-portal` | `<div>` | §3's theme copy. No CSS, no z-index, no size |
+| Portal root | — | — | *Amended (D-061 §4):* no element of ours. The theme goes on the overlay's own root, §3 |
 
 ## Props
 

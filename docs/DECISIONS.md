@@ -3748,3 +3748,91 @@ established. The assertion is already polled (D-052 §3) and reads
   from the committed PNGs (form 4090, range-slider 6158, tokens 3144 tall).
   The count in the first draft was read off the manifest without counting
   the directory against it, which is the check the guard exists to make.
+
+---
+
+## D-061 — Tier 4 is built on Radix Primitives; Gate C for 4.1 and 4.2 approved by delegation; the overlay exception to RULES §1
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** D-002 (the slash
+comes out); RULES §1 (the `Container` consequence), §8; Tier 0.2 tokens
+(`--pp-measure-xs`); `.stylelintrc.json`; `docs/specs/overlay-foundation.md`
+§3, §5, §9, Anatomy; `docs/specs/Popover.md` (status)
+
+### 1. Radix Primitives, decided
+
+D-002 said "Radix / Base UI". The 4.1 spec measured both against the registry
+and the platform on 2026-09-26 (spec §1, with the table) and chose Radix:
+stable 1.x/2.x packages, small per package, React 19 peers, and — the
+deciding reason — its `asChild` and `data-state` / `data-side` / `data-align`
+are the names D-003 and RULES §4 fixed for this library before Tier 4
+existed, so a component built on it emits the library's vocabulary with no
+translation. Base UI is `1.0.0-rc.0` and broke its own API in that release;
+the platform's anchor positioning is in 25 of the 35 `browserslist` targets
+and jsdom implements none of `showModal`, `showPopover` or `inert`.
+
+RULES §8 now says Radix Primitives. Revisit when CSS anchor positioning reaches
+the `defaults` set; 4.1 §5's logical vocabulary is what makes that revisit
+cheap.
+
+### 2. Approved by delegation, twice, and the second one before the spec existed
+
+The 4.1 spec went to Gate C with four open questions and a recommendation on
+each. The approval was **"do it so that it is pixel perfect"** — a
+delegation, recorded as D-057 recorded the last one: one pair of eyes, every
+recommendation adopted as written.
+
+4.1 §9 says the foundation is built with 4.2 `Popover`, tested through it, in
+one PR. So the 4.2 spec was written **after** that message and approved under
+the same delegation, which is a step further than D-057 went: the user has
+not seen it. Two things follow. Every decision in `Popover.md` is listed in
+the closing report as something to revert before merge, not after. And the
+spec stays inside rulings that already exist — Radix's own compound shape,
+RULES §5.5's controlled pair, D-020's `Space` for its offsets — so that a
+reversal is a reversal of a default, not of an invention.
+
+### 3. An overlay has no parent in flow, so it takes its ceiling from the measure scale
+
+RULES §1's rule is that the parent sizes the child, and a Tier 4 panel's
+parent is `<body>`. A popover holding a `Field` — every control in this
+library fills — would grow to the viewport. The roadmap row for 4.2 promised
+"sizing contract exception — documented in spec"; this is it, stated once for
+the tier rather than once per component:
+
+- An overlay panel may declare `max-inline-size` (logical, never
+  `max-width`), and its default comes from the **measure scale** — the
+  vocabulary for "how wide may content run" — which gains
+  `--pp-measure-xs: 20rem` for this class of box. The token comment said
+  "only `Container` may consume these"; it now names the overlays too.
+- `max-block-size` is the available height floating-ui reports, so a tall
+  panel scrolls inside itself.
+- `.stylelintrc.json` gains a per-file override for `max-inline-size`, the
+  shape D-019's `inline-size` exemption already has. Nothing in flow ever
+  qualifies, and the RULES §1 consequence says so.
+
+### 4. Two corrections to the 4.1 spec, made at the 4.2 spec and before any build
+
+- **The theme goes on the overlay's own root, not on a `.pp-portal` wrapper.**
+  Radix's `Portal` composes `Presence`, which keeps its single child mounted
+  only while that child's own animation runs. A wrapper of ours with no
+  animation would unmount the instant `open` turned false and take the
+  content's exit animation with it. `data-pp-theme` on the content root
+  resolves every token identically and adds no element.
+- **`data-side` stays physical.** Radix spreads consumer props after its own,
+  so a logical `data-side` of ours would win — and lose the placed side,
+  since `onPlaced` is not on the composed primitives. The attribute is a
+  paint-time fact for paint-time rules; the `side` *prop* is the logical
+  half, and that is the half RULES §1 asks for.
+
+Both are in the spec text with "amended" markers rather than rewritten, so
+the reasoning that was wrong stays readable.
+
+### 5. Offsets are steps of the space scale
+
+Radix's `sideOffset` and `collisionPadding` are pixel numbers. A `8` in a
+component's JavaScript is the `8px` RULES §3 bans in its CSS, one file over.
+Both are typed `Space` (D-020's index) and resolved to pixels on the trigger
+element at open time by `resolveSpace`, which reads the token's computed value
+and converts its unit. The break check for this one is recorded in advance as
+**not observable** — the token resolves to the number the hardcode would have
+been — so the guard is the type, and the docs page's "don't" shows the pixel
+form so a reviewer knows what to reject.

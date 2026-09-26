@@ -32,6 +32,10 @@ correctly in every layout context. The rule is *don't declare width*, not
 
 - **`Container` is the only component in the library allowed to set `max-width`.**
   That is its entire job. If you want to constrain something, you wrap it.
+  The one class of exception is a Tier 4 overlay panel — a popover, a menu, a
+  dialog — which has no parent in flow to size it and takes its ceiling from
+  the measure scale (`max-inline-size`, logical; D-061 §3). Each such spec
+  says so; nothing in flow ever qualifies.
 - **There is no `fullWidth` prop. Ever.** Its existence in other libraries is
   proof their default sizing model is broken.
 - **Layout primitives are load-bearing.** Because components can't size or space
@@ -185,8 +189,8 @@ Structural requirements for every component:
 
 - Tiers 1–3 and 5: **zero runtime dependencies.** If it needs a library, we
   designed it wrong.
-- Tier 4 (overlays, menus, combobox, date picker): built on **Radix / Base UI**
-  primitives for behavior. We own 100% of the markup, class names, and styling;
+- Tier 4 (overlays, menus, combobox, date picker): built on **Radix
+  Primitives** for behavior (D-002 said "Radix / Base UI"; D-061 chose). We own 100% of the markup, class names, and styling;
   they own focus traps, dismissable layers, typeahead, and ARIA wiring. Writing
   our own focus management is not a badge of honor, it is a year of a11y bugs
   that were fixed upstream in 2021.
