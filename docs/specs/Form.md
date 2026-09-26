@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3 — Form & Action Core |
-| **Status** | `review` — built 2026-09-22. Gate C passed **by delegation** (D-057); build findings in D-058. `done` waits on one Definition of Done box: the CI-authored screenshot baseline (D-013) |
+| **Status** | `done` — built 2026-09-22, closed 2026-09-26. Gate C passed **by delegation** (D-057); build findings in D-058. The last Definition of Done box, the CI-authored screenshot baseline (D-013), was authored on the PR branch and compared green on `main` after the merge |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — a submit handler, a ref and one effect (§5) |
 | **Depends on** | 3.7 `Field` — its `controlId` is what the summary links to (§3). 5.2 `Alert` — composed, as the error summary (§2). 3.3 `Link` — composed, one per summary entry; **added to Deps at this gate**, see §9 |
