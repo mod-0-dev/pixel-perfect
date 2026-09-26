@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `spec`, approved — Gate C passed 2026-09-26 **by delegation** (D-061), every recommendation adopted as written. Built with 4.2 `Popover` (§9) |
+| **Status** | `build` — Gate C passed 2026-09-26 **by delegation** (D-061), every recommendation adopted as written. Built with 4.2 `Popover` the same day (§9); findings in D-062 |
 | **Sizing contract** | `n/a` — a foundation, not a component. Every overlay built on it declares its own |
 | **RSC** | `client` — everything here runs after hydration (§7) |
 | **Depends on** | Tier 3 `done` (it is). Tier 0.2 tokens: `--pp-z-*`, `--pp-shadow-*`, `--pp-duration-*`, `--pp-easing-*`, `--pp-color-bg-scrim` all exist and none is added |
@@ -213,9 +213,11 @@ coupling this library does not offer.
 Every overlay root carries `data-state="open|closed"` (RULES §4). Entry and
 exit are CSS `animation`s keyed on it, using `--pp-duration-fast` and
 `--pp-easing-decelerate` / `-accelerate`; Radix's `Presence` keeps a closing
-element mounted until its `animation-name` finishes, so the exit is seen. The
-reset's `prefers-reduced-motion` crush applies, so a reduced-motion user gets
-an instant open and close with no work in any component.
+element mounted until its `animation-name` finishes, so the exit is seen.
+**Each overlay declares its own `prefers-reduced-motion` rule** — `animation:
+none`, so Presence unmounts at once — *amended at the 4.2 build (D-062 §5):
+this section first said the reset's crush would apply; it does not reach an
+`animation` declared in `pp.components`.*
 
 **`forceMount` is not exposed.** It exists for consumers driving animation
 with a library; this library's motion is CSS.

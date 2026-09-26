@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `spec`, approved — Gate C passed 2026-09-26 **by delegation** (D-061): written after the delegation was given, every recommendation adopted as written, and the decisions listed in the closing report for the user to revert before merge |
+| **Status** | `build` — Gate C passed 2026-09-26 **by delegation** (D-061): written after the delegation was given, every recommendation adopted as written, and the decisions listed in the PR for the user to revert before merge. Built the same day; findings in D-062 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3) |
 | **RSC** | `client` — Radix state, a portal, positioning |
 | **Depends on** | 4.1 Overlay foundation (built with it, in this PR); 3.1 `Button` (the usual trigger, by `asChild`) |
@@ -36,13 +36,13 @@ arrow (§8, open question); or size itself to its trigger (§3).
 
 ```tsx
 <Popover>
-  <Popover.Trigger asChild><Button>Filters</Button></Popover.Trigger>
-  <Popover.Content side="bottom" align="start">
-    <Popover.Title>Filters</Popover.Title>
-    <Popover.Description>Narrow the list.</Popover.Description>
+  <PopoverTrigger asChild><Button>Filters</Button></PopoverTrigger>
+  <PopoverContent side="bottom" align="start">
+    <PopoverTitle>Filters</PopoverTitle>
+    <PopoverDescription>Narrow the list.</PopoverDescription>
     …
-    <Popover.Close asChild><Button variant="ghost">Done</Button></Popover.Close>
-  </Popover.Content>
+    <PopoverClose asChild><Button variant="ghost">Done</Button></PopoverClose>
+  </PopoverContent>
 </Popover>
 ```
 
@@ -66,7 +66,7 @@ Radix renders the content as `role="dialog"`. A dialog without an accessible
 name fails axe (`aria-dialog-name`) and fails the user, so the name is a
 requirement, not a courtesy. Three ways to supply it, in order:
 
-1. `<Popover.Title>` — renders a `<div>` with an id the content's
+1. `<PopoverTitle>` — renders a `<div>` with an id the content's
    `aria-labelledby` points at. A `<div>`, not a heading, for Alert.md §6's
    reason: the right level is the page's to know. Pass a `Heading` as the
    child when it really is a section.
@@ -128,9 +128,11 @@ Radix writes `data-state="open|closed"` on both the trigger and the content.
 The content animates in with a fade and a scale from Radix's transform origin
 (`--pp-duration-fast`, `--pp-easing-decelerate`) and out with the reverse
 (`--pp-easing-accelerate`); Radix keeps the closing element mounted until the
-exit animation ends. Under `prefers-reduced-motion` the reset crushes both,
-so a reduced-motion user gets an instant open and close — asserted in the
-browser, because it is the reset's rule and not this file's.
+exit animation ends. Under `prefers-reduced-motion` both are `none`, by a
+rule in this component's own stylesheet — *corrected at the build (D-062
+§5): this section first said the reset's crush would do it; a shorthand in
+`pp.components` outranks the reset, and it measured 0.14s.* Asserted in the
+browser on the portalled panel.
 
 The trigger's visual open state is not styled here: a `Button` inside a
 `Trigger` keeps its own states, and a consumer who wants a pressed look on an
@@ -142,9 +144,11 @@ open trigger styles `[data-state="open"]`.
 outside press dismisses *and* reaches what was pressed, focus is not
 trapped. `modal={true}` is Radix's modal popover: outside pointer events are
 disabled, scroll is locked, the rest of the page is `aria-hidden`, focus is
-trapped. It exists for a popover a flow cannot proceed past — a required
-choice — and the docs page says that a popover that needs `modal` is usually
-a `Dialog`.
+trapped — and an outside press **closes the popover without landing**, as a
+dialog's overlay does (*corrected at the build, D-062 §4: this section first
+said the press was blocked outright*). It exists for a popover a flow cannot
+proceed past — a required choice — and the docs page says that a popover
+that needs `modal` is usually a `Dialog`.
 
 Focus moves into the content on open (the first tabbable element, else the
 content itself) and returns to the trigger on close — Radix's defaults, which
@@ -214,14 +218,14 @@ carries only the position and the z-index it reads from `.pp-popover`.
 | `modal` | `boolean` | `false` | §6 |
 | `children` | `ReactNode` | — | The parts |
 
-**`Popover.Trigger`**, **`Popover.Close`**
+**`PopoverTrigger`**, **`PopoverClose`**
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `asChild` | `boolean` | `false` | Renders the child instead of a `<button>` |
 | …rest | `ComponentPropsWithoutRef<'button'>` | — | |
 
-**`Popover.Content`**
+**`PopoverContent`**
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
@@ -235,7 +239,7 @@ carries only the position and the z-index it reads from `.pp-popover`.
 | `className` / `style` | | — | Root |
 | …rest | `ComponentPropsWithoutRef<'div'>` | — | |
 
-**`Popover.Title`**, **`Popover.Description`**: `ComponentPropsWithoutRef<'div'>` / `<'p'>`.
+**`PopoverTitle`**, **`PopoverDescription`**: `ComponentPropsWithoutRef<'div'>` / `<'p'>`.
 
 Exported types: `PopoverProps`, `PopoverTriggerProps`, `PopoverContentProps`,
 `PopoverTitleProps`, `PopoverDescriptionProps`, `PopoverCloseProps`,
@@ -305,19 +309,19 @@ viewport at any container width.
 
 ```tsx
 <Popover>
-  <Popover.Trigger asChild>
+  <PopoverTrigger asChild>
     <Button variant="outline">Filters</Button>
-  </Popover.Trigger>
-  <Popover.Content align="start">
-    <Popover.Title>Filters</Popover.Title>
+  </PopoverTrigger>
+  <PopoverContent align="start">
+    <PopoverTitle>Filters</PopoverTitle>
     <Stack gap="3">
       <Field label="Status"><Select>…</Select></Field>
       <Cluster justify="end">
-        <Popover.Close asChild><Button variant="ghost">Cancel</Button></Popover.Close>
+        <PopoverClose asChild><Button variant="ghost">Cancel</Button></PopoverClose>
         <Button onClick={apply}>Apply</Button>
       </Cluster>
     </Stack>
-  </Popover.Content>
+  </PopoverContent>
 </Popover>
 ```
 
@@ -325,16 +329,16 @@ viewport at any container width.
 
 ```tsx
 // ✗ No name. The dialog role requires one; Title, aria-labelledby or aria-label.
-<Popover.Content>…</Popover.Content>
+<PopoverContent>…</PopoverContent>
 
 // ✗ Hover content. A popover is interactive; a hover panel is a Tooltip.
-<Popover.Trigger asChild><Button onMouseEnter={open}>…</Button></Popover.Trigger>
+<PopoverTrigger asChild><Button onMouseEnter={open}>…</Button></PopoverTrigger>
 
 // ✗ A physical side. `start` and `end` reverse with the layout.
-<Popover.Content side="left" />
+<PopoverContent side="left" />
 
 // ✗ A pixel offset. Offsets are steps of the space scale.
-<Popover.Content sideOffset={8} />
+<PopoverContent sideOffset={8} />
 
 // ✗ modal for a "you must choose". That is a Dialog.
 <Popover modal>…</Popover>

@@ -4148,3 +4148,201 @@ test.describe('RangeSlider', () => {
     await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
   });
 });
+
+/*
+ * Popover (4.2), and through it the overlay foundation (4.1) — specs
+ * docs/specs/Popover.md and docs/specs/overlay-foundation.md.
+ *
+ * The panel is PORTALLED to <body>, so nothing below scopes it to a section;
+ * each test opens one popover and reads the one `.pp-popover` on the page.
+ * What only a browser can answer: that the z-index token reaches Radix's
+ * positioned wrapper; that a logical `side` lands on the right physical side
+ * in both directions; that a space-scale offset is the pixels the token says;
+ * that the theme really crosses the portal, in resolved colour and not only
+ * in an attribute; and that the reset's reduced-motion rule reaches a
+ * portalled element.
+ */
+test.describe('Popover', () => {
+  type Page = import('@playwright/test').Page;
+  /* The Matrix gallery keeps six panels open for the screenshot, marked
+     `data-gallery`; every interactive test below opens exactly one more. */
+  const panel = (page: Page) => page.locator('.pp-popover:not([data-gallery])');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="popover-${id}"]`);
+
+  test('the z-index token reaches the element that stacks', async ({ page }) => {
+    await page.goto('/components/popover');
+    await demo(page, 'form').getByRole('button', { name: 'Filters' }).click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+
+    const read = await el.evaluate((n) => ({
+      panel: getComputedStyle(n).zIndex,
+      token: getComputedStyle(n).getPropertyValue('--pp-z-popover').trim(),
+      wrapper: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+    }));
+    expect(read.panel).toBe(read.token);
+    expect(read.wrapper, "Radix's wrapper did not take the panel's z-index").toBe(read.token);
+  });
+
+  test('the Title names the dialog, in a real accessibility tree', async ({ page }) => {
+    await page.goto('/components/popover');
+    await demo(page, 'form').getByRole('button', { name: 'Filters' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Filters' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toHaveAttribute('data-state', 'open');
+    // The page sets no theme scope of its own — the default theme is
+    // `:root:not([data-pp-theme])` — so there is nothing to copy, and the
+    // panel carries no attribute rather than an invented one (D-062 §3).
+    await expect(dialog).not.toHaveAttribute('data-pp-theme', /.*/);
+  });
+
+  /* sideOffset="2" is --pp-space-2, 0.5rem, 8px at the default root size:
+     the gap between the trigger's bottom edge and the panel's top edge. */
+  test('a space-scale offset is the pixels its token resolves to', async ({ page }) => {
+    await page.goto('/components/popover');
+    const trigger = demo(page, 'form').getByRole('button', { name: 'Filters' });
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toHaveAttribute('data-side', 'bottom');
+    const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+    const expected = await trigger.evaluate(
+      (n) => parseFloat(getComputedStyle(n).getPropertyValue('--pp-space-2')) * parseFloat(getComputedStyle(document.documentElement).fontSize),
+    );
+    expect(expected).toBe(8);
+    expect(Math.abs(p!.y - (t!.y + t!.height) - expected), 'the gap is not the token').toBeLessThanOrEqual(1);
+  });
+
+  test('side="start" is on the left in LTR and on the right in RTL', async ({ page }) => {
+    await page.goto('/components/popover');
+    for (const [id, expectLeft] of [
+      ['sides', true],
+      ['sides-rtl', false],
+    ] as const) {
+      const trigger = demo(page, id).locator('[data-side-trigger="start"]');
+      await trigger.scrollIntoViewIfNeeded();
+      await trigger.click();
+      const el = panel(page);
+      await expect(el).toBeVisible();
+      const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+      if (expectLeft) {
+        expect(p!.x + p!.width, `${id}: start is not on the left`).toBeLessThanOrEqual(t!.x + 1);
+        await expect(el).toHaveAttribute('data-side', 'left');
+      } else {
+        expect(p!.x, `${id}: start is not on the right`).toBeGreaterThanOrEqual(t!.x + t!.width - 1);
+        await expect(el).toHaveAttribute('data-side', 'right');
+      }
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+  });
+
+  test('the theme crosses the portal, in resolved colour', async ({ page }) => {
+    await page.goto('/components/popover');
+
+    await demo(page, 'form').getByRole('button', { name: 'Filters' }).click();
+    const lightBg = await panel(page).evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+
+    const dark = demo(page, 'theme');
+    await dark.getByRole('button', { name: 'Open here' }).click();
+    const el = panel(page);
+    await expect(el).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      // Portalled: the panel is not a descendant of the dark region.
+      inside: n.closest('[data-testid="popover-theme"]') !== null,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg, 'the dark panel painted the light surface').not.toBe(lightBg);
+    // The region's own raised surface, resolved by the same token in the same theme.
+    const regionRaised = await dark.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim());
+    expect(read.raised).toBe(regionRaised);
+  });
+
+  test('focus enters the panel on open and returns to the trigger on Escape', async ({ page }) => {
+    await page.goto('/components/popover');
+    const trigger = demo(page, 'form').getByRole('button', { name: 'Filters' });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(panel(page)).toBeVisible();
+    const focused = await page.evaluate(() => document.activeElement?.closest('.pp-popover') !== null);
+    expect(focused, 'focus did not move into the panel').toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  test('an outside press closes a non-modal popover and still lands', async ({ page }) => {
+    await page.goto('/components/popover');
+    const region = demo(page, 'controlled');
+    await region.getByRole('button', { name: 'Open' }).click();
+    await expect(panel(page)).toBeVisible();
+    await page.getByTestId('popover-outside').click();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'Controlled, and an outside press lands' })).toContainText(
+      'outside clicked 1×',
+    );
+  });
+
+  test('a modal popover swallows the outside press and keeps focus inside', async ({ page }) => {
+    await page.goto('/components/popover');
+    await demo(page, 'modal').getByRole('button', { name: 'Choose a plan' }).click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+
+    // Tab from the last button wraps to the first: focus is trapped.
+    await page.getByRole('button', { name: 'Yearly' }).focus();
+    await page.keyboard.press('Tab');
+    const stillInside = await page.evaluate(() => document.activeElement?.closest('.pp-popover') !== null);
+    expect(stillInside, 'focus escaped a modal popover').toBe(true);
+
+    /*
+     * AN OUTSIDE PRESS CLOSES A MODAL POPOVER AND DOES NOT LAND (D-062 §4).
+     * The spec first said the press was blocked outright; Radix's modal
+     * popover closes on it, as a dialog's overlay does, and swallows it —
+     * pointer events outside the panel are disabled, so the button under the
+     * press is never pressed. `page.mouse`, because Playwright's click refuses
+     * an element that cannot receive the pointer, which is the point.
+     */
+    const outside = page.getByTestId('popover-outside');
+    await outside.scrollIntoViewIfNeeded();
+    const box = (await outside.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(el).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'Controlled, and an outside press lands' })).toContainText(
+      'outside clicked 0×',
+    );
+  });
+
+  /*
+   * playwright.config.ts pins reducedMotion: 'reduce'. The first draft of
+   * this test expected the RESET's crush and read 0.14s: an `animation`
+   * shorthand in pp.components outranks a zero-specificity rule in pp.reset,
+   * so the component carries its own reduced-motion rule (D-062 §5). What is
+   * asserted is that rule, on a portalled element.
+   */
+  test('reduced motion removes the panel\'s animation', async ({ page }) => {
+    await page.goto('/components/popover');
+    await demo(page, 'form').getByRole('button', { name: 'Filters' }).click();
+    const name = await panel(page).evaluate((n) => getComputedStyle(n).animationName);
+    expect(name, 'the entry animation ran under reduced motion').toBe('none');
+  });
+
+  test('the Matrix opens one popover per cell, each in its cell\'s theme, none wider than the measure', async ({
+    page,
+  }) => {
+    await page.goto('/components/popover');
+    const panels = page.locator('.pp-popover[data-gallery]');
+    await expect(panels).toHaveCount(6);
+    const themes = await panels.evaluateAll((els) => els.map((el) => el.getAttribute('data-pp-theme')));
+    expect(themes.filter((t) => t === 'light')).toHaveLength(3);
+    expect(themes.filter((t) => t === 'dark')).toHaveLength(3);
+    const widths = await panels.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+    const measure = await page.evaluate(
+      () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pp-measure-xs')) * 16,
+    );
+    for (const w of widths) expect(w).toBeLessThanOrEqual(measure + 1);
+  });
+});

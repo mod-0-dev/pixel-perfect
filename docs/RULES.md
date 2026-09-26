@@ -151,6 +151,10 @@ Structural requirements for every component:
 6. Composition over configuration. Prefer `<Card><Card.Header/></Card>` over
    `<Card headerTitle=... headerIcon=... />`. If a component has more than ~10
    props, it is probably two components.
+   **For a `'use client'` component the parts are named exports**
+   (`<Popover><PopoverTrigger/></Popover>`), never properties of the root:
+   React forbids a Server Component from dotting into a client module, and a
+   Next App Router page is one by default (D-062 §1).
 7. No polymorphic `as` prop. It is a TypeScript tarpit and an inference killer.
    Use Radix-style `asChild` render delegation where composition genuinely
    requires it.

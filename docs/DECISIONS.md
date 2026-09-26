@@ -3836,3 +3836,126 @@ and converts its unit. The break check for this one is recorded in advance as
 **not observable** — the token resolves to the number the hardcode would have
 been — so the guard is the type, and the docs page's "don't" shows the pixel
 form so a reviewer knows what to reject.
+
+---
+
+## D-062 — `Popover` build findings: a compound you cannot dot into from the server, a gallery that dismissed itself, and a reset that does not reach the component layer
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** RULES §5.6;
+`docs/specs/Popover.md` §1, §5, §6; `docs/specs/overlay-foundation.md` §6;
+`docs/components/Popover.md`
+
+The first Tier 4 build, and 4.1's Gate D walked through it (4.1 §9). Five
+findings, three of which corrected the spec.
+
+### 1. The parts are named exports, because React forbids dotting into a client module from a Server Component
+
+The spec's shape was `<Popover><Popover.Trigger/>…</Popover>`, built with
+`Object.assign(Root, { Trigger, … })` as `Split` is. The playground's Popover
+page — a Server Component, as every Next App Router page is by default —
+failed to prerender with "Element type is invalid … got: undefined". The
+cause is in React's flight proxy, in its own words: **"You cannot dot into a
+client module from a server component. You can only pass the imported name
+through."** A client reference is resolved on the other side as
+`module[name]`, and `Popover.Trigger` has no name of its own to resolve.
+
+`Split` gets away with it because it is a Server Component. Every Tier 4
+component is `'use client'`, so for the whole tier the parts are **named
+exports** — `Popover`, `PopoverTrigger`, `PopoverContent`, `PopoverTitle`,
+`PopoverDescription`, `PopoverClose` — one spelling that works on both sides
+of the boundary. RULES §5.6 now says so. The `Card.Header` example it still
+opens with is right for a server compound and wrong for a client one, which
+is the distinction the rule was missing.
+
+### 2. Six non-modal popovers open at once dismiss each other, by design
+
+The gallery section opens one popover per Matrix cell with `defaultOpen`.
+Built plainly, all six were closed by the time the page settled: each one's
+auto-focus on mount is a "focus outside" for the one before it, and the last
+one's unmount cascade returns focus to a trigger, which is outside the last.
+That is the dismissable layer doing its job — a non-modal popover is a
+one-at-a-time thing — and the gallery is not a use, it is a gallery. Its six
+take Radix's three escape hatches through `PopoverContent` (`onOpenAutoFocus`,
+`onFocusOutside`, `onInteractOutside`, each `preventDefault`ed) and are marked
+`data-gallery` so the interactive tests can find the one panel they opened.
+An app never needs those handlers for one popover; the docs page does not
+mention them, and that is deliberate.
+
+**Found through a stale server, and the detour is worth recording.** The
+first probe reported the six triggers `open` and no panel in the DOM, with a
+500 on a JavaScript chunk — a `next start` from an earlier probe was still
+serving an older build under the new one. Two probes were spent on a
+"defect" that was a port. The probe script now kills its server's process
+group; the lesson is D-051 §6's: when a test fails, establish which of the two
+is wrong before changing either — and "the two" includes the harness.
+
+### 3. No scope, no attribute
+
+A popover opened on the playground page proper carries no `data-pp-theme`:
+the page sets no scope, the default theme is `:root:not([data-pp-theme])`,
+and there is nothing to copy. The attribute is written only when a scope
+exists — an invented `light` would be a claim the trigger's DOM does not
+make, and would shadow an app that themes through `prefers-color-scheme`.
+The browser test asserts the absence on the page and the presence in the
+Matrix's dark cells and the dark region.
+
+### 4. A modal popover closes on an outside press, and swallows it
+
+Spec §6 said outside pointer events are disabled for `modal`, and implied the
+press was blocked outright. Radix's modal popover *closes* on it — a dialog
+overlay's behaviour — while the press never reaches what was under it
+(`pointer-events: none` on the body). The test that expected the panel to
+stay open was wrong on the first half and right on the second; it now asserts
+both: the panel closes, and the button under the press was not pressed. The
+spec, the docs page and the playground copy say the same.
+
+### 5. The reset's reduced-motion crush does not reach an animation declared in `pp.components`
+
+The 4.1 and 4.2 specs both said the reset would make open and close instant
+under `prefers-reduced-motion`. Measured under Playwright's pinned
+`reducedMotion: 'reduce'`: **0.14s**. `reset.css` sets `animation-duration:
+0.01ms` at zero specificity in the lowest layer; the `animation` shorthand in
+`Popover.css`, in `pp.components`, outranks it. That is what the reset's own
+comment says — components "opt into essential motion by declaring their own
+transition inside pp.components" — and it is why RULES §3 puts the obligation
+on every animated component rather than on the reset. `Popover.css` now
+declares `animation: none` under reduced motion — `none` rather than a
+crushed duration, so Radix's `Presence` unmounts a closing panel at once.
+`Slider`'s D-052 §3 case was a *transition on the reset's own rule*, which is
+why the crush reached it; the generalisation the specs made from it was
+wrong, and both are amended with markers.
+
+### 6. Verified, as promised in the 4.1 spec rather than assumed
+
+- **The z-index token reaches the element that stacks.** Radix's positioned
+  wrapper reads the panel's computed `z-index` and carries the same value:
+  1200 on both, asserted.
+- **Tree-shaking.** In the playground's production build the chunk holding
+  Radix's popover code (70,635 bytes) is referenced by the Popover page's
+  payload and by neither the Button page's nor the RangeSlider page's.
+  Checked by chunk name in the prerendered HTML, because Next loads
+  page-specific client chunks through the flight payload rather than
+  `<script>` tags — the first draft of this check grepped the tags and
+  proved nothing.
+- **`resolveSpace`.** `sideOffset="2"` measured 8px between trigger and
+  panel; the token's computed value, converted, is 8.
+- **A `position: fixed` panel captures correctly in a full-page screenshot**
+  (the 4.2 spec's stated unknown): the page is not scrolled when captured,
+  so viewport coordinates are document coordinates. Collision avoidance is
+  computed against the *viewport*, so a trigger near the bottom of the
+  first screen flips its panel upward; the gallery sits above that line and
+  the panels are placed below their triggers.
+
+### 7. Five browser breaks and one unit break, each caught by the test named for it
+
+`directionOf` pinned to `ltr` (the RTL test); the theme attribute dropped
+from the panel (the theme test, and the gallery test with it); the `z-index`
+line (the stacking test); the reduced-motion rule (the reduced-motion test);
+and, in the unit suite, the `aria-labelledby` wiring (the name test, and axe
+with it). The break the spec predicted would **not** be observable — a
+hardcoded `8` in place of `resolveSpace` — was run and was not: ten of ten
+passed, because the token resolves to the number the hardcode is. The guard
+for that one is the `Space` type and the docs page's "don't", as D-061 §5
+said. One break had to be run twice: removing the attribute outright left an
+unused variable, the build's `noUnusedLocals` refused it, and the first run
+proved nothing about the test. A break that does not compile is not a break.

@@ -48,6 +48,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'slider', path: '/components/slider' },
   { name: 'form', path: '/components/form' },
   { name: 'range-slider', path: '/components/range-slider' },
+  { name: 'popover', path: '/components/popover' },
   { name: 'alert', path: '/components/alert' },
 ];
 

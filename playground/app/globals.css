@@ -294,3 +294,13 @@ body {
   font-size: 10px;
   color: var(--pp-color-text-muted);
 }
+
+/* Popover page: a dark region on the light page, for the theme-across-the-
+   portal demo. The region paints its own page colour so the difference is
+   visible; the popover opened from it must paint the same. */
+.popover-dark-region {
+  padding: var(--pp-space-4);
+  border-radius: var(--pp-radius-3);
+  background-color: var(--pp-color-bg-page);
+  color: var(--pp-color-text);
+}
