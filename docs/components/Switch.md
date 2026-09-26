@@ -138,6 +138,20 @@ leaves the other alone. `--pp-switch-thumb-bg` is the exception — it is one
 property and it applies to both states, so setting it gives up the automatic
 inversion.
 
+There is **no `tone` prop**, and that is deliberate: the root's own
+`data-pp-tone` is reserved for `invalid`, which sets it to `danger` ([tier-3c
+§4](../specs/tier-3c-inputs.md)). To colour the on track, set the tone on an
+ancestor — the `Field` takes it (or set `--pp-switch-track-bg-checked`), and it touches nothing else there, because the
+label and description do not read the tone and the error sets its own:
+
+```tsx
+<Field label="Notifications" data-pp-tone="accent">
+  <Switch />
+</Field>
+```
+
+`invalid` still wins, because the control's root is the nearer context (D-059).
+
 ## Anatomy
 
 ```

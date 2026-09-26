@@ -777,7 +777,9 @@ That matches the platform and the "select all" case it exists for.
 
 The checked fill is `--pp-tone-solid` and has no property of its own: set the
 tone, or set `--pp-checkbox-bg` inside a `[data-state="checked"]` scope of your
-own. (A `--pp-checkbox-bg-checked` was listed here at the gate and never built;
+own. "Set the tone" means on an ancestor — there is no `tone` prop on any of
+the checkable three, because the root's `data-pp-tone` is §4's, for `invalid`
+(D-059). (A `--pp-checkbox-bg-checked` was listed here at the gate and never built;
 removed rather than left as a promise the stylesheet does not keep.)
 
 ### Keyboard interaction

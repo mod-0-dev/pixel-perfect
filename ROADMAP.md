@@ -26,6 +26,16 @@ is `done`.
 
 ### Current state
 
+- **A claim about inheritance that no test had ever run** (**D-059**). `Alert`
+  said its tone "inherits into" the `Button`s and `Link`s inside it — in the
+  source, the stylesheet, the spec, the docs, this file and the 0.7.0
+  changelog. It does not: both write their own `data-pp-tone` from a default,
+  and the nearest context wins. Launchpad found it with a grey "Try again" on a
+  red alert. The `solid` rejection it propped up survives re-measurement (step
+  11 sits at one lightness in every hue); a test now pins the real behaviour.
+  Same entry: `live="polite"` was documented for exactly the mount-on-demand
+  case its own paragraph called unreliable, and "set the tone" on the checkable
+  three now says *where*
 - **A border's surfaces are neutral; a ring's are not** (**D-056 §2**). The
   generator solved the focus ring against neutral's step 1 while `edge` three
   lines below it solved against steps 1, 2 and 3 — and `solveEdge`'s comment
@@ -99,10 +109,11 @@ is `done`.
   twice, and the first spec to arrive at the gate with the table already filled
   in
 - **A variant table was rejected on measurement, not on taste** (spec §1). An
-  `Alert` is the only component whose children are arbitrary, so the tone
-  context (D-007) inherits into a caller's `Button`s and `Link`s. A `solid`
+  `Alert` is the only component whose children are arbitrary. A `solid`
   variant puts them on step 9, where `--pp-tone-text` is **1.04–1.16:1** in
-  light — not low contrast, invisible. `plain` is 1.10–1.12:1 against the page,
+  light — not low contrast, invisible. (This bullet first said the tone
+  context inherits into a caller's `Button`s and `Link`s; it does not, and the
+  rejection holds anyway — **D-059**.) `plain` is 1.10–1.12:1 against the page,
   which is not a block at all. One treatment ships
 - **A layout whose parts are optional wants a container that spaces items, not
   one that reserves tracks** (**D-053 §3**). The spec drew a three-column grid.
