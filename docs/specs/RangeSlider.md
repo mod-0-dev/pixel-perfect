@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3 — Form & Action Core |
-| **Status** | `build` — started 2026-09-26, the day `Form` was `done` and Gate A opened. Gate C passed 2026-09-22 **by delegation** (D-057): every recommendation below adopted as written. Build findings in D-060 |
+| **Status** | `review` — built 2026-09-26, the day `Form` was `done` and Gate A opened. Gate C passed 2026-09-22 **by delegation** (D-057): every recommendation below adopted as written. Build findings in D-060. `done` waits on one Definition of Done box: the CI-authored screenshot baseline (D-013) |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — `useField()`, `useControllableState`, pointer handlers |
 | **Depends on** | 3.15 `Slider` — the numeric contract (3D §1), `snapToRange` / `numberIO`, and the track-and-fill structure (D-052 §1) |
