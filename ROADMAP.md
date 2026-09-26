@@ -80,7 +80,16 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** nothing. **3.17 `RangeSlider` is `done`** (2026-09-26):
+- **In flight:** **4.1 Overlay foundation is in `spec`**, awaiting Gate C —
+  the first foundation with a spec document, because its choices are the
+  dependency and the vocabulary every Tier 4 component inherits. It measures
+  Radix against Base UI and against the platform (`<dialog>`, `popover`, CSS
+  anchor positioning: 25 of 35 target browsers) and recommends Radix, on
+  vocabulary as much as stability: `asChild` and `data-state` / `data-side` /
+  `data-align` are Radix's names and already RULES §4's. It also names the
+  problem the roadmap row did not: a portal leaves the `[data-pp-theme]`
+  subtree, so the theme must be carried across and the tone must not. Nothing
+  is built until the spec is approved. **3.17 `RangeSlider` is `done`** (2026-09-26):
   built the day Gate A opened, its baseline CI-authored on the PR branch and
   compared green on the re-run (D-013), and the last box closed the same day
   once the dimensions guard — tripped at its limit by that baseline plus two
@@ -741,7 +750,7 @@ Behavior from Radix / Base UI. We own every DOM node and every pixel.
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 4.1 | Overlay foundation | `planned` | n/a | client | T3 | Portal, dismissable layer, focus scope, z-index tokens, floating positioning |
+| 4.1 | Overlay foundation | `spec` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written 2026-09-26, **awaiting Gate C** (individual, per D-014's carve-out). Proposes **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
 | 4.2 | `Popover` | `planned` | hug | client | 4.1 | Sizing contract exception — documented in spec |
 | 4.3 | `Tooltip` | `planned` | hug | client | 4.1 | |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
