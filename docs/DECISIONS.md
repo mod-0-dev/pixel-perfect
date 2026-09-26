@@ -3996,7 +3996,8 @@ library's own default. The Matrix renders the three widths once.
 
 - **Screenshots: two per page.** `screenshots.spec.ts` stores the choice
   before each page loads — the way a returning user's browser would — and
-  captures `<page>.light.png` and `<page>.dark.png`. The Definition of Done's
+  captures `<page>-light.png` and `<page>-dark.png` — the index included,
+  since it is now a page worth looking at. The Definition of Done's
   "correct in light and dark themes" is met by the pair, and a page that is
   wrong in one theme fails exactly one baseline, which names the theme.
 - **Browser assertions that compared the two columns now switch.** A

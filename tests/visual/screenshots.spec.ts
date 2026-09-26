@@ -10,6 +10,7 @@ import { expect, test } from '@playwright/test';
  * so a component page without a screenshot here is a Definition of Done miss.
  */
 const PAGES: Array<{ name: string; path: string }> = [
+  { name: 'index', path: '/' },
   { name: 'tokens', path: '/tokens' },
   { name: 'harness', path: '/harness' },
   { name: 'text', path: '/components/text' },
@@ -116,7 +117,8 @@ test.describe('visual baselines', () => {
           window.localStorage.setItem('pp-theme', choice);
         }, theme);
         await ready(page, path);
-        await expect(page).toHaveScreenshot(`${name}.${theme}.png`, { fullPage: true });
+        // Playwright writes the file as `<name>-<theme>.png`: a dot in the name is sanitised.
+        await expect(page).toHaveScreenshot(`${name}-${theme}.png`, { fullPage: true });
       });
     }
   }

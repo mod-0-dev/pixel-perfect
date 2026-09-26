@@ -1,158 +1,322 @@
 {
-  "alert.png": {
+  "alert-dark.png": {
     "width": 1280,
-    "height": 9327
+    "height": 9133
   },
-  "aspect-ratio.png": {
+  "alert-light.png": {
     "width": 1280,
-    "height": 11530
+    "height": 9133
   },
-  "avatar.png": {
+  "aspect-ratio-dark.png": {
     "width": 1280,
-    "height": 1957
+    "height": 11441
   },
-  "badge.png": {
+  "aspect-ratio-light.png": {
     "width": 1280,
-    "height": 2593
+    "height": 11441
   },
-  "button-group.png": {
+  "avatar-dark.png": {
     "width": 1280,
-    "height": 3536
+    "height": 1903
   },
-  "button.png": {
+  "avatar-light.png": {
     "width": 1280,
-    "height": 5926
+    "height": 1903
   },
-  "center.png": {
+  "badge-dark.png": {
     "width": 1280,
-    "height": 2969
+    "height": 2539
   },
-  "checkbox.png": {
+  "badge-light.png": {
     "width": 1280,
-    "height": 5605
+    "height": 2539
   },
-  "cluster.png": {
+  "button-dark.png": {
     "width": 1280,
-    "height": 5388
+    "height": 5767
   },
-  "code.png": {
+  "button-group-dark.png": {
     "width": 1280,
-    "height": 2600
+    "height": 3448
   },
-  "container.png": {
+  "button-group-light.png": {
     "width": 1280,
-    "height": 12115
+    "height": 3448
   },
-  "field.png": {
+  "button-light.png": {
     "width": 1280,
-    "height": 8572
+    "height": 5767
   },
-  "form.png": {
+  "center-dark.png": {
     "width": 1280,
-    "height": 4090
+    "height": 2951
   },
-  "grid.png": {
+  "center-light.png": {
     "width": 1280,
-    "height": 6510
+    "height": 2951
   },
-  "harness.png": {
+  "checkbox-dark.png": {
     "width": 1280,
-    "height": 1262
+    "height": 5481
   },
-  "heading.png": {
+  "checkbox-light.png": {
     "width": 1280,
-    "height": 3946
+    "height": 5481
   },
-  "icon-button.png": {
+  "cluster-dark.png": {
     "width": 1280,
-    "height": 2984
+    "height": 5229
   },
-  "icon.png": {
+  "cluster-light.png": {
     "width": 1280,
-    "height": 2586
+    "height": 5229
   },
-  "input.png": {
+  "code-dark.png": {
     "width": 1280,
-    "height": 5118
+    "height": 2546
   },
-  "kbd.png": {
+  "code-light.png": {
     "width": 1280,
-    "height": 1625
+    "height": 2546
   },
-  "label.png": {
+  "container-dark.png": {
     "width": 1280,
-    "height": 5304
+    "height": 12061
   },
-  "link.png": {
+  "container-light.png": {
     "width": 1280,
-    "height": 3353
+    "height": 12061
   },
-  "number-input.png": {
+  "field-dark.png": {
     "width": 1280,
-    "height": 8247
+    "height": 8378
   },
-  "radio.png": {
+  "field-light.png": {
     "width": 1280,
-    "height": 7503
+    "height": 8378
   },
-  "range-slider.png": {
+  "form-dark.png": {
     "width": 1280,
-    "height": 6158
+    "height": 4107
   },
-  "scroller.png": {
+  "form-light.png": {
     "width": 1280,
-    "height": 2706
+    "height": 4107
   },
-  "select.png": {
+  "grid-dark.png": {
     "width": 1280,
-    "height": 7834
+    "height": 6316
   },
-  "separator.png": {
+  "grid-light.png": {
     "width": 1280,
-    "height": 1803
+    "height": 6316
   },
-  "skeleton.png": {
+  "harness-dark.png": {
     "width": 1280,
-    "height": 2404
+    "height": 1248
   },
-  "slider.png": {
+  "harness-light.png": {
     "width": 1280,
-    "height": 6445
+    "height": 1248
   },
-  "spinner.png": {
+  "heading-dark.png": {
     "width": 1280,
-    "height": 1601
+    "height": 3893
   },
-  "split.png": {
+  "heading-light.png": {
     "width": 1280,
-    "height": 2502
+    "height": 3893
   },
-  "stack.png": {
+  "icon-button-dark.png": {
     "width": 1280,
-    "height": 6932
+    "height": 2931
   },
-  "switch.png": {
+  "icon-button-light.png": {
     "width": 1280,
-    "height": 6120
+    "height": 2931
   },
-  "text.png": {
+  "icon-dark.png": {
     "width": 1280,
-    "height": 4197
+    "height": 2532
   },
-  "textarea.png": {
+  "icon-light.png": {
     "width": 1280,
-    "height": 8428
+    "height": 2532
   },
-  "toggle.png": {
+  "input-dark.png": {
     "width": 1280,
-    "height": 3418
+    "height": 5030
   },
-  "tokens.png": {
+  "input-light.png": {
     "width": 1280,
-    "height": 3144
+    "height": 5030
   },
-  "visually-hidden.png": {
+  "kbd-dark.png": {
     "width": 1280,
-    "height": 1129
+    "height": 1607
+  },
+  "kbd-light.png": {
+    "width": 1280,
+    "height": 1607
+  },
+  "label-dark.png": {
+    "width": 1280,
+    "height": 5180
+  },
+  "label-light.png": {
+    "width": 1280,
+    "height": 5180
+  },
+  "link-dark.png": {
+    "width": 1280,
+    "height": 3264
+  },
+  "link-light.png": {
+    "width": 1280,
+    "height": 3264
+  },
+  "number-input-dark.png": {
+    "width": 1280,
+    "height": 8123
+  },
+  "number-input-light.png": {
+    "width": 1280,
+    "height": 8123
+  },
+  "popover-dark.png": {
+    "width": 1280,
+    "height": 1988
+  },
+  "popover-light.png": {
+    "width": 1280,
+    "height": 1988
+  },
+  "radio-dark.png": {
+    "width": 1280,
+    "height": 7379
+  },
+  "radio-light.png": {
+    "width": 1280,
+    "height": 7379
+  },
+  "range-slider-dark.png": {
+    "width": 1280,
+    "height": 6105
+  },
+  "range-slider-light.png": {
+    "width": 1280,
+    "height": 6105
+  },
+  "scroller-dark.png": {
+    "width": 1280,
+    "height": 2653
+  },
+  "scroller-light.png": {
+    "width": 1280,
+    "height": 2653
+  },
+  "select-dark.png": {
+    "width": 1280,
+    "height": 7675
+  },
+  "select-light.png": {
+    "width": 1280,
+    "height": 7675
+  },
+  "separator-dark.png": {
+    "width": 1280,
+    "height": 1785
+  },
+  "separator-light.png": {
+    "width": 1280,
+    "height": 1785
+  },
+  "skeleton-dark.png": {
+    "width": 1280,
+    "height": 2386
+  },
+  "skeleton-light.png": {
+    "width": 1280,
+    "height": 2386
+  },
+  "slider-dark.png": {
+    "width": 1280,
+    "height": 6357
+  },
+  "slider-light.png": {
+    "width": 1280,
+    "height": 6357
+  },
+  "spinner-dark.png": {
+    "width": 1280,
+    "height": 1583
+  },
+  "spinner-light.png": {
+    "width": 1280,
+    "height": 1583
+  },
+  "split-dark.png": {
+    "width": 1280,
+    "height": 2449
+  },
+  "split-light.png": {
+    "width": 1280,
+    "height": 2449
+  },
+  "stack-dark.png": {
+    "width": 1280,
+    "height": 6808
+  },
+  "stack-light.png": {
+    "width": 1280,
+    "height": 6808
+  },
+  "switch-dark.png": {
+    "width": 1280,
+    "height": 5962
+  },
+  "switch-light.png": {
+    "width": 1280,
+    "height": 5962
+  },
+  "text-dark.png": {
+    "width": 1280,
+    "height": 4108
+  },
+  "text-light.png": {
+    "width": 1280,
+    "height": 4108
+  },
+  "textarea-dark.png": {
+    "width": 1280,
+    "height": 8304
+  },
+  "textarea-light.png": {
+    "width": 1280,
+    "height": 8304
+  },
+  "toggle-dark.png": {
+    "width": 1280,
+    "height": 3330
+  },
+  "toggle-light.png": {
+    "width": 1280,
+    "height": 3330
+  },
+  "tokens-dark.png": {
+    "width": 1280,
+    "height": 3201
+  },
+  "tokens-light.png": {
+    "width": 1280,
+    "height": 3201
+  },
+  "visually-hidden-dark.png": {
+    "width": 1280,
+    "height": 1146
+  },
+  "visually-hidden-light.png": {
+    "width": 1280,
+    "height": 1146
   }
 }
