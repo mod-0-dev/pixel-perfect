@@ -3594,3 +3594,157 @@ description use text tokens and the error sets its own `danger` — and `invalid
 still wins because the control's root is the nearer context. Launchpad met this
 as a visible change: its `role="switch"` stand-in was accent, `Switch` is
 neutral by default, and the app kept neutral to match its radios.
+
+---
+
+## D-060 — `RangeSlider` build findings: the safety net that hid the wire, and a stacking rule the spec had only written for the coincident case
+
+**Date:** 2026-09-26 · **Status:** accepted · **Amends:** `docs/specs/RangeSlider.md`
+§3, §Testing notes; `.stylelintrc.json` (D-019 exemption list);
+`docs/components/Slider.md`, `Slider.tsx` header
+
+Built as specified, on the day Gate A opened. D-057's two unverified
+assumptions had already been checked before the build (D-058 addendum), and
+both held in the browser suite again — a transparent native thumb under
+`pointer-events: auto` takes a drag, and React restores a clamped controlled
+input including when the clamp leaves state unchanged. What follows is what the
+spec did not anticipate.
+
+### 1. A value assertion could not tell the native thumb from the root's safety net
+
+Spec §Testing notes promised the assertion that §1's placement formula is for:
+press the centre of each visible thumb and drag, and "the value that moves must
+be that thumb's" — the break being the formula itself. Written that way it
+passed, and the break would **not** have failed it.
+
+If our thumb drifts off the native one, or the native thumb takes no pointer
+events, a press on the visible thumb lands on bare track. Bare track reaches
+the root, and §2's routing moves the **nearer** thumb to the pressed value and
+captures the drag. The nearer thumb is the one under the pointer, the pressed
+value is where it already sits, and the drag follows from there: the same
+thumb, moved to the same place. The routing is a safety net that rescues
+exactly the two defects the test exists to catch, and a value assertion cannot
+tell the net from the wire.
+
+So the test asserts the **hit test** first: `document.elementFromPoint` at each
+visible thumb's centre must be that thumb's own input, and between them it
+must be the root. Then it drags. `pointer-events: auto` removed from the
+`-webkit-` thumb block fails on the hit test (and takes the stuck-pair test
+with it, which also presses a thumb); a value read alone stayed green. The
+spec's other break for this test — the formula, run as physical `left` — is
+right in LTR and so passes the LTR hit test too; it is the RTL test that
+catches it, on our thumbs' positions. D-035 §3's rule from the other
+direction: a mechanism that degrades gracefully needs a test that can see the
+degradation, or the graceful part is what gets tested.
+
+### 2. The stacking rule is on the pair's midpoint, not only on the coincident value
+
+Spec §3 said which input is on top when the thumbs **coincide**: the start
+input above the range's midpoint, the end input below it, so the thumb on top
+can always move toward the open side. It then said that when they do not
+coincide "the order is immaterial", which is true of the inputs and not of the
+thumbs: with `step={1}` on a 0–100 range the native thumbs overlap at any two
+values within a thumb's width of each other, and the upper input takes every
+press in the overlap.
+
+The rule is applied to the **pair's own midpoint** against the range's. For a
+coincident pair that is the spec's rule exactly; for a partially overlapping
+pair it puts the same thumb on top that the spec's reasoning would — the one
+with room to move away — and when the thumbs are clear of each other it
+decides nothing, as before. `data-thumb-top` carries it, and the unit test
+pins a pair at `[100, 100]` to `start`, which is the case every hand-built
+range slider ships stuck. The z-order is a rule in the stylesheet, not the
+attribute alone, so the browser break that catches its absence is the deleted
+`z-index` line, not the deleted attribute: dropping the attribute fails on an
+attribute assertion, which proves nothing about whether the pair can be pulled
+apart.
+
+### 3. The public thumb size is resolved into the private property once, not at each use
+
+`Slider.css` reads `var(--pp-slider-thumb-size, var(--_thumb-size))` at the
+one declaration that draws the thumb. Here the thumb's size is read in three
+places that must agree — the native thumb, our thumb, and the `100% − thumb`
+travel in each thumb's inset — so `--_thumb-size` is defined as
+`var(--pp-range-slider-thumb-size, var(--pp-size-5))` on the root and the
+three read the private name. D-024's requirement is that the public property
+is read first and from any ancestor; it is, once, and an override that reached
+one of the three and not the others would have been the misalignment §1
+exists to prevent.
+
+### 4. `preventDefault` on the root's pointerdown, and why a spec that said "focus its input" needed it
+
+A `pointerdown` whose default is not prevented also runs the browser's own
+focus step, which focuses the nearest focusable ancestor of the target — here
+nothing, so focus goes to `<body>` — *after* the handler has already focused
+the thumb's input, and starts a text selection across the page on the way.
+The handler prevents the default once it has decided to route the press, and
+only then: a caller's `onPointerDown` runs first and can prevent it to stand
+the routing down, which the unit test asserts.
+
+### 5. Two test defects, both in the tests
+
+The first run of the unit suite failed three of forty-one, all in the
+track-press group, and all for one reason: the tests dispatched `pointerdown`
+and `pointermove` through `dispatchEvent` rather than through `fireEvent`, so
+nothing wrapped them in `act()`. In a browser a discrete event's state update
+flushes in a microtask before the next event can arrive; in the test the next
+press ran against the previous render's closures and read the value from
+before the press. The component was right; the tests were re-dispatched
+through `fireEvent`, which wraps each in `act()`. D-051 §6's rule — when a test
+fails, establish which of the two is wrong before changing either — and this
+time it was the test both times.
+
+The second was §1's, found by reading the passing test rather than by running
+it, which is the exception rather than the pattern and is recorded as such.
+
+**Five browser breaks, each caught by the test named for it**, with the
+other assertions in the group still passing: physical `left` for
+`inset-inline-start` (the RTL test); the `z-index` line under
+`data-thumb-top` (the stuck pair); `pointer-events: auto` off the `-webkit-`
+thumb (the hit test, and the stuck pair); the ring declarations (the ring
+test); and the crossing clamp (both cannot-cross tests). The unit break the
+spec names — a fraction written only when non-zero — fails the `[0, 0]` case.
+
+**One run did not fit, and it is recorded rather than smoothed over.** In the
+first pass of the clamp break the ring test failed alongside the two clamp
+tests. The clamp is not on the ring's path, and it did not reproduce: six
+repeats on the intact build, three under the same break in isolation and a
+second full run of the group under the break all passed. The cause was not
+established. The assertion is already polled (D-052 §3) and reads
+`outline-style` (D-054 §1); if it fails again, this is where to start.
+
+### 6. Three claims on the docs page are argued, not measured
+
+- **WCAG 2.2 SC 2.5.8.** `Slider` relies on the spacing exception — one
+  target, nothing for a 24px circle to intersect. Two thumbs can touch, so the
+  exception does not hold when they meet. The docs say the target that matters
+  is the control, which is `--pp-control-height-*` tall and routes any press
+  to the nearer thumb. That is an argument about targets, not a measurement of
+  one, and it is written as such.
+- **Firefox.** The `-moz-` half of the thumb blocks — sizing and
+  `pointer-events: auto` — rests on the technique's wide use and on
+  `lint:rules`' mixed-prefix rule, as D-058's addendum said. The environment
+  still ships one browser (D-051 §4).
+- **The ring across the fill** is accepted at the gate's numbers (spec §6,
+  D-057). The build moved nothing that would change them: same ring tokens,
+  same fill step, same thumb sizes.
+
+### 7. Tracking
+
+- `RangeSlider.css` joins the D-019 `inline-size` exemption in
+  `.stylelintrc.json`, as its spec said it would. The thumbs are intrinsically
+  square and sized from the size scale; nothing else in the file declares one.
+- `Slider.md`'s "Why there is no range" is now "Why range is a separate
+  component" and points here; `Slider.tsx`'s header no longer says the
+  two-thumb case is deferred. D-045's rule: a claim about another component is
+  a link to where it is asserted, not a restatement.
+- `range-slider.png` was unrecorded in `dimensions.json` until CI authored
+  it. **This entry first said "the guard's tolerance is three unrecorded
+  baselines and this makes one"; it made three.** `form.png` and `tokens.png`
+  were already unrecorded — `Form`'s baseline was authored after D-054 §2's
+  manifest and `/tokens` was re-baselined by 0.11 — so the authored file was
+  the third and the guard failed the first CI run after the authoring commit,
+  exactly as D-054 §2 says it should. `npm run dimensions` recorded all three
+  from the committed PNGs (form 4090, range-slider 6158, tokens 3144 tall).
+  The count in the first draft was read off the manifest without counting
+  the directory against it, which is the check the guard exists to make.

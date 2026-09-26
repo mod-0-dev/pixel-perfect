@@ -1,0 +1,235 @@
+/*
+ * RangeSlider — spec docs/specs/RangeSlider.md
+ *
+ * TWO NATIVE INPUTS, STACKED, TRANSPARENT — AND THE THUMBS YOU SEE ARE OURS
+ * (spec §1). Everything `Slider.css` says about the track still holds: it is
+ * ours, the fill is a grid column so RTL needs nothing declared (D-052 §1), and
+ * the native track is made invisible so ours shows through. What changes is
+ * the thumb. Two full-width inputs on top of each other would each draw
+ * `:focus-visible` around the WHOLE track, and moving the ring onto the thumb
+ * pseudo-element would need `outline: none`, which Tier 0.7 bans and D-029
+ * banned on purpose. So the inputs are `opacity: 0` — their ring is transparent
+ * with them, nothing is suppressed — and the ring is drawn on our thumb span
+ * by a subsequent-sibling selector.
+ *
+ * THE NATIVE THUMBS ARE STILL SIZED, because they are the hit targets. They
+ * take exactly our thumb's size, and our thumb is placed with the platform's
+ * own formula — centre at `thumb / 2 + p × (track − thumb)` — so the invisible
+ * native thumb is always underneath the visible one. `inset-inline-start` on a
+ * `position: relative` span, not `translate`, because `translate` is physical
+ * and would run the wrong way in RTL (D-048 §4).
+ *
+ * `pointer-events: none` ON THE INPUTS AND `auto` ON THEIR THUMBS is what lets
+ * both thumbs be dragged wherever they are — and it is what takes a bare track
+ * press away from the inputs. That press reaches the root, which routes it to
+ * the nearer thumb in RangeSlider.tsx (spec §2).
+ *
+ * THE VENDOR PSEUDO-ELEMENTS ARE DUPLICATED ON PURPOSE (3D §8). An unknown
+ * pseudo-element invalidates the ENTIRE selector list in the engine that does
+ * not know it, so the -webkit- and -moz- blocks below have identical bodies
+ * and separate selectors, and `lint:rules` refuses a list that mixes them
+ * (D-051 §4). With the native thumbs invisible those blocks only size them and
+ * set pointer-events — no colours, no borders — which is the vendor surface at
+ * its smallest yet.
+ */
+
+@layer pp.components {
+  .pp-range-slider {
+    --_height: var(--pp-control-height-md);
+    /* 16 / 20 / 24 — the checkable three's scale, as Slider (D-039 §8). */
+    --_thumb-size: var(--pp-range-slider-thumb-size, var(--pp-size-5));
+    --_track-size: var(--pp-space-1);
+    --_track-color: var(--pp-color-bg-sunken);
+    --_fill-color: var(--pp-tone-solid);
+    --_thumb-color: var(--pp-color-bg-surface);
+    --_thumb-border: var(--pp-color-border);
+
+    /* fill: block-level with no width declaration. One cell — the track, the
+       two controls, then the two thumbs, all stacked in it. */
+    display: grid;
+    min-inline-size: 0;
+    /* A vertical swipe across the control still scrolls the page; a
+       horizontal one is a drag (spec §2). */
+    touch-action: pan-y;
+    cursor: pointer;
+  }
+
+  .pp-range-slider[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_thumb-size: var(--pp-range-slider-thumb-size, var(--pp-size-4));
+  }
+
+  .pp-range-slider[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_thumb-size: var(--pp-range-slider-thumb-size, var(--pp-size-6));
+    /* A track is a line rather than a box, so it does not earn three steps —
+       sm and md share one, as in Slider. */
+    --_track-size: var(--pp-space-2);
+  }
+
+  /*
+   * EVERY STATE IS DECLARED ON THE ROOT, NEVER ON A DESCENDANT SELECTOR
+   * (D-040 §3).
+   */
+  .pp-range-slider[data-invalid] {
+    /* The root carries data-pp-tone="danger", so this resolves in the danger
+       ramp without this file naming a colour (D-007). */
+    --_fill-color: var(--pp-tone-solid);
+    --_thumb-border: var(--pp-tone-border);
+  }
+
+  .pp-range-slider[data-disabled] {
+    /* The decorative step, because a disabled control is exempt from 1.4.11
+       and should look it (D-050). */
+    --_fill-color: var(--pp-color-border-subtle);
+    --_thumb-border: var(--pp-color-border-subtle);
+    --_thumb-color: var(--pp-color-bg-sunken);
+    cursor: not-allowed;
+  }
+
+  .pp-range-slider__track {
+    grid-area: 1 / 1;
+    place-self: center stretch;
+    display: grid;
+    /*
+     * THE FILL IS COLUMN TWO of `start (end − start) 1fr`. Grid columns follow
+     * the INLINE axis, so this is correct in an RTL layout with nothing said
+     * about direction (D-052 §1). The fractions are unitless and always
+     * written by the component, so the `0` fallbacks are never read in
+     * practice; they are here so a stylesheet-only render has a shape.
+     */
+    grid-template-columns:
+      calc(var(--_pp-range-slider-start, 0) * 100%)
+      calc((var(--_pp-range-slider-end, 0) - var(--_pp-range-slider-start, 0)) * 100%)
+      1fr;
+    block-size: var(--pp-range-slider-track-size, var(--_track-size));
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-range-slider-track-color, var(--_track-color));
+    overflow: hidden;
+    /* Decoration. A press on it must reach the root, not stop here. */
+    pointer-events: none;
+  }
+
+  .pp-range-slider__fill {
+    grid-area: 1 / 2;
+    background-color: var(--pp-range-slider-fill-color, var(--_fill-color));
+  }
+
+  .pp-range-slider__control {
+    grid-area: 1 / 1;
+    min-inline-size: 0;
+    /* The same height as an Input or a Button at this size (D-028), and the
+       pointer target the full height of the control. */
+    block-size: var(--pp-range-slider-height, var(--_height));
+    margin: 0;
+    /* Takes the platform's own track and thumb away; ours follow below. */
+    appearance: none;
+    background-color: transparent;
+    /*
+     * INVISIBLE, NOT SUPPRESSED. The input's own focus ring — the reset's and
+     * the platform's — is transparent with it, so the ring drawn on our thumb
+     * below is a replacement, on the element that has the user's attention
+     * (RULES §6, spec §1).
+     */
+    opacity: 0;
+    /* Only the native THUMB takes the pointer; bare track falls through to the
+       root, which routes the press (spec §2). */
+    pointer-events: none;
+    cursor: pointer;
+  }
+
+  .pp-range-slider__control:disabled {
+    cursor: not-allowed;
+  }
+
+  /*
+   * WHEN THE THUMBS MEET, ONE INPUT COVERS THE OTHER, AND THE TOP ONE IS THE
+   * ONE THAT CAN MOVE TOWARD THE OPEN SIDE (spec §3). The end input is later
+   * in source and paints on top by default; the root says when the start
+   * input should instead. The token, as ButtonGroup (RULES §3).
+   */
+  .pp-range-slider[data-thumb-top="start"] .pp-range-slider__control[data-thumb="start"] {
+    z-index: var(--pp-z-raised);
+  }
+
+  /* --- the native track, made invisible so ours shows through --------------
+     Three blocks, not one selector list. See the file header. */
+
+  .pp-range-slider__control::-webkit-slider-runnable-track {
+    /* The thumb's own block size, which centres the thumb without the negative
+       margin every recipe uses and RULES §2 forbids (D-052 §1). */
+    block-size: var(--_thumb-size);
+    background-color: transparent;
+  }
+
+  .pp-range-slider__control::-moz-range-track {
+    block-size: var(--_thumb-size);
+    background-color: transparent;
+  }
+
+  .pp-range-slider__control::-moz-range-progress {
+    background-color: transparent;
+  }
+
+  /* --- the native thumbs: hit targets only, sized to ours ------------------
+     Two blocks with identical bodies, and that is the point. */
+
+  .pp-range-slider__control::-webkit-slider-thumb {
+    appearance: none;
+    block-size: var(--_thumb-size);
+    aspect-ratio: 1;
+    /* Under an input that takes none: the thumb is draggable wherever it is,
+       and only the thumb. */
+    pointer-events: auto;
+  }
+
+  .pp-range-slider__control::-moz-range-thumb {
+    appearance: none;
+    block-size: var(--_thumb-size);
+    aspect-ratio: 1;
+    pointer-events: auto;
+  }
+
+  /* --- our thumbs -----------------------------------------------------------
+     `inline-size` here is the D-019 exemption Slider's spec extended to this
+     file: the thumb is intrinsically square and takes its size from the size
+     scale, which is not the "how much of my parent do I take" decision RULES
+     §1 reserves for the parent. */
+
+  .pp-range-slider__thumb {
+    grid-area: 1 / 1;
+    place-self: center start;
+    position: relative;
+    /* The platform's own formula: the thumb travels a track shorter by its
+       own width. Logical, so it reverses with the native input in RTL. */
+    inset-inline-start: calc(var(--_pp-range-slider-start, 0) * (100% - var(--_thumb-size)));
+    box-sizing: border-box;
+    inline-size: var(--_thumb-size);
+    aspect-ratio: 1;
+    border: var(--pp-border-width-1) solid
+      var(--pp-range-slider-thumb-border-color, var(--_thumb-border));
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-range-slider-thumb-color, var(--_thumb-color));
+    /* Presses fall through to the native thumb beneath it. */
+    pointer-events: none;
+  }
+
+  .pp-range-slider__thumb[data-thumb="end"] {
+    inset-inline-start: calc(var(--_pp-range-slider-end, 0) * (100% - var(--_thumb-size)));
+  }
+
+  /*
+   * ONE RING, ON THE FOCUSED THUMB ALONE — D-029's colour, width and offset,
+   * placed where the question "which part has focus" has its answer. A
+   * subsequent-sibling combinator rather than `:has()`, so jsdom can see it
+   * (spec §Anatomy). Two selectors, not one, so the start input's ring never
+   * lands on the end thumb.
+   */
+  .pp-range-slider__control[data-thumb="start"]:focus-visible
+    ~ .pp-range-slider__thumb[data-thumb="start"],
+  .pp-range-slider__control[data-thumb="end"]:focus-visible
+    ~ .pp-range-slider__thumb[data-thumb="end"] {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+}

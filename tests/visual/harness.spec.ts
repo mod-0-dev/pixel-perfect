@@ -3803,3 +3803,348 @@ test.describe('Form summary and submission', () => {
     await context.close();
   });
 });
+
+/*
+ * RangeSlider (3.17) — spec docs/specs/RangeSlider.md.
+ *
+ * The first slider thumb in the library that a test can measure. `Slider`'s
+ * thumb is a UA-painted pseudo-element whose box is not observable from script
+ * (D-052 §4); this component's visible thumbs are spans of ours, positioned
+ * with the platform's own formula over invisible native thumbs. So the
+ * assertions below check the things `Slider`'s could only screenshot: where
+ * the ring is drawn, that a press on the visible thumb reaches the native one
+ * beneath it, and that a bare track press — which the pointer-events layering
+ * takes away from the inputs — is routed to the nearer thumb by the root.
+ */
+test.describe('RangeSlider', () => {
+  type Page = import('@playwright/test').Page;
+  type Locator = import('@playwright/test').Locator;
+
+  const scope = (page: Page, id: string) => page.locator(`[data-testid="range-slider-${id}"]`);
+  const control = (root: Locator, thumb: 'start' | 'end') =>
+    root.locator(`.pp-range-slider__control[data-thumb="${thumb}"]`);
+  const thumb = (root: Locator, which: 'start' | 'end') =>
+    root.locator(`.pp-range-slider__thumb[data-thumb="${which}"]`);
+
+  /*
+   * The x of a fraction of the range, by the platform's formula: the thumb
+   * travels a track shorter by its own width, so p = 0 is half a thumb in
+   * from the start edge. Measured from the thumb's own box, not restated.
+   */
+  async function geometry(root: Locator) {
+    await root.scrollIntoViewIfNeeded();
+    const box = (await root.boundingBox())!;
+    const t = (await thumb(root, 'start').boundingBox())!;
+    return {
+      box,
+      thumb: t.width,
+      xAt: (fraction: number) => box.x + t.width / 2 + fraction * (box.width - t.width),
+      y: box.y + box.height / 2,
+    };
+  }
+
+  /* A pointer lands on a pixel and a value is a step, so a drag is right to
+     within a step or two of where it was aimed; exact values are asserted
+     where the keyboard, not the pointer, produced them. */
+  const expectNear = async (input: Locator, expected: number) => {
+    const actual = Number(await input.inputValue());
+    expect(Math.abs(actual - expected), `expected ${expected}, read ${actual}`).toBeLessThanOrEqual(2);
+  };
+
+  const centre = async (el: Locator) => {
+    const b = (await el.boundingBox())!;
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+  };
+
+  /* `page.mouse`, because the visible thumb is `pointer-events: none` and
+     `locator.click()` refuses an element that does not receive the hit
+     (D-052 §2 for the scroll; the press falls through to the native thumb). */
+  async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }) {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move((from.x + to.x) / 2, to.y);
+    await page.mouse.move(to.x, to.y);
+    await page.mouse.up();
+  }
+
+  test('the ring is on the focused thumb, and on nothing else', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'keyboard').locator('.pp-range-slider');
+    await root.scrollIntoViewIfNeeded();
+
+    for (const which of ['start', 'end'] as const) {
+      expect((await ringOf(thumb(root, which))).style, `${which} is ringed before focus`).toBe('none');
+    }
+
+    await control(root, 'start').focus();
+    /* Polled, not read in the same frame (D-052 §3); `outline-style`, not
+       `outline-width` (D-054 §1). */
+    await expect.poll(async () => (await ringOf(thumb(root, 'start'))).style).toBe('solid');
+    expect((await ringOf(thumb(root, 'start'))).width).toBeGreaterThan(0);
+    expect((await ringOf(thumb(root, 'end'))).style, 'the start ring reached the end thumb').toBe('none');
+
+    await page.keyboard.press('Tab');
+    await expect(control(root, 'end')).toBeFocused();
+    await expect.poll(async () => (await ringOf(thumb(root, 'end'))).style).toBe('solid');
+    await expect.poll(async () => (await ringOf(thumb(root, 'start'))).style).toBe('none');
+  });
+
+  /*
+   * THE ASSERTION §1's FORMULA IS FOR — AND THE DRAG ALONE COULD NOT BE IT.
+   * If our thumb drifted off the native one, or the native thumb took no
+   * pointer events, a press on the visible thumb would land on bare track and
+   * the root would route it to the nearer thumb: the same thumb, moved to the
+   * same place, and a value assertion reads green. The root's routing is a
+   * safety net, and a test that cannot tell the net from the wire is D-035
+   * §3's failure. So the HIT TEST is asserted first: at each visible thumb's
+   * centre the element under the pointer must be that thumb's own input, and
+   * between them it must be the root. Removing `pointer-events: auto` from
+   * one engine's thumb fails here; the formula's break (physical `left`) is
+   * right in LTR and is caught by the RTL test below instead (D-060 §1).
+   */
+  test('a press on the visible thumb drags the native thumb beneath it', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'track').locator('.pp-range-slider');
+    const g = await geometry(root);
+    await expect(control(root, 'start')).toHaveValue('40');
+    await expect(control(root, 'end')).toHaveValue('60');
+
+    const under = (x: number, y: number) =>
+      page.evaluate(([px, py]) => {
+        const el = document.elementFromPoint(px, py) as HTMLElement | null;
+        return el ? `${el.className}${el.dataset.thumb ? `[${el.dataset.thumb}]` : ''}` : null;
+      }, [x, y] as const);
+    const startCentre = await centre(thumb(root, 'start'));
+    const endCentre = await centre(thumb(root, 'end'));
+    expect(await under(startCentre.x, startCentre.y), 'nothing native under the start thumb').toBe(
+      'pp-range-slider__control[start]',
+    );
+    expect(await under(endCentre.x, endCentre.y), 'nothing native under the end thumb').toBe(
+      'pp-range-slider__control[end]',
+    );
+    expect(await under(g.xAt(0.5), g.y), 'bare track did not fall through to the root').toBe(
+      'pp-range-slider',
+    );
+
+    await drag(page, await centre(thumb(root, 'start')), { x: g.xAt(0.2), y: g.y });
+    await expectNear(control(root, 'start'), 20);
+    await expect(control(root, 'end')).toHaveValue('60');
+    await expect(control(root, 'start')).toBeFocused();
+
+    await drag(page, await centre(thumb(root, 'end')), { x: g.xAt(0.9), y: g.y });
+    await expectNear(control(root, 'end'), 90);
+    await expectNear(control(root, 'start'), 20);
+  });
+
+  test('a press on bare track moves the nearer thumb and keeps dragging it', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'track').locator('.pp-range-slider');
+    const g = await geometry(root);
+
+    // Nearer the start thumb (40) than the end (60).
+    await page.mouse.move(g.xAt(0.1), g.y);
+    await page.mouse.down();
+    await expectNear(control(root, 'start'), 10);
+    await expect(control(root, 'start')).toBeFocused();
+
+    // Still down: the drag continues on the thumb the press picked.
+    await page.mouse.move(g.xAt(0.2), g.y);
+    await page.mouse.move(g.xAt(0.3), g.y);
+    await expectNear(control(root, 'start'), 30);
+    await expect(control(root, 'end')).toHaveValue('60');
+    await page.mouse.up();
+
+    // Nearer the end thumb.
+    await page.mouse.click(g.xAt(0.95), g.y);
+    await expectNear(control(root, 'end'), 95);
+    await expect(control(root, 'end')).toBeFocused();
+    await expectNear(control(root, 'start'), 30);
+  });
+
+  /*
+   * THE BREAK CHECK FOR `translate`. Our thumbs are placed with
+   * `inset-inline-start`, which the engine mirrors in RTL; `translate` is
+   * physical and would put the end thumb on the right of the start thumb in
+   * a layout where the native inputs have already reversed (D-048 §4). And
+   * the root's pointer maths reads `direction` at event time, so a press
+   * near the LEFT edge is a press near `max`.
+   */
+  test('in RTL the thumbs reverse with the inputs, and a track press is measured from the inline start', async ({
+    page,
+  }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'rtl').locator('.pp-range-slider');
+    const g = await geometry(root);
+
+    const startBox = (await thumb(root, 'start').boundingBox())!;
+    const endBox = (await thumb(root, 'end').boundingBox())!;
+    expect(endBox.x, 'the end thumb is not on the left in RTL').toBeLessThan(startBox.x);
+
+    // Left edge is the max end. Value ≈ 90: nearer the end thumb (80).
+    await page.mouse.click(g.xAt(0.1), g.y);
+    await expectNear(control(root, 'end'), 90);
+    await expect(control(root, 'start')).toHaveValue('20');
+  });
+
+  test('the thumbs cannot cross — by keyboard, the clamp is the other thumb', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'keyboard').locator('.pp-range-slider');
+    await root.scrollIntoViewIfNeeded();
+
+    await control(root, 'start').focus();
+    await page.keyboard.press('End');
+    // Not 10: the end thumb sits at 7, and React restored the clamped input.
+    await expect(control(root, 'start')).toHaveValue('7');
+    await expect(control(root, 'end')).toHaveValue('7');
+
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Home');
+    await expect(control(root, 'end')).toHaveValue('7');
+    await page.keyboard.press('ArrowRight');
+    await expect(control(root, 'end')).toHaveValue('8');
+    await page.keyboard.press('ArrowLeft');
+    await page.keyboard.press('ArrowLeft');
+    await expect(control(root, 'end')).toHaveValue('7');
+  });
+
+  test('the thumbs cannot cross — by drag, the start stops at the end', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'track').locator('.pp-range-slider');
+    const g = await geometry(root);
+
+    await drag(page, await centre(thumb(root, 'start')), { x: g.xAt(0.95), y: g.y });
+    await expect(control(root, 'start')).toHaveValue('60');
+    await expect(control(root, 'end')).toHaveValue('60');
+  });
+
+  /*
+   * THE CASE EVERY HAND-BUILT RANGE SLIDER SHIPS BROKEN (spec §3). Both at
+   * max: the two inputs cover each other, and unless the start input is on
+   * top nothing can be grabbed that moves. `data-thumb-top` says which is,
+   * and the break of dropping it fails here.
+   */
+  test('a pair stuck at max can be pulled apart', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const root = scope(page, 'stuck').locator('.pp-range-slider');
+    const g = await geometry(root);
+    await expect(root).toHaveAttribute('data-thumb-top', 'start');
+
+    await drag(page, await centre(thumb(root, 'start')), { x: g.xAt(0.6), y: g.y });
+    await expectNear(control(root, 'start'), 60);
+    await expect(control(root, 'end')).toHaveValue('100');
+    await expect(root).toHaveAttribute('data-thumb-top', 'start');
+  });
+
+  test('the fill column runs between the thumbs', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const section = page.locator('section', { hasText: 'The fill runs between the thumbs' });
+    const wide = section.locator('.matrix__cell').filter({ hasText: 'wide · 960px' }).first();
+
+    const columns = async (labelText: string) => {
+      const track = wide
+        .locator('.pp-field', { hasText: labelText })
+        .locator('.pp-range-slider__track')
+        .first();
+      const raw = await track.evaluate((el) => getComputedStyle(el).gridTemplateColumns);
+      const [a, b, c] = raw.split(' ').map(parseFloat) as [number, number, number];
+      const total = a + b + c;
+      return { before: a / total, fill: b / total };
+    };
+
+    const quarter = await columns('A quarter to three quarters');
+    expect(quarter.before).toBeCloseTo(0.25, 2);
+    expect(quarter.fill).toBeCloseTo(0.5, 2);
+    const met = await columns('The thumbs meet at 50');
+    expect(met.before).toBeCloseTo(0.5, 2);
+    expect(met.fill).toBeCloseTo(0, 2);
+    expect((await columns('The whole range')).fill).toBeCloseTo(1, 2);
+  });
+
+  /* Same height as an Input at the same size, so a row of controls lines up
+     (D-028). Read off both pages rather than restated. */
+  test('the control scale agrees with Input', async ({ page }) => {
+    await page.goto('/components/input');
+    const inputHeight = await page
+      .locator('.pp-input[data-size="md"] .pp-input__control')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    await page.goto('/components/range-slider');
+    const sliderHeight = await scope(page, 'keyboard')
+      .locator('.pp-range-slider__control')
+      .first()
+      .evaluate((el) => Math.round(el.getBoundingClientRect().height));
+
+    expect(sliderHeight, 'a RangeSlider beside an Input is a pixel crooked').toBe(inputHeight);
+  });
+
+  test('the group is named by its field and each thumb by its label, in a real accessibility tree', async ({
+    page,
+  }) => {
+    await page.goto('/components/range-slider');
+    const region = scope(page, 'valuetext');
+    await expect(region.getByRole('group', { name: 'Price' })).toBeVisible();
+
+    const min = region.getByRole('slider', { name: 'Minimum price' });
+    const max = region.getByRole('slider', { name: 'Maximum price' });
+    await expect(min).toHaveAttribute('aria-valuetext', '£50');
+    await expect(max).toHaveAttribute('aria-valuetext', '£250');
+    // Not ours: the element supplies aria-valuenow for `slider`.
+    await expect(min).not.toHaveAttribute('aria-valuenow', /.*/);
+    await expect(min).toHaveAttribute('name', 'price');
+    await expect(max).toHaveAttribute('name', 'price');
+  });
+
+  test('onValueCommit fires once for a track press that keeps dragging', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const region = scope(page, 'controlled');
+    const root = region.locator('.pp-range-slider');
+    const readout = region.locator('p, .pp-text').last();
+    const g = await geometry(root);
+
+    await page.mouse.move(g.xAt(0.3), g.y);
+    await page.mouse.down();
+    for (const fraction of [0.35, 0.4, 0.45, 0.5]) await page.mouse.move(g.xAt(fraction), g.y);
+    await page.mouse.up();
+
+    const text = await readout.textContent();
+    const changes = Number(/onValueChange fired (\d+)/.exec(text ?? '')?.[1]);
+    const commits = Number(/onValueCommit fired (\d+)/.exec(text ?? '')?.[1]);
+
+    expect(changes, 'the drag produced no continuous updates').toBeGreaterThan(1);
+    expect(commits, 'a drag committed more than once').toBe(1);
+    expect(text).toContain('value 50–80');
+  });
+
+  test('fills the box its parent gives it, at every width, with no width declared', async ({ page }) => {
+    await page.goto('/components/range-slider');
+    const section = page.locator('section', { hasText: 'It fills, at every container width' });
+    const widths: number[] = [];
+
+    for (const width of ['narrow · 240px', 'medium · 480px', 'wide · 960px']) {
+      const box = section.locator('.matrix__cell').filter({ hasText: width }).first();
+      const root = box.locator('.pp-range-slider').first();
+
+      const measured = await root.evaluate((el) => {
+        const parent = el.parentElement as HTMLElement;
+        const style = getComputedStyle(parent);
+        return {
+          root: Math.round(el.getBoundingClientRect().width),
+          available: Math.round(
+            parent.clientWidth -
+              parseFloat(style.paddingInlineStart) -
+              parseFloat(style.paddingInlineEnd),
+          ),
+          declared: el.style.width,
+        };
+      });
+
+      expect(measured.root, `did not fill at ${width}`).toBe(measured.available);
+      expect(measured.declared).toBe('');
+      widths.push(measured.root);
+    }
+
+    expect(new Set(widths).size, 'the control did not track its container').toBe(3);
+    await expect(section.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+  });
+});

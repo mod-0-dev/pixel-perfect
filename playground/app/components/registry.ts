@@ -49,5 +49,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'number-input', name: 'NumberInput', tier: '3.14' },
   { slug: 'slider', name: 'Slider', tier: '3.15' },
   { slug: 'form', name: 'Form', tier: '3.16' },
+  { slug: 'range-slider', name: 'RangeSlider', tier: '3.17' },
   { slug: 'alert', name: 'Alert', tier: '5.2' },
 ];

@@ -200,7 +200,8 @@
         "src/components/IconButton/**/*.css",
         "src/components/Checkbox/**/*.css",
         "src/components/Radio/Radio.css",
-        "src/components/Switch/**/*.css"
+        "src/components/Switch/**/*.css",
+        "src/components/RangeSlider/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [

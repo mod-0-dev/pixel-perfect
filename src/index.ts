@@ -85,6 +85,7 @@ export {
 } from './components/Separator/Separator';
 export { Form, type FormError, type FormProps } from './components/Form/Form';
 export { Slider, type SliderProps } from './components/Slider/Slider';
+export { RangeSlider, type RangeSliderProps } from './components/RangeSlider/RangeSlider';
 export {
   Skeleton,
   type SkeletonProps,

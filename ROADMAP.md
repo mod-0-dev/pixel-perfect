@@ -26,6 +26,18 @@ is `done`.
 
 ### Current state
 
+- **A safety net that hid the wire** (**D-060 §1**). `RangeSlider`'s spec
+  promised the assertion its thumb-placement formula is for: press the visible
+  thumb, drag, and the value that moves must be that thumb's. Written that way
+  it passed, and the break would not have failed it — if our thumb drifts off
+  the native one, or the native thumb takes no pointer events, the press lands
+  on bare track and the root's own routing moves the nearer thumb to the
+  pressed value: the same thumb, the same place. The test now hit-tests
+  `elementFromPoint` at each thumb's centre before it drags. A mechanism that
+  degrades gracefully needs a test that can see the degradation, or the
+  graceful part is what gets tested. Same entry: the stacking rule the spec
+  wrote for a coincident pair is applied to the pair's midpoint, because native
+  thumbs overlap at any two values within a thumb's width (§2)
 - **A claim about inheritance that no test had ever run** (**D-059**). `Alert`
   said its tone "inherits into" the `Button`s and `Link`s inside it — in the
   source, the stylesheet, the spec, the docs, this file and the 0.7.0
@@ -68,18 +80,27 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** **3.16 `Form` is in `review`**: built, every Definition of
-  Done box passing except the screenshot baseline, which CI authors on the PR
-  branch (D-013). Gate C for both it and 3.17 passed **by delegation** (D-057),
-  recorded as that rather than as a review. The build's finding (**D-058 §1**):
-  the spec's focus mechanism leaked on a *successful* synchronous submit, which
-  no effect can see, and the next blur-validation error would have stolen focus.
-  **3.17 `RangeSlider`** is approved and waits for `Form` under Gate A; D-057
-  names the two browser assumptions its build must verify first. Before that: **0.11 is `done`** (D-056) and **5.2 `Alert` is
-  `done`** (D-053), the first component
-  of Tier 5 and the one 3.16 `Form` was waiting for. Next up is **3.17
-  `RangeSlider`**, once `Form` is `done`; Tier 4.1 unlocks once both are
-  `done`. **0.11** is new and is not a blocker: the focus ring below
+- **In flight:** nothing. **3.17 `RangeSlider` is `done`** (2026-09-26):
+  built the day Gate A opened, its baseline CI-authored on the PR branch and
+  compared green on the re-run (D-013), and the last box closed the same day
+  once the dimensions guard — tripped at its limit by that baseline plus two
+  older unrecorded ones (D-060 §7) — had all three recorded. **Tier 3 is
+  complete.** Next up is **4.1 Overlay foundation**, which both 3.16 and
+  3.17 gated; it is the first Tier 4 item and the first to take a runtime
+  dependency (RULES §8). Its spec was approved by delegation (D-057) and
+  D-058's addendum checked the two browser assumptions the build depends on
+  before it began; both held again in the browser suite (D-060). Twelve browser
+  assertions, five browser breaks and one unit break, each failing on the test
+  named for it. **3.16 `Form` is `done`**
+  (2026-09-26): built 2026-09-22 (D-058), it
+  sat in `review` for one box only — the screenshot baseline, which CI authored
+  on the PR branch and then compared green on `main` in runs 109 and 111 after
+  the merge, which is the half of D-013 that "authored" does not cover. Nothing
+  in the component changed between `review` and `done`. Next up after
+  `RangeSlider` is **Tier 4.1**, the overlay foundation, which unlocks once
+  both are `done`. Before these: **0.11 is `done`** (D-056) and **5.2 `Alert`
+  is `done`** (D-053), the first component of Tier 5. **0.11** is not a
+  blocker: the focus ring below
 - **The focus ring has only ever been verified against the page, and Alert is
   the first component to put a focusable control somewhere else** (Alert spec
   §9, open question 2). `--pp-color-focus-ring` is one colour library-wide
@@ -607,12 +628,13 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 45 / 80 tracked items (11 foundations + 69 components) — 10
-  foundations + 35 components. The denominator moved from 79 to 80 when **0.11**
+- **Done:** 47 / 80 tracked items (11 foundations + 69 components) — 10
+  foundations + 37 components, 3.17 `RangeSlider` the 37th and the last of
+  Tier 3. The denominator moved from 79 to 80 when **0.11**
   (the focus ring off the page) was added by D-053 §2 and closed the same day by
   D-056; it had moved from 78 to 79 when 3.17 `RangeSlider` was added (D-052
   §5). The one foundation not `done` is 0.10 docs site, deferred since there
-  were no components worth documenting — there are now 35, so that reasoning has
+  were no components worth documenting — there are now 37, so that reasoning has
   expired
 
 ---
@@ -708,8 +730,8 @@ to the component it was written about — see
 | 3.13 | `Select` | `done` | fill | client | 3.7 | **Native `<select>` first.** Custom listbox is 4.11. The placeholder is seeded with `defaultValue=""`, because the HTML reset algorithm skips a disabled option; painted from `:checked` and `data-placeholder` is emitted only when controlled (D-049) |
 | 3.14 | `NumberInput` | `done` | fill | client | 3.8 | `type="text"` with `role="spinbutton"`, never `type="number"` (3C §13.5). `null` is empty, `undefined` is uncontrolled. Clamp and snap on commit, never on a keystroke. Formatting is opt-in because an ambient locale cannot hydrate |
 | 3.15 | `Slider` | `done` | fill | client | 3.7 | Native `<input type="range">`, **single-thumb**. The track is ours and the thumb is the platform's: the fill is a grid **column**, not a gradient, so RTL needs no declaration (D-052 §1). `onValueCommit`, because React maps `onChange` to *input*. No `readOnly` — HTML's ruling (D-049 §4's shape) |
-| 3.16 | `Form` | `review` | fill | client | 3.7, 5.2, 3.3 | [`Form.md`](docs/specs/Form.md). Built 2026-09-22 (D-058); `done` waits only on its CI-authored baseline. Deps gained 3.3 `Link`, which the summary composes (spec §9). Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
-| 3.17 | `RangeSlider` | `spec` | fill | client | 3.15 | [`RangeSlider.md`](docs/specs/RangeSlider.md), approved by delegation (D-057); build waits for `Form` (Gate A). Both blockers below have a proposed answer: the inputs are transparent and the visible thumbs are ours, so the ring is drawn on a thumb with nothing suppressed; a track press is routed to the nearer thumb by the root (spec §1, §2). The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
+| 3.16 | `Form` | `done` | fill | client | 3.7, 5.2, 3.3 | [`Form.md`](docs/specs/Form.md). Built 2026-09-22 (D-058); **done** 2026-09-26, once its CI-authored baseline had been compared green on `main` (D-013's second half). Deps gained 3.3 `Link`, which the summary composes (spec §9). Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
+| 3.17 | `RangeSlider` | `done` | fill | client | 3.15 | [`RangeSlider.md`](docs/specs/RangeSlider.md), approved by delegation (D-057); built 2026-09-26, the day Gate A opened (D-060). Its baseline was CI-authored on the PR branch and compared green on the re-run (D-013); recording it tripped the dimensions guard at exactly the limit D-054 §2 set, because `form.png` and `tokens.png` were unrecorded too — all three are now in the manifest. Both blockers below have a proposed answer: the inputs are transparent and the visible thumbs are ours, so the ring is drawn on a thumb with nothing suppressed; a track press is routed to the nearer thumb by the root (spec §1, §2). The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
 
 ---
 
