@@ -19,7 +19,8 @@ attributes, and right-to-left reversal all come from the platform. This
 component adds no key handler at all.
 
 **Single-thumb only.** A two-thumb range slider is a separate component, not a
-prop — see [Why there is no range](#why-there-is-no-range) below.
+prop: [`RangeSlider`](RangeSlider.md). [Why](#why-range-is-a-separate-component)
+below.
 
 ## Usage
 
@@ -96,22 +97,22 @@ A slider that must not move is `disabled`. (Same ruling as
 `required` would gate nothing: a slider always has a value, so it can never be
 empty.
 
-## Why there is no range
+## Why range is a separate component
 
 A two-thumb slider built from two overlapping range inputs — the technique that
 keeps everything in the list at the top of this page — puts two full-width
 inputs on top of each other. Each is `:focus-visible` across the whole track, so
-focusing the minimum thumb draws a ring around the entire control including the
-maximum thumb. Moving the ring onto the thumb pseudo-element means suppressing
-it on the input, which means `outline: none`, which this library bans outright.
+focusing the minimum thumb would draw a ring around the entire control including
+the maximum thumb, and moving the ring onto the thumb pseudo-element would mean
+`outline: none`, which this library bans outright. Clicking the track is the
+second half: the `pointer-events` layering that makes both thumbs draggable is
+what takes the track click away from the inputs.
 
-Clicking the track is the second unsolved half: with the upper input covering
-the lower one, a track click has to be routed to the nearer thumb by hand, and
-the `pointer-events` layering that makes both thumbs draggable is what takes the
-track click away.
-
-Both are solvable and neither is solved here, so the range case is its own
-component rather than a prop that half works.
+[`RangeSlider`](RangeSlider.md) solves both — the inputs are transparent and the
+thumbs you see are its own, so the ring is drawn on a thumb with nothing
+suppressed, and a track press is routed to the nearer thumb by the root. Neither
+answer transfers back here: with one thumb, the platform's ring around the whole
+control is the right placement, and a single input takes its own track clicks.
 
 ## Accessibility
 
@@ -182,6 +183,6 @@ makes.
 // ✗ readOnly is ignored by the platform on a range input.
 <Slider readOnly />
 
-// ✗ There is no `range` or `values` prop. Two thumbs is a different component.
+// ✗ There is no `range` or `values` prop. Two thumbs is RangeSlider.
 <Slider value={[20, 80]} />
 ```

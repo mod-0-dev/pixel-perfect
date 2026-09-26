@@ -68,10 +68,10 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** nothing — Gate A is open. **3.17 `RangeSlider`** is next and
-  enters `build` in the commit after this one: its spec was approved by
-  delegation (D-057) and D-058's addendum checked the two browser assumptions
-  the build depends on before it begins. **3.16 `Form` is `done`**
+- **In flight:** **3.17 `RangeSlider` is in `build`**, started 2026-09-26 the
+  moment Gate A opened: its spec was approved by delegation (D-057) and D-058's
+  addendum checked the two browser assumptions the build depends on before it
+  began; both held again in the browser suite (D-060). **3.16 `Form` is `done`**
   (2026-09-26): built 2026-09-22 (D-058), it
   sat in `review` for one box only — the screenshot baseline, which CI authored
   on the PR branch and then compared green on `main` in runs 109 and 111 after
@@ -710,7 +710,7 @@ to the component it was written about — see
 | 3.14 | `NumberInput` | `done` | fill | client | 3.8 | `type="text"` with `role="spinbutton"`, never `type="number"` (3C §13.5). `null` is empty, `undefined` is uncontrolled. Clamp and snap on commit, never on a keystroke. Formatting is opt-in because an ambient locale cannot hydrate |
 | 3.15 | `Slider` | `done` | fill | client | 3.7 | Native `<input type="range">`, **single-thumb**. The track is ours and the thumb is the platform's: the fill is a grid **column**, not a gradient, so RTL needs no declaration (D-052 §1). `onValueCommit`, because React maps `onChange` to *input*. No `readOnly` — HTML's ruling (D-049 §4's shape) |
 | 3.16 | `Form` | `done` | fill | client | 3.7, 5.2, 3.3 | [`Form.md`](docs/specs/Form.md). Built 2026-09-22 (D-058); **done** 2026-09-26, once its CI-authored baseline had been compared green on `main` (D-013's second half). Deps gained 3.3 `Link`, which the summary composes (spec §9). Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
-| 3.17 | `RangeSlider` | `spec` | fill | client | 3.15 | [`RangeSlider.md`](docs/specs/RangeSlider.md), approved by delegation (D-057); build waits for `Form` (Gate A). Both blockers below have a proposed answer: the inputs are transparent and the visible thumbs are ours, so the ring is drawn on a thumb with nothing suppressed; a track press is routed to the nearer thumb by the root (spec §1, §2). The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
+| 3.17 | `RangeSlider` | `build` | fill | client | 3.15 | [`RangeSlider.md`](docs/specs/RangeSlider.md), approved by delegation (D-057); built 2026-09-26, the day Gate A opened (D-060). Both blockers below have a proposed answer: the inputs are transparent and the visible thumbs are ours, so the ring is drawn on a thumb with nothing suppressed; a track press is routed to the nearer thumb by the root (spec §1, §2). The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
 
 ---
 

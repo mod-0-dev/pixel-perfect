@@ -32,11 +32,12 @@ import type { Size } from '../../types';
  * RULES §8 forbids a runtime dependency in Tier 3; a hand-built slider is the
  * pointer maths we would have written instead.
  *
- * SINGLE-THUMB ONLY. The two-thumb case is deferred with its blocker named:
- * two overlapping inputs each draw `:focus-visible` across the whole track, so
+ * SINGLE-THUMB ONLY. The two-thumb case is `RangeSlider` (3.17): two
+ * overlapping inputs each draw `:focus-visible` across the whole track, so
  * focusing one thumb rings the other, and moving the ring onto the thumb
  * pseudo-element requires `outline: none`, which Tier 0.7 bans and D-029 banned
- * on purpose.
+ * on purpose. That component makes its inputs transparent and draws the ring on
+ * a thumb of its own; nothing about it transfers back here.
  *
  * Spec: docs/specs/tier-3d-composite.md §3.15
  */

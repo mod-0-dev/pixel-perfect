@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3 — Form & Action Core |
-| **Status** | `spec`, approved — build waits for `Form` (Gate A: one in `build` at a time). Gate C passed 2026-09-22 **by delegation** (D-057): every recommendation below adopted as written |
+| **Status** | `build` — started 2026-09-26, the day `Form` was `done` and Gate A opened. Gate C passed 2026-09-22 **by delegation** (D-057): every recommendation below adopted as written. Build findings in D-060 |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — `useField()`, `useControllableState`, pointer handlers |
 | **Depends on** | 3.15 `Slider` — the numeric contract (3D §1), `snapToRange` / `numberIO`, and the track-and-fill structure (D-052 §1) |
