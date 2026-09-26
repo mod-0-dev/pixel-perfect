@@ -80,8 +80,10 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** **4.1 Overlay foundation and 4.2 `Popover` are in `build`**,
-  both approved by delegation (D-061) — 4.2's spec written after the
+- **In flight:** **4.1 Overlay foundation and 4.2 `Popover` are in `review`**:
+  built 2026-09-26, every Definition of Done box passing except the
+  screenshot baseline, which CI authors on the PR branch (D-013). Both were
+  approved by delegation (D-061) — 4.2's spec written after the
   delegation was given, so its decisions are listed in the PR for reversal
   before merge. Built together, 4.1 tested through 4.2 (4.1 §9); findings in
   **D-062**, three of which corrected the specs: the parts are named exports
@@ -761,8 +763,8 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 4.1 | Overlay foundation | `build` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
-| 4.2 | `Popover` | `build` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
+| 4.1 | Overlay foundation | `review` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
+| 4.2 | `Popover` | `review` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
 | 4.3 | `Tooltip` | `planned` | hug | client | 4.1 | |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |

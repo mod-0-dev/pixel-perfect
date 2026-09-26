@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `build` — Gate C passed 2026-09-26 **by delegation** (D-061): written after the delegation was given, every recommendation adopted as written, and the decisions listed in the PR for the user to revert before merge. Built the same day; findings in D-062 |
+| **Status** | `review` — every Definition of Done box passes but the CI-authored screenshot baseline (D-013). Gate C passed 2026-09-26 **by delegation** (D-061): written after the delegation was given, every recommendation adopted as written, and the decisions listed in the PR for the user to revert before merge. Built the same day; findings in D-062 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3) |
 | **RSC** | `client` — Radix state, a portal, positioning |
 | **Depends on** | 4.1 Overlay foundation (built with it, in this PR); 3.1 `Button` (the usual trigger, by `asChild`) |

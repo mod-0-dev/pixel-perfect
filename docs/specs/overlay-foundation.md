@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `build` — Gate C passed 2026-09-26 **by delegation** (D-061), every recommendation adopted as written. Built with 4.2 `Popover` the same day (§9); findings in D-062 |
+| **Status** | `review` — every Definition of Done box passes but the CI-authored baseline (through 4.2, D-013). Gate C passed 2026-09-26 **by delegation** (D-061), every recommendation adopted as written. Built with 4.2 `Popover` the same day (§9); findings in D-062 |
 | **Sizing contract** | `n/a` — a foundation, not a component. Every overlay built on it declares its own |
 | **RSC** | `client` — everything here runs after hydration (§7) |
 | **Depends on** | Tier 3 `done` (it is). Tier 0.2 tokens: `--pp-z-*`, `--pp-shadow-*`, `--pp-duration-*`, `--pp-easing-*`, `--pp-color-bg-scrim` all exist and none is added |
