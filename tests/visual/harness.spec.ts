@@ -43,6 +43,34 @@ async function setTheme(page: import('@playwright/test').Page, theme: 'system' |
   else await expect(html).toHaveAttribute('data-pp-theme', theme);
 }
 
+/**
+ * The bounding box of a floating-ui panel, once it is PLACED and STILL.
+ *
+ * Radix parks a panel off-screen (`translate(0, -200%)`) until floating-ui has
+ * computed a position, and `toBeVisible` is satisfied by an off-screen box; a
+ * read in that window is (0, 0), which is exactly what one CI run reported
+ * for the RTL half of both the Popover and the Tooltip side tests while the
+ * LTR half passed (D-066 §3). Nothing in these tests places a panel at the
+ * origin, so a box is trusted only once its x and y are both positive and it
+ * has not moved between two reads a frame apart.
+ */
+async function placedBox(el: import('@playwright/test').Locator) {
+  await expect(el).toBeVisible();
+  let last: { x: number; y: number; width: number; height: number } | null = null;
+  await expect
+    .poll(
+      async () => {
+        const box = await el.boundingBox();
+        const settled = !!box && !!last && box.x > 0 && box.y > 0 && box.x === last.x && box.y === last.y;
+        last = box;
+        return settled;
+      },
+      { message: 'the panel never settled at a placed position', intervals: [32, 32, 64, 128, 256, 512] },
+    )
+    .toBe(true);
+  return last!;
+}
+
 test.describe('harness self-check', () => {
   test('a fill component is never flagged as overflowing', async ({ page }) => {
     await page.goto('/harness');
@@ -4227,7 +4255,7 @@ test.describe('Popover', () => {
     await trigger.click();
     const el = panel(page);
     await expect(el).toHaveAttribute('data-side', 'bottom');
-    const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+    const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
     const expected = await trigger.evaluate(
       (n) => parseFloat(getComputedStyle(n).getPropertyValue('--pp-space-2')) * parseFloat(getComputedStyle(document.documentElement).fontSize),
     );
@@ -4245,8 +4273,7 @@ test.describe('Popover', () => {
       await trigger.scrollIntoViewIfNeeded();
       await trigger.click();
       const el = panel(page);
-      await expect(el).toBeVisible();
-      const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+      const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
       if (expectLeft) {
         expect(p!.x + p!.width, `${id}: start is not on the left`).toBeLessThanOrEqual(t!.x + 1);
         await expect(el).toHaveAttribute('data-side', 'left');
@@ -4380,5 +4407,352 @@ test.describe('Popover', () => {
       () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pp-measure-xs')) * 16,
     );
     for (const w of widths) expect(w).toBeLessThanOrEqual(measure + 1);
+  });
+});
+
+/*
+ * Tooltip (4.3) — spec docs/specs/Tooltip.md.
+ *
+ * The panel is PORTALLED to <body>, so nothing below scopes it to a section;
+ * each test opens one tooltip and reads the one `.pp-tooltip` on the page
+ * that the Matrix gallery did not open. Tooltips open AT ONCE on keyboard
+ * focus, so most tests focus the trigger rather than wait out the pointer
+ * delay; the pointer tests wait. What only a browser can answer: that the
+ * z-index token reaches Radix's positioned wrapper; that the panel is the
+ * inverse surface, in resolved colour, and the inverse of the REGION it was
+ * opened from; that a logical `side` lands on the right physical side in
+ * both directions; that a space-scale offset is the pixels the token says;
+ * that the pointer can travel from trigger to panel (WCAG 1.4.13); that
+ * `instant-open` skips the entry animation and `delayed-open` plays it; that
+ * three `defaultOpen` tooltips coexist; and what a disabled trigger does.
+ */
+test.describe('Tooltip', () => {
+  type Page = import('@playwright/test').Page;
+  const tip = (page: Page) => page.locator('.pp-tooltip:not([data-gallery])');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="tooltip-${id}"]`);
+  const save = (page: Page) => demo(page, 'shortcut').getByRole('button', { name: 'Save' });
+
+  /*
+   * Opens a tooltip by keyboard focus — at once, no delay. The trigger is
+   * scrolled into view FIRST and a frame is waited out, because a scroll
+   * event is dispatched on the next frame and Radix closes a tooltip when
+   * an ancestor of its trigger scrolls (spec §6): scroll-then-focus in one
+   * breath opens the tooltip and closes it a frame later, which is what the
+   * first draft of every test below did.
+   */
+  const focusToOpen = async (page: Page, trigger: import('@playwright/test').Locator) => {
+    await trigger.scrollIntoViewIfNeeded();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await trigger.focus();
+  };
+
+
+  test('the z-index token reaches the element that stacks', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    await focusToOpen(page, save(page));
+    const el = tip(page);
+    await expect(el).toBeVisible();
+    const read = await el.evaluate((n) => ({
+      panel: getComputedStyle(n).zIndex,
+      token: getComputedStyle(n).getPropertyValue('--pp-z-tooltip').trim(),
+      wrapper: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+    }));
+    expect(read.panel).toBe(read.token);
+    expect(read.wrapper, "Radix's wrapper did not take the panel's z-index").toBe(read.token);
+  });
+
+  test('describes its trigger in a real accessibility tree, and paints the inverse surface', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const trigger = save(page);
+    await focusToOpen(page, trigger);
+    const tooltip = page.getByRole('tooltip');
+    await expect(tooltip).toBeVisible();
+    await expect(tooltip).toHaveClass(/pp-tooltip/);
+    await expect(tooltip).toHaveAttribute('data-state', 'instant-open');
+    await expect(trigger).toHaveAttribute('aria-describedby', (await tooltip.getAttribute('id'))!);
+    await expect(trigger).toHaveAccessibleDescription(/Save/);
+    // The page sets no theme scope of its own, so there is nothing to copy
+    // and the panel carries no attribute rather than an invented one (D-062 §3).
+    await expect(tooltip).not.toHaveAttribute('data-pp-theme', /.*/);
+
+    // The inverse pair, resolved: the fill is what `--pp-color-bg-inverse`
+    // computes to and the ink is `--pp-color-text-inverse` — and neither is
+    // the page's own surface or ink (spec §3).
+    const read = await tooltip.evaluate((n) => {
+      const bg = getComputedStyle(n).backgroundColor;
+      const color = getComputedStyle(n).color;
+      // Each token painted on THIS element, so the comparison is between
+      // resolved colours in one serialisation, then the inline paint removed.
+      // Through the same property each time: Chromium serialises a computed
+      // `color` and a computed `background-color` differently (lab vs oklab).
+      const resolve = (token: string, property: 'background-color' | 'color') => {
+        n.style.setProperty(property, `var(${token})`);
+        const value = getComputedStyle(n).getPropertyValue(property);
+        n.style.removeProperty(property);
+        return value;
+      };
+      return {
+        bg,
+        color,
+        bgInverse: resolve('--pp-color-bg-inverse', 'background-color'),
+        textInverse: resolve('--pp-color-text-inverse', 'color'),
+        pageBg: resolve('--pp-color-bg-page', 'background-color'),
+        pageText: resolve('--pp-color-text', 'color'),
+      };
+    });
+    expect(read.bg).toBe(read.bgInverse);
+    expect(read.color).toBe(read.textInverse);
+    expect(read.bg, 'the tooltip painted the page surface').not.toBe(read.pageBg);
+    expect(read.color, "the tooltip painted the page's ink").not.toBe(read.pageText);
+
+    // A Kbd inside keeps its own surface and its own ink on it (D-065 §2):
+    // neither is the panel's, which is what lets a key read as a key.
+    const kbd = tooltip.locator('.pp-kbd');
+    await expect(kbd).toHaveText('⌘S');
+    const key = await kbd.evaluate((n) => ({ bg: getComputedStyle(n).backgroundColor, color: getComputedStyle(n).color }));
+    expect(key.bg, "the Kbd took the tooltip's surface").not.toBe(read.bg);
+    expect(key.color, "the Kbd took the tooltip's ink").not.toBe(read.color);
+  });
+
+  /* sideOffset="1" is --pp-space-1, 0.25rem, 4px at the default root size:
+     the gap between the tooltip's bottom edge and the trigger's top edge. */
+  test('a space-scale offset is the pixels its token resolves to', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const trigger = demo(page, 'sides').locator('[data-side-trigger="top"]');
+    await focusToOpen(page, trigger);
+    const el = tip(page);
+    await expect(el).toHaveAttribute('data-side', 'top');
+    const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
+    const expected = await trigger.evaluate(
+      (n) => parseFloat(getComputedStyle(n).getPropertyValue('--pp-space-1')) * parseFloat(getComputedStyle(document.documentElement).fontSize),
+    );
+    expect(expected).toBe(4);
+    expect(Math.abs(t!.y - (p!.y + p!.height) - expected), 'the gap is not the token').toBeLessThanOrEqual(1);
+  });
+
+  test('side="start" is on the left in LTR and on the right in RTL', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    for (const [id, expectLeft] of [
+      ['sides', true],
+      ['sides-rtl', false],
+    ] as const) {
+      const trigger = demo(page, id).locator('[data-side-trigger="start"]');
+      await focusToOpen(page, trigger);
+      const el = tip(page);
+      const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
+      if (expectLeft) {
+        expect(p!.x + p!.width, `${id}: start is not on the left`).toBeLessThanOrEqual(t!.x + 1);
+        await expect(el).toHaveAttribute('data-side', 'left');
+      } else {
+        expect(p!.x, `${id}: start is not on the right`).toBeGreaterThanOrEqual(t!.x + t!.width - 1);
+        await expect(el).toHaveAttribute('data-side', 'right');
+      }
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+      // Escape closed it and left focus where it was (spec §Keyboard).
+      await expect(trigger).toBeFocused();
+    }
+  });
+
+  test('the pointer can travel from the trigger onto the tooltip, and leaving both closes it', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const trigger = save(page);
+    await trigger.scrollIntoViewIfNeeded();
+    const box = (await trigger.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    // Not before the delay has run.
+    await page.waitForTimeout(200);
+    await expect(tip(page)).toHaveCount(0);
+    const el = tip(page);
+    await expect(el).toBeVisible({ timeout: 3000 });
+    await expect(el).toHaveAttribute('data-state', 'delayed-open');
+
+    // WCAG 1.4.13, hoverable: onto the panel, in a few steps, and it stays.
+    const panel = (await el.boundingBox())!;
+    await page.mouse.move(panel.x + panel.width / 2, panel.y + panel.height / 2, { steps: 8 });
+    await page.waitForTimeout(400);
+    await expect(el).toBeVisible();
+
+    // Away from both: closed.
+    await page.mouse.move(panel.x + panel.width + 200, panel.y + panel.height + 200, { steps: 8 });
+    await expect(el).toHaveCount(0);
+  });
+
+  test('a click on the trigger closes it: activating the control dismisses its label', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const trigger = save(page);
+    await trigger.hover();
+    const el = tip(page);
+    await expect(el).toBeVisible({ timeout: 3000 });
+    await trigger.click();
+    await expect(el).toHaveCount(0);
+  });
+
+  /*
+   * playwright.config.ts pins reducedMotion: 'reduce' for every other test,
+   * which is the right default and exactly what hides the one thing §4 rests
+   * on: that `instant-open` and `delayed-open` are painted differently. This
+   * describe lifts the pin for two tests and nothing else.
+   */
+  test.describe('with motion', () => {
+    test.use({ reducedMotion: 'no-preference' });
+
+    test('delayed-open plays the entry animation; a neighbour within the skip window is instant-open and skips it', async ({
+      page,
+    }) => {
+      await page.goto('/components/tooltip');
+      const toolbar = demo(page, 'toolbar');
+      const copy = toolbar.getByRole('button', { name: 'Copy' });
+      const del = toolbar.getByRole('button', { name: 'Delete' });
+      await copy.hover();
+      const first = tip(page);
+      await expect(first).toBeVisible({ timeout: 3000 });
+      await expect(first).toHaveAttribute('data-state', 'delayed-open');
+      expect(await first.evaluate((n) => getComputedStyle(n).animationName)).toBe('pp-tooltip-in');
+
+      // In steps, as a pointer moves: a single jump's one `pointermove` lands
+      // on the neighbour while the pointer is still "in transit" towards the
+      // first tooltip's grace area, and Radix ignores it — the next move is
+      // what opens. A real hand never produces exactly one event.
+      const target = (await del.boundingBox())!;
+      await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 });
+      const second = page.getByRole('tooltip', { name: 'Delete' });
+      await expect(second).toBeVisible();
+      await expect(second).toHaveAttribute('data-state', 'instant-open');
+      await expect(copy).toHaveAttribute('data-state', 'closed');
+      expect(await second.evaluate((n) => getComputedStyle(n).animationName), 'a skip-delay open animated in').toBe(
+        'none',
+      );
+    });
+
+    test('keyboard focus opens at once with no entry animation', async ({ page }) => {
+      await page.goto('/components/tooltip');
+      await focusToOpen(page, save(page));
+      const el = tip(page);
+      await expect(el).toHaveAttribute('data-state', 'instant-open');
+      expect(await el.evaluate((n) => getComputedStyle(n).animationName)).toBe('none');
+    });
+  });
+
+  test("reduced motion removes the panel's animation", async ({ page }) => {
+    await page.goto('/components/tooltip');
+    // A pointer open, because a focus open skips the entry regardless.
+    await save(page).hover();
+    const el = tip(page);
+    await expect(el).toBeVisible({ timeout: 3000 });
+    await expect(el).toHaveAttribute('data-state', 'delayed-open');
+    expect(await el.evaluate((n) => getComputedStyle(n).animationName)).toBe('none');
+  });
+
+  test('the theme crosses the portal, and the tooltip is the inverse of the region it opened from', async ({
+    page,
+  }) => {
+    await page.goto('/components/tooltip');
+    await focusToOpen(page, save(page));
+    const onPage = await tip(page).evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(tip(page)).toHaveCount(0);
+
+    const region = demo(page, 'theme');
+    await focusToOpen(page, region.getByRole('button', { name: 'Rest here' }));
+    const el = tip(page);
+    await expect(el).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="tooltip-theme"]') !== null,
+      inverse: getComputedStyle(n).getPropertyValue('--pp-color-bg-inverse').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    // The inverse of dark is light: not the near-black the page-level tooltip painted.
+    expect(read.bg, 'the tooltip in a dark region painted the light page\'s inverse').not.toBe(onPage);
+    const regionInverse = await region.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-inverse').trim());
+    expect(read.inverse).toBe(regionInverse);
+  });
+
+  test('long content hugs its text up to the measure, then wraps', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const trigger = demo(page, 'long').getByRole('button');
+    await focusToOpen(page, trigger);
+    const el = tip(page);
+    await placedBox(el);
+    const read = await el.evaluate((n) => ({
+      width: n.getBoundingClientRect().width,
+      lines: n.getBoundingClientRect().height / (parseFloat(getComputedStyle(n).lineHeight) || 1),
+      measure: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pp-measure-xs')) * 16,
+    }));
+    expect(read.width).toBeLessThanOrEqual(read.measure + 1);
+    expect(read.width, 'a long tooltip did not reach the ceiling').toBeGreaterThan(read.measure - 2);
+    expect(read.lines, 'a long tooltip did not wrap').toBeGreaterThan(2);
+  });
+
+  /*
+   * A NATIVELY DISABLED TRIGGER, MEASURED (D-064 §7). Whether a disabled
+   * <button> fires the pointermove the trigger opens on is the browser's;
+   * this pins what Chromium does so the docs page can state it rather than
+   * guess. `page.mouse` rather than `hover()`, which is the one path that
+   * does not itself refuse a disabled element.
+   */
+  test('a disabled trigger opens its tooltip in Chromium', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const trigger = demo(page, 'disabled').getByRole('button');
+    await trigger.scrollIntoViewIfNeeded();
+    await expect(trigger).toBeDisabled();
+    const box = (await trigger.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+    await expect(tip(page)).toBeVisible({ timeout: 3000 });
+  });
+
+  test.describe('on touch', () => {
+    test.use({ hasTouch: true });
+
+    test('a tap activates the control and shows no tooltip', async ({ page }) => {
+      await page.goto('/components/tooltip');
+      const trigger = demo(page, 'controlled').getByRole('button');
+      await trigger.scrollIntoViewIfNeeded();
+      const box = (await trigger.boundingBox())!;
+      await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForTimeout(1000);
+      await expect(tip(page)).toHaveCount(0);
+    });
+  });
+
+  test('controlled: the owner opens and closes it, and an owner-opened tooltip is instant-open', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const show = page.getByTestId('tooltip-show');
+    await show.scrollIntoViewIfNeeded();
+    await show.click();
+    const el = tip(page);
+    await expect(el).toBeVisible();
+    await expect(el).toHaveAttribute('data-state', 'instant-open');
+    await expect(el).toHaveText('Delete');
+    await expect(page.locator('section', { hasText: 'Controlled' })).toContainText('open: true');
+    // The press on Hide is itself an outside press, which the owner is told
+    // about first (`onOpenChange(false)`); Hide then says the same thing.
+    await page.getByTestId('tooltip-hide').click();
+    await expect(el).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'Controlled' })).toContainText('open: false');
+  });
+
+  test('the Matrix opens one tooltip per cell, three together, in the theme the page loaded with', async ({ page }) => {
+    await page.goto('/components/tooltip');
+    const panels = page.locator('.pp-tooltip[data-gallery]');
+    // Three defaultOpen tooltips coexist: a default open dispatches no
+    // "another tooltip opened" event (D-064 §7).
+    await expect(panels).toHaveCount(3);
+    // No stored choice: no scope, no attribute (D-062 §3).
+    expect(await panels.evaluateAll((els) => els.map((el) => el.getAttribute('data-pp-theme')))).toEqual([
+      null,
+      null,
+      null,
+    ]);
+
+    await page.addInitScript(() => window.localStorage.setItem('pp-theme', 'dark'));
+    await page.goto('/components/tooltip');
+    await expect(panels).toHaveCount(3);
+    expect(await panels.evaluateAll((els) => els.map((el) => el.getAttribute('data-pp-theme')))).toEqual([
+      'dark',
+      'dark',
+      'dark',
+    ]);
   });
 });

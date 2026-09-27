@@ -2,6 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
+import { countRegistryEntries } from '../../scripts/registry-count.mjs';
+
 /**
  * A GEOMETRY GUARD FOR THE WINDOW IN WHICH THERE ARE NO BASELINES (D-050).
  *
@@ -32,6 +34,8 @@ const DIR = 'tests/visual/__screenshots__';
 interface Size {
   width: number;
   height: number;
+  /** Index baselines only: how many registry entries the page listed when authored. */
+  components?: number;
 }
 
 function pngSize(file: string): Size {
@@ -59,6 +63,33 @@ describe('screenshot baselines keep their geometry', () => {
     expect(
       drifted,
       'a baseline was re-authored at a different size — something other than colour moved',
+    ).toEqual([]);
+  });
+
+  /*
+   * THE ONE VISUAL CHANGE NO COMPONENT'S OWN BASELINE CAN CATCH (D-066 §2).
+   *
+   * The index page draws one card per registry entry, so adding a component
+   * changes ITS baseline — and the PR that adds a component never touches
+   * that page, so nothing reminded anyone. `Tooltip` shipped its registry
+   * entry with the index baselines untouched; CI reported the 19px, then
+   * authored the new component's baselines over the report (D-066 §1). The
+   * recorder writes the registry count beside the index entry's geometry;
+   * this compares it to the registry now. Absent baselines are skipped: that
+   * is the window `npm run dimensions -- --rebaseline index` opens on
+   * purpose, and CI closes it by authoring.
+   */
+  it('was authored with the components the index lists today', () => {
+    const listed = countRegistryEntries();
+    const stale = present
+      .filter((f) => /^index-(light|dark)\.png$/.test(f) && recorded[f])
+      .map((f) => ({ file: f, with: recorded[f]?.components }))
+      .filter(({ with: authored }) => authored !== listed)
+      .map(({ file, with: authored }) => `${file}: authored with ${authored ?? 'no count recorded'}, the registry lists ${listed}`);
+
+    expect(
+      stale,
+      'the index page lists a different set of components than its baseline shows — run `npm run dimensions -- --rebaseline index`, push, let CI author, then `npm run dimensions`',
     ).toEqual([]);
   });
 

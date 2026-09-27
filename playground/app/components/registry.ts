@@ -69,5 +69,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'form', name: 'Form', tier: '3.16', summary: 'An error summary that moves focus, and one submission at a time.' },
   { slug: 'range-slider', name: 'RangeSlider', tier: '3.17', summary: 'Two thumbs that cannot cross, with the ring on the one that has focus.' },
   { slug: 'popover', name: 'Popover', tier: '4.2', summary: 'A named panel anchored to its trigger; the theme crosses the portal.' },
+  { slug: 'tooltip', name: 'Tooltip', tier: '4.3', summary: 'A label on hover or focus that describes its trigger and never names it.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];

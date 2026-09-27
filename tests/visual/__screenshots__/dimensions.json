@@ -145,11 +145,13 @@
   },
   "index-dark.png": {
     "width": 1280,
-    "height": 2814
+    "height": 2833,
+    "components": 39
   },
   "index-light.png": {
     "width": 1280,
-    "height": 2814
+    "height": 2833,
+    "components": 39
   },
   "input-dark.png": {
     "width": 1280,
@@ -318,6 +320,14 @@
   "tokens-light.png": {
     "width": 1280,
     "height": 3201
+  },
+  "tooltip-dark.png": {
+    "width": 1280,
+    "height": 2329
+  },
+  "tooltip-light.png": {
+    "width": 1280,
+    "height": 2329
   },
   "visually-hidden-dark.png": {
     "width": 1280,

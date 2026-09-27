@@ -84,7 +84,12 @@ On approval, set status to `build` and implement:
 - Unit tests + axe test
 - Playground entry rendering the component at 3 container widths; the
   screenshot suite captures it in both themes through the playground's theme
-  switcher (D-063)
+  switcher (D-063). **Adding the registry entry changes the index page**, so
+  run `npm run dimensions -- --rebaseline index` in the same commit: it
+  deletes the index baselines and their manifest entries so CI re-authors
+  them alongside the component's own, and the unit guard fails the build
+  until it is done (D-066 §2). After CI has authored, `npm run dimensions`
+  records the new set
 - Docs page with usage plus at least one explicit "don't"
 - Changeset
 

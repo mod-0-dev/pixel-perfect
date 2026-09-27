@@ -17,12 +17,14 @@
   :root {
     /* Surfaces */
     --pp-color-bg-page: var(--pp-palette-neutral-1);
+    --pp-color-bg-inverse: var(--pp-palette-neutral-12);
 
     /* Text */
     --pp-color-text: var(--pp-palette-neutral-12);
     --pp-color-text-muted: var(--pp-palette-neutral-11);
     --pp-color-text-disabled: var(--pp-palette-neutral-8);
     --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-color-text-inverse: var(--pp-palette-neutral-1);
 
     /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);
@@ -65,12 +67,14 @@
   [data-pp-theme="light"] {
     /* Surfaces */
     --pp-color-bg-page: var(--pp-palette-neutral-1);
+    --pp-color-bg-inverse: var(--pp-palette-neutral-12);
 
     /* Text */
     --pp-color-text: var(--pp-palette-neutral-12);
     --pp-color-text-muted: var(--pp-palette-neutral-11);
     --pp-color-text-disabled: var(--pp-palette-neutral-8);
     --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-color-text-inverse: var(--pp-palette-neutral-1);
 
     /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);
@@ -114,12 +118,14 @@
     :root:not([data-pp-theme]) {
       /* Surfaces */
       --pp-color-bg-page: var(--pp-palette-neutral-1);
+      --pp-color-bg-inverse: var(--pp-palette-neutral-12);
 
       /* Text */
       --pp-color-text: var(--pp-palette-neutral-12);
       --pp-color-text-muted: var(--pp-palette-neutral-11);
       --pp-color-text-disabled: var(--pp-palette-neutral-8);
       --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+      --pp-color-text-inverse: var(--pp-palette-neutral-1);
 
       /* Borders */
       --pp-color-border-subtle: var(--pp-palette-neutral-6);
@@ -163,12 +169,14 @@
   [data-pp-theme="dark"] {
     /* Surfaces */
     --pp-color-bg-page: var(--pp-palette-neutral-1);
+    --pp-color-bg-inverse: var(--pp-palette-neutral-12);
 
     /* Text */
     --pp-color-text: var(--pp-palette-neutral-12);
     --pp-color-text-muted: var(--pp-palette-neutral-11);
     --pp-color-text-disabled: var(--pp-palette-neutral-8);
     --pp-color-text-on-solid: var(--pp-palette-neutral-on-solid);
+    --pp-color-text-inverse: var(--pp-palette-neutral-1);
 
     /* Borders */
     --pp-color-border-subtle: var(--pp-palette-neutral-6);

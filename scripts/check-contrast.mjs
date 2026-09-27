@@ -84,6 +84,15 @@ const CHECKS = [
   { name: 'body text vs page bg', a: '12', b: '1', min: 7.0 },
   { name: 'body text vs component bg', a: '12', b: '3', min: 7.0 },
   { name: 'muted text vs component bg', a: '11', b: '3', min: 4.5 },
+  /*
+   * THE INVERSE SURFACE (D-064 §2): `--pp-color-text-inverse` on
+   * `--pp-color-bg-inverse` is step 1 on step 12, the body-text pair reversed.
+   * Contrast is symmetric, so the number is the one two lines up — and it is
+   * asserted again under this name anyway, because the pair is retuned
+   * together or not at all, and a check nobody can find by the token's name
+   * is a check nobody re-reads when the token changes.
+   */
+  { name: 'inverse text vs inverse bg', a: '1', b: '12', min: 7.0 },
 ];
 
 let failures = 0;
@@ -153,6 +162,11 @@ const MAPPINGS = [
   // The ring the whole library draws. Re-point this at a ramp step and every
   // value assertion above stays green while every focus ring goes unverified.
   ['--pp-color-focus-ring', '--pp-palette-accent-focus'],
+  // The inverse surface is the body-text pair reversed, in BOTH themes: the
+  // value check above only means something while these two stay pointed at
+  // steps 12 and 1 (D-064 §2).
+  ['--pp-color-bg-inverse', '--pp-palette-neutral-12'],
+  ['--pp-color-text-inverse', '--pp-palette-neutral-1'],
 ];
 
 for (const [token, expected] of MAPPINGS) {

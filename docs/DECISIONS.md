@@ -4033,3 +4033,280 @@ library is and four facts about it. The chrome on every page carries the
 wordmark, the three places, the switcher, and on a component page a
 breadcrumb back to the index and links to the previous and next component
 in roadmap order. Nothing in the chrome writes an id (D-035 §1).
+
+## D-064 — Gate C for 4.3 `Tooltip` approved by delegation; an inverse surface joins the tokens; RULES §4 gains an extension rule
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:** RULES §4;
+Tier 0.2 tokens (`--pp-color-bg-inverse`, `--pp-color-text-inverse`);
+`scripts/check-contrast.mjs`; `.stylelintrc.json`;
+`docs/specs/Tooltip.md` (status) · **Extends:** D-015, D-057, D-061 §5,
+`docs/specs/overlay-foundation.md` §3
+
+### 1. Approved by delegation, the third time
+
+The spec went to Gate C with six open questions and a recommendation on
+each. The approval was **"If you think it's pixel perfect go ahead"** — a
+delegation, recorded as D-057 and D-061 §2 recorded the last two: one pair
+of eyes, every recommendation adopted as written. Compound shape with an
+optional provider (§1); a description, never a name (§2); the inverse
+surface (§3); Radix's three `data-state` values (§4); no arrow (§9); delays
+in milliseconds (§7). What that means for the build is D-057's list, and
+§7 below names the assumptions checked first.
+
+### 2. An inverse surface is a semantic, and it is two tokens
+
+A tooltip is read against whatever it floats over and must not be mistaken
+for a panel the user can act on, and the library had no token for that:
+`--pp-color-bg-raised` is the page's own surface, `--pp-tone-solid` is a
+mid grey that reads as a disabled control, and `--pp-color-text` used as a
+*background* is a token reached for by its lightness rather than its
+meaning — the thing RULES §3 lets `Skeleton` do only because it is not
+choosing a boundary. Tier 0.2 gains **`--pp-color-bg-inverse`** (neutral
+12) and **`--pp-color-text-inverse`** (neutral 1), identical in both themes
+by name and inverted by the ramp: step 12 is near-black in light and
+near-white in dark.
+
+`lint:contrast` asserts the pair **under its own name**, value and mapping.
+The value is the body-text pair reversed and contrast is symmetric, so the
+number was already green two lines up — it is asserted again anyway,
+because a check nobody can find by the token's name is a check nobody
+re-reads when the token changes (D-050 §1 from the other side). 293
+assertions → 305: the value once per hue and theme, the mapping twice.
+
+### 3. `data-state` may be extended by a real state, never replaced
+
+RULES §4 fixed `open|closed`. Radix's `Tooltip` writes `closed`,
+`delayed-open` and `instant-open`, and the third is the one paint-time fact
+the stylesheet needs: a tooltip that opened because the pointer swept from
+a neighbour must not animate in again, or a toolbar flickers. Normalising
+to `open|closed` by spreading our own attribute after Radix's (which wins,
+D-061 §4) would erase the fact for no gain. RULES §4 now says a component
+may add a value that carries a real state; the closed half stays `closed`,
+so a consumer's "is it open" is `:not([data-state="closed"])`.
+
+### 4. The overlay exception, applied
+
+`.stylelintrc.json`'s `Popover.css` override — `max-inline-size` allowed,
+nothing else relaxed — now names `Tooltip.css` too. D-061 §3's exception is
+per file by design: the list of files that may declare a ceiling is the
+list of overlays, and it grows one component at a time.
+
+### 5. A provider is fine when it is optional and carries behaviour an app cannot get otherwise
+
+4.1 §3 declined an `OverlayProvider` because one context for one prop most
+apps never set is the D-036 objection. `TooltipProvider` is different on
+both counts: it carries Radix's skip delay — after one tooltip has shown,
+a neighbour opens at once — which is behaviour, not configuration, and an
+app cannot get it any other way; and it is **optional**. `Tooltip` reads a
+context of ours and, when none is above it, renders Radix's provider itself
+with the defaults. Radix throws without a provider; ours does not. The
+ruling for the tier: a provider may exist when it is optional and carries
+behaviour, and 4.12 `Toast`'s region will be measured against that.
+
+### 6. A hover-intent delay is a number, not a token
+
+D-061 §5 said a `8` in a component's JavaScript is the `8px` RULES §3 bans
+in its CSS, one file over — because a token names it. Nothing names a
+700ms hover delay: the motion scale is for how long a change takes to draw
+and tops out at 360ms, and minting `--pp-delay-tooltip` for a number no
+stylesheet would ever read is D-015's "a name that changes nothing".
+`delayDuration` and `skipDelayDuration` are milliseconds, with Radix's 700
+and 300 as defaults because there is no measurement behind a different
+number. The boundary, stated: a JavaScript number is a hardcode when a
+token already names the quantity, and a plain number otherwise.
+
+### 7. Checked first at the build, not worked around
+
+Three things the spec assumes and could not verify on paper (spec §8). As
+D-057 put it, an assumption the build falsifies is a stop, not a
+workaround:
+
+- a natively `disabled` trigger — whether Chromium fires the `pointermove`
+  the trigger opens on; the docs page states the measured result;
+- three `defaultOpen` tooltips coexist in the Matrix, because `defaultOpen`
+  dispatches no open event;
+- `instant-open` after a skip actually skips the entry animation, and
+  `delayed-open` after a rest plays it.
+
+## D-065 — `Tooltip` build findings: a test harness that waits on a timer nobody advances, a text token that must not be redefined, and a scroll that closes what focus just opened
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:**
+`docs/specs/Tooltip.md` §3, §8, Testing notes; `docs/components/Tooltip.md`
+
+The first build on 4.1 alone. Seven findings; none changes the API the spec
+was approved with, three changed what the spec said would be measured.
+
+### 1. Testing Library's async wrapper waits on a real `setTimeout(0)` and advances only Jest's fake timers
+
+Every user-event call in the unit suite hung. Not user-event's own delay
+(`delay: null` changed nothing) and not React's `act` (narrowing
+`toFake` to `setTimeout` alone changed nothing): `@testing-library/react`'s
+`asyncWrapper` drains the microtask queue after each interaction by awaiting
+a `setTimeout(resolve, 0)` — and advances fake timers past it **only when a
+`jest` global exists**. Under vitest's fake timers that zero-length timer is
+never fired by anyone, and the await never returns.
+
+The fix is `vi.useFakeTimers({ shouldAdvanceTime: true })`: real time
+carries the wrapper's timer while `act(() => vi.advanceTimersByTime(ms))`
+moves Radix's delays deliberately. The `act` is not optional either — the
+delay's callback sets React state outside any event, and an unwrapped
+advance leaves the open scheduled but unrendered. Both are on the docs page,
+because a consumer's test hits the same wall with the same library.
+
+### 2. `--pp-color-text` is not redefined on the panel, and the first draft did
+
+The panel's ink is `--pp-color-text-inverse`, and the first draft also
+redefined `--pp-color-text` to it on the panel so that anything inside
+reading the text token would paint the inverse too. That would have made
+`Kbd` — the one component the spec's own usage puts in a tooltip —
+unreadable: `Kbd` paints `--pp-color-text` on its own `bg-sunken` surface,
+which is the page's, so inverse ink on a page-coloured chip. `Text` has no
+surface of its own and would have needed the redefinition. One of the two
+loses, and the one that loses is the one a tooltip has no reason to hold:
+a tooltip's content is plain text, `Text` in a tooltip is a "don't", and
+`Kbd` keeps its own surface — on a near-black tooltip a light chip reads
+as a key, which is the point of it.
+
+### 3. Scroll-then-focus opens a tooltip and closes it a frame later
+
+Half the browser suite failed on the first run with the tooltip found in
+`data-state="closed"` or not found at all, and the sides test passed for
+no reason it could name. A scroll event is dispatched on the frame after
+the scroll, and Radix closes a tooltip when an ancestor of its trigger
+scrolls (spec §6). `scrollIntoViewIfNeeded()` followed by `focus()` in one
+breath therefore opens the tooltip and closes it one frame later; the sides
+test passed only because its triggers were already in view. The suite's
+`focusToOpen` waits two frames between the two. Same family as D-062 §2's
+stale server: when a test fails, establish which side is wrong before
+changing either, and "the harness" includes the order it does things in.
+
+### 4. A controlled tooltip's "toggle" button re-opens it
+
+The controlled demo had one button flipping `open`. The press on it is an
+outside press, and the dismissable layer tells the owner `onOpenChange(false)`
+**before** the click handler runs — so a flip reads "closed" and sets
+`true`, and the tooltip never closes from that button. The demo has two
+buttons that each *say* a state. Recorded because the same shape — an
+outside control that toggles a dismissable overlay — will come up at
+`Dialog` and `DropdownMenu`, and the answer is the same: say the state,
+do not flip it.
+
+### 5. One `pointermove` on a neighbour is swallowed while the pointer is "in transit"
+
+Playwright's `hover()` moves the mouse in one jump. Leaving the first
+trigger opens Radix's grace area towards its panel and marks the pointer in
+transit; the single `pointermove` that then lands on the neighbour reaches
+the neighbour's handler *first* (React's root listener) while transit is
+still set, and is ignored — the document listener that clears transit runs
+after it. A real hand produces dozens of events; the second one opens the
+neighbour. The test moves in ten steps, and the unit test fires the
+document-level move before reaching the neighbour, which is the order a
+pointer takes. Neither is a workaround: a one-event sweep is not a thing a
+pointer does.
+
+### 6. Verified, as the spec promised (§8) rather than assumed
+
+- **A natively disabled trigger opens its tooltip in Chromium.** The
+  browser fires `pointermove` on a disabled `<button>`; the docs page states
+  it, with Firefox named as the browser that does not.
+- **Three `defaultOpen` tooltips coexist** in the Matrix. A default open
+  dispatches no `tooltip.open` event.
+- **`instant-open` skips the entry animation and `delayed-open` plays it**,
+  measured under `reducedMotion: 'no-preference'` — the config pins
+  `'reduce'` for every other test, which is right, and would have hidden
+  the one thing §4 rests on. Two tests lift the pin and nothing else does.
+- **The z-index token reaches the element that stacks**: 1400 on the panel
+  and on Radix's wrapper.
+- **Tree-shaking.** The chunk holding `@radix-ui/react-tooltip` (18,061
+  bytes) is referenced by the Tooltip page's payload and by none of the
+  Button, IconButton or Popover pages', checked by chunk name in the
+  prerendered HTML as D-062 §6 did.
+- **axe's `region` rule flags a portalled tooltip**, on the whole body,
+  because it sits outside every landmark — by design, and a popover passes
+  the same rule only because axe exempts a dialog. The unit assertion
+  disables that one rule with the reason beside it; the role, the
+  description and the name it must not replace stay asserted.
+
+### 7. Five browser breaks and one unit break, each caught by the test named for it
+
+Applied together and run once: `directionOf` pinned to `ltr` (the RTL
+test); the theme attribute dropped from the panel (the theme test, and the
+gallery test with it); the `z-index` line (the stacking test: `auto`
+against `1400`); the reduced-motion rule (that test: `pp-tooltip-in`
+against `none`); the `instant-open` rule (both motion tests). Two others
+failed as collateral — a panel measured mid-animation is 0.96 of its width
+— which is what makes a combined run a check on the named tests and not
+on the failure count. In the unit suite, the fallback provider removed
+makes every no-provider test throw Radix's own error, the named one among
+them. The break the spec recorded in advance as not observable — a bare
+`4` in place of `resolveSpace` — was not run: D-062 §7 ran it for the same
+mechanism and it was not.
+
+## D-066 — An authoring run masked a regression, because `git status` cannot see a mismatch; the index page's baseline is tied to the registry; a placed box is a still box
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:** `.github/workflows/ci.yml`
+(classify step); `scripts/record-dimensions.mjs` (`--rebaseline`, the index
+count); `tests/unit/screenshot-dimensions.test.ts`; `tests/visual/harness.spec.ts`
+(Popover and Tooltip side tests); `.claude/skills/component/SKILL.md` (build
+step) · **Extends:** D-013, D-017, D-042, D-054 §2, D-063 §3
+
+Asked for after the Tooltip PR's visual job went red on a re-run of the
+authoring commit: "make sure it doesn't ever happen again". Three things,
+each fixed where it lives.
+
+### 1. CI's "changed" was false on every run that ever happened
+
+The visual job classified a run by `git status --porcelain` on the
+baseline directory: untracked files meant "a new test asking for a
+baseline", modified files meant "a regression". But Playwright never
+modifies a baseline it disagrees with — it writes `<name>-actual.png` and
+`<name>-diff.png` under `test-results/` and leaves the committed file as it
+was. `git status` on that directory can therefore only ever see new files;
+`changed` had been `false` since D-017 wrote it, and the regression check
+was reached only on a run with **no** new files.
+
+So run 128, which added `Tooltip`'s two baselines, reported the index page
+19px taller in both themes, then classified the run as "new only",
+authored the two tooltip baselines and pushed — with the check that would
+have failed it skipped. The authoring commit triggers no run (D-042), and
+the next one, a manual re-run, had no new files and failed on the index.
+The regression had been on the branch for an hour with a green tick.
+
+The classify step now reads the mismatch from Playwright's own output: a
+`-diff.png` anywhere under `test-results/` is a regression, and nothing is
+authored on a red run. A missing baseline writes `-actual.png` alone, so
+the two cases are told apart by the one file only a mismatch produces.
+
+### 2. The index page's baseline records how many components it listed
+
+The failure itself was legitimate: the index draws one card per registry
+entry (D-063 §4), `Tooltip` added one, and its baseline had to move. But a
+component's PR never touches the index page, so nothing said so, and the
+component's own baseline — the one the Definition of Done names — cannot
+catch it. Two additions:
+
+- `npm run dimensions` writes `components: N` beside each index entry's
+  geometry, and `tests/unit/screenshot-dimensions.test.ts` fails when the
+  registry lists a different number than the baseline was authored with,
+  naming the command. This runs in `npm test`, locally and in the checks
+  job, before any browser is involved.
+- `npm run dimensions -- --rebaseline <page>` is the deliberate re-baseline
+  as one command: it deletes the page's two baselines *and* their manifest
+  entries in the same step, so the window between deleting and re-recording
+  is one the guard skips rather than one it fails — the red run D-063 §3
+  accepted by design is no longer part of the procedure. The `/component`
+  skill's build step now says: adding the registry entry means running it
+  in the same commit.
+
+### 3. A placed box is a still box
+
+The same re-run also reported the RTL half of the Popover **and** Tooltip
+side tests failing with the panel's box at x = 0, then passing on retry.
+Radix parks a panel at `translate(0, -200%)` until floating-ui has placed
+it, and `toBeVisible` is satisfied by an off-screen box, so a read in that
+window is the origin. The Tooltip test had already waited for the parking
+transform to go; it was not enough, which says the first placed position
+is not always the final one. Both suites now read the box through one
+helper that trusts it only once x and y are positive and unchanged across
+two reads a frame apart. This was a flake in the harness, not in either
+component, and it predated `Tooltip`: the Popover test was unchanged.
