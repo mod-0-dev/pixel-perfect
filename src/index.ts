@@ -118,6 +118,18 @@ export {
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
 export { Switch, type SwitchProps } from './components/Switch/Switch';
 export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
+export {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  type TooltipAlign,
+  type TooltipContentProps,
+  type TooltipProps,
+  type TooltipProviderProps,
+  type TooltipSide,
+  type TooltipTriggerProps,
+} from './components/Tooltip/Tooltip';
 export { Textarea, type TextareaProps } from './components/Textarea/Textarea';
 export {
   Text,

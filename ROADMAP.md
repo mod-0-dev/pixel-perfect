@@ -90,10 +90,23 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** **4.3 `Tooltip` is in `build`**, its spec approved by
-  delegation 2026-09-27 (D-064, the shape of D-057 and D-061) — the first
-  component to build on 4.1 alone. Three assumptions the spec made are
-  checked first at the build, not worked around (D-064 §7).
+- **In flight:** **4.3 `Tooltip` is in `review`** — built 2026-09-27, the
+  day its spec was approved by delegation (D-064, the shape of D-057 and
+  D-061), and every Definition of Done box is checked but one: the
+  screenshot baseline, which CI authors on the PR branch and compares on
+  the next push (D-013). The first component to build on 4.1 alone. The
+  three assumptions the spec named were checked first and all held (D-065
+  §6): a disabled trigger opens in Chromium, three `defaultOpen` tooltips
+  coexist, `instant-open` skips the entry animation. Findings in **D-065**:
+  Testing Library's async wrapper waits on a real `setTimeout(0)` and
+  advances only Jest's fake timers past it, so vitest's need
+  `shouldAdvanceTime` (§1); `--pp-color-text` is not redefined on the
+  panel, because `Kbd` paints it on the page's surface (§2); a scroll event
+  lands one frame after the scroll and closes what focus just opened (§3);
+  and an outside button that *flips* a controlled overlay re-opens it, so
+  the demo's buttons say a state (§4). Fifteen browser assertions, 27 unit;
+  five browser breaks and one unit break, each caught by its named test
+  (§7). The Radix tooltip chunk is referenced by no other page's payload.
   [`Tooltip.md`](docs/specs/Tooltip.md) keeps the tier's shape (`Tooltip`,
   `TooltipTrigger`, `TooltipContent`, named exports per D-062 §1) and adds
   an optional `TooltipProvider` with a fallback, so one tooltip needs no
@@ -796,7 +809,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | --- | --- | --- | --- | --- | --- | --- |
 | 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
 | 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
-| 4.3 | `Tooltip` | `build` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
+| 4.3 | `Tooltip` | `review` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064); built the same day, findings in D-065. In `review` for one box: the CI-authored screenshot baseline (D-013). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
 | 4.6 | `Drawer` | `planned` | hug | client | 4.4 | |

@@ -4127,3 +4127,117 @@ workaround:
   dispatches no open event;
 - `instant-open` after a skip actually skips the entry animation, and
   `delayed-open` after a rest plays it.
+
+## D-065 — `Tooltip` build findings: a test harness that waits on a timer nobody advances, a text token that must not be redefined, and a scroll that closes what focus just opened
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:**
+`docs/specs/Tooltip.md` §3, §8, Testing notes; `docs/components/Tooltip.md`
+
+The first build on 4.1 alone. Seven findings; none changes the API the spec
+was approved with, three changed what the spec said would be measured.
+
+### 1. Testing Library's async wrapper waits on a real `setTimeout(0)` and advances only Jest's fake timers
+
+Every user-event call in the unit suite hung. Not user-event's own delay
+(`delay: null` changed nothing) and not React's `act` (narrowing
+`toFake` to `setTimeout` alone changed nothing): `@testing-library/react`'s
+`asyncWrapper` drains the microtask queue after each interaction by awaiting
+a `setTimeout(resolve, 0)` — and advances fake timers past it **only when a
+`jest` global exists**. Under vitest's fake timers that zero-length timer is
+never fired by anyone, and the await never returns.
+
+The fix is `vi.useFakeTimers({ shouldAdvanceTime: true })`: real time
+carries the wrapper's timer while `act(() => vi.advanceTimersByTime(ms))`
+moves Radix's delays deliberately. The `act` is not optional either — the
+delay's callback sets React state outside any event, and an unwrapped
+advance leaves the open scheduled but unrendered. Both are on the docs page,
+because a consumer's test hits the same wall with the same library.
+
+### 2. `--pp-color-text` is not redefined on the panel, and the first draft did
+
+The panel's ink is `--pp-color-text-inverse`, and the first draft also
+redefined `--pp-color-text` to it on the panel so that anything inside
+reading the text token would paint the inverse too. That would have made
+`Kbd` — the one component the spec's own usage puts in a tooltip —
+unreadable: `Kbd` paints `--pp-color-text` on its own `bg-sunken` surface,
+which is the page's, so inverse ink on a page-coloured chip. `Text` has no
+surface of its own and would have needed the redefinition. One of the two
+loses, and the one that loses is the one a tooltip has no reason to hold:
+a tooltip's content is plain text, `Text` in a tooltip is a "don't", and
+`Kbd` keeps its own surface — on a near-black tooltip a light chip reads
+as a key, which is the point of it.
+
+### 3. Scroll-then-focus opens a tooltip and closes it a frame later
+
+Half the browser suite failed on the first run with the tooltip found in
+`data-state="closed"` or not found at all, and the sides test passed for
+no reason it could name. A scroll event is dispatched on the frame after
+the scroll, and Radix closes a tooltip when an ancestor of its trigger
+scrolls (spec §6). `scrollIntoViewIfNeeded()` followed by `focus()` in one
+breath therefore opens the tooltip and closes it one frame later; the sides
+test passed only because its triggers were already in view. The suite's
+`focusToOpen` waits two frames between the two. Same family as D-062 §2's
+stale server: when a test fails, establish which side is wrong before
+changing either, and "the harness" includes the order it does things in.
+
+### 4. A controlled tooltip's "toggle" button re-opens it
+
+The controlled demo had one button flipping `open`. The press on it is an
+outside press, and the dismissable layer tells the owner `onOpenChange(false)`
+**before** the click handler runs — so a flip reads "closed" and sets
+`true`, and the tooltip never closes from that button. The demo has two
+buttons that each *say* a state. Recorded because the same shape — an
+outside control that toggles a dismissable overlay — will come up at
+`Dialog` and `DropdownMenu`, and the answer is the same: say the state,
+do not flip it.
+
+### 5. One `pointermove` on a neighbour is swallowed while the pointer is "in transit"
+
+Playwright's `hover()` moves the mouse in one jump. Leaving the first
+trigger opens Radix's grace area towards its panel and marks the pointer in
+transit; the single `pointermove` that then lands on the neighbour reaches
+the neighbour's handler *first* (React's root listener) while transit is
+still set, and is ignored — the document listener that clears transit runs
+after it. A real hand produces dozens of events; the second one opens the
+neighbour. The test moves in ten steps, and the unit test fires the
+document-level move before reaching the neighbour, which is the order a
+pointer takes. Neither is a workaround: a one-event sweep is not a thing a
+pointer does.
+
+### 6. Verified, as the spec promised (§8) rather than assumed
+
+- **A natively disabled trigger opens its tooltip in Chromium.** The
+  browser fires `pointermove` on a disabled `<button>`; the docs page states
+  it, with Firefox named as the browser that does not.
+- **Three `defaultOpen` tooltips coexist** in the Matrix. A default open
+  dispatches no `tooltip.open` event.
+- **`instant-open` skips the entry animation and `delayed-open` plays it**,
+  measured under `reducedMotion: 'no-preference'` — the config pins
+  `'reduce'` for every other test, which is right, and would have hidden
+  the one thing §4 rests on. Two tests lift the pin and nothing else does.
+- **The z-index token reaches the element that stacks**: 1400 on the panel
+  and on Radix's wrapper.
+- **Tree-shaking.** The chunk holding `@radix-ui/react-tooltip` (18,061
+  bytes) is referenced by the Tooltip page's payload and by none of the
+  Button, IconButton or Popover pages', checked by chunk name in the
+  prerendered HTML as D-062 §6 did.
+- **axe's `region` rule flags a portalled tooltip**, on the whole body,
+  because it sits outside every landmark — by design, and a popover passes
+  the same rule only because axe exempts a dialog. The unit assertion
+  disables that one rule with the reason beside it; the role, the
+  description and the name it must not replace stay asserted.
+
+### 7. Five browser breaks and one unit break, each caught by the test named for it
+
+Applied together and run once: `directionOf` pinned to `ltr` (the RTL
+test); the theme attribute dropped from the panel (the theme test, and the
+gallery test with it); the `z-index` line (the stacking test: `auto`
+against `1400`); the reduced-motion rule (that test: `pp-tooltip-in`
+against `none`); the `instant-open` rule (both motion tests). Two others
+failed as collateral — a panel measured mid-animation is 0.96 of its width
+— which is what makes a combined run a check on the named tests and not
+on the failure count. In the unit suite, the fallback provider removed
+makes every no-provider test throw Radix's own error, the named one among
+them. The break the spec recorded in advance as not observable — a bare
+`4` in place of `resolveSpace` — was not run: D-062 §7 ran it for the same
+mechanism and it was not.

@@ -1,0 +1,111 @@
+/*
+ * Tooltip — spec docs/specs/Tooltip.md
+ *
+ * THE PANEL IS THE ONE ELEMENT HERE, AND IT IS RADIX'S CONTENT NODE WITH OUR
+ * CLASS ON IT. Radix's positioned wrapper sits above it in the DOM, unstyled,
+ * and reads this element's computed `z-index` onto itself — which is how the
+ * token below reaches the element that actually stacks (overlay-foundation.md
+ * §4; checked at the Popover build, D-062 §6, and again here).
+ *
+ * THE INVERSE SURFACE (spec §3, D-064 §2). A tooltip is read against whatever
+ * it floats over and must never be mistaken for a panel the user can act on,
+ * so it is the page inverted: `--pp-color-bg-inverse` under
+ * `--pp-color-text-inverse`, the body-text pair the other way round. No
+ * border — an inverse surface needs no edge to be seen.
+ *
+ * `--pp-color-text` IS NOT REDEFINED HERE, and the first draft did. Plain
+ * text and anything painting from `currentColor` inherit the panel's ink;
+ * a component that reads the text token itself does not, and there are two
+ * of those a tooltip might hold. `Kbd` paints `--pp-color-text` on its own
+ * sunken surface — which is the page's, not the inverse — so redefining the
+ * token would put inverse ink on a page-coloured chip and make every "⌘S"
+ * unreadable. `Text` paints the same token on NO surface of its own and
+ * would need the redefinition. One of the two has to lose, and the one that
+ * loses is the one a tooltip has no reason to hold: a tooltip's content is
+ * plain text, and the docs page says so.
+ *
+ * THE OVERLAY EXCEPTION TO RULES §1 (D-061 §3, applied by D-064 §4): no parent
+ * in flow, so the ceiling is the measure, logically, and never past what
+ * fits. `.stylelintrc.json` names this file for `max-inline-size`. No
+ * `max-block-size`: a tooltip that needs to scroll is not a tooltip.
+ *
+ * `data-state` IS RADIX'S THREE VALUES (D-064 §3). `instant-open` — keyboard
+ * focus, a controlled open, or a neighbour's skip delay — gets no entry
+ * animation: a tooltip that appeared because the pointer swept across a
+ * toolbar must not fade in again on every button.
+ *
+ * THE THEME IS ON THIS ELEMENT (4.1 §3): the panel is portalled out of the
+ * app's `[data-pp-theme]` subtree and carries the trigger's theme, so the
+ * inverse it paints is the inverse of the region it was opened from.
+ *
+ * The vendor custom properties read below — `--radix-popper-*` — are Radix's
+ * positioning data, consumed here and named nowhere a consumer would write
+ * them (4.1 §5).
+ */
+
+@layer pp.components {
+  .pp-tooltip {
+    /* Above everything, a toast included (4.1 §4). */
+    z-index: var(--pp-z-tooltip);
+
+    /* hug: sized by its text, up to the ceiling (D-061 §3). */
+    max-inline-size: min(
+      var(--pp-tooltip-max-inline-size, var(--pp-measure-xs)),
+      var(--radix-popper-available-width)
+    );
+    padding-block: var(--pp-tooltip-padding-block, var(--pp-space-1));
+    padding-inline: var(--pp-tooltip-padding-inline, var(--pp-space-2));
+    border-radius: var(--pp-tooltip-radius, var(--pp-radius-2));
+    background-color: var(--pp-tooltip-bg, var(--pp-color-bg-inverse));
+    color: var(--pp-tooltip-color, var(--pp-color-text-inverse));
+    box-shadow: var(--pp-tooltip-shadow, var(--pp-shadow-2));
+    font-size: var(--pp-font-size-2);
+    font-weight: var(--pp-font-weight-regular);
+    line-height: var(--pp-line-height-snug);
+
+    /* The motion grows out of the anchor: Radix writes the origin for the
+       side it placed the panel on. */
+    transform-origin: var(--radix-popper-transform-origin);
+    animation: pp-tooltip-in var(--pp-duration-fast) var(--pp-easing-decelerate);
+  }
+
+  /* Opened at once — focus, a controlled open, a neighbour's skip delay: no
+     entry animation, or a toolbar flickers (spec §4). */
+  .pp-tooltip[data-state="instant-open"] {
+    animation: none;
+  }
+
+  /* Radix keeps the closing panel mounted until this animation ends
+     (Presence reads `animation-name`), which is what makes an exit visible.
+     Quicker than the entry: a label leaving should not linger. */
+  .pp-tooltip[data-state="closed"] {
+    animation: pp-tooltip-out var(--pp-duration-instant) var(--pp-easing-accelerate);
+  }
+
+  /*
+   * THE RESET'S CRUSH DOES NOT REACH THIS LAYER (D-062 §5): an `animation`
+   * shorthand in pp.components outranks reset.css's zero-specificity rule,
+   * so every animated component carries its own (RULES §3). `none` rather
+   * than a crushed duration, so Presence unmounts a closing panel at once.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-tooltip,
+    .pp-tooltip[data-state="closed"] {
+      animation: none;
+    }
+  }
+
+  @keyframes pp-tooltip-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+
+  @keyframes pp-tooltip-out {
+    to {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+}

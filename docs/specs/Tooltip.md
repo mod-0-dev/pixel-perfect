@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `build` — Gate C passed 2026-09-27 **by delegation** (D-064), every recommendation adopted as written |
+| **Status** | `review` — built 2026-09-27; every Definition of Done box but the CI-authored screenshot baseline (D-013). Gate C passed 2026-09-27 **by delegation** (D-064); build findings in D-065 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3) |
 | **RSC** | `client` — Radix state, timers, a portal, positioning |
 | **Depends on** | 4.1 Overlay foundation (`done`). Composes nothing; its usual trigger is 3.2 `IconButton`, by `asChild` |
@@ -143,6 +143,12 @@ The elevation is `--pp-shadow-2`, one step below `Popover`'s: a label, not
 a panel. No border — an inverse surface needs no edge to be seen, and a
 border would need a colour that exists in neither pair.
 
+*Amended at the build (D-065 §2):* `--pp-color-text` is **not** redefined
+on the panel. Plain text and anything painting from `currentColor` inherit
+the inverse ink; `Kbd` keeps its own surface, which is what makes a key read
+as a key on it; `Text` paints the page's ink on nothing and is a "don't".
+A tooltip's content is plain text.
+
 ### 4. Radix's open-state vocabulary is kept: `closed | delayed-open | instant-open`
 
 RULES §4 fixes `data-state="open|closed"`, and Radix's `Tooltip` writes
@@ -227,7 +233,10 @@ measurement behind a different number, and the spec says which they are.
 ### 8. What is left to the build to verify, named now
 
 Following 4.1's practice of stating a mechanism's dependence before the
-build checks it:
+build checks it. *All three held at the build (D-065 §6): Chromium fires
+`pointermove` on a disabled button and the tooltip opens; three
+`defaultOpen` tooltips sit open together; and `instant-open` skips the
+entry animation, measured with the reduced-motion pin lifted for that test.*
 
 - **A natively `disabled` trigger.** Whether a disabled `<button>` fires the
   `pointermove` the trigger opens on is the browser's decision, not ours —
@@ -472,8 +481,9 @@ const label = 'Copy to clipboard';
 
 ## Testing notes
 
-- **Unit (jsdom, fake timers):** pointer rest opens after `delayDuration`
-  and not before; a second trigger within `skipDelayDuration` of a close
+- **Unit (jsdom, fake timers — `shouldAdvanceTime: true`, and every
+  advance inside `act`; D-065 §1 says why both):** pointer rest opens after
+  `delayDuration` and not before; a second trigger within `skipDelayDuration` of a close
   opens at once and carries `instant-open`; focus opens at once, blur
   closes; a pointer press then focus does not open; click closes; Escape
   closes; controlled and uncontrolled; `aria-describedby` present only while

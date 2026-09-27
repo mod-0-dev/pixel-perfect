@@ -82,6 +82,7 @@
 
 /* Tier 4 — overlays & disclosure, on Radix Primitives (D-061). */
 @import "../components/Popover/Popover.css";
+@import "../components/Tooltip/Tooltip.css";
 
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";
