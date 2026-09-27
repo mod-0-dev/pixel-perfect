@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — built 2026-09-27; every Definition of Done box but the CI-authored screenshot baseline (D-013). Gate C passed 2026-09-27 **by delegation** (D-064); build findings in D-065 |
+| **Status** | `done` — 2026-09-27; built the same day, its baselines CI-authored on the PR branch and compared green on run 132 (D-013). Gate C passed 2026-09-27 **by delegation** (D-064); build findings in D-065; the CI classification its PR exposed is D-066 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3) |
 | **RSC** | `client` — Radix state, timers, a portal, positioning |
 | **Depends on** | 4.1 Overlay foundation (`done`). Composes nothing; its usual trigger is 3.2 `IconButton`, by `asChild` |

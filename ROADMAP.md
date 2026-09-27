@@ -90,11 +90,11 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** **4.3 `Tooltip` is in `review`** — built 2026-09-27, the
-  day its spec was approved by delegation (D-064, the shape of D-057 and
-  D-061), and every Definition of Done box is checked but one: the
-  screenshot baseline, which CI authors on the PR branch and compares on
-  the next push (D-013). The first component to build on 4.1 alone. The
+- **In flight:** nothing. **4.3 `Tooltip` is `done`** (2026-09-27): built
+  the day its spec was approved by delegation (D-064, the shape of D-057
+  and D-061), its baselines CI-authored on the PR branch and compared green
+  on run 132 (D-013). Next up is **4.4 `Dialog`**, the first modal, which
+  4.5, 4.6 and 4.14 gate on. The first component to build on 4.1 alone. The
   three assumptions the spec named were checked first and all held (D-065
   §6): a disabled trigger opens in Chromium, three `defaultOpen` tooltips
   coexist, `instant-open` skips the entry animation. Findings in **D-065**:
@@ -706,9 +706,10 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 49 / 80 tracked items (11 foundations + 69 components) — 10
-  foundations + 39 components, 4.1 the overlay foundation and 4.2 `Popover`
-  the first of Tier 4, 3.17 `RangeSlider` the last of Tier 3. The denominator moved from 79 to 80 when **0.11**
+- **Done:** 50 / 80 tracked items (11 foundations + 69 components) — 10
+  foundations + 40 components, 4.3 `Tooltip` the latest, 4.1 the overlay
+  foundation and 4.2 `Popover` the first of Tier 4, 3.17 `RangeSlider` the
+  last of Tier 3. The denominator moved from 79 to 80 when **0.11**
   (the focus ring off the page) was added by D-053 §2 and closed the same day by
   D-056; it had moved from 78 to 79 when 3.17 `RangeSlider` was added (D-052
   §5). The one foundation not `done` is 0.10 docs site, deferred since there
@@ -821,7 +822,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | --- | --- | --- | --- | --- | --- | --- |
 | 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
 | 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
-| 4.3 | `Tooltip` | `review` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064); built the same day, findings in D-065. In `review` for one box: the CI-authored screenshot baseline (D-013). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
+| 4.3 | `Tooltip` | `done` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064); built the same day, findings in D-065; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 132, D-013). Its PR also found and fixed the CI classification that could author over a regression (D-066). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
 | 4.6 | `Drawer` | `planned` | hug | client | 4.4 | |
