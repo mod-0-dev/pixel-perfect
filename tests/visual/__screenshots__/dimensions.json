@@ -143,14 +143,6 @@
     "width": 1280,
     "height": 2532
   },
-  "index-dark.png": {
-    "width": 1280,
-    "height": 2814
-  },
-  "index-light.png": {
-    "width": 1280,
-    "height": 2814
-  },
   "input-dark.png": {
     "width": 1280,
     "height": 5030
@@ -318,6 +310,14 @@
   "tokens-light.png": {
     "width": 1280,
     "height": 3201
+  },
+  "tooltip-dark.png": {
+    "width": 1280,
+    "height": 2329
+  },
+  "tooltip-light.png": {
+    "width": 1280,
+    "height": 2329
   },
   "visually-hidden-dark.png": {
     "width": 1280,

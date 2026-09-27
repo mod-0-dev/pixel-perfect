@@ -99,16 +99,32 @@ jobs:
         run: npm run test:visual
         continue-on-error: true
 
+      # A MISMATCH IS READ FROM PLAYWRIGHT'S OUTPUT, NOT FROM GIT (D-066 §1).
+      # Playwright never touches a baseline it disagrees with: it writes
+      # `<name>-actual.png` and `<name>-diff.png` under test-results/ and
+      # leaves the file in __screenshots__ as it was. So `git status` on the
+      # baseline directory can only ever see NEW files, and the old
+      # `changed=$(git status | grep -v '^??')` was false on every run that
+      # ever happened — which meant a run that authored a new component's
+      # baselines skipped the regression check below and committed them on
+      # top of a real regression in the same run (index-*.png, 19px taller,
+      # run 128). A missing baseline writes `-actual.png` alone; only a
+      # mismatch against an existing one writes a `-diff.png`, so that file
+      # is what says "regression".
       - name: Classify the result
         id: classify
         run: |
-          changed=$(git status --porcelain -- tests/visual/__screenshots__ | grep -v '^??' || true)
+          changed=$(find test-results -name '*-diff.png' 2>/dev/null | sort || true)
           new=$(git status --porcelain -- tests/visual/__screenshots__ | grep '^??' || true)
           echo "changed=$([ -n "$changed" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "new=$([ -n "$new" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           if [ -n "$changed" ]; then
-            echo "::error::Existing screenshot baselines differ — this is a visual regression."
+            echo "::error::Existing screenshot baselines differ — this is a visual regression. Nothing is authored on a red run."
             echo "$changed"
+          fi
+          if [ -n "$new" ]; then
+            echo "New baselines (authored below only if nothing regressed):"
+            echo "$new"
           fi
 
       # Authoring happens on a PR branch and nowhere else. A push to `main`

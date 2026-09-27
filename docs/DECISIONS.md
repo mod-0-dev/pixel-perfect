@@ -4241,3 +4241,72 @@ makes every no-provider test throw Radix's own error, the named one among
 them. The break the spec recorded in advance as not observable — a bare
 `4` in place of `resolveSpace` — was not run: D-062 §7 ran it for the same
 mechanism and it was not.
+
+## D-066 — An authoring run masked a regression, because `git status` cannot see a mismatch; the index page's baseline is tied to the registry; a placed box is a still box
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:** `.github/workflows/ci.yml`
+(classify step); `scripts/record-dimensions.mjs` (`--rebaseline`, the index
+count); `tests/unit/screenshot-dimensions.test.ts`; `tests/visual/harness.spec.ts`
+(Popover and Tooltip side tests); `.claude/skills/component/SKILL.md` (build
+step) · **Extends:** D-013, D-017, D-042, D-054 §2, D-063 §3
+
+Asked for after the Tooltip PR's visual job went red on a re-run of the
+authoring commit: "make sure it doesn't ever happen again". Three things,
+each fixed where it lives.
+
+### 1. CI's "changed" was false on every run that ever happened
+
+The visual job classified a run by `git status --porcelain` on the
+baseline directory: untracked files meant "a new test asking for a
+baseline", modified files meant "a regression". But Playwright never
+modifies a baseline it disagrees with — it writes `<name>-actual.png` and
+`<name>-diff.png` under `test-results/` and leaves the committed file as it
+was. `git status` on that directory can therefore only ever see new files;
+`changed` had been `false` since D-017 wrote it, and the regression check
+was reached only on a run with **no** new files.
+
+So run 128, which added `Tooltip`'s two baselines, reported the index page
+19px taller in both themes, then classified the run as "new only",
+authored the two tooltip baselines and pushed — with the check that would
+have failed it skipped. The authoring commit triggers no run (D-042), and
+the next one, a manual re-run, had no new files and failed on the index.
+The regression had been on the branch for an hour with a green tick.
+
+The classify step now reads the mismatch from Playwright's own output: a
+`-diff.png` anywhere under `test-results/` is a regression, and nothing is
+authored on a red run. A missing baseline writes `-actual.png` alone, so
+the two cases are told apart by the one file only a mismatch produces.
+
+### 2. The index page's baseline records how many components it listed
+
+The failure itself was legitimate: the index draws one card per registry
+entry (D-063 §4), `Tooltip` added one, and its baseline had to move. But a
+component's PR never touches the index page, so nothing said so, and the
+component's own baseline — the one the Definition of Done names — cannot
+catch it. Two additions:
+
+- `npm run dimensions` writes `components: N` beside each index entry's
+  geometry, and `tests/unit/screenshot-dimensions.test.ts` fails when the
+  registry lists a different number than the baseline was authored with,
+  naming the command. This runs in `npm test`, locally and in the checks
+  job, before any browser is involved.
+- `npm run dimensions -- --rebaseline <page>` is the deliberate re-baseline
+  as one command: it deletes the page's two baselines *and* their manifest
+  entries in the same step, so the window between deleting and re-recording
+  is one the guard skips rather than one it fails — the red run D-063 §3
+  accepted by design is no longer part of the procedure. The `/component`
+  skill's build step now says: adding the registry entry means running it
+  in the same commit.
+
+### 3. A placed box is a still box
+
+The same re-run also reported the RTL half of the Popover **and** Tooltip
+side tests failing with the panel's box at x = 0, then passing on retry.
+Radix parks a panel at `translate(0, -200%)` until floating-ui has placed
+it, and `toBeVisible` is satisfied by an off-screen box, so a read in that
+window is the origin. The Tooltip test had already waited for the parking
+transform to go; it was not enough, which says the first placed position
+is not always the final one. Both suites now read the box through one
+helper that trusts it only once x and y are positive and unchanged across
+two reads a frame apart. This was a flake in the harness, not in either
+component, and it predated `Tooltip`: the Popover test was unchanged.

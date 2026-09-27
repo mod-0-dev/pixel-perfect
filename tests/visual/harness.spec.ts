@@ -43,6 +43,34 @@ async function setTheme(page: import('@playwright/test').Page, theme: 'system' |
   else await expect(html).toHaveAttribute('data-pp-theme', theme);
 }
 
+/**
+ * The bounding box of a floating-ui panel, once it is PLACED and STILL.
+ *
+ * Radix parks a panel off-screen (`translate(0, -200%)`) until floating-ui has
+ * computed a position, and `toBeVisible` is satisfied by an off-screen box; a
+ * read in that window is (0, 0), which is exactly what one CI run reported
+ * for the RTL half of both the Popover and the Tooltip side tests while the
+ * LTR half passed (D-066 §3). Nothing in these tests places a panel at the
+ * origin, so a box is trusted only once its x and y are both positive and it
+ * has not moved between two reads a frame apart.
+ */
+async function placedBox(el: import('@playwright/test').Locator) {
+  await expect(el).toBeVisible();
+  let last: { x: number; y: number; width: number; height: number } | null = null;
+  await expect
+    .poll(
+      async () => {
+        const box = await el.boundingBox();
+        const settled = !!box && !!last && box.x > 0 && box.y > 0 && box.x === last.x && box.y === last.y;
+        last = box;
+        return settled;
+      },
+      { message: 'the panel never settled at a placed position', intervals: [32, 32, 64, 128, 256, 512] },
+    )
+    .toBe(true);
+  return last!;
+}
+
 test.describe('harness self-check', () => {
   test('a fill component is never flagged as overflowing', async ({ page }) => {
     await page.goto('/harness');
@@ -4227,7 +4255,7 @@ test.describe('Popover', () => {
     await trigger.click();
     const el = panel(page);
     await expect(el).toHaveAttribute('data-side', 'bottom');
-    const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+    const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
     const expected = await trigger.evaluate(
       (n) => parseFloat(getComputedStyle(n).getPropertyValue('--pp-space-2')) * parseFloat(getComputedStyle(document.documentElement).fontSize),
     );
@@ -4245,8 +4273,7 @@ test.describe('Popover', () => {
       await trigger.scrollIntoViewIfNeeded();
       await trigger.click();
       const el = panel(page);
-      await expect(el).toBeVisible();
-      const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+      const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
       if (expectLeft) {
         expect(p!.x + p!.width, `${id}: start is not on the left`).toBeLessThanOrEqual(t!.x + 1);
         await expect(el).toHaveAttribute('data-side', 'left');
@@ -4419,14 +4446,6 @@ test.describe('Tooltip', () => {
     await trigger.focus();
   };
 
-  /* Radix parks a panel off-screen (`translate(0, -200%)`) until floating-ui
-     has placed it; a box read before that is (0, 0). Waits for the placement. */
-  const placed = async (el: import('@playwright/test').Locator) => {
-    await expect(el).toBeVisible();
-    await expect
-      .poll(() => el.evaluate((n) => !(n.parentElement as HTMLElement).style.transform.includes('-200%')))
-      .toBe(true);
-  };
 
   test('the z-index token reaches the element that stacks', async ({ page }) => {
     await page.goto('/components/tooltip');
@@ -4502,9 +4521,8 @@ test.describe('Tooltip', () => {
     const trigger = demo(page, 'sides').locator('[data-side-trigger="top"]');
     await focusToOpen(page, trigger);
     const el = tip(page);
-    await placed(el);
     await expect(el).toHaveAttribute('data-side', 'top');
-    const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+    const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
     const expected = await trigger.evaluate(
       (n) => parseFloat(getComputedStyle(n).getPropertyValue('--pp-space-1')) * parseFloat(getComputedStyle(document.documentElement).fontSize),
     );
@@ -4521,8 +4539,7 @@ test.describe('Tooltip', () => {
       const trigger = demo(page, id).locator('[data-side-trigger="start"]');
       await focusToOpen(page, trigger);
       const el = tip(page);
-      await placed(el);
-      const [t, p] = await Promise.all([trigger.boundingBox(), el.boundingBox()]);
+      const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
       if (expectLeft) {
         expect(p!.x + p!.width, `${id}: start is not on the left`).toBeLessThanOrEqual(t!.x + 1);
         await expect(el).toHaveAttribute('data-side', 'left');
@@ -4657,7 +4674,7 @@ test.describe('Tooltip', () => {
     const trigger = demo(page, 'long').getByRole('button');
     await focusToOpen(page, trigger);
     const el = tip(page);
-    await placed(el);
+    await placedBox(el);
     const read = await el.evaluate((n) => ({
       width: n.getBoundingClientRect().width,
       lines: n.getBoundingClientRect().height / (parseFloat(getComputedStyle(n).lineHeight) || 1),

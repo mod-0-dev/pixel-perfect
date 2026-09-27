@@ -27,13 +27,48 @@
  * is a different Chromium build and 2-4px shorter; recording one would write
  * this machine's geometry in as the truth.
  */
-import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+
+import { countRegistryEntries } from './registry-count.mjs';
 
 const DIR = 'tests/visual/__screenshots__';
 const MANIFEST = `${DIR}/dimensions.json`;
 const all = process.argv.includes('--all');
 
 const recorded = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+
+/*
+ * `--rebaseline <page>`: THE DELIBERATE RE-BASELINE, AS ONE COMMAND (D-066 §2).
+ * Deletes the page's baselines (both themes) AND their manifest entries in
+ * the same step, so that the window between deleting and re-recording is
+ * one the guard skips (no file, no entry) rather than one it fails (a new
+ * file against an old entry — the red run D-063 §3 accepted by design).
+ * Push; CI authors the replacements; run `npm run dimensions` to record
+ * them. The index page needs this whenever a component is added, because
+ * it draws one card per registry entry.
+ */
+const rebaselineAt = process.argv.indexOf('--rebaseline');
+if (rebaselineAt !== -1) {
+  const page = process.argv[rebaselineAt + 1];
+  if (!page) {
+    console.error('usage: npm run dimensions -- --rebaseline <page>   (e.g. index)');
+    process.exit(2);
+  }
+  const targets = readdirSync(DIR).filter((f) => new RegExp(`^${page}-(light|dark)\\.png$`).test(f));
+  if (targets.length === 0) {
+    console.error(`no baselines named ${page}-light.png / ${page}-dark.png in ${DIR}`);
+    process.exit(2);
+  }
+  for (const file of targets) {
+    unlinkSync(`${DIR}/${file}`);
+    delete recorded[file];
+  }
+  writeFileSync(MANIFEST, `${JSON.stringify(recorded, null, 2)}\n`);
+  console.log(`deleted ${targets.join(', ')} and their manifest entries.`);
+  console.log('Commit and push; CI authors the replacements on the PR branch; then run `npm run dimensions` to record them.');
+  process.exit(0);
+}
+
 const present = readdirSync(DIR)
   .filter((f) => f.endsWith('.png'))
   .sort();
@@ -41,17 +76,35 @@ const present = readdirSync(DIR)
 const added = [];
 const changed = [];
 
+/*
+ * THE INDEX PAGE'S GEOMETRY DEPENDS ON HOW MANY COMPONENTS IT LISTS, so its
+ * entry records the registry count it was authored with. Adding a component
+ * without re-baselining the index is the one visual change no component's
+ * own baseline can catch; the unit guard compares this number to the
+ * registry and names the command (D-066 §2).
+ */
+const components = countRegistryEntries();
+const isIndex = (file) => /^index-(light|dark)\.png$/.test(file);
+
 for (const file of present) {
   const bytes = readFileSync(`${DIR}/${file}`);
   const size = { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+  if (isIndex(file)) size.components = components;
   const was = recorded[file];
 
   if (!was) {
     recorded[file] = size;
-    added.push(`${file} ${size.width}×${size.height}`);
+    added.push(`${file} ${size.width}×${size.height}${isIndex(file) ? ` (${components} components)` : ''}`);
   } else if (all && (was.width !== size.width || was.height !== size.height)) {
     recorded[file] = size;
     changed.push(`${file} ${was.width}×${was.height} → ${size.width}×${size.height}`);
+  } else if (isIndex(file) && was.components === undefined) {
+    // A field the entry predates: adding it is adding a missing entry, not
+    // re-recording one. The count is the registry's NOW, which is right only
+    // when the committed baseline was authored against it — true once, at
+    // the commit that introduced the field, and guarded from then on.
+    recorded[file] = { ...was, components };
+    added.push(`${file}: components = ${components}`);
   }
 }
 

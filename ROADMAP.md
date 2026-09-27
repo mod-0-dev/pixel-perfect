@@ -107,6 +107,18 @@ is `done`.
   the demo's buttons say a state (§4). Fifteen browser assertions, 27 unit;
   five browser breaks and one unit break, each caught by its named test
   (§7). The Radix tooltip chunk is referenced by no other page's payload.
+  **Then the visual job went red on a re-run, and the cause was CI's**
+  (**D-066**): its "changed" classification read `git status`, which
+  cannot see a mismatch — Playwright writes diffs to `test-results/`, never
+  over a baseline — so it had been `false` on every run ever, and run 128
+  authored Tooltip's baselines over a real 19px change to the index page
+  (one card per registry entry, D-063 §4). CI now reads the `-diff.png`
+  Playwright writes; the index baseline records the registry count it was
+  authored with and `npm test` fails when the registry has moved on; and
+  `npm run dimensions -- --rebaseline index` is the deliberate re-baseline
+  as one command, which the `/component` build step now requires with the
+  registry entry. The RTL side tests' flake (a box read before placement)
+  is closed for Popover and Tooltip alike (§3).
   [`Tooltip.md`](docs/specs/Tooltip.md) keeps the tier's shape (`Tooltip`,
   `TooltipTrigger`, `TooltipContent`, named exports per D-062 §1) and adds
   an optional `TooltipProvider` with a fallback, so one tooltip needs no
