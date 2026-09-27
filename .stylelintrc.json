@@ -233,7 +233,8 @@
     {
       "files": [
         "src/components/Popover/**/*.css",
-        "src/components/Tooltip/**/*.css"
+        "src/components/Tooltip/**/*.css",
+        "src/components/Dialog/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [

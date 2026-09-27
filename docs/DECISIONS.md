@@ -4310,3 +4310,34 @@ is not always the final one. Both suites now read the box through one
 helper that trusts it only once x and y are positive and unchanged across
 two reads a frame apart. This was a flake in the harness, not in either
 component, and it predated `Tooltip`: the Popover test was unchanged.
+
+## D-067 — Gate C for 4.4 `Dialog` approved by delegation; a modal's scrim is the other half of the overlay exception
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:** RULES §1 (the
+`Container` consequence); `.stylelintrc.json`; `docs/specs/Dialog.md`
+(status) · **Extends:** D-057, D-061 §3, D-064 §4
+
+### 1. Approved by delegation, the fourth time
+
+The spec went to Gate C with eight open questions and a recommendation on
+each. The approval was **"Build it so it's pixel perfect"** — a delegation,
+recorded as D-057, D-061 §2 and D-064 §1 recorded the others: one pair of
+eyes, every recommendation adopted as written. No `modal` prop (§2);
+`--pp-measure-sm` and no `size` (§3); the scrim scrolls and the panel does
+not (§4); `DialogTitle` is a `<div>` (§6); no automatic close button (§5);
+`aria-modal="true"` written by us (§6); the no-trigger focus restore (§7);
+the gallery in contained cells (§10). What that means for the build is
+D-057's list, and the spec's §11 names what is checked first.
+
+### 2. A modal's scrim is the viewport-sized box, and `inset: 0` is how a box is that box
+
+D-061 §3 let an overlay panel declare a ceiling because it has no parent in
+flow to size it. A modal has the same problem one level up: the box the
+viewport gives it — the scrim, which positions the panel, dims the page and
+scrolls when the panel is taller — is a box nothing in flow provides. So a
+scrim may declare `position: fixed; inset: 0`, logical and one property,
+and that is the exception's other half. RULES §1's consequence says so;
+`.stylelintrc.json`'s overlay override (`max-inline-size` allowed, nothing
+else relaxed) names `Dialog.css` as it named `Tooltip.css` (D-064 §4).
+Nothing in flow ever qualifies, and the panel itself declares no position:
+it is a grid item, centred by the scrim.

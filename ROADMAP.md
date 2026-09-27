@@ -90,9 +90,11 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight: 4.4 `Dialog` (`spec`, 2026-09-27).**
-  [`Dialog.md`](docs/specs/Dialog.md) is at Gate C with eight open questions
-  and a recommendation on each. The first modal, which 4.5, 4.6 and 4.14
+- **In flight: 4.4 `Dialog` (`build`, 2026-09-27).**
+  [`Dialog.md`](docs/specs/Dialog.md) went to Gate C with eight open
+  questions and a recommendation on each, and was approved by delegation
+  (D-067, the shape of D-057, D-061 and D-064): every recommendation
+  adopted as written, and the two assumptions §11 names checked first. The first modal, which 4.5, 4.6 and 4.14
   gate on, and the first component that takes the page away from the user —
   scroll lock, `aria-hidden` on the rest, a focus trap — so each is decided
   in the spec rather than inherited. What it asks for: modal only, no
@@ -843,7 +845,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
 | 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
 | 4.3 | `Tooltip` | `done` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064); built the same day, findings in D-065; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 132, D-013). Its PR also found and fixed the CI classification that could author over a regression (D-066). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
-| 4.4 | `Dialog` | `spec` | hug | client | 4.1 | [`Dialog.md`](docs/specs/Dialog.md), at Gate C 2026-09-27 with eight open questions. The first modal, and the one 4.5, 4.6 and 4.14 gate on. Modal only, no `modal` prop; the scrim is Radix's `Overlay` rendered by `Content` and is the panel's parent — positioner and scroll container in one, centred by a grid so RTL needs nothing; ceiling `--pp-measure-sm`, no `size`; `aria-modal` and a focus restore for a trigger-less dialog are the two things added over Radix; the gallery portals into `contain: layout` cells, so a cell is a viewport |
+| 4.4 | `Dialog` | `build` | hug | client | 4.1 | [`Dialog.md`](docs/specs/Dialog.md), approved by delegation 2026-09-27 (D-067), every one of its eight recommendations adopted as written. The first modal, and the one 4.5, 4.6 and 4.14 gate on. Modal only, no `modal` prop; the scrim is Radix's `Overlay` rendered by `Content` and is the panel's parent — positioner and scroll container in one, centred by a grid so RTL needs nothing; ceiling `--pp-measure-sm`, no `size`; `aria-modal` and a focus restore for a trigger-less dialog are the two things added over Radix; the gallery portals into `contain: layout` cells, so a cell is a viewport |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
 | 4.6 | `Drawer` | `planned` | hug | client | 4.4 | |
 | 4.7 | `DropdownMenu` | `planned` | hug | client | 4.2 | Typeahead, submenus |

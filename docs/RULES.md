@@ -34,8 +34,10 @@ correctly in every layout context. The rule is *don't declare width*, not
   That is its entire job. If you want to constrain something, you wrap it.
   The one class of exception is a Tier 4 overlay panel — a popover, a menu, a
   dialog — which has no parent in flow to size it and takes its ceiling from
-  the measure scale (`max-inline-size`, logical; D-061 §3). Each such spec
-  says so; nothing in flow ever qualifies.
+  the measure scale (`max-inline-size`, logical; D-061 §3). A modal's scrim
+  is the other half of that exception: `position: fixed; inset: 0` is how
+  the viewport-sized box a modal is given is that box (D-067 §2). Each such
+  spec says so; nothing in flow ever qualifies.
 - **There is no `fullWidth` prop. Ever.** Its existence in other libraries is
   proof their default sizing model is broken.
 - **Layout primitives are load-bearing.** Because components can't size or space
