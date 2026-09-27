@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — built 2026-09-27; every Definition of Done box but the CI-authored screenshot baseline (D-013). Gate C passed 2026-09-27 **by delegation** (D-067); build findings in D-068 |
+| **Status** | `done` — 2026-09-27; built the same day, its baselines CI-authored on the PR branch and compared green on run 139 (D-013). Gate C passed 2026-09-27 **by delegation** (D-067); build findings in D-068 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3), and the scrim's box is the viewport (§4) |
 | **RSC** | `client` — Radix state, a portal, a focus trap, a scroll lock |
 | **Depends on** | 4.1 Overlay foundation (`done`). Composes nothing; its usual trigger and its close buttons are 3.1 `Button` and 3.2 `IconButton`, by `asChild` |
