@@ -38,6 +38,20 @@ export {
   type ContainerSize,
 } from './components/Container/Container';
 export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+  type DialogCloseProps,
+  type DialogContentProps,
+  type DialogDescriptionProps,
+  type DialogProps,
+  type DialogTitleProps,
+  type DialogTriggerProps,
+} from './components/Dialog/Dialog';
+export {
   Field,
   useField,
   type FieldContextValue,

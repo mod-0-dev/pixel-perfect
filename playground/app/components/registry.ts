@@ -70,5 +70,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'range-slider', name: 'RangeSlider', tier: '3.17', summary: 'Two thumbs that cannot cross, with the ring on the one that has focus.' },
   { slug: 'popover', name: 'Popover', tier: '4.2', summary: 'A named panel anchored to its trigger; the theme crosses the portal.' },
   { slug: 'tooltip', name: 'Tooltip', tier: '4.3', summary: 'A label on hover or focus that describes its trigger and never names it.' },
+  { slug: 'dialog', name: 'Dialog', tier: '4.4', summary: 'A modal window over an inert page; the scrim centres it and scrolls.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];

@@ -1,0 +1,161 @@
+/*
+ * Dialog — spec docs/specs/Dialog.md
+ *
+ * TWO ELEMENTS, BOTH OURS, AND THE FIRST IS THE PARENT OF THE SECOND. The
+ * scrim is Radix's Overlay with our class on it; the panel is Radix's
+ * Content, its child. A dialog is not positioned by popper, so there is no
+ * wrapper of Radix's here — the one Popover and Tooltip have.
+ *
+ * THE SCRIM IS THE POSITIONER AND THE SCROLL CONTAINER (spec §4). It is the
+ * viewport-sized box a modal is given — `position: fixed; inset: 0`, the
+ * other half of D-061 §3's exception (D-067 §2) — and it centres the panel
+ * with a grid: `place-items: center`, no `margin: auto` on a root (RULES
+ * §2) and no transform, which is what makes the centring hold in RTL
+ * without a second rule. One implicit `auto` row stretches to the scrim's
+ * height while the panel is shorter, so the panel is centred in it; when
+ * the panel is taller the row is the panel's height, the overflow is at
+ * the END, and the scrim scrolls to it. That is the classic "centred item
+ * in a scroll container" trap avoided by the row, not by the `safe`
+ * keyword, which Chrome 109 in the `defaults` set does not know. The scrim
+ * is also the one scroll container Radix's lock permits scrolling inside.
+ *
+ * THE PANEL HUGS, UP TO THE CEILING (spec §3). `max-inline-size` is the
+ * tier's exception, logical, from the measure scale — `sm`, not Popover's
+ * `xs`: a dialog holds a form or a paragraph. `100%` is the scrim's content
+ * box, the viewport less the gutter, so on a narrow viewport the panel
+ * shrinks and the gutter is kept. `min-inline-size: 0` because a grid
+ * item's minimum is its content's, and one unbreakable string would push
+ * the panel past its ceiling instead of wrapping inside it.
+ * `.stylelintrc.json` names this file for `max-inline-size`.
+ *
+ * THE THEME IS ON THE SCRIM (4.1 §3): the outermost element of ours in the
+ * portal, so the panel resolves every token in the trigger's theme too.
+ * `color` is declared on the panel for the same reason as Popover: whatever
+ * the app set on a wrapper is left behind with the wrapper.
+ *
+ * TWO EXITS, ONE TOKEN (spec §8). Radix's Presence keeps a closing element
+ * mounted until its `animation-name` finishes, on the scrim and on the
+ * panel. The panel is the scrim's child, so the scrim's exit ending
+ * unmounts both; the durations are the same token and neither is a custom
+ * property.
+ */
+
+@layer pp.components {
+  .pp-dialog__scrim {
+    /* The box the viewport gives a modal (D-067 §2). */
+    position: fixed;
+    inset: 0;
+    z-index: var(--pp-z-overlay);
+
+    /* Positioner: centred in every direction, no margin, no transform. */
+    display: grid;
+    place-items: center;
+
+    /* Scroll container: a panel taller than the viewport scrolls here,
+       with the gutter kept above and below it. */
+    overflow: auto;
+    padding: var(--pp-dialog-gutter, var(--pp-space-4));
+
+    background-color: var(--pp-dialog-scrim, var(--pp-color-bg-scrim));
+    animation: pp-dialog-scrim-in var(--pp-duration-fast) var(--pp-easing-decelerate);
+  }
+
+  .pp-dialog__scrim[data-state="closed"] {
+    animation: pp-dialog-scrim-out var(--pp-duration-fast) var(--pp-easing-accelerate);
+  }
+
+  .pp-dialog {
+    --_bg: var(--pp-color-bg-raised);
+    /* Decoration, not a control boundary: the shadow and the scrim carry
+       the separation (RULES §3). */
+    --_border: var(--pp-color-border-subtle);
+
+    /* Ordered among the scrim's descendants only — the scrim is a stacking
+       context — and declared anyway, because every root names its layer
+       (4.1 §4). */
+    z-index: var(--pp-z-modal);
+
+    /* hug: a grid item sized by its content, up to the ceiling (spec §3).
+       `min-inline-size: 0` lets the panel shrink below its content's
+       minimum; `overflow-wrap: anywhere` is what then makes an unbreakable
+       string — a path, a URL — wrap inside it rather than run out of it.
+       The spec named the first and meant both (D-068 §2). */
+    min-inline-size: 0;
+    max-inline-size: min(var(--pp-dialog-max-inline-size, var(--pp-measure-sm)), 100%);
+    overflow-wrap: anywhere;
+    padding: var(--pp-dialog-padding, var(--pp-space-5));
+    border: var(--pp-border-width-1) solid var(--pp-dialog-border-color, var(--_border));
+    border-radius: var(--pp-dialog-radius, var(--pp-radius-4));
+    background-color: var(--pp-dialog-bg, var(--_bg));
+    color: var(--pp-color-text);
+    box-shadow: var(--pp-dialog-shadow, var(--pp-shadow-3));
+
+    /* From its own centre: no popper, so no vendor origin (spec §8). */
+    animation: pp-dialog-in var(--pp-duration-fast) var(--pp-easing-decelerate);
+  }
+
+  .pp-dialog[data-state="closed"] {
+    animation: pp-dialog-out var(--pp-duration-fast) var(--pp-easing-accelerate);
+  }
+
+  /*
+   * THE RESET'S CRUSH DOES NOT REACH THIS LAYER (D-062 §5): an `animation`
+   * shorthand in pp.components outranks reset.css's zero-specificity rule,
+   * so every animated component carries its own (RULES §3). `none` rather
+   * than a crushed duration, so both Presences unmount at once.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-dialog__scrim,
+    .pp-dialog__scrim[data-state="closed"],
+    .pp-dialog,
+    .pp-dialog[data-state="closed"] {
+      animation: none;
+    }
+  }
+
+  /* The panel holds focus itself when nothing inside is tabbable. */
+  .pp-dialog:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-dialog__title {
+    font-size: var(--pp-font-size-4);
+    font-weight: var(--pp-font-weight-semibold);
+    line-height: var(--pp-line-height-tight);
+  }
+
+  /* Body size, not Popover's `2`: a dialog's description is read as a paragraph. */
+  .pp-dialog__description {
+    margin: 0;
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-3);
+    line-height: var(--pp-line-height-normal);
+  }
+
+  @keyframes pp-dialog-scrim-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pp-dialog-scrim-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pp-dialog-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+
+  @keyframes pp-dialog-out {
+    to {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+}

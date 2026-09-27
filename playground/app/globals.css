@@ -467,3 +467,22 @@ body {
   background-color: var(--pp-color-bg-page);
   color: var(--pp-color-text);
 }
+
+/* Dialog page: a cell is a viewport (Dialog.md §10). `contain: layout` makes
+   the box the containing block for its `position: fixed` descendants, so a
+   dialog portalled into it — scrim `inset: 0` and all — is the box's size and
+   centred in it. Overflow is clipped to the corners because the box is the
+   scrim's containing block. */
+.dialog-stage {
+  position: relative;
+  contain: layout;
+  block-size: 20rem;
+  overflow: hidden;
+  border-radius: var(--pp-radius-2);
+  background-color: var(--pp-color-bg-page);
+}
+
+/* A long paragraph block for the "taller than the viewport" demo. */
+.dialog-long p {
+  margin: 0;
+}

@@ -4756,3 +4756,332 @@ test.describe('Tooltip', () => {
     ]);
   });
 });
+
+/*
+ * Dialog (4.4) — spec docs/specs/Dialog.md.
+ *
+ * Scrim and panel are PORTALLED to <body>. The Matrix gallery holds three
+ * dialogs open, each portalled into a `contain: layout` box in its cell, and
+ * their side effects are real: the page's scroll is locked, the rest of it is
+ * `aria-hidden` and takes no pointer events. So every interactive test
+ * closes the gallery first — Escape, three times, topmost layer each — and
+ * then reads the one non-gallery scrim and panel on the page.
+ *
+ * What only a browser can answer: that the scrim's box is the viewport and
+ * the panel is centred in it, in both directions; that the panel shrinks to
+ * the viewport less the gutter at 320px; that a tall panel scrolls the scrim
+ * and not the page; the scroll lock and its RTL compensation, measured; the
+ * layers, with a popover and a second dialog opened from inside; the focus
+ * loop and the no-trigger restore; the theme in resolved colour; and the
+ * gallery's three viewports.
+ */
+test.describe('Dialog', () => {
+  type Page = import('@playwright/test').Page;
+  const gallery = (page: Page) => page.locator('.pp-dialog[data-gallery]');
+  const panel = (page: Page) => page.locator('.pp-dialog:not([data-gallery])');
+  const scrim = (page: Page) => page.locator('.pp-dialog__scrim:has(> .pp-dialog:not([data-gallery]))');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="dialog-${id}"]`);
+
+  /* One Escape per dialog, each waited out: Escape reaches the topmost
+     layer, and a dialog still running its exit is still the topmost layer. */
+  const closeGallery = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(gallery(page)).toHaveCount(left);
+    }
+  };
+
+  /* Returns the trigger as a text locator, not a role one: once the dialog
+     is open the trigger is aria-hidden with the rest of the page, and a role
+     locator no longer resolves to it. */
+  const open = async (page: Page, id: string, name: string) => {
+    await closeGallery(page);
+    const trigger = demo(page, id).getByRole('button', { name });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    await expect(panel(page)).toBeVisible();
+    return demo(page, id).locator('button', { hasText: name }).first();
+  };
+
+  const centred = async (page: Page) => {
+    const [viewport, box] = await Promise.all([page.viewportSize(), placedBox(panel(page))]);
+    const dx = Math.abs(box.x + box.width / 2 - viewport!.width / 2);
+    const dy = Math.abs(box.y + box.height / 2 - viewport!.height / 2);
+    return { dx, dy };
+  };
+
+  test('the scrim is the viewport, the panel is centred in it, and each is at its token\'s layer', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const viewport = page.viewportSize()!;
+    const s = await scrim(page).boundingBox();
+    expect(s).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
+    const { dx, dy } = await centred(page);
+    expect(dx, 'the panel is not centred horizontally').toBeLessThanOrEqual(1);
+    expect(dy, 'the panel is not centred vertically').toBeLessThanOrEqual(1);
+
+    const read = await panel(page).evaluate((n) => ({
+      panel: getComputedStyle(n).zIndex,
+      modal: getComputedStyle(n).getPropertyValue('--pp-z-modal').trim(),
+      scrim: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+      overlay: getComputedStyle(n).getPropertyValue('--pp-z-overlay').trim(),
+    }));
+    expect(read.scrim).toBe(read.overlay);
+    expect(read.panel).toBe(read.modal);
+  });
+
+  test('centred in RTL too: the scrim is a grid, not a transform', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
+    await open(page, 'form', 'Rename');
+    const { dx, dy } = await centred(page);
+    expect(dx, 'the panel is off centre in RTL').toBeLessThanOrEqual(1);
+    expect(dy).toBeLessThanOrEqual(1);
+  });
+
+  test('at 320px the panel is the viewport less the gutter, and nothing scrolls sideways', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const box = await placedBox(panel(page));
+    const gutter = await panel(page).evaluate(
+      (n) => parseFloat(getComputedStyle(n.parentElement as HTMLElement).paddingInlineStart),
+    );
+    expect(gutter).toBe(16);
+    expect(Math.abs(box.width - (320 - 2 * gutter)), 'the panel did not shrink to the viewport').toBeLessThanOrEqual(1);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, 'the page scrolls sideways').toBe(0);
+    // The description holds one unbreakable path longer than the panel's
+    // content box: it wraps inside, and nothing runs out of the panel.
+    const inside = await panel(page).evaluate((n) => n.scrollWidth <= n.clientWidth);
+    expect(inside, 'an unbreakable string ran out of the panel').toBe(true);
+  });
+
+  test('a panel taller than the viewport scrolls the scrim, not the page, and leaves the page where it was', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'long', 'Terms');
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before, 'the trigger sits low enough that the page had to scroll').toBeGreaterThan(0);
+
+    const s = scrim(page);
+    const metrics = await s.evaluate((n) => ({ scroll: n.scrollHeight, client: n.clientHeight, top: n.scrollTop }));
+    expect(metrics.scroll, 'the panel did not overflow the scrim').toBeGreaterThan(metrics.client);
+    expect(metrics.top).toBe(0);
+
+    await page.mouse.move(640, 450);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => s.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled under the dialog').toBe(before);
+
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page moved when the dialog closed').toBe(before);
+  });
+
+  /*
+   * THE SCROLLBAR COMPENSATION IN RTL, MEASURED (spec §9). Radix's lock pads
+   * the body by the scrollbar's width so the page does not shift when the
+   * bar disappears — react-remove-scroll-bar writes `padding-right` and
+   * `margin-right`, unconditionally. Chromium puts the bar on the LEFT under
+   * `dir="rtl"`. Headless Chromium hides scrollbars, so the gap here is
+   * expected to be 0 and the side is recorded rather than asserted; the
+   * source is what says which side, and the docs page says so.
+   */
+  test('the scroll lock: body overflow hidden, and the compensation measured under dir="rtl"', async ({ page }, info) => {
+    await page.goto('/components/dialog');
+    await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
+    await open(page, 'form', 'Rename');
+    const read = await page.evaluate(() => {
+      const cs = getComputedStyle(document.body);
+      return {
+        overflow: cs.overflowY,
+        paddingRight: cs.paddingRight,
+        paddingLeft: cs.paddingLeft,
+        marginRight: cs.marginRight,
+        scrollbar: window.innerWidth - document.documentElement.clientWidth,
+      };
+    });
+    expect(read.overflow).toBe('hidden');
+    console.log(`[dialog] rtl scrollbar compensation: ${JSON.stringify(read)}`);
+    info.annotations.push({
+      type: 'rtl-scrollbar-compensation',
+      description: `scrollbar ${read.scrollbar}px; body padding-right ${read.paddingRight}, padding-left ${read.paddingLeft}, margin-right ${read.marginRight}`,
+    });
+    if (read.scrollbar > 0) {
+      // A classic scrollbar: the compensation is on the right, which in RTL is
+      // the wrong side. Recorded, not fixed (spec §9).
+      expect(read.marginRight).toBe(`${read.scrollbar}px`);
+    }
+  });
+
+  test('a press on the scrim closes it, and nothing under the scrim is pressed', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const outside = page.getByTestId('dialog-outside');
+    const box = (await outside.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'The usual' })).toContainText('outside clicked 0×');
+  });
+
+  test('a dialog with unsaved input vetoes Escape and the scrim press', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'veto', 'New note');
+    await page.getByRole('textbox', { name: 'Note' }).fill('draft');
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toBeVisible();
+    await page.mouse.click(20, 20);
+    await expect(panel(page)).toBeVisible();
+    await page.getByRole('button', { name: 'Discard' }).click();
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test('focus moves in, loops, and returns to the trigger', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await closeGallery(page);
+    const trigger = demo(page, 'form').getByRole('button', { name: 'Rename' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Name' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Rename', exact: true }).last()).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('textbox', { name: 'Name' }), 'Tab did not wrap to the first control').toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.getByRole('button', { name: 'Rename', exact: true }).last(), 'Shift+Tab did not wrap to the last').toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  test('without a trigger, focus returns to the element that opened it', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await closeGallery(page);
+    const actions = demo(page, 'no-trigger').getByRole('button', { name: 'Row actions' });
+    await actions.scrollIntoViewIfNeeded();
+    await actions.click();
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'File name' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(actions, 'focus dropped to the body (spec §7)').toBeFocused();
+  });
+
+  test('the page behind is hidden from assistive tech; a popover opened inside is not, and paints above the scrim; a second dialog paints above and closes first', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog');
+    const trigger = await open(page, 'nested', 'Open the first');
+    expect(await trigger.evaluate((n) => n.closest('[aria-hidden="true"]') !== null), 'the page is not hidden').toBe(true);
+
+    await page.getByRole('button', { name: 'Pick a colour' }).click();
+    const popover = page.getByRole('dialog', { name: 'Colour' });
+    await expect(popover, 'the popover is hidden by the sweep or not rendered').toBeVisible();
+    const layers = await popover.evaluate((n) => ({
+      popover: parseInt(getComputedStyle(n).zIndex, 10),
+      scrim: parseInt(getComputedStyle(document.querySelector('.pp-dialog__scrim:not(:has([data-gallery]))') as HTMLElement).zIndex, 10),
+    }));
+    expect(layers.popover).toBeGreaterThan(layers.scrim);
+    await page.keyboard.press('Escape');
+    await expect(popover).toHaveCount(0);
+    await expect(panel(page), 'Escape on the popover closed the dialog too').toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Open another' }).click();
+    const scrims = page.locator('.pp-dialog__scrim:not(:has([data-gallery]))');
+    await expect(scrims).toHaveCount(2);
+    const order = await scrims.evaluateAll((els) => {
+      const [a, b] = els as HTMLElement[];
+      const later = !!(a!.compareDocumentPosition(b!) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return { later, same: getComputedStyle(a!).zIndex === getComputedStyle(b!).zIndex };
+    });
+    expect(order.later, 'the second scrim is not later in the DOM').toBe(true);
+    expect(order.same, 'the two scrims are not at the same layer').toBe(true);
+    await expect(page.getByRole('dialog', { name: 'The second dialog' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(scrims, 'Escape closed both').toHaveCount(1);
+    await expect(page.getByRole('dialog', { name: 'The first dialog' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(scrims).toHaveCount(0);
+  });
+
+  test('the theme crosses the portal onto the scrim, in resolved colour', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const onPage = await scrim(page).evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+
+    const region = demo(page, 'theme');
+    const trigger = region.getByRole('button', { name: 'Open here' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const s = scrim(page);
+    await expect(s).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await s.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="dialog-theme"]') !== null,
+      token: getComputedStyle(n).getPropertyValue('--pp-color-bg-scrim').trim(),
+      panelBg: getComputedStyle(n.querySelector('.pp-dialog') as HTMLElement).backgroundColor,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg, 'the dark scrim painted the light theme\'s scrim').not.toBe(onPage);
+    const regionTokens = await region.evaluate((n) => ({
+      scrim: getComputedStyle(n).getPropertyValue('--pp-color-bg-scrim').trim(),
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.token).toBe(regionTokens.scrim);
+    expect(read.raised, 'the panel did not inherit the theme from the scrim').toBe(regionTokens.raised);
+  });
+
+  test("reduced motion removes the scrim's and the panel's animation", async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const names = await panel(page).evaluate((n) => ({
+      panel: getComputedStyle(n).animationName,
+      scrim: getComputedStyle(n.parentElement as HTMLElement).animationName,
+    }));
+    expect(names).toEqual({ panel: 'none', scrim: 'none' });
+  });
+
+  test('the gallery: three viewports, the narrow and medium panels below the ceiling and the wide one at it', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog');
+    const panels = gallery(page);
+    await expect(panels).toHaveCount(3);
+    // The page is still a page while three bodies' worth of scroll lock are
+    // applied: the full-page capture has a height to capture (spec §11).
+    const tall = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight);
+    expect(tall).toBe(true);
+
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const stage = scrim.parentElement as HTMLElement;
+        const s = scrim.getBoundingClientRect();
+        const t = stage.getBoundingClientRect();
+        return {
+          scrimIsStage: Math.abs(s.width - t.width) <= 1 && Math.abs(s.height - t.height) <= 1 && Math.abs(s.x - t.x) <= 1,
+          width: el.getBoundingClientRect().width,
+          centred: Math.abs(el.getBoundingClientRect().x + el.getBoundingClientRect().width / 2 - (t.x + t.width / 2)) <= 1,
+          ceiling: parseFloat(getComputedStyle(el).getPropertyValue('--pp-measure-sm')) * 16,
+        };
+      }),
+    );
+    for (const cell of read) {
+      expect(cell.scrimIsStage, 'the scrim is not the size of its stage').toBe(true);
+      expect(cell.centred, 'the panel is not centred in its stage').toBe(true);
+    }
+    expect(read[0]!.width).toBeLessThan(read[0]!.ceiling);
+    expect(read[1]!.width).toBeLessThan(read[1]!.ceiling);
+    expect(Math.abs(read[2]!.width - read[2]!.ceiling), 'the wide panel is not at its ceiling').toBeLessThanOrEqual(1);
+  });
+});

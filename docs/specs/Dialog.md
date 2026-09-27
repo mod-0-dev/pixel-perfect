@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `build` — Gate C passed 2026-09-27 **by delegation** (D-067), every recommendation adopted as written |
+| **Status** | `review` — built 2026-09-27; every Definition of Done box but the CI-authored screenshot baseline (D-013). Gate C passed 2026-09-27 **by delegation** (D-067); build findings in D-068 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3), and the scrim's box is the viewport (§4) |
 | **RSC** | `client` — Radix state, a portal, a focus trap, a scroll lock |
 | **Depends on** | 4.1 Overlay foundation (`done`). Composes nothing; its usual trigger and its close buttons are 3.1 `Button` and 3.2 `IconButton`, by `asChild` |
@@ -110,7 +110,15 @@ max-inline-size: min(var(--pp-dialog-max-inline-size, var(--pp-measure-sm)), 100
 on a narrow viewport the panel shrinks to the space and the gutter is kept.
 `min-inline-size: 0` on the panel, because a grid item's minimum is its
 content's, and one unbreakable string in a dialog would otherwise push the
-panel past its ceiling instead of wrapping inside it.
+panel past its ceiling instead of wrapping inside it. *Amended at the build
+(D-068 §2): that is two properties, not one — `min-inline-size: 0` lets the
+panel shrink, and `overflow-wrap: anywhere` is what makes the string wrap
+inside it rather than run out of it; the panel declares both.*
+
+*Also at the build (D-068 §1): a hug panel is as wide as its content asks,
+up to the ceiling — not as wide as the ceiling. A short form asks for about
+26rem; a paragraph reaches 40rem. The gallery's wide cell shows the ceiling
+because its description is a sentence long enough to want it.*
 
 **`--pp-measure-sm` (40rem), not `--pp-measure-xs` (20rem).** `xs` is
 `Popover`'s: a panel beside its trigger, holding a filter or two. A dialog
@@ -342,6 +350,11 @@ and a return to this document, not a workaround (D-057).
   on `<body>` before our restore exists (the test that pins §7 must fail
   with the restore removed).
 - **The RTL scrollbar compensation** (§9), measured and recorded either way.
+  *At the build (D-068 §5): headless Chromium hides scrollbars, so the gap
+  measured 0 and nothing was compensated; the source of
+  `react-remove-scroll-bar` writes `padding-right` and `margin-right`
+  unconditionally, so on a classic scrollbar in RTL the page shifts by the
+  bar's width. Recorded on the docs page as a gap, as §9 said it would be.*
 - **`aria-hidden`'s sweep and a portal from inside the dialog**: a `Popover`
   or `Tooltip` opened from within an open dialog is appended to `<body>`
   after the sweep and is not hidden by it. Radix's own docs say so; asserted.
@@ -531,8 +544,8 @@ scrim, not the page, that scrolls when it is taller. Shown in the gallery
 </Dialog>
 
 // A corner close: the end of the title row, not an absolute position.
-<Cluster justify="space-between" align="start">
-  <DialogTitle><Heading level={2} size="4">Settings</Heading></DialogTitle>
+<Cluster justify="between" align="start">
+  <DialogTitle><Heading level={2} size="sm">Settings</Heading></DialogTitle>
   <DialogClose asChild>
     <IconButton label="Close" variant="plain" size="sm"><Cross /></IconButton>
   </DialogClose>

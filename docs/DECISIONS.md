@@ -4341,3 +4341,117 @@ and that is the exception's other half. RULES §1's consequence says so;
 else relaxed) names `Dialog.css` as it named `Tooltip.css` (D-064 §4).
 Nothing in flow ever qualifies, and the panel itself declares no position:
 it is a grid item, centred by the scrim.
+
+## D-068 — `Dialog` build findings: a hug panel is as wide as its content asks, an explicit `undefined` erases what Radix wired, and a page a dialog hides is a page a role locator cannot see
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:**
+`docs/specs/Dialog.md` §3, §11, Usage; `docs/components/Dialog.md`
+
+The first modal. Seven findings; two corrected the spec, one corrected the
+first draft of the component, and the rest are what the spec promised
+would be verified.
+
+### 1. A hug panel is as wide as its content asks, not as wide as its ceiling
+
+The spec's gallery section said the wide cell would show the panel "at its
+40rem ceiling with scrim on either side". It showed it at 26rem: a hug panel
+is a grid item sized by its content's max-content width, and a title, a
+one-line description, a `Field` and two buttons ask for about 416px. That is
+the contract working, not failing — `Popover`'s "a two-button confirmation
+is two buttons wide" — and the spec's own §3 argument ("a dialog holding a
+`Field` would grow to the viewport") was wrong about *why* the ceiling is
+needed: a `fill` child cannot widen a hug parent; a paragraph can. The
+gallery's description is now a sentence long enough to want more than
+40rem, so the wide cell shows the ceiling and the narrow cells show the
+shrink; the docs page says a short form is about 26rem and a paragraph
+reaches the ceiling.
+
+### 2. `min-inline-size: 0` lets the panel shrink; `overflow-wrap` is what makes the string wrap
+
+Spec §3 said `min-inline-size: 0` keeps an unbreakable string from pushing
+the panel past its ceiling "instead of wrapping inside it". Half right: it
+lets the panel shrink below its content's minimum, and the string then runs
+*out* of the panel, because nothing told it to break. `overflow-wrap:
+anywhere` on the panel is the other half, and a dialog that shows a path or
+a URL — a rename, a share — needs it. Both are declared; the 320px test puts
+one such path in the description and asserts the panel's `scrollWidth`
+does not exceed its `clientWidth`. Dropping either fails it.
+
+### 3. An explicit `undefined` erases what Radix wired
+
+The first draft passed `aria-label={ariaLabel}` and
+`aria-labelledby={ariaLabelledby}` to Radix's `Content` unconditionally.
+Radix sets `aria-labelledby` to its Title's id *before* spreading the
+consumer's props, so an `aria-labelledby={undefined}` after it erased the
+name: every titled dialog was nameless, and axe said so
+(`aria-dialog-name`) before any human would have. Both are now spread only
+when given — the `exactOptionalPropertyTypes` pattern every Tier 4 root
+already uses for Radix's optionals, seen from the other side. A prop
+forwarded as "whatever the caller passed" is not the same as a prop not
+forwarded.
+
+### 4. A page a dialog hides is a page a role locator cannot see
+
+Radix's `aria-hidden` sweep removes everything outside the panel from the
+accessibility tree, and Testing Library's `getByRole` and Playwright's
+`getByRole` honour it: the trigger a test just clicked stops resolving the
+moment the dialog opens, and a test that holds a role locator for it hangs.
+The unit suite reads the owner's `<output>` by text while the dialog is
+open; the browser suite's `open` helper returns the trigger as a text
+locator. On the docs page, because a consumer's test hits the same thing on
+its first `getByRole` after opening.
+
+### 5. Verified, as §11 promised
+
+- **`contain: layout` holds the scrim to the cell**: each gallery scrim's
+  box is its stage's box, and each panel is centred in its stage, at all
+  three widths.
+- **A page under three scroll locks is still a page**: its `scrollHeight`
+  exceeds the viewport, so the full-page capture has a height to capture.
+  The capture itself is CI's (D-013).
+- **Radix's close handler is as read**: with the restore removed, a
+  trigger-less dialog's close lands focus on `<body>`, in jsdom and in
+  Chromium (the break checks below).
+- **The RTL scrollbar compensation** measured 0: headless Chromium hides
+  scrollbars, so there was nothing to compensate. The source of
+  `react-remove-scroll-bar` writes `padding-right` and `margin-right`
+  unconditionally, so on a classic scrollbar under `dir="rtl"` the page
+  shifts by the bar's width while a dialog is open. Recorded on the docs
+  page as a gap, per spec §9; there is no switch for it.
+- **The sweep and a portal from inside**: a `Popover` opened from the open
+  dialog is found by a role query (so it is not hidden) and is at
+  `--pp-z-popover`, above the scrim; a second `Dialog` is a later sibling
+  at the same `--pp-z-overlay`, and Escape closes only it.
+- **axe passes on an open dialog with no rule disabled**, in both themes.
+  The `region` rule D-065 §6 had to switch off for a tooltip does not fire:
+  a dialog is exempt, and the scrim has no content of its own.
+- **Tree-shaking**: the chunk holding `@radix-ui/react-dialog` (22,011
+  bytes) is referenced by the Dialog page's payload and by none of the
+  Button, Popover or Tooltip pages'.
+
+### 6. Two usage typos in the spec
+
+`justify="space-between"` is `between` in this library's `Justify`
+vocabulary, and `Heading`'s `size` is `sm`, not `"4"`. Corrected in the
+spec's usage block; the playground and the docs page use the real names.
+
+### 7. Six browser breaks and two unit breaks, each caught by the test named for it
+
+The first combined run was a wash: dropping the reduced-motion rule slowed
+every gallery dialog's exit, the helper that closes the gallery pressed
+Escape three times faster than three exits, and thirteen tests failed on
+setup. The helper now waits each dialog out before the next press — an
+exit still running is still the topmost layer — and the breaks ran in two
+rounds. Round one: the panel's `z-index` (the layer test, `auto` against
+`1100` — observable after all, because the assertion compares the computed
+value to the token, not two elements to each other); the theme attribute
+(the theme test); the grid centring replaced by the logical `translate`
+(the RTL test: the panel never settled at a placed position — off the left
+edge, a full width off centre, as spec §4 predicted); `min-inline-size: 0`
+and `overflow-wrap` (the 320px test, 41px too wide); the no-trigger restore
+(the focus test). Round two: the reduced-motion rule alone (that test). In
+the unit suite: `aria-modal` (the name test) and the restore (the
+no-trigger test). Collateral failures — the tall-dialog test once the panel
+was `position: fixed` and no longer overflowed the scrim, the gallery's
+wide panel mid-animation — are what a combined run costs and why the named
+test is what is read.
