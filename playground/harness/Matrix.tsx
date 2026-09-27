@@ -67,33 +67,30 @@ function Cell({ width, children }: { width: MatrixWidth; children: ReactNode }) 
 export interface MatrixProps {
   children: ReactNode;
   widths?: MatrixWidth[];
-  themes?: Array<'light' | 'dark'>;
 }
 
 /**
- * Renders the same subtree at every container width in both themes at once.
+ * Renders the same subtree at every container width, in the page's theme.
+ *
+ * ONE THEME AT A TIME (D-063). The Matrix used to render a light and a dark
+ * column side by side. It now renders the three widths once, and the theme is
+ * whatever the switcher in the page chrome set on `<html>` — the way an app is
+ * actually themed (D-010). Both themes are still covered: the screenshot
+ * suite captures every page twice, and the browser assertions that compare
+ * themes switch explicitly.
  *
  * The viewport div is what sizes the component — the whole point of the sizing
  * contract is that the component has no say. Each viewport is also a query
  * container, so a component's own `@container` rules resolve against the box
  * it was actually given rather than the browser window.
  */
-export function Matrix({
-  children,
-  widths = CONTAINER_WIDTHS,
-  themes = ['light', 'dark'],
-}: MatrixProps) {
+export function Matrix({ children, widths = CONTAINER_WIDTHS }: MatrixProps) {
   return (
     <div className="matrix">
-      {themes.map((theme) => (
-        <section key={theme} className="matrix__theme" data-pp-theme={theme}>
-          <h3 className="matrix__theme-name">{theme}</h3>
-          {widths.map((width) => (
-            <Cell key={width.label} width={width}>
-              {children}
-            </Cell>
-          ))}
-        </section>
+      {widths.map((width) => (
+        <Cell key={width.label} width={width}>
+          {children}
+        </Cell>
       ))}
     </div>
   );

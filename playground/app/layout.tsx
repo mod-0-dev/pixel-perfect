@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 
 /*
  * Pinned fonts, installed from npm rather than resolved from the system.
@@ -21,18 +22,32 @@ import '@fontsource/jetbrains-mono/600.css';
 // Exactly how a consuming app pulls the library in: one stylesheet, once.
 import 'pixel-perfect/styles.css';
 
+import { Chrome } from '../harness/Chrome';
+import { THEME_SCRIPT } from '../harness/theme-script';
 import '../harness/matrix.css';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'pixel-perfect playground',
-  description: 'Component harness: every component at three container widths, in both themes.',
+  description: 'Component harness: every component at three container widths, in the theme you pick.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    /*
+     * `suppressHydrationWarning`, because the theme script below sets
+     * `data-pp-theme` on this element before React loads, and the server
+     * rendered it without one. That is the one attribute React must not
+     * "correct" (D-063).
+     */
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <Script id="pp-theme" strategy="beforeInteractive">
+          {THEME_SCRIPT}
+        </Script>
+      </head>
       <body>
+        <Chrome />
         <div className="page">{children}</div>
       </body>
     </html>

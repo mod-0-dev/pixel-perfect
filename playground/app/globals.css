@@ -58,23 +58,184 @@ body {
   max-width: 68ch;
 }
 
-.nav {
+/*
+ * PAGE CHROME (D-063). The header every page shares: wordmark, places, the
+ * theme switcher, and on a component page the breadcrumb and its neighbours.
+ * Unlayered, like the rest of this file, and scoped by class so nothing in a
+ * Matrix cell is touched.
+ */
+.chrome {
+  position: sticky;
+  top: 0;
+  z-index: var(--pp-z-sticky);
   display: flex;
-  gap: var(--pp-space-3);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: var(--pp-space-2);
+  padding-inline: var(--pp-space-6);
+  padding-block: var(--pp-space-3);
+  border-bottom: 1px solid var(--pp-color-border-subtle);
+  background-color: var(--pp-color-bg-page);
+  color: var(--pp-color-text);
 }
 
-.nav a {
-  padding-inline: var(--pp-space-3);
-  padding-block: var(--pp-space-2);
-  border: 1px solid var(--pp-color-border);
-  border-radius: var(--pp-radius-2);
+.chrome__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pp-space-4);
+  align-items: center;
+  max-width: 1200px;
+  margin-inline: auto;
+  width: 100%;
+}
+
+.chrome__brand {
+  font-weight: var(--pp-font-weight-semibold);
+  letter-spacing: var(--pp-letter-spacing-tight);
   color: var(--pp-color-text);
   text-decoration: none;
 }
 
-.nav a:hover {
-  background-color: var(--pp-tone-bg-hover);
+.chrome__places {
+  display: flex;
+  gap: var(--pp-space-4);
+  margin-inline-end: auto;
+}
+
+.chrome__places a[aria-current="page"] {
+  font-weight: var(--pp-font-weight-semibold);
+}
+
+.chrome__where {
+  font-size: var(--pp-font-size-2);
+  color: var(--pp-color-text-muted);
+}
+
+.chrome__here {
+  color: var(--pp-color-text);
+  font-weight: var(--pp-font-weight-medium);
+}
+
+.chrome__tier {
+  font-family: var(--pp-font-family-mono);
+  color: var(--pp-color-text-muted);
+}
+
+.chrome__siblings {
+  display: flex;
+  gap: var(--pp-space-2);
+  margin-inline-start: auto;
+}
+
+.chrome__end {
+  color: var(--pp-color-text-muted);
+}
+
+/*
+ * THE INDEX. A hero, then one section per tier, each a grid of cards that are
+ * links. The cards use the library's tokens and nothing else: the raised
+ * surface and a subtle edge at rest, the control boundary on hover, and the
+ * reset's focus ring — the same ring every control in the library shows.
+ */
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-4);
+  padding-block: var(--pp-space-6);
+}
+
+.hero__lede {
+  max-width: 62ch;
+}
+
+.hero__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pp-space-6);
+  margin: 0;
+}
+
+.hero__facts div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-1);
+}
+
+.hero__facts dt {
+  font-size: var(--pp-font-size-1);
+  font-weight: var(--pp-font-weight-semibold);
+  letter-spacing: var(--pp-letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--pp-color-text-muted);
+}
+
+.hero__facts dd {
+  margin: 0;
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-3);
+}
+
+.tier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-4);
+}
+
+.tier__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-1);
+}
+
+.tier__number {
+  font-family: var(--pp-font-family-mono);
+  font-weight: var(--pp-font-weight-regular);
+  color: var(--pp-color-text-muted);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--pp-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-1);
+  height: 100%;
+  padding: var(--pp-space-4);
+  border: 1px solid var(--pp-color-border-subtle);
+  border-radius: var(--pp-radius-3);
+  background-color: var(--pp-color-bg-raised);
+  color: var(--pp-color-text);
+  text-decoration: none;
+  transition:
+    border-color var(--pp-duration-fast) var(--pp-easing-standard),
+    box-shadow var(--pp-duration-fast) var(--pp-easing-standard);
+}
+
+.card:hover {
+  border-color: var(--pp-color-border);
+  box-shadow: var(--pp-shadow-1);
+}
+
+.card__tier {
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-1);
+  color: var(--pp-color-text-muted);
+}
+
+.card__name {
+  font-weight: var(--pp-font-weight-semibold);
+}
+
+.card__summary {
+  font-size: var(--pp-font-size-2);
+  line-height: var(--pp-line-height-snug);
+  color: var(--pp-color-text-muted);
 }
 
 .ramp {
@@ -293,4 +454,14 @@ body {
   font-family: var(--pp-font-family-mono);
   font-size: 10px;
   color: var(--pp-color-text-muted);
+}
+
+/* Popover page: a dark region on the light page, for the theme-across-the-
+   portal demo. The region paints its own page colour so the difference is
+   visible; the popover opened from it must paint the same. */
+.popover-dark-region {
+  padding: var(--pp-space-4);
+  border-radius: var(--pp-radius-3);
+  background-color: var(--pp-color-bg-page);
+  color: var(--pp-color-text);
 }

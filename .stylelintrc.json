@@ -232,6 +232,37 @@
     },
     {
       "files": [
+        "src/components/Popover/**/*.css"
+      ],
+      "rules": {
+        "property-disallowed-list": [
+          "width",
+          "min-width",
+          "max-width",
+          "inline-size",
+          "float",
+          "clear",
+          "left",
+          "right",
+          "padding-left",
+          "padding-right",
+          "border-left",
+          "border-right",
+          "border-left-width",
+          "border-right-width",
+          "border-left-color",
+          "border-right-color",
+          "border-left-style",
+          "border-right-style",
+          "margin-top",
+          "margin-right",
+          "margin-bottom",
+          "margin-left"
+        ]
+      }
+    },
+    {
+      "files": [
         "src/components/Skeleton/**/*.css"
       ],
       "rules": {

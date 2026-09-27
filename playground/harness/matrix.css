@@ -4,13 +4,6 @@
  */
 
 .matrix {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: var(--pp-space-5);
-  align-items: start;
-}
-
-.matrix__theme {
   display: flex;
   flex-direction: column;
   gap: var(--pp-space-4);
@@ -19,16 +12,8 @@
   border-radius: var(--pp-radius-3);
   background-color: var(--pp-color-bg-page);
   color: var(--pp-color-text);
+  /* A 960px cell is 960px. The frame scrolls rather than the cell shrinking. */
   overflow-x: auto;
-}
-
-.matrix__theme-name {
-  margin: 0;
-  font-size: var(--pp-font-size-1);
-  font-weight: var(--pp-font-weight-semibold);
-  letter-spacing: var(--pp-letter-spacing-wide);
-  text-transform: uppercase;
-  color: var(--pp-color-text-muted);
 }
 
 .matrix__cell {
@@ -61,8 +46,7 @@
  */
 .matrix__viewport {
   container-type: inline-size;
-  /* No max-width: the declared width is the point. The theme column scrolls
-     instead, so a 960px cell really is 960px. */
+  /* No max-width: the declared width is the point. */
   padding: var(--pp-space-3);
   border: 1px dashed var(--pp-color-border);
   border-radius: var(--pp-radius-2);
