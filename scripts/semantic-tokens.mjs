@@ -12,12 +12,24 @@
 export const BASE = {
   'Surfaces': {
     '--pp-color-bg-page': 'var(--pp-palette-neutral-1)',
+    /*
+     * THE ONE SURFACE THAT IS NOT THE PAGE'S (D-064 §2). A tooltip is read
+     * against whatever it floats over and must never be mistaken for a panel
+     * the user can interact with, so it is the page inverted: the body-text
+     * pair the other way round. Step 12 is near-black in light and near-white
+     * in dark, so the inversion follows the theme with nothing said per
+     * theme — which is what makes this a semantic token and not a hardcode.
+     * Asserted by `lint:contrast` under its own name, value and mapping.
+     */
+    '--pp-color-bg-inverse': 'var(--pp-palette-neutral-12)',
   },
   'Text': {
     '--pp-color-text': 'var(--pp-palette-neutral-12)',
     '--pp-color-text-muted': 'var(--pp-palette-neutral-11)',
     '--pp-color-text-disabled': 'var(--pp-palette-neutral-8)',
     '--pp-color-text-on-solid': 'var(--pp-palette-neutral-on-solid)',
+    /* Ink on `--pp-color-bg-inverse`, and on nothing else (D-064 §2). */
+    '--pp-color-text-inverse': 'var(--pp-palette-neutral-1)',
   },
   /*
    * TWO OF THESE THREE CARRY A CONTRAST GUARANTEE AND ONE DOES NOT, AND THAT IS

@@ -4033,3 +4033,97 @@ library is and four facts about it. The chrome on every page carries the
 wordmark, the three places, the switcher, and on a component page a
 breadcrumb back to the index and links to the previous and next component
 in roadmap order. Nothing in the chrome writes an id (D-035 §1).
+
+## D-064 — Gate C for 4.3 `Tooltip` approved by delegation; an inverse surface joins the tokens; RULES §4 gains an extension rule
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:** RULES §4;
+Tier 0.2 tokens (`--pp-color-bg-inverse`, `--pp-color-text-inverse`);
+`scripts/check-contrast.mjs`; `.stylelintrc.json`;
+`docs/specs/Tooltip.md` (status) · **Extends:** D-015, D-057, D-061 §5,
+`docs/specs/overlay-foundation.md` §3
+
+### 1. Approved by delegation, the third time
+
+The spec went to Gate C with six open questions and a recommendation on
+each. The approval was **"If you think it's pixel perfect go ahead"** — a
+delegation, recorded as D-057 and D-061 §2 recorded the last two: one pair
+of eyes, every recommendation adopted as written. Compound shape with an
+optional provider (§1); a description, never a name (§2); the inverse
+surface (§3); Radix's three `data-state` values (§4); no arrow (§9); delays
+in milliseconds (§7). What that means for the build is D-057's list, and
+§7 below names the assumptions checked first.
+
+### 2. An inverse surface is a semantic, and it is two tokens
+
+A tooltip is read against whatever it floats over and must not be mistaken
+for a panel the user can act on, and the library had no token for that:
+`--pp-color-bg-raised` is the page's own surface, `--pp-tone-solid` is a
+mid grey that reads as a disabled control, and `--pp-color-text` used as a
+*background* is a token reached for by its lightness rather than its
+meaning — the thing RULES §3 lets `Skeleton` do only because it is not
+choosing a boundary. Tier 0.2 gains **`--pp-color-bg-inverse`** (neutral
+12) and **`--pp-color-text-inverse`** (neutral 1), identical in both themes
+by name and inverted by the ramp: step 12 is near-black in light and
+near-white in dark.
+
+`lint:contrast` asserts the pair **under its own name**, value and mapping.
+The value is the body-text pair reversed and contrast is symmetric, so the
+number was already green two lines up — it is asserted again anyway,
+because a check nobody can find by the token's name is a check nobody
+re-reads when the token changes (D-050 §1 from the other side). 293
+assertions → 305: the value once per hue and theme, the mapping twice.
+
+### 3. `data-state` may be extended by a real state, never replaced
+
+RULES §4 fixed `open|closed`. Radix's `Tooltip` writes `closed`,
+`delayed-open` and `instant-open`, and the third is the one paint-time fact
+the stylesheet needs: a tooltip that opened because the pointer swept from
+a neighbour must not animate in again, or a toolbar flickers. Normalising
+to `open|closed` by spreading our own attribute after Radix's (which wins,
+D-061 §4) would erase the fact for no gain. RULES §4 now says a component
+may add a value that carries a real state; the closed half stays `closed`,
+so a consumer's "is it open" is `:not([data-state="closed"])`.
+
+### 4. The overlay exception, applied
+
+`.stylelintrc.json`'s `Popover.css` override — `max-inline-size` allowed,
+nothing else relaxed — now names `Tooltip.css` too. D-061 §3's exception is
+per file by design: the list of files that may declare a ceiling is the
+list of overlays, and it grows one component at a time.
+
+### 5. A provider is fine when it is optional and carries behaviour an app cannot get otherwise
+
+4.1 §3 declined an `OverlayProvider` because one context for one prop most
+apps never set is the D-036 objection. `TooltipProvider` is different on
+both counts: it carries Radix's skip delay — after one tooltip has shown,
+a neighbour opens at once — which is behaviour, not configuration, and an
+app cannot get it any other way; and it is **optional**. `Tooltip` reads a
+context of ours and, when none is above it, renders Radix's provider itself
+with the defaults. Radix throws without a provider; ours does not. The
+ruling for the tier: a provider may exist when it is optional and carries
+behaviour, and 4.12 `Toast`'s region will be measured against that.
+
+### 6. A hover-intent delay is a number, not a token
+
+D-061 §5 said a `8` in a component's JavaScript is the `8px` RULES §3 bans
+in its CSS, one file over — because a token names it. Nothing names a
+700ms hover delay: the motion scale is for how long a change takes to draw
+and tops out at 360ms, and minting `--pp-delay-tooltip` for a number no
+stylesheet would ever read is D-015's "a name that changes nothing".
+`delayDuration` and `skipDelayDuration` are milliseconds, with Radix's 700
+and 300 as defaults because there is no measurement behind a different
+number. The boundary, stated: a JavaScript number is a hardcode when a
+token already names the quantity, and a plain number otherwise.
+
+### 7. Checked first at the build, not worked around
+
+Three things the spec assumes and could not verify on paper (spec §8). As
+D-057 put it, an assumption the build falsifies is a stop, not a
+workaround:
+
+- a natively `disabled` trigger — whether Chromium fires the `pointermove`
+  the trigger opens on; the docs page states the measured result;
+- three `defaultOpen` tooltips coexist in the Matrix, because `defaultOpen`
+  dispatches no open event;
+- `instant-open` after a skip actually skips the entry animation, and
+  `delayed-open` after a rest plays it.

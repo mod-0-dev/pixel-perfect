@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `spec` — written 2026-09-27, **awaiting Gate C** |
+| **Status** | `build` — Gate C passed 2026-09-27 **by delegation** (D-064), every recommendation adopted as written |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (RULES §1 as amended by D-061 §3) |
 | **RSC** | `client` — Radix state, timers, a portal, positioning |
 | **Depends on** | 4.1 Overlay foundation (`done`). Composes nothing; its usual trigger is 3.2 `IconButton`, by `asChild` |

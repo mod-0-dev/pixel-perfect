@@ -126,6 +126,12 @@ drilling and without knowing our internals:
 Style off these attributes internally too. If our own CSS needs a boolean class
 that consumers can't see, we got the API wrong.
 
+A component may **extend** the `data-state` vocabulary with a value that
+carries a real state, never replace it: `Tooltip` reports `delayed-open` and
+`instant-open`, because whether the tooltip opened after a rest or at once is
+what decides whether it animates in (D-064 §3). The closed half is always
+`closed`, so "is it open" is `:not([data-state="closed"])`.
+
 ---
 
 ## 5. API Conventions
