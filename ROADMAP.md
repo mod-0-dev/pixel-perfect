@@ -90,7 +90,25 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** nothing. **4.1 Overlay foundation and 4.2 `Popover` are
+- **In flight:** **4.3 `Tooltip` is in `spec`**, awaiting Gate C
+  (2026-09-27) — the first component to build on 4.1 alone.
+  [`Tooltip.md`](docs/specs/Tooltip.md) keeps the tier's shape (`Tooltip`,
+  `TooltipTrigger`, `TooltipContent`, named exports per D-062 §1) and adds
+  an optional `TooltipProvider` with a fallback, so one tooltip needs no
+  setup and a toolbar gets Radix's skip delay by wrapping once. It asks for
+  two Tier 0.2 tokens, `--pp-color-bg-inverse` and `--pp-color-text-inverse`
+  — the body-text pair reversed, asserted under their own names — because a
+  `--pp-tone-solid` label is a mid grey that reads as a disabled control. It
+  keeps Radix's `closed | delayed-open | instant-open` as an extension of
+  RULES §4, since `instant-open` is the fact that stops a toolbar's tooltips
+  re-animating; wires the tooltip as a description (`aria-describedby`),
+  never a name, and accepts an `IconButton`'s repeated label being read
+  twice; does not expose `disableHoverableContent`, the one switch whose
+  only effect is to fail WCAG 1.4.13; and settles the arrow `Popover` §8
+  deferred here: none. Six open questions, each with a recommendation.
+  `@radix-ui/react-tooltip` is added with the spec so the lockfiles land
+  with it. Nothing is built until the spec is approved
+- **4.1 Overlay foundation and 4.2 `Popover` are
   `done`** (2026-09-26): built the same day, their baselines CI-authored on
   the PR branch and compared green (run 123, D-013). Next up is **4.3
   `Tooltip`**, the first component to build on 4.1 alone. Both were approved
@@ -776,7 +794,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | --- | --- | --- | --- | --- | --- | --- |
 | 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
 | 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
-| 4.3 | `Tooltip` | `planned` | hug | client | 4.1 | |
+| 4.3 | `Tooltip` | `spec` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written 2026-09-27, **awaiting Gate C**. The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
 | 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
 | 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
 | 4.6 | `Drawer` | `planned` | hug | client | 4.4 | |
