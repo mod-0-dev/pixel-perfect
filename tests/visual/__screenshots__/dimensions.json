@@ -87,6 +87,14 @@
     "width": 1280,
     "height": 12061
   },
+  "dialog-dark.png": {
+    "width": 1280,
+    "height": 3175
+  },
+  "dialog-light.png": {
+    "width": 1280,
+    "height": 3175
+  },
   "field-dark.png": {
     "width": 1280,
     "height": 8378
@@ -142,6 +150,16 @@
   "icon-light.png": {
     "width": 1280,
     "height": 2532
+  },
+  "index-dark.png": {
+    "width": 1280,
+    "height": 2833,
+    "components": 40
+  },
+  "index-light.png": {
+    "width": 1280,
+    "height": 2833,
+    "components": 40
   },
   "input-dark.png": {
     "width": 1280,
