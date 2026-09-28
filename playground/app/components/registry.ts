@@ -88,4 +88,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'breadcrumb', name: 'Breadcrumb', tier: '5.6', summary: 'The way back up: a trail of links, the last one the page.' },
   { slug: 'stepper', name: 'Stepper', tier: '5.7', summary: 'Where a process stands: steps done, current and to come, joined by a line.' },
   { slug: 'empty-state', name: 'EmptyState', tier: '5.8', summary: 'Nothing here yet, and what to do about it; centred, held to a measure.' },
+  { slug: 'calendar', name: 'Calendar', tier: '5.9', summary: 'A month of days to pick one from; one tab stop, the APG keys, an ISO value.' },
 ];

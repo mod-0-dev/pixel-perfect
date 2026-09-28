@@ -7436,3 +7436,117 @@ test.describe('EmptyState', () => {
     expect(inCard).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('Calendar', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolveIn = (page: Page, token: string, tone: string, property: 'backgroundColor' | 'color' = 'backgroundColor') =>
+    page.evaluate(
+      ([t, tn, prop]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style[prop as 'backgroundColor' | 'color'] = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe)[prop as 'backgroundColor' | 'color'];
+        scope.remove();
+        return c;
+      },
+      [token, tone, property] as const,
+    );
+
+  test('seven equal columns of the cell; the day\'s height per size; the picked day solid and today accent; hover; the ring', async ({ page }) => {
+    await page.goto('/components/calendar');
+    const cells = await page.locator('.matrix__cell .pp-calendar').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const parent = root.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const week = root.querySelector('.pp-calendar__week') as HTMLElement;
+        const days = Array.from(week.querySelectorAll<HTMLElement>('.pp-calendar__day')).map((d) => d.getBoundingClientRect());
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          widths: days.map((r) => r.width),
+          heights: days.map((r) => r.height),
+          firstLeft: days[0]!.left - root.getBoundingClientRect().left,
+          lastRight: root.getBoundingClientRect().right - days[6]!.right,
+          spills: root.scrollWidth > root.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const md = await px(page, '--pp-control-height-md');
+    for (const c of cells) {
+      expect(Math.abs(c.rootWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(c.spills).toBe(false);
+      expect(c.widths).toHaveLength(7);
+      const w = c.widths[0]!;
+      for (const x of c.widths) expect(Math.abs(x - w)).toBeLessThanOrEqual(1);
+      for (const h of c.heights) expect(Math.abs(h - md)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.firstLeft)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.lastRight)).toBeLessThanOrEqual(0.5);
+    }
+
+    const sizes = await page.locator('[data-testid="calendar-sizes"] .pp-calendar').evaluateAll((els) =>
+      els.map((n) => (n.querySelector('.pp-calendar__day[data-date]') as HTMLElement).getBoundingClientRect().height),
+    );
+    expect(sizes.map(Math.round)).toEqual([await px(page, '--pp-control-height-sm'), md, await px(page, '--pp-control-height-lg')].map(Math.round));
+
+    const cal = page.locator('.matrix__cell .pp-calendar').last();
+    const picked = cal.locator('[data-date="2026-09-28"]');
+    const pickedStyle = await picked.evaluate((n) => ({ bg: getComputedStyle(n).backgroundColor, color: getComputedStyle(n).color, weight: getComputedStyle(n).fontWeight }));
+    expect(pickedStyle.bg).toBe(await resolveIn(page, '--pp-tone-solid', 'accent'));
+    expect(pickedStyle.color).toBe(await resolveIn(page, '--pp-tone-on-solid', 'accent', 'color'));
+    /* Today: the 10th is picked in the sizes section, so the 28th there is today and not selected. */
+    const today = page.locator('[data-testid="calendar-sizes"] .pp-calendar').nth(1).locator('[data-date="2026-09-28"]');
+    const todayStyle = await today.evaluate((n) => ({ color: getComputedStyle(n).color, weight: getComputedStyle(n).fontWeight, bg: getComputedStyle(n).backgroundColor }));
+    expect(todayStyle.color).toBe(await resolveIn(page, '--pp-tone-text', 'accent', 'color'));
+    expect(todayStyle.weight).toBe('500');
+    expect(todayStyle.bg).toBe('rgba(0, 0, 0, 0)');
+    const plain = cal.locator('[data-date="2026-09-15"]');
+    await plain.hover();
+    await expect.poll(() => plain.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg-hover', 'accent'));
+    await plain.focus();
+    await expect.poll(() => plain.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await plain.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+  });
+
+  test('in RTL the grid runs from the right, the arrows are mirrored and Arrow Left moves forward; Arrow Down past the month shows the next with focus on the day', async ({
+    page,
+  }) => {
+    await page.goto('/components/calendar');
+    const rtl = page.locator('[data-testid="calendar-rtl"] .pp-calendar');
+    const order = await rtl.evaluate((n) => {
+      const week = n.querySelectorAll('.pp-calendar__week')[1]!;
+      const days = Array.from(week.querySelectorAll<HTMLElement>('.pp-calendar__day'));
+      return { first: days[0]!.getBoundingClientRect().left, last: days[6]!.getBoundingClientRect().left, scale: getComputedStyle(n.querySelector('.pp-calendar__chevron')!).scale };
+    });
+    expect(order.first).toBeGreaterThan(order.last);
+    expect(order.scale).toBe('-1 1');
+    const before = await rtl.locator('.pp-calendar__month').textContent();
+    await rtl.locator('[data-date="2026-09-28"]').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(rtl.locator('[data-date="2026-09-29"]')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(rtl.locator('[data-date="2026-10-06"]')).toBeFocused();
+    /* The month's name changed (it is Arabic here, digits included). */
+    await expect.poll(() => rtl.locator('.pp-calendar__month').textContent()).not.toBe(before);
+    expect(await rtl.locator('.pp-calendar__grid').getAttribute('aria-labelledby')).toBe(await rtl.locator('.pp-calendar__month').getAttribute('id'));
+
+    /* One tab stop: Tab from the month's next arrow lands on the picked day, and Tab again leaves the grid. */
+    const cal = page.locator('.matrix__cell .pp-calendar').first();
+    await cal.getByRole('button', { name: 'Next month' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(cal.locator('[data-date="2026-09-28"]')).toBeFocused();
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.closest('.pp-calendar__grid') === null)).toBe(true);
+  });
+});

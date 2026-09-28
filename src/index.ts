@@ -49,6 +49,7 @@ export {
   type BreadcrumbProps,
 } from './components/Breadcrumb/Breadcrumb';
 export { Button, type ButtonProps } from './components/Button/Button';
+export { Calendar, type CalendarProps, type CalendarSize } from './components/Calendar/Calendar';
 export { Card, CardBody, CardFooter, CardHeader, type CardBodyProps, type CardFooterProps, type CardHeaderProps, type CardProps } from './components/Card/Card';
 export {
   ButtonGroup,

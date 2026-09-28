@@ -6032,3 +6032,96 @@ edge dropped (`solid`); `text-align` dropped (the title at `start`, once
 the test read it); the tile's surface dropped (transparent). Each failed
 on exactly the test named for it.
 
+## D-086 — `Calendar` rulings: an ISO value and no date library, our own grid with the APG keys, names by `Intl`, and a sixth week hidden as a row
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Calendar.md`
+(status) · **Adds:** `src/internal/date.ts` · **Extends:** D-061 (Tier 5's
+first keyboard widget is our own, because Radix has none), D-021, D-081
+§3, D-082 §4, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The component 4.13 `DatePicker` waits for.
+
+### 1. The value is an ISO date; the month shown is `YYYY-MM`; both controllable; no date library
+
+A `Date` is an instant in a time zone and a day is not, so the value is
+`2026-09-28` — what a URL, a form and a database already hold — and the
+month shown is `2026-09`, each with its controlled and uncontrolled
+form (RULES §5.5). `today` is a prop, so a server render, a test and a
+screenshot agree on what today is; `min`, `max`, `isDateDisabled` and
+`disabled` bound the pickable days. The arithmetic a month needs is
+forty lines in `src/internal/date.ts`, UTC-anchored so no daylight
+change moves a day; no package is added. A string that is not a date is
+ignored with a development warning. A value set from outside to another
+month brings that month into view when the month is uncontrolled.
+
+### 2. Our own grid on `div`s, one tab stop, the APG keys, mirrored arrows
+
+Radix has no calendar, and a `<table>` cannot fill its container or
+stretch its cells without a width, so the grid is `div`s with the roles
+(`grid`, `row`, `columnheader`, `gridcell`) laid out by CSS grid
+(`repeat(7, 1fr)`), each day a `<button>` stretched to its cell — the
+parent sizing the box it created (D-021). One day has `tabindex="0"`
+(the focused one, else the value, else today, else the first); arrows
+move a day or a week, Home and End to the week's ends, PageUp and
+PageDown a month (Shift: a year), Enter and Space pick; a move past the
+month's edge shows the next month and focus follows once it has
+rendered, through a pending ref the effect consumes. A disabled day is
+skipped, stepping the way the key went up to a year, and nothing moves
+past a bound. Arrow Left goes to the previous day in LTR and to the
+next in RTL, read from the root's computed direction, because the grid
+runs the other way there; the month arrows are mirrored by
+`[dir="rtl"]` (D-082 §4). Filler days before and after the month are
+`aria-hidden` spans, muted and inert: the previous month is one PageUp
+away.
+
+### 3. Names by `Intl`; the week starts where the locale says, else Monday
+
+Month, weekday and day names come from `Intl.DateTimeFormat(locale)`,
+a weekday header the narrow form with the long one as its label, a day
+button named in full so a screen reader never hears a bare "28". The
+day's *number* is formatted too, so a locale with its own digits shows
+them on the days as well as in the month's name. `locale` is a prop
+with NumberInput's caveat: without it the runtime's is used, and a
+server and a client that disagree about the locale disagree about the
+names, so pass it. The first day of the week is `weekStartsOn`, else
+the locale's week info where the runtime provides it (a cast, since
+TypeScript's lib does not yet know `getWeekInfo`), else Monday.
+
+### 4. Two things axe and the screenshot said
+
+**A sixth week that is all fillers has no gridcell.** September 2026's
+grid ends with a row of October, every cell `aria-hidden`, and axe's
+`aria-required-children` found a `row` with nothing in it. The row is
+hidden with its cells: a screen reader walking the grid meets five
+weeks, which is the month. The unit test counts six rows exposed, not
+seven.
+
+**Latin days under an Arabic month.** The RTL instance showed
+`سبتمبر ٢٠٢٦` over `1 2 3`, because the month came from Intl and the day
+from a number. Both come from Intl now (§3).
+
+### 5. Verified, and the five breaks
+
+Unit: thirteen tests — the group, the grid labelled by the month, the
+weekdays for `en-US` from Sunday and `de-DE` from Monday, the month's
+days and the hidden fillers and the hidden sixth week; the value
+selected and today current, the tab stop's fallbacks; a click picking
+and reporting, uncontrolled moving and controlled holding; the arrows
+changing the month and a value from outside bringing its month in;
+`min`, `max`, `isDateDisabled` and `disabled`; every key, the tab stop
+following, a crossing of the month's edge with focus, a disabled day
+skipped, a bound held; an owner; a bad value warned and ignored;
+`size`, `label`, ref, `className`, `style`; axe in both themes.
+Browser: seven equal columns of the cell's content width and no spill;
+the day's height per size; the picked day solid, today accent and
+medium, hover, the ring; RTL from the right with the arrows mirrored,
+Arrow Left forward, Arrow Down across the month with focus on the day
+and the month's name changed; one tab stop in and out.
+
+Break checks (D-035 §3): `repeat(7, 1fr)` dropped (the columns unequal,
+9px apart); the selected surface dropped (transparent); today's colour
+dropped (the page's text); the day's height dropped (26px short); the
+RTL mirror dropped (`scale: none`). Each failed on exactly the test
+named for it.
+
