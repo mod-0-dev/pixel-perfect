@@ -95,6 +95,14 @@
     "width": 1280,
     "height": 2546
   },
+  "combobox-dark.png": {
+    "width": 1280,
+    "height": 1927
+  },
+  "combobox-light.png": {
+    "width": 1280,
+    "height": 1927
+  },
   "container-dark.png": {
     "width": 1280,
     "height": 12061
@@ -350,6 +358,14 @@
   "textarea-light.png": {
     "width": 1280,
     "height": 8304
+  },
+  "toast-dark.png": {
+    "width": 1280,
+    "height": 2282
+  },
+  "toast-light.png": {
+    "width": 1280,
+    "height": 2282
   },
   "toggle-dark.png": {
     "width": 1280,
