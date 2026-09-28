@@ -43,7 +43,10 @@ Each gate is a hard stop. Do not proceed past a failing gate; report it.
 
 **Gate A — WIP limit.** At most one item may be in `spec`, `build`, or `review`.
 If one already is, refuse to start another and offer to continue the in-flight
-one instead. Breadth is how component libraries die.
+one instead. Breadth is how component libraries die. One carve-out (D-069
+§2): an item in `review` whose only open box is the CI-authored screenshot
+baseline does not hold the limit — that wait is CI's, and the next build may
+start; one PR then closes several components with one authoring run.
 
 **Gate B — Dependencies.** Every item in the target's **Deps** column must be
 `done`. Tier 0 must be fully `done` before any component starts.
@@ -51,6 +54,11 @@ one instead. Breadth is how component libraries die.
 **Gate C — Spec approval.** After writing the spec, **stop and ask the user to
 approve the API.** Do not write implementation code in the same turn. API
 mistakes are the expensive kind — they are cheap on paper and permanent in code.
+**Under the standing delegation of D-069 §1 the gate is satisfied in advance:**
+the spec is still written in full with a recommendation on every open
+question, every recommendation is adopted as written, the build starts in the
+same session, and the spec's decisions are listed in the PR body for reversal
+before merge. A spec that would bend a RULE still stops and asks.
 
 **Gate D — Definition of Done.** Walk
 `references/definition-of-done.md` item by item before marking anything `done`.

@@ -52,6 +52,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'popover', path: '/components/popover' },
   { name: 'tooltip', path: '/components/tooltip' },
   { name: 'dialog', path: '/components/dialog' },
+  { name: 'alert-dialog', path: '/components/alert-dialog' },
   { name: 'alert', path: '/components/alert' },
 ];
 

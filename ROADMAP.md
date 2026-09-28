@@ -22,7 +22,12 @@ Definition of Done: [`.claude/skills/component/references/definition-of-done.md`
 group at a time, so any number of components in a group may sit in `spec`
 together ([D-014](docs/DECISIONS.md)). Implementation remains strictly one at a
 time. A component may not enter `spec` until every entry in its **Deps** column
-is `done`.
+is `done`. An item in `review` waiting only on its CI-authored baseline does
+not hold the limit ([D-069 §2](docs/DECISIONS.md)); Gate C is satisfied in
+advance for every remaining item by the standing delegation of D-069 §1.
+
+**Parked idea (D-069 §3):** a modifier key that switches the components into
+display combinations — a Tier 6 spec of its own, once the components exist.
 
 ### Current state
 
@@ -90,7 +95,13 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** nothing. **4.4 `Dialog` is `done`** (2026-09-27): built
+- **In flight: 4.5 `AlertDialog` (`review`, waiting only on its
+  CI-authored baseline, D-069 §2) and the batch that follows it.** Under
+  the standing delegation of D-069 §1 the rest of Tier 4 is built in
+  sequence, one in `build` at a time, each moved to `review` with every
+  box but the baseline checked, and one authoring run at the end of the
+  PR closes them together. 4.5 is `Dialog` with two rules changed
+  (D-070). **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -865,7 +876,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
 | 4.3 | `Tooltip` | `done` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064); built the same day, findings in D-065; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 132, D-013). Its PR also found and fixed the CI classification that could author over a regression (D-066). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
 | 4.4 | `Dialog` | `done` | hug | client | 4.1 | [`Dialog.md`](docs/specs/Dialog.md), approved by delegation 2026-09-27 (D-067), every one of its eight recommendations adopted as written; built the same day, findings in D-068; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 139, D-013). The first modal, and the one 4.5, 4.6 and 4.14 gate on. Modal only, no `modal` prop; the scrim is Radix's `Overlay` rendered by `Content` and is the panel's parent — positioner and scroll container in one, centred by a grid so RTL needs nothing; ceiling `--pp-measure-sm`, no `size`; `aria-modal` and a focus restore for a trigger-less dialog are the two things added over Radix; the gallery portals into `contain: layout` cells, so a cell is a viewport |
-| 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
+| 4.5 | `AlertDialog` | `review` | hug | client | 4.4 | [`AlertDialog.md`](docs/specs/AlertDialog.md), written and built 2026-09-28 under the standing delegation (D-069); findings in D-070. `Dialog` with two rules changed — no close on a scrim press, focus on `Cancel` — drawn by Dialog's stylesheet through two classes per part; ceiling `--pp-measure-xs`. In `review` for the CI-authored baseline only, which does not hold the WIP limit (D-069 §2) |
 | 4.6 | `Drawer` | `planned` | hug | client | 4.4 | |
 | 4.7 | `DropdownMenu` | `planned` | hug | client | 4.2 | Typeahead, submenus |
 | 4.8 | `ContextMenu` | `planned` | hug | client | 4.7 | |

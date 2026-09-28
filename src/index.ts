@@ -6,6 +6,22 @@ export {
 } from './components/AspectRatio/AspectRatio';
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Alert, type AlertLive, type AlertProps } from './components/Alert/Alert';
+export {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+  type AlertDialogActionProps,
+  type AlertDialogCancelProps,
+  type AlertDialogContentProps,
+  type AlertDialogDescriptionProps,
+  type AlertDialogProps,
+  type AlertDialogTitleProps,
+  type AlertDialogTriggerProps,
+} from './components/AlertDialog/AlertDialog';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
 export { Button, type ButtonProps } from './components/Button/Button';
 export {

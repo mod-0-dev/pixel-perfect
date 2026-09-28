@@ -5085,3 +5085,118 @@ test.describe('Dialog', () => {
     expect(Math.abs(read[2]!.width - read[2]!.ceiling), 'the wide panel is not at its ceiling').toBeLessThanOrEqual(1);
   });
 });
+
+/*
+ * AlertDialog (4.5) — spec docs/specs/AlertDialog.md. Dialog with two rules
+ * changed, drawn by Dialog's stylesheet. Asserted here: only what differs,
+ * and the two-class contract that makes the rest apply — resolved, not by
+ * class name.
+ */
+test.describe('AlertDialog', () => {
+  type Page = import('@playwright/test').Page;
+  const gallery = (page: Page) => page.locator('.pp-alert-dialog[data-gallery]');
+  const panel = (page: Page) => page.locator('.pp-alert-dialog:not([data-gallery])');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="alert-dialog-${id}"]`);
+
+  const closeGallery = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(gallery(page)).toHaveCount(left);
+    }
+  };
+
+  test('is drawn by Dialog: the layers, the scrim as viewport, the ceiling at 20rem, no motion under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    await demo(page, 'delete').getByRole('button', { name: 'Delete report' }).click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const viewport = page.viewportSize()!;
+    const box = await placedBox(el);
+    const read = await el.evaluate((n) => {
+      const scrim = n.parentElement as HTMLElement;
+      const s = scrim.getBoundingClientRect();
+      return {
+        scrim: { x: s.x, y: s.y, width: s.width, height: s.height },
+        scrimZ: getComputedStyle(scrim).zIndex,
+        overlay: getComputedStyle(n).getPropertyValue('--pp-z-overlay').trim(),
+        panelZ: getComputedStyle(n).zIndex,
+        modal: getComputedStyle(n).getPropertyValue('--pp-z-modal').trim(),
+        ceiling: parseFloat(getComputedStyle(n).getPropertyValue('--pp-measure-xs')) * 16,
+        animation: getComputedStyle(n).animationName,
+        scrimAnimation: getComputedStyle(scrim).animationName,
+        role: n.getAttribute('role'),
+      };
+    });
+    expect(read.scrim).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
+    expect(read.scrimZ).toBe(read.overlay);
+    expect(read.panelZ).toBe(read.modal);
+    expect(read.role).toBe('alertdialog');
+    expect(Math.abs(box.width - read.ceiling), 'the panel is not at the 20rem ceiling').toBeLessThanOrEqual(1);
+    expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(1);
+    expect(read.animation).toBe('none');
+    expect(read.scrimAnimation).toBe('none');
+  });
+
+  test('focus lands on Cancel, a scrim press does nothing, and Escape returns focus to the trigger', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    const trigger = demo(page, 'delete').getByRole('button', { name: 'Delete report' });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Keep it' })).toBeFocused();
+
+    const outside = page.getByTestId('alert-dialog-outside');
+    const box = (await outside.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(300);
+    await expect(panel(page), 'a scrim press closed an alert dialog').toBeVisible();
+    await expect(page.locator('section', { hasText: 'Delete, with a way to decline' })).toContainText('outside clicked 0×');
+
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(demo(page, 'delete').locator('button', { hasText: 'Delete report' })).toBeFocused();
+  });
+
+  test('Action closes and acts; Cancel closes and does not', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    const trigger = demo(page, 'delete').getByRole('button', { name: 'Delete report' });
+    await trigger.click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(panel(page)).toHaveCount(0);
+    await trigger.click();
+    await page.getByRole('button', { name: 'Keep it' }).click();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'Delete, with a way to decline' })).toContainText('deleted 1× · kept 1×');
+  });
+
+  test('with no Cancel, the panel itself takes focus', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    await demo(page, 'no-cancel').getByRole('button', { name: 'Acknowledge' }).click();
+    await expect(panel(page)).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test('the gallery holds three, each scrim the size of its cell', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    const panels = gallery(page);
+    await expect(panels).toHaveCount(3);
+    const ok = await panels.evaluateAll((els) =>
+      els.every((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const stage = scrim.parentElement as HTMLElement;
+        const s = scrim.getBoundingClientRect();
+        const t = stage.getBoundingClientRect();
+        return Math.abs(s.width - t.width) <= 1 && Math.abs(s.height - t.height) <= 1;
+      }),
+    );
+    expect(ok).toBe(true);
+  });
+});

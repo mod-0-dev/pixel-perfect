@@ -4,7 +4,6 @@ import * as RadixDialog from '@radix-ui/react-dialog';
 import {
   createContext,
   forwardRef,
-  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -16,6 +15,7 @@ import {
 } from 'react';
 
 import { cx } from '../../internal/cx';
+import { useFocusRestore } from '../../internal/overlay/focus';
 import { useInheritedTheme } from '../../internal/overlay/theme';
 import { mergeRefs } from '../../internal/refs';
 
@@ -175,39 +175,9 @@ const DialogPanel = forwardRef<HTMLDivElement, Omit<DialogContentProps, 'contain
   const panelRef = useRef<HTMLDivElement | null>(null);
   const setRef = useMemo(() => mergeRefs<HTMLDivElement>(ref, panelRef), [ref]);
 
-  /*
-   * FOCUS GOES BACK TO SOMETHING WHEN THERE WAS NO TRIGGER (spec §7). Radix's
-   * close handler prevents the focus scope's own restore and focuses
-   * `triggerRef.current` — for a dialog opened from a row's menu, a shortcut
-   * or a controlled `open` set from anywhere, that is `undefined?.focus()`
-   * and focus drops to <body>. The element that had focus is recorded when
-   * the open-autofocus event fires — before the scope moves it — and, only
-   * when no trigger exists, focused again on close. With a trigger, nothing
-   * here changes what Radix does. Either handler a consumer passes runs
-   * first and can `preventDefault()`.
-   */
-  const restoreRef = useRef<HTMLElement | null>(null);
-  const handleOpenAutoFocus = useCallback(
-    (event: Event) => {
-      const doc = (event.currentTarget as Node | null)?.ownerDocument ?? document;
-      const active = doc.activeElement;
-      restoreRef.current = active instanceof HTMLElement && active !== doc.body ? active : null;
-      onOpenAutoFocus?.(event);
-    },
-    [onOpenAutoFocus],
-  );
-  const handleCloseAutoFocus = useCallback(
-    (event: Event) => {
-      onCloseAutoFocus?.(event);
-      if (event.defaultPrevented || triggerRef.current) return;
-      const target = restoreRef.current;
-      if (target?.isConnected) {
-        event.preventDefault();
-        target.focus();
-      }
-    },
-    [onCloseAutoFocus, triggerRef],
-  );
+  /* Focus goes back to something when there was no trigger (spec §7):
+     shared with every modal built on Radix's dialog. */
+  const { handleOpenAutoFocus, handleCloseAutoFocus } = useFocusRestore(triggerRef, onOpenAutoFocus, onCloseAutoFocus);
 
   /*
    * THE NAME IS WARNED ABOUT, NOT WIRED (spec §6). Radix wires

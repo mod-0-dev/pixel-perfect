@@ -4455,3 +4455,94 @@ no-trigger test). Collateral failures — the tall-dialog test once the panel
 was `position: fixed` and no longer overflowed the scrim, the gallery's
 wide panel mid-animation — are what a combined run costs and why the named
 test is what is read.
+
+## D-069 — A standing delegation for the rest of the roadmap; a component waiting only on its CI-authored baseline does not hold the WIP limit; one parked idea
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.claude/skills/component/SKILL.md`
+(Gate A, Gate C); ROADMAP.md (WIP limit, a parked idea) · **Extends:** D-014,
+D-057, D-061 §2, D-064 §1, D-067 §1
+
+### 1. Gate C is satisfied in advance, for every remaining item
+
+Four components in a row were approved by delegation with the same words,
+and the user has now said so for the rest: *"Tired of approving single
+components. Just build and keep in mind the pixel perfect mentality."*
+That is a standing delegation. Gate C's purpose — a second pair of eyes on
+an API before it is permanent — is not served by asking a question whose
+answer is known, so from here:
+
+- **Every spec is still written**, to the template, with its decisions and
+  its open questions each carrying a recommendation. The spec is the
+  record a reversal is made against and the document the build is checked
+  against; none of that depends on who approves it.
+- **Every recommendation is adopted as written**, and the build starts in
+  the same session. The spec's decisions are listed in the PR body, as
+  D-061 §2 required for a spec written after its delegation, so the user
+  reverses before merge what they would have reversed at the gate.
+- **The assumptions a spec names are still checked first** (D-057), and a
+  ruling the spec did not anticipate is still a DECISIONS finding.
+
+The delegation ends when the user says so, or when a spec would bend a
+RULE: that still stops and asks, because a rule is not a default.
+
+### 2. A component whose only open box is the CI-authored baseline does not count against the WIP limit
+
+The WIP limit is one item in `build` or `review`. Since D-013 every
+component sits in `review` for one box it cannot close itself — the
+baseline CI authors on the next run — and that wait is CI's, not the
+work's. Holding the next build for it serialises components behind a
+five-minute job. So: an item in `review` with every box checked but the
+baseline (and, from D-066, the index re-baseline that rides with it) does
+not hold the limit. One PR may then close several components with one
+authoring run and one recording commit. Everything else about the limit
+stands: one item in `build` at a time, and a `review` with any *other* box
+open still holds it.
+
+### 3. Parked: a modifier key that composes the components' display
+
+The user's idea, recorded so it is not lost: holding a modifier (Ctrl, or
+another) while using the page would switch the components into
+combinations that expose more of what they can do, in one simple gesture.
+Parked at the user's request until the components exist; when it is
+picked up it is a Tier 6 item with a spec of its own, because it touches
+every component's state vocabulary (RULES §4) at once.
+
+## D-070 — `AlertDialog` build findings: one stylesheet draws two components, and a Cancel-less alert dialog leaves focus outside its own trap
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/AlertDialog.md`
+(status) · **Extends:** D-030 §10 (IconButton's two classes), D-068
+
+Built under the standing delegation (D-069 §1), every recommendation
+adopted. Three findings, none against the spec.
+
+### 1. Two classes per part is how one stylesheet draws two components
+
+`AlertDialog` is `Dialog` with two rules changed, and its parts carry
+Dialog's class first and their own second (`pp-dialog pp-alert-dialog`),
+the way `IconButton` carries `pp-button pp-icon-button`. `AlertDialog.css`
+is one rule — the smaller ceiling, through its own property. The browser
+suite asserts the contract by what it *buys*, resolved: the scrim is the
+viewport, the layers are the tokens, the motion is `none` under reduced
+motion; dropping `pp-dialog` from the panel fails that test (`auto`
+against `1100`). The alternative, a copy of Dialog.css, is the drift
+D-045 wrote about: two files that must agree and nothing that checks it.
+
+### 2. Without a Cancel, Radix leaves focus outside the trap
+
+Radix's alert dialog prevents the focus scope's autofocus and focuses its
+Cancel part. With no Cancel rendered that is `undefined?.focus()` and
+focus stays on the trigger — *outside* a trapped scope, with the rest of
+the page `aria-hidden`. The panel now takes focus itself in that case, and
+development warns that a Cancel is missing: a decision the user cannot
+decline is not a decision. The break check (fallback removed) fails the
+named test with focus still on the trigger.
+
+### 3. Verified
+
+Focus lands on Cancel and returns to the trigger; a scrim press leaves the
+dialog open and presses nothing under it; Action closes after its
+`onClick`; the gallery's three scrims are the size of their cells; axe
+passes with no rule disabled on `role="alertdialog"`. The chunk holding
+`@radix-ui/react-alert-dialog` (14,028 bytes) is referenced by the
+AlertDialog page's payload only. 13 unit and 5 browser assertions; one
+browser break and two unit breaks, each caught by its named test.
