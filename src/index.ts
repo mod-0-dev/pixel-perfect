@@ -56,6 +56,26 @@ export {
 } from './components/Checkbox/Checkbox';
 export { Code, type CodeProps } from './components/Code/Code';
 export {
+  Combobox,
+  ComboboxEmpty,
+  ComboboxGroup,
+  ComboboxInput,
+  ComboboxLabel,
+  ComboboxList,
+  ComboboxOption,
+  type ComboboxEmptyProps,
+  type ComboboxGroupProps,
+  type ComboboxInputProps,
+  type ComboboxInputReason,
+  type ComboboxLabelProps,
+  type ComboboxListProps,
+  type ComboboxMultipleProps,
+  type ComboboxOptionProps,
+  type ComboboxProps,
+  type ComboboxSide,
+  type ComboboxSingleProps,
+} from './components/Combobox/Combobox';
+export {
   Heading,
   type HeadingLevel,
   type HeadingProps,

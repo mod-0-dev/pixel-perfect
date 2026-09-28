@@ -6131,3 +6131,151 @@ test.describe('Accordion', () => {
     await expect(region.getByPlaceholder('gone on return')).toHaveValue('');
   });
 });
+
+test.describe('Combobox', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="combobox-${id}"]`);
+  const list = (page: Page) => page.locator('.pp-combobox__list:not([data-gallery])');
+
+  test("the control is Input's box, the list is never narrower than it, and the highlighted option scrolls into view", async ({ page }) => {
+    // A short viewport, so seventeen options cannot fit below the field.
+    await page.setViewportSize({ width: 1280, height: 480 });
+    await page.goto('/components/combobox');
+    for (const id of ['narrow', 'wide'] as const) {
+      const region = demo(page, id);
+      await region.scrollIntoViewIfNeeded();
+      const input = region.getByRole('combobox');
+      await input.click();
+      await page.keyboard.press('ArrowDown');
+      const el = list(page);
+      await expect(el).toBeVisible();
+      const [box, panel] = await Promise.all([region.locator('.pp-combobox__box').boundingBox(), placedBox(el)]);
+      expect(panel!.width, `${id}: the list is narrower than its control`).toBeGreaterThanOrEqual(box!.width - 1);
+      if (id === 'wide') expect(Math.abs(panel!.width - box!.width), 'a wide control: the list is its width').toBeLessThanOrEqual(1);
+      expect(Math.abs(panel!.x - box!.x)).toBeLessThanOrEqual(1);
+      const height = await region.locator('.pp-combobox__box').evaluate((n) => n.getBoundingClientRect().height);
+      expect(Math.abs(height - 40), 'the box is not the medium control').toBeLessThanOrEqual(1);
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+    // Seventeen options scroll; End is the caret's, so arrow down past the fold.
+    const region = demo(page, 'wide');
+    await region.getByRole('combobox').click();
+    for (let i = 0; i < 17; i += 1) await page.keyboard.press('ArrowDown');
+    const el = list(page);
+    const last = el.getByRole('option').last();
+    await expect(last).toHaveAttribute('data-highlighted', '');
+    const visible = await last.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const p = (n.closest('.pp-combobox__list') as HTMLElement).getBoundingClientRect();
+      return r.top >= p.top - 1 && r.bottom <= p.bottom + 1;
+    });
+    expect(visible, 'the highlighted option is out of view').toBe(true);
+    expect(await el.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+  });
+
+  test('a press in the list does not blur the input; a click takes; the box rings for the input and a token rings itself', async ({ page }) => {
+    await page.goto('/components/combobox');
+    const region = demo(page, 'single');
+    await region.scrollIntoViewIfNeeded();
+    const input = region.getByRole('combobox');
+    await input.click();
+    await page.keyboard.type('b');
+    const el = list(page);
+    await expect(el).toBeVisible();
+    // Keyboard focus in the input: the box carries the ring, the input none.
+    const ring = await region.locator('.pp-combobox__box').evaluate((n) => getComputedStyle(n).outlineStyle);
+    expect(ring).toBe('solid');
+    await el.getByRole('option', { name: 'Brussels' }).hover();
+    await expect(el.getByRole('option', { name: 'Brussels' })).toHaveAttribute('data-highlighted', '');
+    await page.mouse.down();
+    await expect(input).toBeFocused();
+    await page.mouse.up();
+    await expect(el).toHaveCount(0);
+    await expect(input).toHaveValue('Brussels');
+    await expect(region.locator('xpath=..')).toContainText('value: bru');
+    await expect(input).toBeFocused();
+
+    const many = demo(page, 'multiple');
+    await many.scrollIntoViewIfNeeded();
+    await many.getByRole('combobox').focus();
+    await page.keyboard.press('Shift+Tab');
+    const remove = many.getByRole('button', { name: 'Remove Tokyo' });
+    await expect(remove).toBeFocused();
+    expect(await remove.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+    expect(await many.locator('.pp-combobox__box').evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('none');
+    await page.keyboard.press('Enter');
+    await expect(many.locator('.pp-combobox__token')).toHaveCount(1);
+    await expect(many.getByRole('combobox')).toBeFocused();
+  });
+
+  test('a selected option is marked in the gutter and its label aligns with the others; the chevron turns; still under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/combobox');
+    const region = demo(page, 'multiple');
+    await region.scrollIntoViewIfNeeded();
+    const chevron = region.locator('.pp-combobox__chevron');
+    expect(await chevron.evaluate((n) => getComputedStyle(n).rotate)).toBe('none');
+    await region.getByRole('combobox').click();
+    await page.keyboard.press('ArrowDown');
+    const el = list(page);
+    await expect(el).toBeVisible();
+    expect(await chevron.evaluate((n) => getComputedStyle(n).rotate)).toBe('180deg');
+    expect(await chevron.evaluate((n) => getComputedStyle(n).transitionDuration)).toBe('0s');
+    expect(await el.evaluate((n) => getComputedStyle(n).animationName)).toBe('none');
+    const read = await el.locator('[role="option"]').evaluateAll((els) =>
+      els.map((n) => ({
+        selected: n.getAttribute('aria-selected'),
+        start: parseFloat(getComputedStyle(n).paddingInlineStart),
+        marked: n.querySelector('.pp-combobox__indicator') !== null,
+      })),
+    );
+    expect(new Set(read.map((r) => r.start)).size, 'options do not share one inset').toBe(1);
+    expect(read[0]!.start).toBeGreaterThan(8);
+    expect(read.filter((r) => r.selected === 'true').every((r) => r.marked)).toBe(true);
+    expect(read.filter((r) => r.selected === 'false').every((r) => !r.marked)).toBe(true);
+    expect(read.filter((r) => r.selected === 'true')).toHaveLength(2);
+  });
+
+  test('async: the spinner while loading, then the options; the theme crosses the portal', async ({ page }) => {
+    await page.goto('/components/combobox');
+    const region = demo(page, 'async');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('combobox').click();
+    await page.keyboard.type('to');
+    await expect(region.locator('.pp-combobox__toggle .pp-spinner')).toBeVisible();
+    await expect(list(page).getByRole('listbox')).toHaveAttribute('aria-busy', 'true');
+    await expect(list(page).getByRole('option', { name: 'Tokyo' })).toBeVisible();
+    await expect(region.locator('.pp-combobox__toggle .pp-spinner')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    const dark = demo(page, 'theme');
+    await dark.scrollIntoViewIfNeeded();
+    await dark.getByRole('combobox').click();
+    await page.keyboard.press('ArrowDown');
+    const el = list(page);
+    await expect(el).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      inside: n.closest('[data-testid="combobox-theme"]') !== null,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.raised).toBe(await dark.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three open lists, each the width of its control', async ({ page }) => {
+    await page.goto('/components/combobox');
+    const panels = page.locator('.pp-combobox__list[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const p = el.getBoundingClientRect();
+        const boxes = Array.from(document.querySelectorAll('.matrix .pp-combobox__box')).map((b) => b.getBoundingClientRect());
+        const box = boxes.find((b) => Math.abs(b.x - p.x) <= 1);
+        return { options: el.querySelectorAll('[role="option"]').length, selected: el.querySelectorAll('[aria-selected="true"]').length, fits: !!box && p.width >= box.width - 1 };
+      }),
+    );
+    expect(read.every((r) => r.options === 2 && r.selected === 1 && r.fits), JSON.stringify(read)).toBe(true);
+  });
+});

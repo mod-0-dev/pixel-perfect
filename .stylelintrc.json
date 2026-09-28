@@ -346,6 +346,22 @@
           ]
         }
       }
+    },
+    {
+      "files": [
+        "src/components/Combobox/**/*.css"
+      ],
+      "rules": {
+        "declaration-property-value-allowed-list": {
+          "min-inline-size": [
+            "0",
+            "var(--radix-popper-anchor-width)"
+          ],
+          "/^margin(-(inline|block)(-(start|end))?)?$/": [
+            "0"
+          ]
+        }
+      }
     }
   ]
 }

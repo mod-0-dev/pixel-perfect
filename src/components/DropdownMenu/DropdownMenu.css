@@ -76,8 +76,10 @@
     }
   }
 
-  /* The gutter: the inline padding, the mark, and the gap between them. */
-  .pp-dropdown-menu:has([role="menuitemcheckbox"], [role="menuitemradio"]) {
+  /* The gutter: the inline padding, the mark, and the gap between them. A
+     listbox's options can be chosen, so they count as checkable rows
+     (Combobox §6, D-076). */
+  .pp-dropdown-menu:has([role="menuitemcheckbox"], [role="menuitemradio"], [role="option"]) {
     --_gutter: calc(var(--_inline) + var(--_mark) + var(--pp-control-gap-sm));
   }
 

@@ -58,6 +58,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'context-menu', path: '/components/context-menu' },
   { name: 'tabs', path: '/components/tabs' },
   { name: 'accordion', path: '/components/accordion' },
+  { name: 'combobox', path: '/components/combobox' },
   { name: 'alert', path: '/components/alert' },
 ];
 

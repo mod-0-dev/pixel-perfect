@@ -96,9 +96,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
 - **In flight: 4.5 `AlertDialog`, 4.6 `Drawer`, 4.7 `DropdownMenu`, 4.8
-  `ContextMenu`, 4.9 `Tabs` and 4.10 `Accordion` (all `review`, waiting
-  only on their CI-authored baselines, D-069 §2) and the batch that
-  follows them.** Under the standing delegation of D-069 §1 the rest of
+  `ContextMenu`, 4.9 `Tabs`, 4.10 `Accordion` and 4.11 `Combobox` (all
+  `review`, waiting only on their CI-authored baselines, D-069 §2) and
+  the batch that follows them.** Under the standing delegation of D-069 §1 the rest of
   Tier 4 is built in sequence, one in `build` at a time, each moved to
   `review` with every box but the baseline checked, and one authoring run
   at the end of the PR closes them together. 4.5 is `Dialog` with two
@@ -115,8 +115,10 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   non-overlay: a hairline, a bar on it, a strip that scrolls, and the
   page's direction as the component's (D-074). 4.10 is the second: headings
   on hairlines, `multiple` as a boolean, the heading level asked once
-  (D-075). Next up is **4.11 `Combobox`**, the tier's largest: a Popover
-  and a list of the library's own. **4.4 `Dialog` is `done`** (2026-09-27): built
+  (D-075). 4.11 is the tier's largest and the one whose behaviour is the
+  library's own — Popover's anchor, the menu's stylesheet, Input's box,
+  and a keyboard model written here; the consumer renders the matches
+  (D-076). Next up is **4.12 `Toast`**. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -897,7 +899,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.8 | `ContextMenu` | `review` | hug | client | 4.7 | [`ContextMenu.md`](docs/specs/ContextMenu.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-073. `DropdownMenu`'s list opened at the pointer: the twelve parts a menu is made of are built once by an internal factory and drawn by 4.7's stylesheet through two classes, so this component ships no CSS; the trigger is a region that renders a `<div>`; the direction is read from the region at open time. Gate B read 4.7's `review` (baseline only) as `done` (D-073 §2). In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.9 | `Tabs` | `review` | fill | client | T3 | [`Tabs.md`](docs/specs/Tabs.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-074. The tier's first non-overlay: one look (a hairline, a two-pixel accent bar on it under the selected tab), the strip scrolls at a narrow width rather than wrapping, `keepMounted` for a panel that holds a form, and the page's direction is the component's — Radix's `dir` attribute is not written. `data-state="active\|inactive"` joins RULES §4. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.10 | `Accordion` | `review` | fill | client | T3 | [`Accordion.md`](docs/specs/Accordion.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-075. Headings on hairlines, a chevron that turns, a height that animates; `multiple` is a boolean (RULES §5 reserves `type`) with the value's shape to match; `collapsible` defaults to `true`; `headingLevel` on the root sets every heading once; `keepMounted` as Tabs'. In `review` for the CI-authored baseline only (D-069 §2) |
-| 4.11 | `Combobox` | `planned` | fill | client | 4.2, 3.13 | Async options, multi-select |
+| 4.11 | `Combobox` | `review` | fill | client | 4.2, 3.13 | [`Combobox.md`](docs/specs/Combobox.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-076. The one Tier 4 component whose behaviour is the library's own: the list on Popover's `Anchor`, its look DropdownMenu's stylesheet, the control Input's box; the keyboard, `aria-activedescendant`, the selection and the tokens written here. The consumer renders the options that match and `onInputValueChange` says why the text changed; `multiple` as tokens; `getLabel` for a value set from outside; `loading` for options from a server. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.12 | `Toast` | `planned` | fill | client | 4.1 | Region + imperative API |
 | 4.13 | `DatePicker` | `planned` | fill | client | 4.2, 5.9 | |
 | 4.14 | `CommandPalette` | `planned` | fill | client | 4.11, 4.4 | |

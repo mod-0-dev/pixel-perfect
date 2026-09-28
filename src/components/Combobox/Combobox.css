@@ -1,0 +1,177 @@
+/*
+ * Combobox — spec docs/specs/Combobox.md
+ *
+ * INPUT'S ROOT, A BOX DRAWN AROUND (spec §5). The root carries `pp-input`
+ * first, so Input.css resolves the size, the invalid tone, the disabled
+ * surface and the private variables — `--_height`, `--_padding-inline`,
+ * `--_font-size`, `--_bg`, `--_border`, `--_color` — exactly as for an
+ * Input, on the same attributes. An Input draws its box on the <input>;
+ * this component draws it on `.pp-combobox__box` AROUND the input, from
+ * those variables, because with `multiple` the tokens sit inside the box
+ * before the text. The <input> inside is naked.
+ *
+ * THE RING IS THE BOX'S, when the INPUT is the thing focused (`:has()`, with
+ * precedent in Select and Radio): a token's remove button rings itself, and
+ * the box rings for the text. The input's own ring is a transparent outline,
+ * never `none` — the box is its replacement (RULES §6).
+ *
+ * THE LIST IS DROPDOWNMENU'S PANEL (spec §6): every row, the highlight, the
+ * gutter and the motion come from DropdownMenu.css through the two-class
+ * contract; this file adds one thing, the floor — a list never narrower
+ * than its control, from Radix's anchor width, which `.stylelintrc.json`
+ * admits for this file as the one value `min-inline-size` may take besides
+ * zero (D-076 §3).
+ *
+ * The vendor custom property read below is Radix's anchor width, consumed
+ * here and named nowhere a consumer would write it (4.1 §5).
+ */
+
+@layer pp.components {
+  .pp-combobox__box {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    min-block-size: var(--pp-input-height, var(--_height));
+    border: var(--pp-border-width-1) solid var(--pp-input-border-color, var(--_border));
+    border-radius: var(--pp-input-radius, var(--pp-control-radius));
+    background-color: var(--pp-input-bg, var(--_bg));
+    color: var(--pp-input-color, var(--_color));
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  /* Tokens and the text, wrapping; the row is the control's content height
+     so a single line is exactly an Input. */
+  .pp-combobox__field {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--pp-space-1);
+    min-block-size: calc(var(--pp-input-height, var(--_height)) - 2 * var(--pp-border-width-1));
+    padding-inline-start: var(--pp-input-padding-inline, var(--_padding-inline));
+  }
+
+  /* With tokens in it, the field pads like a chip row. */
+  .pp-combobox__field:has(.pp-combobox__token) {
+    padding-block: var(--pp-space-1);
+    padding-inline-start: var(--pp-space-1);
+  }
+
+  .pp-combobox__control {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    block-size: var(--pp-size-6);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: var(--_font-size);
+    line-height: var(--pp-line-height-normal);
+    appearance: none;
+  }
+
+  .pp-combobox__control::placeholder {
+    color: var(--pp-input-placeholder-color, var(--pp-color-text-muted));
+    opacity: 1;
+  }
+
+  /* Transparent, not none: the box below is the ring's home. */
+  .pp-combobox__control:focus-visible {
+    outline: var(--pp-focus-ring-width) solid transparent;
+  }
+
+  .pp-combobox:has(.pp-combobox__control:focus-visible) .pp-combobox__box {
+    --_border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-combobox__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    block-size: calc(var(--pp-input-height, var(--_height)) - 2 * var(--pp-border-width-1));
+    padding-inline: var(--pp-space-2);
+    border: 0;
+    background: none;
+    color: var(--pp-color-text-muted);
+    cursor: pointer;
+  }
+
+  .pp-combobox[data-disabled] .pp-combobox__toggle {
+    cursor: default;
+  }
+
+  .pp-combobox__chevron {
+    flex: 0 0 var(--pp-size-4);
+    block-size: var(--pp-size-4);
+    transition: rotate var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  .pp-combobox[data-state="open"] .pp-combobox__chevron {
+    rotate: 180deg;
+  }
+
+  .pp-combobox__token {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pp-space-1);
+    block-size: var(--pp-size-6);
+    padding-inline: var(--pp-space-2) var(--pp-space-1);
+    border-radius: var(--pp-radius-2);
+    background-color: var(--pp-combobox-token-bg, var(--pp-tone-bg));
+    color: var(--pp-tone-text-strong);
+    font-size: var(--pp-font-size-1);
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .pp-combobox__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 var(--pp-size-4);
+    block-size: var(--pp-size-4);
+    padding: 0;
+    border: 0;
+    border-radius: var(--pp-radius-1);
+    background: none;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .pp-combobox__remove > svg {
+    flex: 0 0 var(--pp-size-3);
+    block-size: var(--pp-size-3);
+  }
+
+  .pp-combobox__remove:hover {
+    background-color: var(--pp-tone-bg-hover);
+  }
+
+  .pp-combobox__remove:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: 0;
+  }
+
+  .pp-combobox__list {
+    min-inline-size: var(--radix-popper-anchor-width);
+  }
+
+  .pp-combobox__empty {
+    padding-block: var(--pp-space-2);
+    padding-inline: var(--pp-control-padding-inline-sm);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-control-font-size-sm);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-combobox__box,
+    .pp-combobox__chevron {
+      transition: none;
+    }
+  }
+}

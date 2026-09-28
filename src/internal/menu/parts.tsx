@@ -130,7 +130,8 @@ export interface MenuSubContentProps
 // check, a dash for `indeterminate`, a dot for a radio item, a chevron for a
 // submenu. `currentColor`, so the tone reaches them.
 
-function Check() {
+/** Exported for the Combobox, whose selected option carries the same mark. */
+export function Check() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="m5 12.5 4.5 4.5L19 7" />

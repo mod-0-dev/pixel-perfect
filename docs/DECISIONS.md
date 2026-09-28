@@ -5098,3 +5098,112 @@ what was typed, hidden while closed, and a fresh one empties. 12 unit and
 4 browser tests; five break checks (the chevron's turn, the
 reduced-motion rule, the heading's grid, the `hidden` mirror, `multiple`
 ignored), each caught by its named test.
+
+## D-076 — `Combobox` rulings: the consumer filters and is told why the text changed, a value from outside is named by `getLabel`, one allowance for the list's floor, and the listbox inside a presentation panel
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`,
+`DropdownMenu.css` (the gutter selector), `docs/specs/Combobox.md` (status) ·
+**Extends:** D-061 §1 and §3, D-070 §1, D-072 §2, D-073 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The one Tier 4 component with no primitive under
+its behaviour.
+
+### 1. The consumer renders the options that match, and `onInputValueChange` says why the text changed
+
+The component does not filter: it owns the text, the selection, the open
+state, the highlight and the keyboard, and reports the text. A built-in
+filter would need every label in JavaScript, a match rule, a debounce,
+and would still be wrong for options from a server; rendering the matches
+is one line over an array and makes the server case ordinary.
+
+The first build reported the text alone, and the first test that selected
+an option and reopened the list found one match: the text was the
+selected label, and the consumer had filtered on it. So the callback is
+`onInputValueChange(text, reason)`, `reason` being `input` (typed),
+`select` (set to a label, or cleared, by a selection) or `value`
+(following a value set from outside), and the documented pattern filters
+on `input` only — after a selection the query is empty and a reopened
+list shows everything. Downshift reports the same thing by the same
+name; a combobox that does not filter has exactly this one thing to say.
+
+### 2. A value from outside is named by `getLabel`
+
+An option's label is read from it when it is chosen, which covers every
+selection the user makes. A `defaultValue` or a controlled `value` set by
+a form has no option to read — the list is closed and its children are
+not mounted — so `getLabel(value)` names it, for the input's text and for
+a token, and the value itself is shown without it. A registration
+context cannot help: an unrendered option cannot register. Object values
+(`{ value, label }`) were the alternative and are declined: strings post
+in forms and compare, and a label is asked for only when the option is
+not there.
+
+### 3. The list's floor is Radix's anchor width, one value `.stylelintrc.json` admits
+
+A list narrower than its field is a list that looks unrelated to it;
+`min-inline-size: var(--radix-popper-anchor-width)` is the floor, and the
+menu's ceiling sits above it — where the field is wider than the measure,
+the floor wins, which CSS resolves in the floor's favour by rule. The
+value list for `min-inline-size` allows `0` alone (RULES §1's intent: no
+component sizes itself); the Combobox override admits this one value
+besides, named, because it is the anchor's width and not the
+component's. `DropdownMenu.css`'s gutter selector gains `[role="option"]`
+so a listbox's options align like checkable rows: they can be chosen.
+
+### 4. The listbox sits inside a presentation panel, and the empty row beside it
+
+axe's `aria-required-children` (a real WCAG 1.3.1 failure) fails a
+`listbox` holding anything but options and groups, and the consumer's
+"nothing matches" row has to sit somewhere. So Radix's content — the
+panel DropdownMenu.css draws, which Radix would make a `dialog` — is a
+`presentation` wrapper with its `tabindex` removed, the options go in a
+`listbox` of the panel's own (the input's `aria-controls`, the naming,
+`aria-multiselectable`, `aria-busy`), and any `ComboboxEmpty` among the
+list's children is rendered after it. Found by the axe test's "open with
+only the empty row" case, which is why that case is in the test.
+
+### 5. The listbox is named as its input is
+
+A listbox needs a name (axe's `aria-input-field-name`, and the user's
+ear). Read when the list mounts: the input's `aria-label`, or its
+`aria-labelledby`, or the `<label>` it has — a `Field`'s — by id; and a
+development warning when there is none. No `label` prop on the list: the
+input is already named, and two names for one control drift.
+
+### 6. Focus never leaves the input
+
+The highlight is `aria-activedescendant` on the input and `data-highlighted`
+on the option (D-072 §2's listbox, as promised), moved over the DOM's
+enabled options when a key is pressed — so a consumer's filtering,
+grouping and disabling are honoured with nothing registered — and a move
+asked for before the list is mounted waits for the mount. The list
+refuses `pointerdown`, so a press in it does not blur the field; Radix's
+`onFocusOutside` is prevented outright (focus is always outside the
+content) and `onInteractOutside` when the press is in the box. The
+control's ring is the box's, through `:has()` on the focused input, so a
+token's remove button rings itself.
+
+### 7. Verified
+
+The control is the medium control height, the list is at least the
+control's width under a narrow field and exactly it under a wide one, and
+the highlighted option scrolls into view down a long list; a press in the
+list does not blur the input, a click takes, the box rings for the input
+and a token's button rings itself and removes on `Enter`; a selected
+option is marked in the gutter with every label aligned; the chevron
+turns and is still under reduced motion; `loading` shows the spinner and
+marks the listbox busy until the options arrive; the theme crosses; the
+gallery holds three open lists, each its control's width. 13 unit and 5
+browser tests. Break checks in §8.
+
+### 8. Break checks
+
+Five, each caught by its named test: the list's `pointerdown` refusal
+dropped (a press in the list blurred the input); the floor dropped (the
+list under the narrow field was narrower than it, and the gallery's
+three too); `[role="option"]` dropped from the menu's gutter selector (a
+selected option's mark sat on its label); the scroll-into-view dropped
+(the seventeenth option was highlighted out of view); `getLabel` ignored
+(a value from outside showed as its code, in the input and as a token —
+the unit tests).

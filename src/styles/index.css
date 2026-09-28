@@ -89,6 +89,7 @@
 @import "../components/DropdownMenu/DropdownMenu.css";
 @import "../components/Tabs/Tabs.css";
 @import "../components/Accordion/Accordion.css";
+@import "../components/Combobox/Combobox.css";
 
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";
