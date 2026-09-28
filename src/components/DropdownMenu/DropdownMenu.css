@@ -1,0 +1,185 @@
+/*
+ * DropdownMenu — spec docs/specs/DropdownMenu.md
+ *
+ * THE PANEL IS POPOVER'S BOX WITH A LIST INSIDE. Radix's content node with
+ * our class on it, its positioned wrapper above it reading this element's
+ * `z-index` (4.1 §4); the overlay exception to RULES §1 for the ceiling
+ * (D-061 §3), logically and never past what fits; the theme on this element
+ * (4.1 §3). `.stylelintrc.json` names this file for `max-inline-size`, for
+ * the two `inline-size`s the marks need, and for one `margin-inline-start:
+ * auto` (D-072 §3) — the one that pushes a shortcut or a chevron to the end
+ * of a row whose children are the consumer's.
+ *
+ * ONE STYLESHEET, TWO COMPONENTS (spec §2): 4.8 `ContextMenu` is the same
+ * list opened from a right-click, and its parts carry these classes first
+ * and their own second, the D-070 §1 contract.
+ *
+ * THE ROW IS THE SMALL CONTROL (spec §3): a menu is a dense list read top to
+ * bottom, and eight rows at the medium height is a 320px column.
+ *
+ * THE GUTTER EXISTS ONLY WHERE A MARK CAN APPEAR (spec §7): `:has()` on the
+ * panel insets every row of a menu that holds a checkable item, so labels
+ * align down the whole list, and a menu of plain commands keeps its edge.
+ * `:has()` is in every browserslist target and `Select` and `Radio` use it
+ * already.
+ *
+ * THE HIGHLIGHT IS A FILL, THE RING IS FOR THE KEYBOARD (spec §7): Radix
+ * writes `data-highlighted` on the row the pointer is over or the arrows
+ * reached and moves focus to it. The fill is the soft Button's hover pair;
+ * `:focus-visible` adds the ring, inset, and the browser's own heuristic
+ * keeps it off pointer-driven focus. No `outline: none` anywhere here.
+ *
+ * The vendor custom properties read below — `--radix-popper-*` — are Radix's
+ * positioning data, consumed here and named nowhere a consumer would write
+ * them (4.1 §5).
+ */
+
+@layer pp.components {
+  .pp-dropdown-menu {
+    --_bg: var(--pp-color-bg-raised);
+    --_border: var(--pp-color-border-subtle);
+    --_padding: var(--pp-dropdown-menu-padding, var(--pp-space-1));
+    --_row: var(--pp-dropdown-menu-item-height, var(--pp-control-height-sm));
+    --_inline: var(--pp-control-padding-inline-sm);
+    --_mark: var(--pp-size-4);
+
+    /* Above everything in flow, below a modal's scrim (4.1 §4). */
+    z-index: var(--pp-z-popover);
+
+    /* hug: sized by its longest row, up to the ceiling; scrolls inside
+       itself when taller than the space (D-061 §3). */
+    max-inline-size: min(
+      var(--pp-dropdown-menu-max-inline-size, var(--pp-measure-xs)),
+      var(--radix-popper-available-width)
+    );
+    max-block-size: var(--radix-popper-available-height);
+    overflow: auto;
+    padding: var(--_padding);
+    border: var(--pp-border-width-1) solid var(--pp-dropdown-menu-border-color, var(--_border));
+    border-radius: var(--pp-dropdown-menu-radius, var(--pp-radius-3));
+    background-color: var(--pp-dropdown-menu-bg, var(--_bg));
+    color: var(--pp-color-text);
+    box-shadow: var(--pp-dropdown-menu-shadow, var(--pp-shadow-3));
+    transform-origin: var(--radix-popper-transform-origin);
+    animation: pp-dropdown-menu-in var(--pp-duration-fast) var(--pp-easing-decelerate);
+  }
+
+  .pp-dropdown-menu[data-state="closed"] {
+    animation: pp-dropdown-menu-out var(--pp-duration-fast) var(--pp-easing-accelerate);
+  }
+
+  /* `none`, not a crushed duration, so Presence unmounts at once (D-062 §5). */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-dropdown-menu,
+    .pp-dropdown-menu[data-state="closed"] {
+      animation: none;
+    }
+  }
+
+  /* The gutter: the inline padding, the mark, and the gap between them. */
+  .pp-dropdown-menu:has([role="menuitemcheckbox"], [role="menuitemradio"]) {
+    --_gutter: calc(var(--_inline) + var(--_mark) + var(--pp-control-gap-sm));
+  }
+
+  .pp-dropdown-menu__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--pp-control-gap-sm);
+    min-block-size: var(--_row);
+    padding-inline: var(--_gutter, var(--_inline)) var(--_inline);
+    border-radius: var(--pp-dropdown-menu-item-radius, var(--pp-radius-2));
+    color: var(--pp-tone-text-strong);
+    font-size: var(--pp-control-font-size-sm);
+    line-height: var(--pp-line-height-tight);
+    cursor: default;
+    user-select: none;
+  }
+
+  .pp-dropdown-menu__item[data-highlighted],
+  .pp-dropdown-menu__sub-trigger[data-state="open"] {
+    background-color: var(--pp-tone-bg-hover);
+  }
+
+  .pp-dropdown-menu__item[data-disabled] {
+    color: var(--pp-color-text-disabled);
+  }
+
+  /* Inset, so the panel's `overflow: auto` cannot clip it. */
+  .pp-dropdown-menu__item:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  /* The mark, in the gutter, on the row's centre line. */
+  .pp-dropdown-menu__indicator {
+    position: absolute;
+    inset-inline-start: var(--_inline);
+    inset-block: 0;
+    display: inline-flex;
+    align-items: center;
+    inline-size: var(--_mark);
+  }
+
+  .pp-dropdown-menu__indicator > svg {
+    inline-size: var(--_mark);
+    block-size: var(--_mark);
+  }
+
+  .pp-dropdown-menu__label {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--pp-size-6);
+    padding-inline: var(--_gutter, var(--_inline)) var(--_inline);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-1);
+    font-weight: var(--pp-font-weight-medium);
+    line-height: var(--pp-line-height-tight);
+  }
+
+  /* A hairline with a step of space above and below, and no margin (RULES
+     §2): the box is the padding, and the background paints the content
+     box only. */
+  .pp-dropdown-menu__separator {
+    box-sizing: content-box;
+    block-size: var(--pp-border-width-1);
+    padding-block: var(--pp-space-1);
+    background-clip: content-box;
+    background-color: var(--pp-dropdown-menu-border-color, var(--_border));
+  }
+
+  .pp-dropdown-menu__shortcut {
+    margin-inline-start: auto;
+    padding-inline-start: var(--pp-space-4);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-1);
+  }
+
+  .pp-dropdown-menu__chevron {
+    flex: none;
+    margin-inline-start: auto;
+    inline-size: var(--_mark);
+    block-size: var(--_mark);
+    color: var(--pp-color-text-muted);
+  }
+
+  /* Radix writes the root's `dir` on the panel; the chevron points into the
+     submenu, which in a right-to-left page is on the left. */
+  .pp-dropdown-menu[dir="rtl"] .pp-dropdown-menu__chevron {
+    scale: -1 1;
+  }
+
+  @keyframes pp-dropdown-menu-in {
+    from {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+
+  @keyframes pp-dropdown-menu-out {
+    to {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+}

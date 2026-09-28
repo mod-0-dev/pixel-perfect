@@ -162,6 +162,41 @@ export {
 } from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
 export { Switch, type SwitchProps } from './components/Switch/Switch';
+export {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuItemIndicator,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+  type DropdownMenuAlign,
+  type DropdownMenuCheckboxItemProps,
+  type DropdownMenuContentProps,
+  type DropdownMenuGroupProps,
+  type DropdownMenuItemIndicatorProps,
+  type DropdownMenuItemProps,
+  type DropdownMenuItemTone,
+  type DropdownMenuLabelProps,
+  type DropdownMenuProps,
+  type DropdownMenuRadioGroupProps,
+  type DropdownMenuRadioItemProps,
+  type DropdownMenuSeparatorProps,
+  type DropdownMenuShortcutProps,
+  type DropdownMenuSide,
+  type DropdownMenuSubContentProps,
+  type DropdownMenuSubProps,
+  type DropdownMenuSubTriggerProps,
+  type DropdownMenuTriggerProps,
+} from './components/DropdownMenu/DropdownMenu';
 export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
 export {
   Tooltip,

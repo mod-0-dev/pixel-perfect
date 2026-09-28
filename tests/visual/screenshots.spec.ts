@@ -54,6 +54,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'dialog', path: '/components/dialog' },
   { name: 'alert-dialog', path: '/components/alert-dialog' },
   { name: 'drawer', path: '/components/drawer' },
+  { name: 'dropdown-menu', path: '/components/dropdown-menu' },
   { name: 'alert', path: '/components/alert' },
 ];
 

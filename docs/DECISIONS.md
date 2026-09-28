@@ -4668,3 +4668,126 @@ the gallery holds three, contained. 14 unit and 7 browser tests; four
 browser break checks (`justify-items: right` dropped, `resolveSide`
 pinned to LTR, the side drawers' `inline-size` dropped, the reduced-motion
 rule dropped), each caught by its named test.
+
+## D-072 — `DropdownMenu` rulings: `align` starts, `data-highlighted` joins RULES §4, and one stylesheet's three allowances
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §4
+(the attribute list), `.stylelintrc.json`, `docs/specs/DropdownMenu.md`
+(status) · **Extends:** D-061 §3 and §5, D-062 §2, D-070 §1, D-071 §3 and §6
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. Three rulings the spec relies on, then the
+findings.
+
+### 1. A menu's `align` defaults to `start`
+
+The tier's table (4.1 §5) gives `align` the default `center`, and `Popover`
+took it. A menu is a list read from its start edge: centred under a short
+trigger its labels begin left of the button and its far edge hangs past
+it, and every native menu hangs from the trigger's start edge. So
+`DropdownMenuContent` defaults `align` to `start` — the one component
+default that departs from the table, and the table's own words allow it
+("per component"). `side` stays `bottom`, `sideOffset` is one step (four
+pixels: a list belongs to its button more closely than a panel does).
+
+### 2. `data-highlighted` is the fifth data attribute of RULES §4
+
+Radix writes `data-highlighted` on the row the pointer is over or the
+arrow keys reached, and moves DOM focus there. RULES §4 named eight
+attributes and the `data-state` values; the highlighted row is a state
+none of them carries, and it cannot ride on `data-state`, because a
+checkable row's `data-state` is `checked | unchecked | indeterminate`.
+Added to the list, for a menu now and a listbox (4.11) later: the row's
+highlight is one attribute, wherever a row can be highlighted. Styled as
+the soft Button's hover pair, and the focus ring joins it under
+`:focus-visible` — the browser's heuristic keeps the ring off
+pointer-driven focus, so a mouse user sees the fill alone and a keyboard
+user sees both. No `outline: none` was needed anywhere.
+
+### 3. Three allowances for one stylesheet, and why each
+
+`.stylelintrc.json` gains a `DropdownMenu.css` override: `max-inline-size`
+(the overlay exception, D-061 §3, as for Popover), `inline-size` (the two
+marks — the check, the dot — and the chevron are sized boxes, as Icon's
+and Checkbox's are, D-019's shape), and `margin-inline-start: auto`,
+which no component file had. The shortcut and the chevron sit at the end
+of a row whose *other* children are the consumer's, in any number, so
+neither a grid template nor `justify-content` can place them without
+wrapping what the consumer wrote; `auto` on the trailing child is the one
+declaration that does, and Container's override already admits `auto` for
+the same reason (centring is a margin's job). RULES §2's "no outer
+margins" is about a component's own edges, and this margin is inside one.
+
+### 4. The gutter exists only where a mark can appear
+
+A menu mixing plain and checkable rows must align its labels, and a menu
+of plain commands must not carry an empty column. `:has()` on the panel —
+`.pp-dropdown-menu:has([role="menuitemcheckbox"], [role="menuitemradio"])`
+— sets one custom property that every row and label read as their
+start padding. `:has()` is in every browserslist target and `Select` and
+`Radio` used it first. The browser suite measures both menus: eight pixels
+in the plain one, twenty-eight in the mixed one, on every row and label.
+
+### 5. The direction goes up to the root as Radix's `dir`
+
+For a popover the direction resolves one prop. For a menu it decides which
+arrow key opens a submenu, which closes it, which side the submenu appears
+on and how the roving focus group reads its keys — all of them Radix's,
+all keyed on the root's `dir`, which Radix otherwise assumes `ltr`. So the
+root holds `dir` as state and the content, mounted on open (D-071 §3),
+reads `directionOf(trigger)` in a layout effect and sets it. The RTL row
+of the playground opens its submenu to the left on `ArrowLeft`, its
+chevron flipped by the `dir` Radix writes on the panel, with nothing said
+by the caller. `SubContent`'s `alignOffset` is minus its own top edge
+(border and padding, read from the element), so the first sub-item sits on
+its trigger's row whatever `--pp-dropdown-menu-padding` a consumer set.
+
+### 6. The uncontrolled half is ours
+
+Radix's `CheckboxItem` and `RadioGroup` are controlled-only. RULES §5.5 has
+no exceptions, so both take `defaultChecked` / `defaultValue` through
+`useControllableState`, the Tier 3 hook, and the indicator reads the
+resolved value from a context of ours rather than from Radix's — which is
+also what lets an indicator with no children draw the right mark (check,
+dash, dot) for the row it is in.
+
+### 7. Findings from the build
+
+- **A key pressed before the entry focus lands is lost.** Radix focuses the
+  first item a frame after the list mounts (its roving group's entry
+  focus); the browser tests' opener now waits for that focus before it
+  returns, or the next `ArrowDown` reaches the wrong row. Same shape as
+  D-065's `focusToOpen`.
+- **A modal menu hides the trigger from role queries** while it is open
+  (D-068 §4 again): the opener returns a CSS locator, and the unit test for
+  a controlled menu reads the trigger's text, not its role. The docs page
+  says so under "Testing in jsdom".
+- **axe's `region` rule flags any portalled menu** — the list lands in
+  `<body>` outside every landmark, and unlike a `dialog` a `menu` is not
+  exempt. Disabled for the open-menu check, with the reason in the test and
+  on the docs page; the rules that matter (roles, names, `aria-*`) run.
+
+### 8. Verified
+
+The z-index token reaches Radix's wrapper and the list is named by its
+trigger; `align="start"` puts the list on the trigger's start edge four
+pixels below it; every row is 32px, a plain menu has no gutter and a mixed
+one insets rows and labels alike with the mark in the gutter on the row's
+centre line; the highlighted row is the hover token resolved and typeahead
+moves it; the submenu opens on `ArrowRight` to the right in LTR and on
+`ArrowLeft` to the left in RTL, its first item on its trigger's row, the
+chevron flipped; `Enter` activates, closes and returns focus; an outside
+press on a modal menu closes it and does not land; a long label wraps in
+the ceiling and a long list scrolls itself with the page still; the theme
+crosses; the gallery holds three. 16 unit and 10 browser tests. Break
+checks in §9.
+
+### 9. Break checks
+
+Five, each caught by its named test: the `dir` hand-off dropped (the RTL
+submenu opened on the wrong key, `toHaveCount` on the submenu failed); the
+`:has()` gutter dropped (the alignment test and the gallery's inset); the
+ceiling dropped (the long label ran past the measure); the reduced-motion
+rule dropped (`animationName` was the keyframe); the submenu's
+`alignOffset` zeroed (the first sub-item four pixels below its trigger's
+row). The tone attribute's break is a unit test's (`data-pp-tone`).

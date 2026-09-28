@@ -86,6 +86,7 @@
 @import "../components/Dialog/Dialog.css";
 @import "../components/AlertDialog/AlertDialog.css";
 @import "../components/Drawer/Drawer.css";
+@import "../components/DropdownMenu/DropdownMenu.css";
 
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";

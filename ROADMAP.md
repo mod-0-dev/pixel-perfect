@@ -95,9 +95,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight: 4.5 `AlertDialog` and 4.6 `Drawer` (both `review`, waiting
-  only on their CI-authored baselines, D-069 §2) and the batch that
-  follows them.** Under the standing delegation of D-069 §1 the rest of
+- **In flight: 4.5 `AlertDialog`, 4.6 `Drawer` and 4.7 `DropdownMenu` (all
+  `review`, waiting only on their CI-authored baselines, D-069 §2) and the
+  batch that follows them.** Under the standing delegation of D-069 §1 the rest of
   Tier 4 is built in sequence, one in `build` at a time, each moved to
   `review` with every box but the baseline checked, and one authoring run
   at the end of the PR closes them together. 4.5 is `Dialog` with two
@@ -105,8 +105,11 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   package, with the anchored axis a token (D-071 §1, §2). Building 4.6
   found that Radix's scroll lock strips a padded `<body>` of its gutter
   while any modal is open, shifting the page (D-071 §6): the playground
-  pads a wrapper now, and the gap is documented on the Dialog page. Next
-  up is **4.7 `DropdownMenu`**. **4.4 `Dialog` is `done`** (2026-09-27): built
+  pads a wrapper now, and the gap is documented on the Dialog page. 4.7 is
+  the tier's first list of commands: Radix's menu with the direction read
+  from the trigger at open time, `align` starting, and a gutter only where
+  a mark can appear (D-072). Next up is **4.8 `ContextMenu`**, the same
+  list from a right-click, on 4.7's stylesheet. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -883,7 +886,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.4 | `Dialog` | `done` | hug | client | 4.1 | [`Dialog.md`](docs/specs/Dialog.md), approved by delegation 2026-09-27 (D-067), every one of its eight recommendations adopted as written; built the same day, findings in D-068; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 139, D-013). The first modal, and the one 4.5, 4.6 and 4.14 gate on. Modal only, no `modal` prop; the scrim is Radix's `Overlay` rendered by `Content` and is the panel's parent — positioner and scroll container in one, centred by a grid so RTL needs nothing; ceiling `--pp-measure-sm`, no `size`; `aria-modal` and a focus restore for a trigger-less dialog are the two things added over Radix; the gallery portals into `contain: layout` cells, so a cell is a viewport |
 | 4.5 | `AlertDialog` | `review` | hug | client | 4.4 | [`AlertDialog.md`](docs/specs/AlertDialog.md), written and built 2026-09-28 under the standing delegation (D-069); findings in D-070. `Dialog` with two rules changed — no close on a scrim press, focus on `Cancel` — drawn by Dialog's stylesheet through two classes per part; ceiling `--pp-measure-xs`. In `review` for the CI-authored baseline only, which does not hold the WIP limit (D-069 §2) |
 | 4.6 | `Drawer` | `review` | hug | client | 4.4 | [`Drawer.md`](docs/specs/Drawer.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-071. A modal sheet from one of four logical sides, built on Radix's dialog (no new package) and drawn on Dialog's scrim; the anchored axis is a token, `--pp-drawer-size`, and the panel scrolls, not the scrim. The build found Radix's scroll lock stripping a padded `<body>` of its gutter (D-071 §6): the playground now pads a wrapper, and the Dialog page documents the gap. In `review` for the CI-authored baseline only (D-069 §2) |
-| 4.7 | `DropdownMenu` | `planned` | hug | client | 4.2 | Typeahead, submenus |
+| 4.7 | `DropdownMenu` | `review` | hug | client | 4.2 | [`DropdownMenu.md`](docs/specs/DropdownMenu.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-072. Typeahead and submenus are Radix's; the direction is read from the trigger at open time and handed to Radix as `dir`, so the arrow keys and the submenu's side read correctly in RTL. Fifteen named parts; `align` defaults to `start` (D-072 §1); rows are the small control height; a checkable item earns the list its gutter by `:has()`; `data-highlighted` joins RULES §4 (D-072 §2). The stylesheet is shared with 4.8. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.8 | `ContextMenu` | `planned` | hug | client | 4.7 | |
 | 4.9 | `Tabs` | `planned` | fill | client | T3 | |
 | 4.10 | `Accordion` | `planned` | fill | client | T3 | |

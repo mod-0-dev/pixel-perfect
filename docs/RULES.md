@@ -123,7 +123,9 @@ drilling and without knowing our internals:
 
 `data-state="open|closed|checked|unchecked|indeterminate"`, `data-disabled`,
 `data-invalid`, `data-loading`, `data-readonly`, `data-orientation`,
-`data-side`, `data-align`.
+`data-side`, `data-align`, `data-highlighted` (the row of a menu or a
+listbox the pointer is over or the arrow keys reached — a state of its own,
+because the row's `data-state` is its checked state, D-072 §2).
 
 Style off these attributes internally too. If our own CSS needs a boolean class
 that consumers can't see, we got the API wrong.

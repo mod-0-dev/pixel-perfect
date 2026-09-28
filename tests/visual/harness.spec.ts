@@ -5403,3 +5403,249 @@ test.describe('Drawer', () => {
     expect(Math.abs(read[2]!.width - 320)).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('DropdownMenu', () => {
+  type Page = import('@playwright/test').Page;
+  /* The Matrix gallery keeps three non-modal menus open for the screenshot,
+     marked `data-gallery`; a submenu is a second `.pp-dropdown-menu`. */
+  const panel = (page: Page) => page.locator('.pp-dropdown-menu:not([data-gallery]):not(.pp-dropdown-menu__sub)');
+  const sub = (page: Page) => page.locator('.pp-dropdown-menu__sub');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="dropdown-menu-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  /* Opened from the keyboard, and not returned until the entry focus has
+     landed on the first item: a key pressed before that is lost. The trigger
+     comes back as a CSS locator — a modal menu hides the rest of the page
+     from assistive tech, so a role query cannot see it while the menu is
+     open (D-068 §4). */
+  const openActions = async (page: Page, id = 'actions') => {
+    const trigger = demo(page, id).locator('button').first();
+    await expect(trigger).toHaveAccessibleName('More');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('ArrowDown');
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el.getByRole('menuitem').first()).toBeFocused();
+    return { trigger, el };
+  };
+
+  test('the z-index token reaches the element that stacks, and the list is named by its trigger', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    await expect(page.getByRole('menu', { name: 'More' })).toBeVisible();
+    const read = await el.evaluate((n) => ({
+      panel: getComputedStyle(n).zIndex,
+      token: getComputedStyle(n).getPropertyValue('--pp-z-popover').trim(),
+      wrapper: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+      animation: getComputedStyle(n).animationName,
+    }));
+    expect(read.panel).toBe(read.token);
+    expect(read.wrapper, "Radix's wrapper did not take the panel's z-index").toBe(read.token);
+    expect(read.animation, 'not still under reduced motion').toBe('none');
+  });
+
+  test('align="start" puts the list on the trigger\'s start edge, one space step below it', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { trigger, el } = await openActions(page);
+    await expect(el).toHaveAttribute('data-side', 'bottom');
+    await expect(el).toHaveAttribute('data-align', 'start');
+    const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
+    const step = await px(page, '--pp-space-1');
+    expect(step).toBe(4);
+    expect(Math.abs(p!.x - t!.x), 'the start edges differ').toBeLessThanOrEqual(1);
+    expect(Math.abs(p!.y - (t!.y + t!.height) - step), 'the gap is not the token').toBeLessThanOrEqual(1);
+  });
+
+  test('a row is the small control height; a plain menu has no gutter and a checkable one insets every row alike', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    const height = await px(page, '--pp-control-height-sm');
+    const inline = await px(page, '--pp-control-padding-inline-sm');
+    expect(height).toBe(32);
+    const rows = el.locator('.pp-dropdown-menu__item');
+    const plain = await rows.evaluateAll((els) =>
+      els.map((n) => ({ h: n.getBoundingClientRect().height, start: parseFloat(getComputedStyle(n).paddingInlineStart) })),
+    );
+    expect(plain.length).toBeGreaterThan(3);
+    expect(plain.every((r) => Math.abs(r.h - height) <= 1), JSON.stringify(plain)).toBe(true);
+    expect(plain.every((r) => r.start === inline), 'a plain menu carries a gutter').toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+
+    const view = demo(page, 'view').getByRole('button', { name: 'View' });
+    await view.scrollIntoViewIfNeeded();
+    await view.click();
+    await expect(el).toBeVisible();
+    const mixed = await el.locator('.pp-dropdown-menu__item, .pp-dropdown-menu__label').evaluateAll((els) =>
+      els.map((n) => ({ role: n.getAttribute('role'), start: parseFloat(getComputedStyle(n).paddingInlineStart) })),
+    );
+    const starts = new Set(mixed.map((r) => r.start));
+    expect(starts.size, `rows and labels do not share one inset: ${JSON.stringify(mixed)}`).toBe(1);
+    const mark = await px(page, '--pp-size-4');
+    const gap = await px(page, '--pp-control-gap-sm');
+    expect([...starts][0]).toBe(inline + mark + gap);
+    // The plain item at the end of a checkable menu is inset like the rest.
+    expect(mixed.find((r) => r.role === 'menuitem')?.start).toBe(inline + mark + gap);
+    // The mark sits in the gutter, on the row's centre line.
+    const checked = el.locator('[role="menuitemradio"][aria-checked="true"]');
+    const [row, ind] = await Promise.all([checked.boundingBox(), checked.locator('.pp-dropdown-menu__indicator').boundingBox()]);
+    expect(Math.abs(ind!.x - (row!.x + inline))).toBeLessThanOrEqual(1);
+    expect(Math.abs(ind!.y + ind!.height / 2 - (row!.y + row!.height / 2))).toBeLessThanOrEqual(1);
+  });
+
+  test('the highlighted row is the hover token, resolved; typeahead moves it', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    const rename = el.getByRole('menuitem', { name: 'Rename' });
+    await expect(rename).toBeFocused();
+    await expect(rename).toHaveAttribute('data-highlighted', '');
+    const read = await rename.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      token: getComputedStyle(n).getPropertyValue('--pp-tone-bg-hover').trim(),
+    }));
+    const expected = await rename.evaluate((n, token) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = token;
+      n.appendChild(probe);
+      const bg = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return bg;
+    }, read.token);
+    expect(read.bg).toBe(expected);
+    await page.keyboard.type('d');
+    await expect(el.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+    await expect(rename).not.toHaveAttribute('data-highlighted', '');
+  });
+
+  test('the submenu opens on ArrowRight in LTR, to the right, its first item on the trigger\'s row; ArrowLeft in RTL, to the left', async ({
+    page,
+  }) => {
+    await page.goto('/components/dropdown-menu');
+    for (const [id, rtl] of [
+      ['actions', false],
+      ['actions-rtl', true],
+    ] as const) {
+      const { el } = await openActions(page, id);
+      // Radix's roving focus moves focus on a timeout after the key, so each
+      // arrow is waited out before the next (D-072 §7).
+      await page.keyboard.press('ArrowDown');
+      await expect(el.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+      await page.keyboard.press('ArrowDown');
+      const trigger = el.getByRole('menuitem', { name: 'Move to' });
+      await expect(trigger).toBeFocused();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // The wrong key does nothing.
+      await page.keyboard.press(rtl ? 'ArrowRight' : 'ArrowLeft');
+      await expect(sub(page)).toHaveCount(0);
+      await page.keyboard.press(rtl ? 'ArrowLeft' : 'ArrowRight');
+      const s = sub(page);
+      await expect(s).toBeVisible();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      const first = s.getByRole('menuitem', { name: 'Archive' });
+      await expect(first).toBeFocused();
+      await expect(s).toHaveAttribute('data-side', rtl ? 'left' : 'right');
+      const [t, sp, f] = await Promise.all([trigger.boundingBox(), placedBox(s), first.boundingBox()]);
+      if (rtl) {
+        expect(sp!.x + sp!.width, `${id}: the submenu is not on the left`).toBeLessThanOrEqual(t!.x + 1);
+      } else {
+        expect(sp!.x, `${id}: the submenu is not on the right`).toBeGreaterThanOrEqual(t!.x + t!.width - 1);
+      }
+      expect(Math.abs(f!.y - t!.y), `${id}: the first sub-item is not on its trigger's row`).toBeLessThanOrEqual(1);
+      // The chevron points into the submenu.
+      const flipped = await trigger.locator('.pp-dropdown-menu__chevron').evaluate((n) => getComputedStyle(n).scale);
+      expect(flipped).toBe(rtl ? '-1 1' : 'none');
+      await page.keyboard.press(rtl ? 'ArrowRight' : 'ArrowLeft');
+      await expect(s).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+  });
+
+  test('Enter activates an item, closes the menu and returns focus to the trigger', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { trigger, el } = await openActions(page);
+    await page.keyboard.press('ArrowDown');
+    await expect(el.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(el).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    await expect(demo(page, 'actions').locator('xpath=..')).toContainText('last: duplicate');
+  });
+
+  test('a press outside a modal menu closes it and does not land', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const trigger = demo(page, 'outside').getByRole('button', { name: 'Open' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const target = page.getByTestId('dropdown-menu-outside-target');
+    const box = (await target.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(el).toHaveCount(0);
+    await expect(target.locator('xpath=../..')).toContainText('outside clicked 0×');
+  });
+
+  test('a long label wraps inside the ceiling and a long list scrolls inside itself', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const trigger = demo(page, 'long').getByRole('button', { name: 'Workspaces' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const before = await page.evaluate(() => window.scrollY);
+    const box = await placedBox(el);
+    const ceiling = await px(page, '--pp-measure-xs');
+    expect(box!.width).toBeLessThanOrEqual(ceiling + 1);
+    const metrics = await el.evaluate((n) => ({ scroll: n.scrollHeight, client: n.clientHeight }));
+    expect(metrics.scroll, 'the list did not overflow').toBeGreaterThan(metrics.client);
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => el.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled under the menu').toBe(before);
+  });
+
+  test('the theme crosses the portal, in resolved colour', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    const lightBg = await el.evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+    const region = demo(page, 'theme');
+    const trigger = region.getByRole('button', { name: 'Open here' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    await expect(el).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="dropdown-menu-theme"]') !== null,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg).not.toBe(lightBg);
+    expect(read.raised).toBe(await region.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three, each beside its trigger, with the gutter its checkable item earns', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const panels = page.locator('.pp-dropdown-menu[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => ({
+        state: el.getAttribute('data-state'),
+        items: el.querySelectorAll('.pp-dropdown-menu__item').length,
+        inset: parseFloat(getComputedStyle(el.querySelector('.pp-dropdown-menu__item') as HTMLElement).paddingInlineStart),
+        marks: el.querySelectorAll('.pp-dropdown-menu__indicator').length,
+      })),
+    );
+    expect(read.every((r) => r.state === 'open' && r.items === 4 && r.marks === 1 && r.inset > 8), JSON.stringify(read)).toBe(true);
+  });
+});

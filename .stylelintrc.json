@@ -304,6 +304,48 @@
           ]
         }
       }
+    },
+    {
+      "files": [
+        "src/components/DropdownMenu/**/*.css"
+      ],
+      "rules": {
+        "property-disallowed-list": [
+          "width",
+          "min-width",
+          "max-width",
+          "float",
+          "clear",
+          "left",
+          "right",
+          "padding-left",
+          "padding-right",
+          "border-left",
+          "border-right",
+          "border-left-width",
+          "border-right-width",
+          "border-left-color",
+          "border-right-color",
+          "border-left-style",
+          "border-right-style",
+          "margin-top",
+          "margin-right",
+          "margin-bottom",
+          "margin-left"
+        ],
+        "declaration-property-value-allowed-list": {
+          "min-inline-size": [
+            "0"
+          ],
+          "/^margin(-(inline|block)(-(start|end))?)?$/": [
+            "0"
+          ],
+          "margin-inline-start": [
+            "0",
+            "auto"
+          ]
+        }
+      }
     }
   ]
 }

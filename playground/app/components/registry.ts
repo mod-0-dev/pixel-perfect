@@ -73,5 +73,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'dialog', name: 'Dialog', tier: '4.4', summary: 'A modal window over an inert page; the scrim centres it and scrolls.' },
   { slug: 'alert-dialog', name: 'AlertDialog', tier: '4.5', summary: 'A decision the user must make; the scrim does not dismiss it.' },
   { slug: 'drawer', name: 'Drawer', tier: '4.6', summary: 'A modal sheet from an edge of the viewport, sized by a token.' },
+  { slug: 'dropdown-menu', name: 'DropdownMenu', tier: '4.7', summary: 'A list of commands under its trigger; arrows, typeahead, submenus.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];
