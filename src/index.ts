@@ -68,6 +68,21 @@ export {
   type DialogTriggerProps,
 } from './components/Dialog/Dialog';
 export {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+  DrawerTrigger,
+  type DrawerCloseProps,
+  type DrawerContentProps,
+  type DrawerDescriptionProps,
+  type DrawerProps,
+  type DrawerSide,
+  type DrawerTitleProps,
+  type DrawerTriggerProps,
+} from './components/Drawer/Drawer';
+export {
   Field,
   useField,
   type FieldContextValue,

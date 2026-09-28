@@ -4546,3 +4546,125 @@ passes with no rule disabled on `role="alertdialog"`. The chunk holding
 `@radix-ui/react-alert-dialog` (14,028 bytes) is referenced by the
 AlertDialog page's payload only. 13 unit and 5 browser assertions; one
 browser break and two unit breaks, each caught by its named test.
+
+## D-071 — `Drawer` rulings and build findings: a token on the anchored axis, no new package, and Radix's scroll lock strips a padded body of its gutter
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Drawer.md`
+(status), the playground's root layout · **Extends:** D-061 §3 (the overlay
+sizing exception), D-067 §2, D-068, D-070 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. Two rulings the spec relies on, then the findings.
+
+### 1. The anchored axis is a token, not the content's
+
+D-061 §3 lets an overlay take a `max-inline-size` from the measure scale
+because nothing in flow constrains a portalled box. A sheet needs the
+exception one step further: an edge-anchored panel has one dimension the
+viewport gives it (a side drawer is the full height) and one that must be
+*chosen* — and a hug panel around a navigation list, a `Stack` of `fill`
+items, would be as wide as its longest label. So `.pp-drawer` declares
+`inline-size: min(var(--pp-drawer-size, var(--pp-measure-xs)), 100%)` for
+`start` / `end`, and `block-size: min(var(--pp-drawer-size, 50%), 100%)`
+for `top` / `bottom`: a length on the anchored axis, logical, from the
+measure scale, capped at the scrim. `.stylelintrc.json` names `Drawer.css`
+in the group allowed `inline-size` and `block-size`, the D-019 shape. The
+tokens are the escape; there is no `size` prop, for Dialog §3's reason.
+
+### 2. No new package: a drawer is Dialog's primitive, placed
+
+Radix has no drawer. 4.1 §2's "one package per component" was written for
+primitives Radix has; for one it does not, the reading is: build on the
+package the nearest component already brought in, when the semantics are
+its semantics. A drawer is a modal dialog with a different placement —
+same role, trap, lock, layer and escape — so it is `@radix-ui/react-dialog`
+with its scrim carrying `pp-dialog__scrim pp-drawer__scrim` (D-070 §1's
+two-class contract), so Dialog.css draws the viewport box, the layer, the
+fill, the fade and the scrim's reduced-motion rule, and `Drawer.css`
+changes only the placement, the gutter and the panel. A third-party
+drawer with drag physics (vaul) was the alternative and is declined: a
+drag-to-dismiss gesture is a surface of its own, and the primitive is
+already the drawer minus placement. The build adds no chunk: the Drawer
+page's payload references the chunk Dialog's does.
+
+### 3. The side resolves at open time, so the thing that resolves it mounts at open time
+
+`start` / `end` resolve against the trigger's direction (4.1 §5). The first
+draft resolved them in `DrawerContent`, which is mounted with the page,
+so a `dir` set after load — the RTL browser test sets one — never reached
+it, and `start` was on the left in a right-to-left page. The surface
+(scrim and panel) is now one component rendered as the portal's child, so
+it mounts when the drawer opens; it resolves the side in a layout effect
+on mount, before paint. The rule for the tier: **resolve a logical side
+in a component that mounts on open, never in one that mounts with the
+page.** `Popover` and `Tooltip` were never exposed — Radix positions them
+on open — but a placement this component owns is its own to time.
+
+### 4. Radix's focus scope skips links when it auto-focuses on mount
+
+A navigation drawer's first tabbable is a link, and Radix's `FocusScope`
+removes links from its mount-autofocus candidates (`removeLinks`), so the
+first focus is the first *button* — here, `Close`. The APG asks for the
+first focusable; Radix's reading is that a link auto-focused and then
+`Enter`-ed navigates away from a dialog the user did not read, which is
+defensible, and it is what every other Radix dialog does. Recorded, not
+fought: the unit and browser tests expect `Close`, and the docs page says
+where focus lands. A consumer who wants the link takes `onOpenAutoFocus`.
+
+### 5. The reduced-motion rule needs the side in its selector
+
+`Drawer.css` sets the entry animation per `[data-side]` at (0,2,0). The
+first draft's reduced-motion rule was a bare `.pp-drawer { animation:
+none }` at (0,1,0), which lost, and two tests said so: the motion test
+read a keyframe name, and the gallery test measured a panel mid-slide.
+The rule is now `.pp-drawer[data-side], .pp-drawer[data-state="closed"][data-side]`.
+Same lesson as D-062 §5 from the other side: an `animation` set on a
+qualified selector must be unset on one at least as qualified.
+
+### 6. Radix's scroll lock rewrites a padded body's gutter to zero
+
+Every Radix modal mounts `react-remove-scroll`, whose scrollbar
+compensation styles `body[data-scroll-locked]`. In its default gap mode
+it reads the body's **margins** and writes them as the body's **top, left
+and right padding** (`padding-left: 0px; padding-top: 0px; padding-right:
+0px` for the usual `margin: 0`), plus `position: relative`. A page that
+carries its gutter on `<body>` — the playground did, `padding:
+var(--pp-space-6)` — loses it while a Dialog, AlertDialog or Drawer is
+open: the content shifts up and left by the gutter, the document shrinks
+by it, and a page scrolled to its end has its `scrollY` clamped. The
+Drawer's tall-panel test caught it as the clamp (the trigger sits at the
+bottom of the page); Dialog's counterpart never scrolled that far and
+never saw it, and neither did the eye, because the scrim covers the shift.
+
+Three things follow. The library cannot undo it: no CSS can restore an
+author's declared value from another rule, and Radix's dialog exposes no
+`RemoveScroll` option. The playground pads a wrapper (`.shell`, the body's
+former padding box, so every baseline's geometry is unchanged) and the
+body has `padding: 0`. And the Dialog docs page — the one AlertDialog's
+and Drawer's defer to — records the gap next to the RTL scrollbar one:
+**put the page gutter on a wrapper inside the body, never on the body.**
+The Drawer's tall test now also asserts the document's height across the
+open, so a future lock that shrinks the page fails by name.
+
+### 7. The facing edge is an inset shadow
+
+The edge a drawer shows the page carries a hairline; the edge on the
+viewport is flush. That is one physical border side (`border-left` for a
+drawer on the right), and RULES §1 bans the physical border properties
+with no logical spelling of "the edge away from the viewport". So the
+hairline is an inset `box-shadow` of `--pp-border-width-1`, in the same
+declaration as the elevation shadow; the panel's corners are rounded on
+the same side. Physical, like `data-side`, because the side already was.
+
+### 8. Verified
+
+Each side is flush with its edge, the token on the anchored axis and the
+viewport on the other; `start` is on the right under `dir="rtl"`; a side
+drawer at 320px is the full width; a tall panel scrolls itself, the scrim
+does not, and the page keeps its height and offset across open, wheel and
+close; focus lands on `Close` and returns to the trigger; the panel's
+animation is `none` under reduced motion; the theme crosses the portal;
+the gallery holds three, contained. 14 unit and 7 browser tests; four
+browser break checks (`justify-items: right` dropped, `resolveSide`
+pinned to LTR, the side drawers' `inline-size` dropped, the reduced-motion
+rule dropped), each caught by its named test.

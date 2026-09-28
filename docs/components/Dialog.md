@@ -191,6 +191,16 @@ bar's width while a dialog is open. Overlay scrollbars — macOS, every phone
 — are zero width and unaffected. There is no switch for it in this
 component; it is a documented gap.
 
+The same lock rewrites the body's **top, left and right padding** while a
+dialog is open: it copies the body's margins there, which for the usual
+`body { margin: 0 }` means zero. A page that carries its gutter on `<body>`
+loses it, and everything shifts by that gutter — and if the page is
+scrolled to its end, the scroll position clamps too — each time a Dialog,
+AlertDialog or Drawer opens. Put the gutter on a wrapper inside the body;
+a wrapper's padding is untouched. The library cannot undo this from CSS
+(there is no way to restore an author's declared value from another rule),
+and Radix exposes no option for it.
+
 ## Anatomy
 
 ```

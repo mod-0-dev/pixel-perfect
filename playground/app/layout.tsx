@@ -47,8 +47,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </Script>
       </head>
       <body>
-        <Chrome />
-        <div className="page">{children}</div>
+        {/*
+          * The page gutter is on THIS wrapper, not on <body>: Radix's scroll
+          * lock rewrites the body's top, left and right padding to its
+          * margins (zero) while a modal is open, so a padded body jumps by
+          * its gutter every time a Dialog, AlertDialog or Drawer opens
+          * (D-071 §6). A padded wrapper is untouched.
+          */}
+        <div className="shell">
+          <Chrome />
+          <div className="page">{children}</div>
+        </div>
       </body>
     </html>
   );

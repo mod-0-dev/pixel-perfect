@@ -5200,3 +5200,206 @@ test.describe('AlertDialog', () => {
     expect(ok).toBe(true);
   });
 });
+
+/*
+ * Drawer (4.6) — spec docs/specs/Drawer.md. Dialog with a different
+ * placement. Asserted here: where the panel is, per side and per direction;
+ * that its anchored axis is the token and the other axis the viewport; that
+ * the PANEL scrolls, not the page; the motion rule; the gallery.
+ */
+test.describe('Drawer', () => {
+  type Page = import('@playwright/test').Page;
+  type Box = { x: number; y: number; width: number; height: number };
+  const gallery = (page: Page) => page.locator('.pp-drawer[data-gallery]');
+  const panel = (page: Page) => page.locator('.pp-drawer:not([data-gallery])');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="drawer-${id}"]`);
+
+  const closeGallery = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(gallery(page)).toHaveCount(left);
+    }
+  };
+
+  const openSide = async (page: Page, side: string) => {
+    const trigger = demo(page, 'sides').locator(`[data-side-trigger="${side}"]`);
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el).toHaveAttribute('data-side', /left|right|top|bottom/);
+    return el;
+  };
+
+  /* A drawer sits AT an edge, so a box with x = 0 or y = 0 is a placed box
+     here; placedBox's positive-coordinate rule does not apply. Two reads a
+     frame apart that agree are enough — under reduced motion there is no
+     slide to wait out. */
+  const stillBox = async (el: import('@playwright/test').Locator): Promise<Box> => {
+    let last: Box | null = null;
+    await expect
+      .poll(async () => {
+        const box = await el.boundingBox();
+        const settled = !!box && !!last && box.x === last.x && box.y === last.y && box.width === last.width && box.height === last.height;
+        last = box;
+        return settled;
+      })
+      .toBe(true);
+    return last!;
+  };
+
+  test('each side is flush with its edge, the token on the anchored axis and the viewport on the other', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const viewport = page.viewportSize()!;
+    const token = 20 * 16;
+    const checks: Record<string, [string, (b: Box) => void]> = {
+      start: ['left', (b) => { expect(b.x).toBe(0); expect(Math.abs(b.width - token)).toBeLessThanOrEqual(1); expect(b.height).toBe(viewport.height); }],
+      end: ['right', (b) => { expect(Math.abs(b.x + b.width - viewport.width)).toBeLessThanOrEqual(1); expect(Math.abs(b.width - token)).toBeLessThanOrEqual(1); expect(b.height).toBe(viewport.height); }],
+      top: ['top', (b) => { expect(b.y).toBe(0); expect(b.width).toBe(viewport.width); expect(Math.abs(b.height - viewport.height / 2)).toBeLessThanOrEqual(1); }],
+      bottom: ['bottom', (b) => { expect(Math.abs(b.y + b.height - viewport.height)).toBeLessThanOrEqual(1); expect(b.width).toBe(viewport.width); expect(Math.abs(b.height - viewport.height / 2)).toBeLessThanOrEqual(1); }],
+    };
+    for (const [side, [physical, check]] of Object.entries(checks)) {
+      const el = await openSide(page, side);
+      await expect(el).toHaveAttribute('data-side', physical);
+      check(await stillBox(el));
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+  });
+
+  test('side="start" is on the right under dir="rtl"', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
+    const el = await openSide(page, 'start');
+    await expect(el).toHaveAttribute('data-side', 'right');
+    const box = await stillBox(el);
+    const viewport = page.viewportSize()!;
+    expect(Math.abs(box.x + box.width - viewport.width), 'start is not on the right in RTL').toBeLessThanOrEqual(1);
+  });
+
+  test('at 320px a side drawer is the full width', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const trigger = demo(page, 'nav').getByRole('button', { name: 'Menu' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const box = await stillBox(panel(page));
+    expect(box.width).toBe(320);
+    expect(box.x).toBe(0);
+  });
+
+  /*
+   * THE PAGE MUST NOT MOVE, MEASURED AT THE BOTTOM OF THE PAGE. The trigger
+   * sits low, so the page is scrolled to its maximum; any shrink of the
+   * document while the drawer is open clamps `scrollY`, which is how this
+   * test caught Radix's scroll lock zeroing a padded body's gutter (D-071
+   * §6). Dialog's counterpart never scrolled that far and never saw it.
+   */
+  test('a panel taller than its content scrolls itself, and the page stays where it was', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const trigger = demo(page, 'tall').getByRole('button', { name: 'Activity' });
+    await trigger.scrollIntoViewIfNeeded();
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before, 'the trigger sits low enough that the page had to scroll').toBeGreaterThan(0);
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollHeight), 'the page shrank behind the drawer').toBe(height);
+    expect(await page.evaluate(() => window.scrollY), 'opening the drawer scrolled the page').toBe(before);
+
+    const metrics = await el.evaluate((n) => ({
+      scroll: n.scrollHeight,
+      client: n.clientHeight,
+      scrimScroll: (n.parentElement as HTMLElement).scrollHeight,
+      scrimClient: (n.parentElement as HTMLElement).clientHeight,
+    }));
+    expect(metrics.scroll, 'the panel did not overflow').toBeGreaterThan(metrics.client);
+    expect(metrics.scrimScroll, 'the scrim scrolled instead of the panel').toBe(metrics.scrimClient);
+
+    const box = await stillBox(el);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => el.evaluate((n) => n.scrollTop), 'the wheel did not scroll the panel').toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled under the drawer').toBe(before);
+
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page moved when the drawer closed').toBe(before);
+  });
+
+  test('focus lands on the first link, Escape returns it to the trigger, and the motion is none under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const trigger = demo(page, 'nav').getByRole('button', { name: 'Menu' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    // Radix's focus scope skips links on mount autofocus (D-071 §4): the
+    // first focus is the first BUTTON, which here is Close.
+    await expect(page.getByRole('button', { name: 'Close' })).toBeFocused();
+    expect(await el.evaluate((n) => getComputedStyle(n).animationName)).toBe('none');
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+    await expect(demo(page, 'nav').locator('button').first()).toBeFocused();
+  });
+
+  test('the theme crosses the portal onto the scrim', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const region = demo(page, 'theme');
+    const trigger = region.getByRole('button', { name: 'Open here' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el.locator('xpath=..')).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+      inside: n.closest('[data-testid="drawer-theme"]') !== null,
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.raised).toBe(await region.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three end drawers, contained: full width at 240, 20rem at the right edge at 480 and 960', async ({
+    page,
+  }) => {
+    await page.goto('/components/drawer');
+    const panels = gallery(page);
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const s = scrim.getBoundingClientRect();
+        const b = el.getBoundingClientRect();
+        const stage = (scrim.parentElement as HTMLElement).getBoundingClientRect();
+        return {
+          stage: s.width,
+          width: b.width,
+          scrimX: s.x,
+          stageX: stage.x,
+          panelX: b.x,
+          panelRight: b.x + b.width,
+          scrimRight: s.x + s.width,
+          flushRight: Math.abs(b.x + b.width - (s.x + s.width)) <= 1,
+          fullHeight: Math.abs(b.height - s.height) <= 1,
+        };
+      }),
+    );
+    expect(read.every((r) => r.flushRight && r.fullHeight), JSON.stringify(read)).toBe(true);
+    expect(read[0]!.width).toBe(read[0]!.stage);
+    expect(Math.abs(read[1]!.width - 320)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read[2]!.width - 320)).toBeLessThanOrEqual(1);
+  });
+});

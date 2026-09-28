@@ -11,12 +11,25 @@
 
 body {
   margin: 0;
-  padding: var(--pp-space-6);
+  padding: 0;
   background-color: var(--pp-color-bg-page);
   color: var(--pp-color-text);
   font-family: var(--pp-font-family-sans);
   font-size: var(--pp-font-size-3);
   line-height: var(--pp-line-height-normal);
+}
+
+/*
+ * The gutter lives here and not on <body>. `react-remove-scroll-bar`, which
+ * every Radix modal mounts, styles `body[data-scroll-locked]` with the body's
+ * MARGINS written as its top, left and right padding — zero, for a body with
+ * `margin: 0` — so a body that carries the gutter loses it, and the whole
+ * page shifts by it, each time a Dialog, AlertDialog or Drawer opens. The
+ * Drawer's tall-panel test caught the shift as a clamped scroll position
+ * (D-071 §6). A wrapper's padding is nobody's business but ours.
+ */
+.shell {
+  padding: var(--pp-space-6);
 }
 
 .page {
