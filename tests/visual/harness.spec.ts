@@ -487,6 +487,20 @@ test.describe('layout primitives', () => {
       parseFloat(getComputedStyle(el).outlineWidth),
     );
     expect(outlineWidth).toBeGreaterThan(0);
+
+    /* The inline shadows swap under `dir="rtl"`: the start shadow moves from
+       the left edge to the right. Asserted on the element itself, because
+       the first version selected by `:dir(rtl)`, which the build rewrote
+       into a `:lang()` list, and no RTL page in English ever got the swap
+       (D-082 §4). */
+    const layers = (value: string) => value.split(',').map((l) => l.trim());
+    const ltr = await scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    await scroller.evaluate((el) => el.setAttribute('dir', 'rtl'));
+    const rtl = await scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    await scroller.evaluate((el) => el.removeAttribute('dir'));
+    expect(layers(ltr)[2]).toMatch(/^(0%|left)/);
+    expect(layers(rtl)[2]).toMatch(/^(100%|right)/);
+    expect(layers(rtl)[3]).toMatch(/^(0%|left)/);
   });
 });
 
@@ -6952,5 +6966,139 @@ test.describe('Table', () => {
     await region.focus();
     await expect.poll(() => region.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
     expect(await region.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+  });
+});
+
+test.describe('Pagination', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+  test('the full row at 480px and 960px with the status hidden; the compact form at 240px with the status shown; the row centred; equal slots', async ({
+    page,
+  }) => {
+    await page.goto('/components/pagination');
+    const cells = await page.locator('.matrix__cell .pp-pagination').evaluateAll((navs) => navs.map((n) => {
+      const nav = n as HTMLElement;
+      /* On the screen or not: a button inside a hidden item keeps its own computed display. */
+      const pages = Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__page')).filter((p) => p.getClientRects().length > 0);
+      const ellipses = Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__ellipsis')).filter((p) => getComputedStyle(p).display !== 'none');
+      const status = nav.querySelector<HTMLElement>('.pp-pagination__status')!;
+      const items = Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__item')).filter(
+        (li) => getComputedStyle(li).display !== 'none' && getComputedStyle(li).position !== 'absolute',
+      );
+      const navBox = nav.getBoundingClientRect();
+      const first = items[0]!.getBoundingClientRect();
+      const last = items[items.length - 1]!.getBoundingClientRect();
+      return {
+        pages: pages.map((p) => p.textContent?.trim()),
+        ellipses: ellipses.length,
+        statusShown: getComputedStyle(status).clipPath === 'none' && status.getBoundingClientRect().width > 10,
+        statusText: status.textContent?.trim(),
+        startGap: first.left - navBox.left,
+        endGap: navBox.right - last.right,
+        navWidth: navBox.width,
+        /* The row must never spill out of the landmark: the first compact
+           form hid the buttons and left their empty items as columns. */
+        spills: nav.scrollWidth > nav.clientWidth + 1,
+        /* The cell's CONTENT box: the matrix pads its cells. */
+        parentWidth: (() => {
+          const parent = nav.parentElement as HTMLElement;
+          const ps = getComputedStyle(parent);
+          return parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight);
+        })(),
+        itemWidths: items.map((li) => li.getBoundingClientRect().width),
+        itemHeight: first.height,
+      };
+    }));
+    expect(cells).toHaveLength(3);
+    const [narrow, medium, wide] = cells as [(typeof cells)[number], (typeof cells)[number], (typeof cells)[number]];
+    expect(narrow.pages).toEqual([]);
+    expect(narrow.ellipses).toBe(0);
+    expect(narrow.statusShown).toBe(true);
+    expect(narrow.statusText).toBe('6 of 12');
+    for (const full of [medium, wide]) {
+      expect(full.pages).toEqual(['1', '5', '6', '7', '12']);
+      expect(full.ellipses).toBe(2);
+      expect(full.statusShown).toBe(false);
+      /* Centred: the same room each side of the row. */
+      expect(Math.abs(full.startGap - full.endGap)).toBeLessThanOrEqual(1);
+      expect(full.startGap).toBeGreaterThan(1);
+      /* Every slot at least a control's height wide, and the single-digit
+         ones exactly that: "1" and "12" sit in equal boxes. */
+      for (const w of full.itemWidths) expect(w).toBeGreaterThanOrEqual(full.itemHeight - 0.5);
+      expect(full.itemWidths.filter((w) => Math.abs(w - full.itemHeight) <= 0.5).length).toBeGreaterThanOrEqual(7);
+    }
+    /* `fill`: the landmark is its parent's width in every cell, and the
+       compact row is centred in it too. */
+    for (const c of cells) expect(Math.abs(c.navWidth - c.parentWidth)).toBeLessThanOrEqual(1);
+    for (const c of cells) expect(c.spills, 'the row spilled out of the landmark').toBe(false);
+    expect(Math.abs(narrow.startGap - narrow.endGap)).toBeLessThanOrEqual(1);
+    /* Three items in the compact row — previous, the status, next — and no
+       empty columns: the row is no wider than those three and their gaps. */
+    expect(narrow.itemWidths).toHaveLength(3);
+
+    /* In a plain narrow parent — not a container — the compact form is the
+       component's own container-type answering (D-082 §2): the matrix's
+       cells are containers, so the break check there caught nothing. */
+    const plain = await page.locator('[data-testid="pagination-compact"] .pp-pagination').evaluate((nav) => ({
+      pages: Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__page')).filter((p) => p.getClientRects().length > 0).length,
+      statusShown: getComputedStyle(nav.querySelector('.pp-pagination__status')!).clipPath === 'none',
+      container: getComputedStyle(nav).containerType,
+    }));
+    expect(plain).toEqual({ pages: 0, statusShown: true, container: 'inline-size' });
+  });
+
+  test('the current page is the accent pressed surface; the ring on a page; in RTL the row runs from the right and the chevrons are mirrored', async ({
+    page,
+  }) => {
+    await page.goto('/components/pagination');
+    const current = page.locator('[data-testid="pagination-sizes"] .pp-pagination').nth(1).locator('[aria-current="page"]');
+    expect(await current.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg-active', 'accent'));
+    const other = page.locator('[data-testid="pagination-sizes"] .pp-pagination').nth(1).getByRole('button', { name: '5' });
+    expect(await other.evaluate((n) => getComputedStyle(n).backgroundColor)).not.toBe(await resolveIn(page, '--pp-tone-bg-active', 'accent'));
+    await other.focus();
+    await expect.poll(() => other.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await other.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+
+    const ltr = await page.locator('[data-testid="pagination-sizes"] .pp-pagination').nth(1).evaluate((nav) => ({
+      previous: nav.querySelector('[aria-label="Previous page"]')!.getBoundingClientRect().left,
+      next: nav.querySelector('[aria-label="Next page"]')!.getBoundingClientRect().left,
+      scale: getComputedStyle(nav.querySelector('.pp-pagination__chevron')!).scale,
+    }));
+    expect(ltr.previous).toBeLessThan(ltr.next);
+    expect(ltr.scale).toBe('none');
+    const rtl = await page.locator('[data-testid="pagination-rtl"] .pp-pagination').evaluate((nav) => ({
+      previous: nav.querySelector('[aria-label="Previous page"]')!.getBoundingClientRect().left,
+      next: nav.querySelector('[aria-label="Next page"]')!.getBoundingClientRect().left,
+      scale: getComputedStyle(nav.querySelector('.pp-pagination__chevron')!).scale,
+    }));
+    expect(rtl.previous).toBeGreaterThan(rtl.next);
+    expect(rtl.scale).toBe('-1 1');
+
+    /* A linked page is a Button drawn on an <a>: no underline, the page's
+       text colour, the same box as its button neighbours. */
+    const linked = await page.locator('[data-testid="pagination-links"] .pp-pagination').evaluate((nav) => {
+      const link = nav.querySelector('a.pp-pagination__page') as HTMLElement;
+      const current = nav.querySelector('[aria-current="page"]') as HTMLElement;
+      return {
+        decoration: getComputedStyle(link).textDecorationLine,
+        currentTag: current.tagName,
+        sameHeight: Math.abs(link.getBoundingClientRect().height - current.getBoundingClientRect().height) <= 0.5,
+      };
+    });
+    expect(linked).toEqual({ decoration: 'none', currentTag: 'SPAN', sameHeight: true });
   });
 });

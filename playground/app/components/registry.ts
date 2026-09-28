@@ -84,4 +84,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
   { slug: 'progress', name: 'Progress', tier: '5.3', summary: 'A bar filled as far as the value says; sweeping while there is none.' },
   { slug: 'table', name: 'Table', tier: '5.4', summary: 'A semantic table in a named region that scrolls; sorting and selection are hooks.' },
+  { slug: 'pagination', name: 'Pagination', tier: '5.5', summary: 'Previous, next and a window of pages; compact in a narrow container.' },
 ];

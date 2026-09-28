@@ -5689,3 +5689,119 @@ dropped (transparent); the selected row's surface dropped (transparent);
 the head's `text-align: start` dropped (the UA's `center`). Each failed
 on exactly the test named for it.
 
+## D-082 — `Pagination` rulings: a constant window, the compact form is the container's, the current page is a pressed Toggle, `:dir()` does not ship, and three things only the screenshot said
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §1
+(direction in a selector is `[dir="rtl"]`, never `:dir()`),
+`src/components/Scroller/Scroller.css` (the same fix, ported),
+`src/components/Button/Button.css` (`text-decoration: none`),
+`docs/specs/Pagination.md` (status) · **Extends:** D-021, D-022 §2, D-035 §3,
+D-053 §5, D-078 (the client demo file)
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. `count` pages and a window with a constant number of slots
+
+`page` / `defaultPage` / `onPageChange` (RULES §5.5); the numbers shown
+are the first and last `boundaryCount`, `siblingCount` each side of the
+current page, and an ellipsis where the two do not touch. The window
+keeps the same number of slots as the page moves — near an edge the far
+siblings take the slots an ellipsis would have — so the row does not
+change width from page to page. The arithmetic is MUI's `usePagination`,
+exported as `paginationItems` and unit-tested at both ends and in the
+middle. Buttons by default; with `getHref` every page is an `<a>` drawn
+by `Button asChild`, the current page a `<span>` with `aria-current`,
+because a page is never a link to itself.
+
+### 2. The compact form is a container query, and that is why the contract is `fill`
+
+Below 28rem the page numbers and the ellipses are gone and "6 of 12"
+stands between the arrows — Split's device (`container-type:
+inline-size`, D-022 §2, the threshold a literal because a query cannot
+read a custom property). Nothing is measured in JavaScript and the form
+is the container's, not the viewport's: one component is compact in a
+sidebar and full in the main column of the same page. The sizing
+contract is `fill` **because of this**: a container query needs the
+root's inline size to be the parent's, and a hugging row would be its
+own content's width in every container. The row inside is a grid that
+sizes its items — `grid-auto-columns: minmax(<control height>, auto)`,
+D-021's habit — so "1" and "12" sit in equal boxes with no width on any
+control, centred in the landmark.
+
+The matrix's cells are size containers of their own, so the break check
+that dropped the component's `container-type` caught nothing there: the
+query answered from the cell. The page now has a compact instance in a
+plain 15rem block, where only the component's own container can answer,
+and the break is caught there.
+
+### 3. The current page is Toggle's `on`, in the accent ramp
+
+`aria-current="page"` is the state; the surface is `--pp-tone-bg-active`
+written into Button's private variables the way Toggle.css does, with
+the page in the accent tone so its text and border are the accent's
+too. Not a `solid` accent button: a page number is not the view's one
+primary action (Button §3.1), and a solid page among ghosts reads as a
+call to action.
+
+### 4. `:dir()` does not ship; the Scroller had the same defect
+
+The chevron's mirror was written `.pp-pagination:dir(rtl)`, and the RTL
+test read `scale: none` with the rule "present". The built stylesheet
+showed why: Lightning CSS, under the package's `defaults` targets,
+rewrites `:dir(rtl)` into `:is(:lang(ar), :lang(he), …)` — a polyfill
+that matches Arabic and Hebrew prose and not a `dir` attribute, so an
+RTL page in English never gets the rule. The selector is `[dir="rtl"]`
+on an ancestor now, RULES §1 says so, and `Scroller.css`, which swapped
+its inline shadows by `:dir(rtl)` since Tier 2 and had no RTL assertion,
+is fixed the same way with one added: the start shadow moves to the
+right edge when the element is given `dir="rtl"`.
+
+### 5. Three things only the screenshot said
+
+The browser suite was green and the page was wrong three times.
+
+- **The compact row overflowed its cell.** The first form hid the page
+  *buttons* and left their list items in the grid, and an empty item is
+  still a column at least a control wide: seven invisible 40px columns
+  spilled out of a 240px cell, and the harness's own overflow flag said
+  so before any assertion did. The items hide now
+  (`pp-pagination__item--page`), and the test asserts the landmark does
+  not scroll and the compact row has three items. The test's "visible"
+  read also changed: a button inside a hidden item keeps its own
+  computed `display`, so visibility is `getClientRects().length`.
+- **The linked pages were underlined.** A `Button asChild` on an `<a>`
+  inherited the UA's link underline, and nothing in `Button.css` said
+  otherwise — every `<Button asChild><a>` in the library was an
+  underlined button. `text-decoration: none` on `.pp-button` now, and
+  the Button page's baseline is re-authored.
+- **The page did not build.** `getHref` is a function, and a function
+  cannot cross from a Server Component page into a client component;
+  Next refused the prerender. The linked instance lives in a client
+  `Demos.tsx`, CommandPalette's shape (D-078).
+
+D-051 §6 and D-081 §6 again: a green run measures what it was told to
+measure. The screenshot is part of the definition of done.
+
+### 6. Verified, and the five breaks
+
+Unit: fourteen tests — the window at 1, 2, 6, 11 and 12 of 12, wider,
+and with nothing to elide; the landmark and its name; `aria-current`
+and the tones; the arrows disabled at the ends; reporting and moving
+uncontrolled, reporting and holding controlled, an owner that stores
+what it reports, no call on the current page; `getHref` links, the
+current page as text, a disabled arrow as a button; `size`, `disabled`,
+`count` below one; ref, `className`, `style`, `label`; axe in both
+themes, as buttons and as links. Browser: the full row at 480 and 960
+with the status hidden and the compact form at 240 with it shown; the
+row centred and every slot at least a control wide; the landmark its
+cell's content width and never spilling; the compact form in a plain
+parent; the current page's surface; the ring; LTR and RTL order and the
+mirrored chevron; a linked page unadorned and the current page's height.
+
+Break checks (D-035 §3): `container-type` dropped (the plain parent
+showed five numbers); the current surface dropped (the ghost surface);
+the RTL mirror dropped (`scale: none`); the centring dropped (the row at
+the start). Each failed on exactly the test named for it; the fifth,
+`container-type` in the matrix, is §2.
+

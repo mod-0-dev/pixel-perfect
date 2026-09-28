@@ -55,6 +55,12 @@ correctly in every layout context. The rule is *don't declare width*, not
 unless the property genuinely has no logical equivalent. RTL should work without
 a single extra line.
 
+Where a selector must know the direction — a drawing to mirror, a physical
+value to swap — it is `[dir="rtl"]` on the element or an ancestor, never
+`:dir(rtl)`: the build's `defaults` targets make Lightning CSS rewrite `:dir()`
+into a list of `:lang()` selectors, which matches Arabic and Hebrew prose and
+not a `dir` attribute (D-082 §4).
+
 ---
 
 ## 2. No Outer Margins

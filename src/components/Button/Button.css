@@ -54,6 +54,10 @@
        of one word each in a narrow sidebar. Same ruling as Badge. */
     white-space: nowrap;
     vertical-align: middle;
+    /* A Button drawn on an <a> through `asChild` is a button, not a run of
+       text: the UA's link underline goes. Found by Pagination's linked pages,
+       which were underlined numbers in bordered boxes (D-082 §5). */
+    text-decoration: none;
     /* Kills the UA button chrome that survives a background declaration in Safari. */
     appearance: none;
     cursor: pointer;

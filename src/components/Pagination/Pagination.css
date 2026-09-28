@@ -1,0 +1,113 @@
+/*
+ * Pagination — spec docs/specs/Pagination.md
+ *
+ * THE LIST IS A GRID THAT SIZES ITS ITEMS (D-021's habit, spec §Sizing): one
+ * row of columns, each at least a control's height wide so "1" and "12" sit
+ * in equal boxes, and any wider by its content. No width declaration on any
+ * control: the column is the parent sizing the box it created. The row is
+ * centred in the landmark.
+ *
+ * THE COMPACT FORM IS A CONTAINER QUERY (spec §4, Split's device): below
+ * 28rem the numbers and the ellipses are gone and the status is shown. The
+ * threshold is a literal because a container query cannot read a custom
+ * property (D-022 §2). The status is always rendered, visually hidden in the
+ * full form, so a screen reader walking the landmark hears the count.
+ *
+ * THE CURRENT PAGE IS TOGGLE'S `on` (spec §3): Button's private variables
+ * written from here, which Toggle.css argues is the consumer's override
+ * still winning through `--pp-button-bg`.
+ */
+
+@layer pp.components {
+  .pp-pagination {
+    --_control: var(--pp-control-height-md);
+    --_gap: var(--pp-pagination-gap, var(--pp-space-1));
+
+    container-type: inline-size;
+    display: block;
+    min-inline-size: 0;
+  }
+
+  .pp-pagination[data-size="sm"] {
+    --_control: var(--pp-control-height-sm);
+  }
+
+  .pp-pagination[data-size="lg"] {
+    --_control: var(--pp-control-height-lg);
+  }
+
+  .pp-pagination__list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(var(--_control), auto);
+    justify-content: center;
+    align-items: center;
+    gap: var(--_gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pp-pagination__item {
+    display: grid;
+  }
+
+  .pp-pagination__ellipsis {
+    place-items: center;
+    color: var(--pp-color-text-muted);
+    user-select: none;
+  }
+
+  /* The full form: the status is in the tree and not on the screen. */
+  .pp-pagination__status {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pp-pagination__page {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pp-pagination__page[aria-current="page"] {
+    --_bg: var(--pp-pagination-current-bg, var(--pp-tone-bg-active));
+    --_bg-hover: var(--pp-pagination-current-bg, var(--pp-tone-bg-active));
+    --_bg-active: var(--pp-pagination-current-bg, var(--pp-tone-bg-active));
+    --_border: var(--pp-tone-border);
+
+    cursor: default;
+  }
+
+  /* Previous points to the start and next to the end; under RTL the drawing
+     is mirrored so the arrow points the way the pages run (spec §5).
+     `[dir="rtl"]` ON AN ANCESTOR, NOT `:dir(rtl)`: the build's targets make
+     Lightning CSS rewrite `:dir()` into a list of `:lang()` selectors, which
+     matches Arabic prose and not a `dir` attribute — the first draft's arrow
+     pointed the wrong way in the RTL test with the rule "present" (D-082 §4). */
+  [dir="rtl"] .pp-pagination__chevron {
+    scale: -1 1;
+  }
+
+  @container (max-inline-size: 28rem) {
+    /* THE LIST ITEMS GO, NOT THE BUTTONS IN THEM (D-082 §5): an empty item
+       is still a column of the grid, at least a control wide, and seven of
+       them overflowed the 240px cell with nothing visible in them. The
+       current page's number is the status now, so its item goes too. */
+    .pp-pagination__item--page,
+    .pp-pagination__ellipsis {
+      display: none;
+    }
+
+    .pp-pagination__status {
+      position: static;
+      overflow: visible;
+      clip-path: none;
+      place-items: center;
+      padding-inline: var(--pp-space-2);
+    }
+  }
+}

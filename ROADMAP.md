@@ -125,8 +125,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   is under way**: 5.1 `Card` is in `review` (2026-09-28, D-079), the first
   Server Component compound, its parts named exports like every other's;
   5.3 `Progress` is in `review` (D-080), the determinate half of Spinner;
-  5.4 `Table` is in `review` (D-081), the tier's data component. Next up
-  is **5.5 `Pagination`**. **4.4 `Dialog` is `done`** (2026-09-27): built
+  5.4 `Table` is in `review` (D-081), the tier's data component; 5.5
+  `Pagination` is in `review` (D-082), compact by its container. Next up
+  is **5.6 `Breadcrumb`**. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -922,7 +923,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 5.2 | `Alert` | `done` | fill | server | 1.3, 3.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Holds no state, so `onDismiss` reports the intent and the caller unmounts it — which is what keeps it `server` (§4). **Deps corrected from 2.2 to 3.2 at approval**: it composes `IconButton` and does not compose `Cluster`. The root is flex, not a grid — a grid gaps between *tracks*, so an alert with no icon paid 12px for the empty one (D-053 §3) |
 | 5.3 | `Progress` | `review` | fill | server | T0 | [`Progress.md`](docs/specs/Progress.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-080; awaiting its CI-authored baseline (D-013). `value` present is determinate, absent is indeterminate, `aria-valuenow` omitted when there is none; `determinate` joins `data-state` (§1). A name is required at the type level, `label` or `aria-labelledby` (§2). The fill is a flex item so it slides in every browser and grows from the right in RTL with no rule (§2); the sweep moves by `inset-inline-start`; reduced motion pulses the whole bar. `tone` defaults to `accent`, recorded beside Spinner's `neutral` (§3) |
 | 5.4 | `Table` | `review` | fill | server | T2 | [`Table.md`](docs/specs/Table.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-081; awaiting its CI-authored baseline (D-013). A semantic table in a named region that scrolls, focusable always (§1); `caption` a prop of the root, one of three names required (§2); the table stretched by a grid, never by a width (§3); sorting and selection are hooks, `sort` → `aria-sort`, `selected` → `data-state`. Found on the way: `useId` is not a client hook, and the rule lint and RULES §7 now say so (§4); a ring read in the frame focus landed in is 0px wide under the reset's reduced-motion crush (§5); the UA centres a `th` and a cell that wraps a date is worse than one that scrolls, both seen on the screenshot and not by the first green run (§6) |
-| 5.5 | `Pagination` | `planned` | fill | client | 3.1 | |
+| 5.5 | `Pagination` | `review` | fill | client | 3.1 | [`Pagination.md`](docs/specs/Pagination.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-082; awaiting its CI-authored baseline (D-013). A window with a constant number of slots, buttons or links by `getHref` (§1); the compact form is a container query, which is why the contract is `fill` (§2); the current page is Toggle's `on` in the accent ramp (§3). Found on the way: `:dir()` does not ship — the build rewrites it into `:lang()` — so RULES §1 says `[dir="rtl"]` and the Scroller's RTL swap is fixed (§4); a Button drawn on an `<a>` was underlined, fixed in Button.css (§5) |
 | 5.6 | `Breadcrumb` | `planned` | fill | server | 3.3 | |
 | 5.7 | `Stepper` | `planned` | fill | server | T2 | |
 | 5.8 | `EmptyState` | `planned` | fill | server | 5.1 | |
