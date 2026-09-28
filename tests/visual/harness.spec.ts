@@ -6585,3 +6585,79 @@ test.describe('CommandPalette', () => {
     expect(Math.abs(read[2]!.width - 640)).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('Card', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return c;
+    }, token);
+
+  test('the raised surface, a hairline edge, no shadow; one hairline per adjacent pair; the foot sunken; the padding tokens', async ({ page }) => {
+    await page.goto('/components/card');
+    const raised = await resolve(page, '--pp-color-bg-raised');
+    const sunken = await resolve(page, '--pp-color-bg-sunken');
+    const inline = await px(page, '--pp-space-5');
+    const block = await px(page, '--pp-space-4');
+    const read = await page.locator('[data-testid="card-sections"] .pp-card').evaluateAll((els) =>
+      els.map((card) => {
+        const sections = Array.from(card.children) as HTMLElement[];
+        return {
+          bg: getComputedStyle(card).backgroundColor,
+          edge: getComputedStyle(card).borderTopWidth,
+          shadow: getComputedStyle(card).boxShadow,
+          lines: sections.map((s) => getComputedStyle(s).borderTopWidth),
+          padding: sections.map((s) => [getComputedStyle(s).paddingInlineStart, getComputedStyle(s).paddingBlockStart]),
+          footer: sections.find((s) => s.classList.contains('pp-card__footer'))
+            ? getComputedStyle(sections.find((s) => s.classList.contains('pp-card__footer'))!).backgroundColor
+            : null,
+        };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    expect(read.every((r) => r.bg === raised && r.edge === '1px' && r.shadow === 'none')).toBe(true);
+    expect(read[0]!.lines).toEqual(['0px']);
+    expect(read[1]!.lines).toEqual(['0px', '1px']);
+    expect(read[2]!.lines).toEqual(['0px', '1px', '1px']);
+    expect(read[2]!.footer).toBe(sunken);
+    expect(read[2]!.padding.every(([i, b]) => parseFloat(i!) === inline && parseFloat(b!) === block)).toBe(true);
+  });
+
+  test('an interactive card lifts on hover, rings on focus, and its text is not underlined; a URL stays inside at 240px', async ({ page }) => {
+    await page.goto('/components/card');
+    const link = page.locator('[data-testid="card-links"] .pp-card').first();
+    await link.scrollIntoViewIfNeeded();
+    const rest = await link.evaluate((n) => ({
+      tag: n.tagName,
+      shadow: getComputedStyle(n).boxShadow,
+      decoration: getComputedStyle(n).textDecorationLine,
+      heading: getComputedStyle(n.querySelector('.pp-heading, h3') as HTMLElement).textDecorationLine,
+    }));
+    expect(rest.tag).toBe('A');
+    expect(rest.shadow).toBe('none');
+    expect(rest.decoration).toBe('none');
+    expect(rest.heading).toBe('none');
+    await link.hover();
+    await expect.poll(() => link.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
+    const border = await link.evaluate((n) => getComputedStyle(n).borderTopColor);
+    expect(border).toBe(await resolve(page, '--pp-color-border'));
+    await link.focus();
+    expect(await link.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+
+    const narrow = page.locator('.matrix__cell').first().locator('.pp-card');
+    const fits = await narrow.evaluate((n) => n.scrollWidth <= n.clientWidth && n.getBoundingClientRect().width <= (n.parentElement as HTMLElement).getBoundingClientRect().width + 1);
+    expect(fits, 'the URL pushed the card past its cell').toBe(true);
+  });
+});

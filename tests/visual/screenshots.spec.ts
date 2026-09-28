@@ -61,6 +61,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'combobox', path: '/components/combobox' },
   { name: 'toast', path: '/components/toast' },
   { name: 'command-palette', path: '/components/command-palette' },
+  { name: 'card', path: '/components/card' },
   { name: 'alert', path: '/components/alert' },
 ];
 

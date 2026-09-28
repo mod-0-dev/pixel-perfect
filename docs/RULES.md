@@ -160,13 +160,15 @@ Structural requirements for every component:
 5. Stateful components support **controlled and uncontrolled** use:
    `value` / `defaultValue` / `onValueChange`, `open` / `defaultOpen` /
    `onOpenChange`. Both, always. No exceptions.
-6. Composition over configuration. Prefer `<Card><Card.Header/></Card>` over
+6. Composition over configuration. Prefer `<Card><CardHeader/></Card>` over
    `<Card headerTitle=... headerIcon=... />`. If a component has more than ~10
    props, it is probably two components.
-   **For a `'use client'` component the parts are named exports**
-   (`<Popover><PopoverTrigger/></Popover>`), never properties of the root:
-   React forbids a Server Component from dotting into a client module, and a
-   Next App Router page is one by default (D-062 §1).
+   **The parts of every compound are named exports**
+   (`<Popover><PopoverTrigger/></Popover>`, `<Card><CardHeader/></Card>`),
+   never properties of the root: React forbids a Server Component from
+   dotting into a client module, and a Next App Router page is one by default
+   (D-062 §1); a server compound could dot, and then there would be two
+   spellings for one idea (D-079 §1).
 7. No polymorphic `as` prop. It is a TypeScript tarpit and an inference killer.
    Use Radix-style `asChild` render delegation where composition genuinely
    requires it.

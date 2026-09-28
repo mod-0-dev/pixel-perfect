@@ -37,6 +37,7 @@ export {
 } from './components/AlertDialog/AlertDialog';
 export { Badge, type BadgeProps } from './components/Badge/Badge';
 export { Button, type ButtonProps } from './components/Button/Button';
+export { Card, CardBody, CardFooter, CardHeader, type CardBodyProps, type CardFooterProps, type CardHeaderProps, type CardProps } from './components/Card/Card';
 export {
   ButtonGroup,
   type ButtonGroupOrientation,

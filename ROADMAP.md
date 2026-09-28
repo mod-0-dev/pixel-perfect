@@ -121,8 +121,10 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   and a keyboard model written here; the consumer renders the matches
   (D-076). 4.12 is the region and the imperative API the roadmap promised,
   an `Alert` that floats (D-077). 4.14 closes the tier, made of it with no
-  package added (D-078). 4.13 `DatePicker` waits on 5.9 `Calendar`. Next up
-  is **Tier 5**, starting with 5.1 `Card`. **4.4 `Dialog` is `done`** (2026-09-27): built
+  package added (D-078). 4.13 `DatePicker` waits on 5.9 `Calendar`. **Tier 5
+  is under way**: 5.1 `Card` is in `review` (2026-09-28, D-079), the first
+  Server Component compound, its parts named exports like every other's.
+  Next up is **5.3 `Progress`**. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -914,7 +916,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 5.1 | `Card` | `planned` | fill | server | T2 | Compound: `Card.Header` / `.Body` / `.Footer` |
+| 5.1 | `Card` | `review` | fill | server | T2 | [`Card.md`](docs/specs/Card.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-079; awaiting its CI-authored baseline (D-013). The first Server Component compound: `Card` / `CardHeader` / `CardBody` / `CardFooter` as named exports, and RULES §5.6 now says every compound's parts are (§1). A bordered raised surface, no shadow, no `tone` / `variant` / `size`; one hairline per adjacent pair of sections; the foot sunken (§2). An interactive card is the consumer's link or button by `asChild` (§2). The wrap of a URL in the body is the card's `overflow-wrap`, not `min-inline-size: 0`, which the clip makes unobservable — found by the break check (§3) |
 | 5.2 | `Alert` | `done` | fill | server | 1.3, 3.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Holds no state, so `onDismiss` reports the intent and the caller unmounts it — which is what keeps it `server` (§4). **Deps corrected from 2.2 to 3.2 at approval**: it composes `IconButton` and does not compose `Cluster`. The root is flex, not a grid — a grid gaps between *tracks*, so an alert with no icon paid 12px for the empty one (D-053 §3) |
 | 5.3 | `Progress` | `planned` | fill | server | T0 | Determinate + indeterminate |
 | 5.4 | `Table` | `planned` | fill | server | T2 | Semantic table; sorting/selection hooks, no data layer |

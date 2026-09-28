@@ -80,5 +80,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'combobox', name: 'Combobox', tier: '4.11', summary: 'A text input with a list of options; you render the matches, it does the rest.' },
   { slug: 'toast', name: 'Toast', tier: '4.12', summary: 'A brief message at a corner, announced, gone after a moment; toast() from a hook.' },
   { slug: 'command-palette', name: 'CommandPalette', tier: '4.14', summary: 'Every command one keystroke away: a search field over a list, in a modal.' },
+  { slug: 'card', name: 'Card', tier: '5.1', summary: 'A bordered surface with a header, a body and a foot, and hairlines between.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];

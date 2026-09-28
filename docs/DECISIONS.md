@@ -5401,3 +5401,80 @@ highlighted on typing, in the long list, and in the gallery); the hotkey
 listener dropped (`Control+k` opened nothing); the row variable dropped
 (the menu's small row); the close after select dropped (the palette
 stayed open after `Enter`).
+
+## D-079 — `Card` rulings: named parts for a server compound, no shadow, the foot sunken, and the wrap is the card's
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md`
+§5.6 (the parts of every compound are named exports),
+`docs/specs/Card.md` (status) · **Extends:** D-062 §1, D-053 §4 and §5,
+D-068 §2
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The first of Tier 5, and the first Server
+Component compound.
+
+### 1. Named parts for a server compound too, and RULES §5.6's example is amended
+
+RULES §5.6 gave `<Card><Card.Header/></Card>` as the example of
+composition, and then said client compounds use named exports because a
+Server Component cannot dot into a client module (D-062 §1). A card is a
+server module: it *could* dot. It does not, because the library would then
+have two spellings for one idea, chosen by an implementation detail the
+consumer should not have to know. The rule now reads "the parts of every
+compound are named exports", and its example is
+`<Card><CardHeader/></Card>`. `Card`, `CardHeader`, `CardBody`,
+`CardFooter`; no context, so a part outside the root is a plain `div` and
+throws nothing.
+
+### 2. A bordered raised surface with no shadow; one hairline per adjacent pair; the foot sunken
+
+The raised surface, a hairline edge, no shadow: a shadow is for what floats
+(Popover, Dialog, Toast), and a card sits on the page. The hairline between
+sections is drawn as the *later* section's block-start border, so a body
+alone has no line, a header and a body have one, and all three have two —
+the count is the assertion. The footer is `--pp-color-bg-sunken`, so a row
+of actions reads as the card's foot rather than as more body. No `tone`, no
+`variant`, no `size`: like Alert (D-053), a card's children are arbitrary,
+and a filled surface would put them on the wrong background.
+
+An interactive card is the consumer's link or button through `asChild`
+(RULES §5.7): the class lands on their element, and `:is(a, button)` gives
+it the hover edge (`--pp-color-border`), `--pp-shadow-1` as the lift, the
+one ring, and its text back — a link's underline and colour reset, because
+a card is not a run of text. The playground's link card is an `<a>`, and
+the test reads its tag.
+
+### 3. The wrap is the card's; `min-inline-size: 0` is stated, not claimed
+
+The spec copied Alert's finding: "`min-inline-size: 0`, so a URL in the
+body cannot push the box past its parent". The break check said otherwise:
+dropping it changed nothing, because the card clips (`overflow: hidden`,
+for its radius), and a clipped flex or grid item's automatic minimum is
+already zero. The URL on the page wrapped because it sat in a `Text`, whose
+own `overflow-wrap: anywhere` did the work — the test was passing on a
+mechanism the component did not own. And a card is worse off than Alert
+here: an unbreakable string in a bare section would not paint past the edge
+(D-053 §4), it would be *cut off* by the clip, silently.
+
+So `overflow-wrap: anywhere` is on the root, inherited, and the page's URL
+is a bare `<p>` so that the card's rule is the one under test: dropping it
+fails "a URL stays inside at 240px". `min-inline-size: 0` stays on the root
+because RULES §1 defines `fill` as including it (D-053 §5's ruling), and its
+comment says the clip makes it unobservable here; it is gone from the
+sections, which are cross-axis children of a column and never had an
+automatic minimum to zero. The spec's break list names the rule that
+actually holds.
+
+### 4. Verified, and the four breaks
+
+Unit: four tests — the parts and their classes, `asChild` on a link, a
+part outside the root, axe in both themes. Browser: the surface and the
+foot resolved to their tokens, the hairline count across three cards, the
+padding tokens, the hover lift and ring, a link card's text not
+underlined, the URL at 240px. Break checks (D-035 §3): the hairline rule
+dropped (the count, `['0px', '1px']` read `['0px', '0px']`); the footer's
+surface dropped (transparent); the hover lift dropped (`box-shadow` stayed
+`none`); `overflow-wrap` dropped (the URL pushed the card past its cell).
+Each failed on exactly the test named for it; the fifth, `min-inline-size:
+0`, is §3.
+
