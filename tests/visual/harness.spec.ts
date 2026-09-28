@@ -7884,3 +7884,110 @@ test.describe('CodeBlock', () => {
     await expect(bare.getByRole('region', { name: 'Two commands' })).toBeVisible();
   });
 });
+
+test.describe('AvatarGroup', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return c;
+    }, token);
+  const geometry = (root: HTMLElement) => {
+    const faces = Array.from(root.querySelectorAll<HTMLElement>('.pp-avatar')).map((a) => a.getBoundingClientRect());
+    const box = root.getBoundingClientRect();
+    return {
+      groupWidth: box.width,
+      parentWidth: (root.parentElement as HTMLElement).getBoundingClientRect().width,
+      lefts: faces.map((f) => f.left),
+      sizes: faces.map((f) => f.width),
+      lastInside: faces[faces.length - 1]!.right <= box.right + 0.5,
+      firstInside: faces[0]!.left >= box.left - 0.5,
+      ring: getComputedStyle(root.querySelector('.pp-avatar')!).boxShadow,
+      moreBg: getComputedStyle(root.querySelector('.pp-avatar-group__more')!).backgroundColor,
+      moreSize: root.querySelector('.pp-avatar-group__more')!.getBoundingClientRect().width,
+    };
+  };
+
+  test('the group hugs; each face starts a size less the overlap after the last; the last inside the box; the ring; the count sunken and face-sized', async ({
+    page,
+  }) => {
+    await page.goto('/components/avatar-group');
+    const size = await px(page, '--pp-size-8');
+    /* A fifth of the face. */
+    const overlap = size / 5;
+    const cells = await page.locator('.matrix__cell .pp-avatar-group').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const faces = Array.from(root.querySelectorAll<HTMLElement>('.pp-avatar')).map((a) => a.getBoundingClientRect());
+        const box = root.getBoundingClientRect();
+        return {
+          groupWidth: box.width,
+          parentWidth: (root.parentElement as HTMLElement).getBoundingClientRect().width,
+          lefts: faces.map((f) => f.left),
+          sizes: faces.map((f) => f.width),
+          lastInside: faces[faces.length - 1]!.right <= box.right + 0.5,
+          firstInside: faces[0]!.left >= box.left - 0.5,
+          ring: getComputedStyle(root.querySelector('.pp-avatar')!).boxShadow,
+          moreBg: getComputedStyle(root.querySelector('.pp-avatar-group__more')!).backgroundColor,
+          moreSize: root.querySelector('.pp-avatar-group__more')!.getBoundingClientRect().width,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const surface = await resolve(page, '--pp-color-bg-surface');
+    const sunken = await resolve(page, '--pp-color-bg-sunken');
+    for (const c of cells) {
+      expect(c.lefts).toHaveLength(4);
+      expect(c.groupWidth).toBeLessThan(c.parentWidth - 20);
+      for (let i = 1; i < c.lefts.length; i += 1) expect(Math.abs(c.lefts[i]! - c.lefts[i - 1]! - (size - overlap))).toBeLessThanOrEqual(0.5);
+      for (const s of c.sizes) expect(Math.abs(s - size)).toBeLessThanOrEqual(0.5);
+      expect(c.lastInside).toBe(true);
+      expect(c.firstInside).toBe(true);
+      expect(Math.abs(c.groupWidth - (3 * (size - overlap) + size))).toBeLessThanOrEqual(1);
+      expect(c.ring).toContain(surface);
+      expect(c.ring).toMatch(/0px 0px 0px 2px/);
+      expect(c.moreBg).toBe(sunken);
+      expect(Math.abs(c.moreSize - size)).toBeLessThanOrEqual(0.5);
+    }
+    /* Same group at three widths: identical. */
+    expect(cells.map((c) => Math.round(c.groupWidth))).toEqual([cells[0]!, cells[0]!, cells[0]!].map((c) => Math.round(c.groupWidth)));
+  });
+
+  test('size on the group sizes every face and the count; in RTL the row runs from the right', async ({ page }) => {
+    await page.goto('/components/avatar-group');
+    const sizes = await page.locator('[data-testid="avatar-group-sizes"] .pp-avatar-group').evaluateAll((els) =>
+      els.map((n) => Array.from(n.querySelectorAll<HTMLElement>('.pp-avatar')).map((a) => Math.round(a.getBoundingClientRect().width))),
+    );
+    expect(sizes[0]).toEqual([24, 24, 24, 24]);
+    expect(sizes[1]).toEqual([32, 32, 32, 32]);
+    expect(sizes[2]).toEqual([40, 40, 40, 40]);
+    const rtl = await page.locator('[data-testid="avatar-group-rtl"] .pp-avatar-group').evaluate(geometry);
+    expect(rtl.lefts[0]).toBeGreaterThan(rtl.lefts[3]!);
+    expect(rtl.lastInside).toBe(true);
+    expect(rtl.firstInside).toBe(true);
+    /* The count reads "+2" under RTL too: an isolated LTR run. */
+    const more = page.locator('[data-testid="avatar-group-rtl"] .pp-avatar-group__more .pp-avatar__fallback');
+    expect(await more.getAttribute('dir')).toBe('ltr');
+    expect(await more.evaluate((n) => getComputedStyle(n).direction)).toBe('ltr');
+    /* Beside text in a Cluster: all five, no count, and it hugs (a flex item
+       is blockified, so `inline-grid` computes to `grid`; the width is the
+       claim). */
+    const inline = await page.locator('[data-testid="avatar-group-inline"] .pp-avatar-group').evaluate((n) => ({
+      faces: n.querySelectorAll('.pp-avatar').length,
+      more: n.querySelector('.pp-avatar-group__more') === null,
+      hugs: n.getBoundingClientRect().width < (n.parentElement as HTMLElement).getBoundingClientRect().width / 2,
+    }));
+    expect(inline).toEqual({ faces: 5, more: true, hugs: true });
+  });
+});

@@ -4,6 +4,7 @@ export {
   AspectRatio,
   type AspectRatioProps,
 } from './components/AspectRatio/AspectRatio';
+export { AvatarGroup, type AvatarGroupProps } from './components/AvatarGroup/AvatarGroup';
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Alert, type AlertLive, type AlertProps } from './components/Alert/Alert';
 export {

@@ -6371,3 +6371,81 @@ both tests); `pre-wrap` dropped (`pre`); the grid dropped (the code
 two pixels short of the frame). Each failed on exactly the test named
 for it.
 
+## D-090 — `AvatarGroup` rulings: a list with a count, overlap by a grid and not a margin, and the group's size written into the faces
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/AvatarGroup.md`
+(status) · **Extends:** D-016 §7 (the item it adds), D-021, D-070 §1,
+D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last of Tier 5's own items.
+
+### 1. A `<ul>` of the children, the first `max` shown, the rest one count drawn as an avatar
+
+One part. Each child sits in a `<li>`, so a screen reader hears "list,
+4 items" and then each `Avatar`'s name; `label` names the list. `max`
+shows the first `max` and then one more item, the count — `+2`, named
+"2 more" (`moreLabel` rewords it) — drawn with `pp-avatar` and the
+group's own class after it, the two-class contract (D-070 §1), on the
+sunken surface in muted text. A `max` at or above the count shows none;
+`max={0}` shows only the count.
+
+### 2. Overlap by a grid whose columns are narrower than a face
+
+A negative margin is the usual overlap and RULES §2 bans it. The group
+is an inline grid, `grid-auto-flow: column`, its columns a face less
+the overlap, so each item starts inside the one before it; the last
+runs past its column by the overlap and the group pads its end by the
+same amount, so its hug box holds it — the parent sizing the boxes it
+created (D-021), with no margin and no width. Each face carries a ring
+the colour of the surface. Later items sit over earlier ones, document
+order, and RTL runs the row from the right with nothing said. Dropping
+the end padding put the last face outside the group's box, which the
+test reads.
+
+### 3. `size` is the group's, and the group's variables have their own names
+
+`size` on the group writes Avatar's private `--_size` and `--_font-size`
+from the group's stylesheet, Toggle's device for Button, at a
+specificity that outranks an avatar's own `data-size` on purpose: one
+`size` sizes every face and the count, and "set it on the group" is the
+rule. The first draft wrote `--_size: var(--_size)` — a custom property
+that references itself is a cycle, invalid at computed-value time, and
+every face would have lost its size. The group's own variables are
+`--_face` and `--_face-font`. The unit test cannot see that; the
+browser test measures the faces at every size.
+
+### 4. Two things the screenshot said
+
+**A fixed overlap clipped the initials.** `--pp-space-2` (8px) is the
+whole margin beside a pair of initials in a 32px face, and at `sm` more
+than that: the second letter of every face but the last went under its
+neighbour. The overlap is a fifth of the face now — 4.8, 6.4 and 8px —
+so the initials clear at every size, and the property still overrides
+it.
+
+**"+2" read "2+" under RTL.** A plus sign and a digit are both bidi-weak,
+so the RTL paragraph reordered them. The count's text is an isolated
+left-to-right run (`dir="ltr"` on the hidden fallback span), and the
+test reads its direction.
+
+### 5. Verified, and the five breaks
+
+Unit: five tests — the list and its items, all shown without `max`;
+`max` and the count's name, text, size and tone, none at or above the
+count, `max={0}`; `size` and `moreLabel`; ref, `className`, `style`;
+axe in both themes. Browser: the group hugging in every cell and the
+same width in all three; each face a size less the overlap after the
+last; the first and the last inside the box; the box's width the sum;
+the ring's colour and width; the count sunken and face-sized; the
+faces 24, 32 and 40px by the group's `size`; RTL from the right; a
+group of five beside text hugging with no count (a flex item is
+blockified, so `inline-grid` computes to `grid`, and the width is the
+claim).
+
+Break checks (D-035 §3): the overlap dropped (faces a full size apart);
+the end padding dropped (the last face outside the box); the ring
+dropped (`none`); the count's surface dropped (the tone's solid); the
+group's size dropped (the faces at Avatar's own sizes). Each failed on
+exactly the test named for it.
+
