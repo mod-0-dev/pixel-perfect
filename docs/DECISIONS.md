@@ -5312,3 +5312,92 @@ pinned to `right` (the right-to-left stage's toast said `right`); the
 reduced-motion rule dropped (the enter animation measured, and the
 gallery read no toasts mid-motion — collateral of the un-reduced run,
 D-035 §3).
+
+## D-078 — `CommandPalette` rulings: made of the tier, the first match highlighted, focus back to whatever had it, and `mod` decided when pressed
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`CommandPalette.css` in the `inline-size` group), `src/internal/overlay/focus.ts`
+(`always`), `docs/specs/CommandPalette.md` (status) · **Extends:** D-070 §1,
+D-071 §1, D-073 §1 and §2, D-076 §4 and §6
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last of Tier 4.
+
+### 1. Made of the tier, and the listbox's highlight is one hook
+
+No package is added: the modal and its scrim are Dialog's through the
+two-class contract (`pp-dialog pp-command-palette`), the rows are
+DropdownMenu's through its item class and the panel writing the row's
+private variables (`--_row`, `--_inline`, `--_mark`, Toggle's device for
+Button's), the shortcuts are `Kbd`s, and the highlight is Combobox's —
+factored out of it into `src/internal/listbox.ts` (`useActiveOption`,
+`optionsOf`) so both move the same highlight over the same DOM the same
+way (D-073 §1's argument, for behaviour). Combobox's suite ran unchanged
+after the move.
+
+### 2. The first match is highlighted as the user types — the one place Combobox's rule is reversed
+
+Combobox highlights nothing when its list opens (Combobox §4): its `Enter`
+with nothing highlighted submits a form, and a first match taken by
+surprise is a wrong city. A palette's `Enter` runs a command and its whole
+point is `Enter` on the first result, so the list highlights its first
+enabled item on open and on every change of the text. Same hook, opposite
+default, each recorded.
+
+### 3. Focus returns to whatever had it
+
+`useFocusRestore` restored to the recorded element only when a modal had
+no trigger (Dialog §7); a palette usually has a trigger *and* is usually
+opened by its hotkey from wherever the user was, and Radix would then
+send focus to the trigger button the user never touched. The hook gains
+`always`: the element that had focus when the palette opened is the one
+restored — the trigger when the trigger was used, the field the user was
+in when the hotkey was. Dialog, AlertDialog and Drawer keep the old
+reading; their suites ran unchanged.
+
+### 4. `hotkey` once, `mod` decided when pressed; the palette sits high, a token wide
+
+`hotkey="mod+k"` binds a document `keydown` that toggles the palette;
+`mod` is ⌘ where `navigator.platform` says Apple and Ctrl elsewhere,
+decided in the handler (RULES §7), and every other modifier must match
+exactly, so `Shift+Ctrl+K` is not `Ctrl+K`. Off by default, for an app
+with its own shortcut layer. The panel's inline size is a token
+(`--pp-measure-sm`), the D-071 §1 form, and it sits `--pp-space-9` below
+the scrim's top rather than at its centre: a field one types into sits
+where the eye starts. The field's focus is its hairline — the input's
+outline is transparent and the field's bottom edge takes the focus tone
+— Input's D-039 §4 affordance, in the one place a ring inside a panel
+would read as a box in a box.
+
+### 5. Findings from the build
+
+- **The consumer's `Empty` row sits beside the listbox** (D-076 §4 again),
+  partitioned from the children by type.
+- **`Enter` runs the highlighted item by clicking it**: the item's handler
+  lives in React, the highlight is a DOM id, and `node.click()` is the
+  one path both a pointer and the keyboard take — no registry of
+  handlers by id.
+- **Closing clears the text**, so the next open starts fresh; a controlled
+  `inputValue` sees the clear through its callback and may keep it.
+
+### 6. Verified
+
+The panel sits the offset below the top, the token wide, centred, over
+Dialog's scrim at the overlay layer, with no padding; the field is
+focused on open with its hairline in the focus tone and no outline of its
+own; a row is the medium control height; typing narrows and highlights
+the first match, the arrows move with the menu's fill, `Enter` runs the
+command, closes and returns focus to the trigger; `Control+k` toggles it
+with the text cleared; a long list scrolls and keeps the highlight in
+view; the theme crosses; the gallery holds three contained palettes with
+the matches for "go" and one highlighted. 8 unit and 4 browser tests.
+Break checks in §7.
+
+### 7. Break checks
+
+Five, each caught by its named test: the scrim's start alignment dropped
+(the panel centred); the first-match highlight dropped (nothing
+highlighted on typing, in the long list, and in the gallery); the hotkey
+listener dropped (`Control+k` opened nothing); the row variable dropped
+(the menu's small row); the close after select dropped (the palette
+stayed open after `Enter`).

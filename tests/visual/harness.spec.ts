@@ -6425,3 +6425,163 @@ test.describe('Toast', () => {
     expect(Math.abs(read[2]!.width - 320)).toBeLessThanOrEqual(1);
   });
 });
+
+test.describe('CommandPalette', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="command-palette-${id}"]`);
+  const panel = (page: Page) => page.locator('.pp-command-palette:not([data-gallery])');
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  const closeGallery = async (page: Page) => {
+    await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(left);
+    }
+  };
+
+  test('the panel sits the offset below the top, a token wide, over Dialog\'s scrim; the field is focused with its hairline lit; a row is the medium control', async ({
+    page,
+  }) => {
+    await page.goto('/components/command-palette');
+    await closeGallery(page);
+    const trigger = demo(page, 'launcher').getByRole('button', { name: /Search commands/ });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const offset = await px(page, '--pp-space-9');
+    const width = await px(page, '--pp-measure-sm');
+    const height = await px(page, '--pp-control-height-md');
+    const read = await el.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const scrim = n.parentElement as HTMLElement;
+      const field = n.querySelector('.pp-command-palette__field') as HTMLElement;
+      const input = n.querySelector('.pp-command-palette__input') as HTMLElement;
+      const row = n.querySelector('.pp-command-palette__item') as HTMLElement;
+      return {
+        top: r.top,
+        width: r.width,
+        centred: Math.abs(r.left + r.width / 2 - window.innerWidth / 2) <= 1,
+        scrimZ: getComputedStyle(scrim).zIndex,
+        scrimToken: getComputedStyle(scrim).getPropertyValue('--pp-z-overlay').trim(),
+        padding: getComputedStyle(n).paddingTop,
+        focused: document.activeElement === input,
+        line: getComputedStyle(field).borderBottomColor,
+        lineToken: getComputedStyle(field).getPropertyValue('--pp-tone-focus').trim(),
+        inputOutline: getComputedStyle(input).outlineColor,
+        row: row.getBoundingClientRect().height,
+        animation: getComputedStyle(n).animationName,
+      };
+    });
+    expect(Math.abs(read.top - offset)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - width)).toBeLessThanOrEqual(1);
+    expect(read.centred).toBe(true);
+    expect(read.scrimZ).toBe(read.scrimToken);
+    expect(read.padding).toBe('0px');
+    expect(read.focused).toBe(true);
+    const focusColour = await el.evaluate((n, token) => {
+      const probe = document.createElement('i');
+      probe.style.color = token;
+      n.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, read.lineToken);
+    expect(read.line, 'the field does not light its hairline on focus').toBe(focusColour);
+    expect(read.inputOutline).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+    expect(Math.abs(read.row - height)).toBeLessThanOrEqual(1);
+    expect(read.animation, 'not still under reduced motion').toBe('none');
+  });
+
+  test('type, arrow, Enter: the first match is highlighted, the command runs, the palette closes and focus returns; mod+k toggles', async ({ page }) => {
+    await page.goto('/components/command-palette');
+    await closeGallery(page);
+    const region = demo(page, 'launcher');
+    const trigger = region.getByRole('button', { name: /Search commands/ });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el.getByRole('option').first()).toHaveAttribute('data-highlighted', '');
+    await page.keyboard.type('new');
+    await expect(el.getByRole('option')).toHaveCount(2);
+    await expect(el.getByRole('option', { name: 'New issue' })).toHaveAttribute('data-highlighted', '');
+    await page.keyboard.press('ArrowDown');
+    await expect(el.getByRole('option', { name: 'New project' })).toHaveAttribute('data-highlighted', '');
+    const fill = await el.getByRole('option', { name: 'New project' }).evaluate((n) => getComputedStyle(n).backgroundColor);
+    expect(fill).not.toBe('rgba(0, 0, 0, 0)');
+    await page.keyboard.press('Enter');
+    await expect(el).toHaveCount(0);
+    await expect(region.locator('xpath=..')).toContainText('last ran: new-project');
+    await expect(trigger).toBeFocused();
+
+    await page.keyboard.press('Control+k');
+    await expect(el).toBeVisible();
+    await expect(el.getByRole('combobox')).toBeFocused();
+    await expect(el.getByRole('combobox')).toHaveValue('');
+    await page.keyboard.press('Control+k');
+    await expect(el).toHaveCount(0);
+  });
+
+  test('a long list scrolls and keeps the highlight in view; the theme crosses the portal', async ({ page }) => {
+    await page.goto('/components/command-palette');
+    await closeGallery(page);
+    const trigger = demo(page, 'long').getByRole('button', { name: 'Thirty commands' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    for (let i = 0; i < 20; i += 1) await page.keyboard.press('ArrowDown');
+    const active = el.locator('[data-highlighted]');
+    await expect(active).toHaveText('Command 21');
+    const read = await active.evaluate((n) => {
+      const list = n.closest('.pp-command-palette__list') as HTMLElement;
+      const r = n.getBoundingClientRect();
+      const p = list.getBoundingClientRect();
+      return { inView: r.top >= p.top - 1 && r.bottom <= p.bottom + 1, scrolled: list.scrollTop > 0, overflow: getComputedStyle(list).overflowY };
+    });
+    expect(read).toEqual({ inView: true, scrolled: true, overflow: 'auto' });
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+
+    const dark = demo(page, 'theme');
+    await dark.scrollIntoViewIfNeeded();
+    await dark.getByRole('button', { name: 'Open here' }).click();
+    await expect(el).toBeVisible();
+    await expect(el.locator('xpath=..')).toHaveAttribute('data-pp-theme', 'dark');
+    const raised = await el.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim());
+    expect(raised).toBe(await dark.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three, contained, each with the matches for "go" and the first highlighted', async ({ page }) => {
+    await page.goto('/components/command-palette');
+    const panels = page.locator('.pp-command-palette[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const stage = scrim.parentElement as HTMLElement;
+        const s = stage.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return {
+          inside: r.left >= s.left - 1 && r.right <= s.right + 1,
+          options: el.querySelectorAll('[role="option"]').length,
+          highlighted: el.querySelectorAll('[data-highlighted]').length,
+          width: r.width,
+          stage: stage.clientWidth,
+        };
+      }),
+    );
+    expect(read.every((r) => r.inside && r.options === 3 && r.highlighted === 1), JSON.stringify(read)).toBe(true);
+    expect(Math.abs(read[0]!.width - (read[0]!.stage - 2 * 16))).toBeLessThanOrEqual(1);
+    expect(Math.abs(read[2]!.width - 640)).toBeLessThanOrEqual(1);
+  });
+});

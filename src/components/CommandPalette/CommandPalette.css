@@ -1,0 +1,122 @@
+/*
+ * CommandPalette — spec docs/specs/CommandPalette.md
+ *
+ * A DIALOG, HIGH AND A TOKEN WIDE (spec §2). Dialog.css draws the scrim and
+ * the panel through the two-class contract (D-070 §1); this file changes
+ * three things about the panel — no padding, an inline size from a token
+ * (D-071 §1's form of the overlay exception; `.stylelintrc.json` names this
+ * file for `inline-size`), and a seat near the top of the scrim rather than
+ * its centre, because a field one types into sits where the eye starts.
+ *
+ * ROWS ARE DROPDOWNMENU'S (spec §4): an item carries the menu's row class,
+ * and the panel writes the row's PRIVATE variables — `--_row`, `--_inline`,
+ * `--_mark` — the way Toggle writes Button's (tier 3a §3.5): the menu reads
+ * them with a public fallback, so a consumer's override still wins from
+ * anywhere. The row is the medium height, not the menu's small one: a
+ * palette's rows are hit with a pointer as often as read.
+ *
+ * THE FIELD'S FOCUS IS ITS HAIRLINE (spec §3): the input's own outline is
+ * transparent, never none, and the field's bottom edge takes the focus tone
+ * while the input is focus-visible — Input's D-039 §4 affordance, in the
+ * one place a ring inside a panel would read as a box in a box.
+ */
+
+@layer pp.components {
+  .pp-command-palette__scrim {
+    align-items: start;
+    padding-block-start: var(--pp-command-palette-offset, var(--pp-space-9));
+  }
+
+  .pp-command-palette {
+    --_row: var(--pp-command-palette-item-height, var(--pp-control-height-md));
+    --_inline: var(--pp-control-padding-inline-md);
+    --_mark: var(--pp-size-4);
+
+    display: flex;
+    flex-direction: column;
+    inline-size: min(var(--pp-command-palette-width, var(--pp-measure-sm)), 100%);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .pp-command-palette__field {
+    display: flex;
+    align-items: center;
+    gap: var(--pp-space-2);
+    padding-inline: var(--pp-space-4);
+    border-block-end: var(--pp-border-width-1) solid var(--pp-color-border-subtle);
+    transition: border-color var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  .pp-command-palette__field:has(.pp-command-palette__input:focus-visible) {
+    border-color: var(--pp-tone-focus);
+  }
+
+  .pp-command-palette__glyph {
+    flex: 0 0 var(--pp-size-4);
+    block-size: var(--pp-size-4);
+    color: var(--pp-color-text-muted);
+  }
+
+  .pp-command-palette__input {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    block-size: var(--pp-control-height-lg);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--pp-color-text);
+    font-size: var(--pp-font-size-3);
+    line-height: var(--pp-line-height-normal);
+    appearance: none;
+  }
+
+  .pp-command-palette__input::placeholder {
+    color: var(--pp-color-text-muted);
+    opacity: 1;
+  }
+
+  .pp-command-palette__input:focus-visible {
+    outline: var(--pp-focus-ring-width) solid transparent;
+  }
+
+  .pp-command-palette__list {
+    max-block-size: var(--pp-command-palette-list-height, var(--pp-measure-xs));
+    padding: var(--pp-space-1);
+    overflow: auto;
+  }
+
+  .pp-command-palette__item {
+    font-size: var(--pp-control-font-size-md);
+  }
+
+  .pp-command-palette__icon {
+    display: inline-flex;
+    flex: 0 0 var(--pp-size-4);
+    block-size: var(--pp-size-4);
+    color: var(--pp-color-text-muted);
+  }
+
+  .pp-command-palette__icon > svg {
+    inline-size: var(--pp-size-4);
+    block-size: var(--pp-size-4);
+  }
+
+  .pp-command-palette__shortcut {
+    display: inline-flex;
+    gap: var(--pp-space-1);
+  }
+
+  .pp-command-palette__empty {
+    padding-block: var(--pp-space-3);
+    padding-inline: var(--pp-control-padding-inline-md);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-control-font-size-md);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-command-palette__field {
+      transition: none;
+    }
+  }
+}

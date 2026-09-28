@@ -22,6 +22,7 @@ import {
 } from 'react';
 
 import { cx } from '../../internal/cx';
+import { useActiveOption, type ListboxMove } from '../../internal/listbox';
 import { Check } from '../../internal/menu/parts';
 import { directionOf, resolveSide, type LogicalSide } from '../../internal/overlay/side';
 import { resolveSpace } from '../../internal/overlay/space';
@@ -55,10 +56,9 @@ import { Spinner } from '../Spinner/Spinner';
  */
 
 export type ComboboxSide = LogicalSide;
+type Move = ListboxMove;
 /** Why the text changed: typed by the user, set by a selection, or following a value set from outside (spec §2). Filter on `input` only. */
 export type ComboboxInputReason = 'input' | 'select' | 'value';
-
-type Move = 'next' | 'prev' | 'first' | 'last';
 
 interface ComboboxContextValue {
   multiple: boolean;
@@ -159,12 +159,6 @@ function Cross() {
   );
 }
 
-/** The enabled options of a list, in DOM order. */
-function optionsOf(list: HTMLElement | null): HTMLElement[] {
-  if (!list) return [];
-  return Array.from(list.querySelectorAll<HTMLElement>('[role="option"]:not([aria-disabled="true"])'));
-}
-
 export const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(function Combobox(props, ref) {
   const {
     multiple = false,
@@ -241,7 +235,9 @@ export const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(function Combo
     component: 'Combobox',
     prop: 'open',
   });
-  const [activeId, setActiveId] = useState<string | null>(null);
+  /* The highlight, moved over the DOM's options (D-076 §6, shared with
+     CommandPalette). */
+  const { activeId, setActiveId, move, active, listMounted } = useActiveOption(listRef);
   const setOpen = useCallback(
     (next: boolean) => {
       if (disabled && next) return;
@@ -297,46 +293,13 @@ export const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(function Combo
     if (Array.isArray(value) && value.length) setValue(value.slice(0, -1));
   }, [value, setValue]);
 
-  /*
-   * THE HIGHLIGHT MOVES OVER THE DOM (spec §4): the enabled options are
-   * read from the list when a key is pressed, so a consumer's filtering,
-   * grouping and disabling are all honoured with nothing registered. A move
-   * asked for before the list is mounted waits for it.
-   */
-  const pending = useRef<Move | null>(null);
-  const move = useCallback(
-    (to: Move) => {
-      const options = optionsOf(listRef.current);
-      if (options.length === 0) {
-        pending.current = to;
-        return;
-      }
-      const index = options.findIndex((n) => n.id === activeId);
-      let next: number;
-      if (to === 'first') next = 0;
-      else if (to === 'last') next = options.length - 1;
-      else if (index === -1) next = to === 'next' ? 0 : options.length - 1;
-      else next = (index + (to === 'next' ? 1 : -1) + options.length) % options.length;
-      setActiveId(options[next]!.id);
-    },
-    [activeId],
-  );
-  const listMounted = useCallback(() => {
-    if (pending.current) {
-      const to = pending.current;
-      pending.current = null;
-      move(to);
-    }
-  }, [move]);
-
   const takeActive = useCallback((): boolean => {
-    if (!activeId) return false;
-    const node = listRef.current?.querySelector<HTMLElement>(`[id="${activeId}"]`);
-    if (!node || node.getAttribute('aria-disabled') === 'true') return false;
+    const node = active();
+    if (!node) return false;
     const v = node.dataset.value ?? '';
     select(v, node.dataset.label ?? node.textContent?.trim() ?? v);
     return true;
-  }, [activeId, select]);
+  }, [active, select]);
 
   /* Focus leaving the control and its list closes the list; the text stays. */
   const handleBlur = (event: FocusEvent<HTMLDivElement>) => {

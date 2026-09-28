@@ -96,9 +96,10 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
 - **In flight: 4.5 `AlertDialog`, 4.6 `Drawer`, 4.7 `DropdownMenu`, 4.8
-  `ContextMenu`, 4.9 `Tabs`, 4.10 `Accordion`, 4.11 `Combobox` and 4.12
-  `Toast` (all `review`, waiting only on their CI-authored baselines,
-  D-069 §2) and the batch that follows them.** Under the standing delegation of D-069 §1 the rest of
+  `ContextMenu`, 4.9 `Tabs`, 4.10 `Accordion`, 4.11 `Combobox`, 4.12
+  `Toast` and 4.14 `CommandPalette` (all `review`, waiting only on their
+  CI-authored baselines, D-069 §2): the whole of Tier 4 but 4.13, which
+  waits on 5.9.** Under the standing delegation of D-069 §1 the rest of
   Tier 4 is built in sequence, one in `build` at a time, each moved to
   `review` with every box but the baseline checked, and one authoring run
   at the end of the PR closes them together. 4.5 is `Dialog` with two
@@ -119,8 +120,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   library's own — Popover's anchor, the menu's stylesheet, Input's box,
   and a keyboard model written here; the consumer renders the matches
   (D-076). 4.12 is the region and the imperative API the roadmap promised,
-  an `Alert` that floats (D-077). Next up is **4.14 `CommandPalette`**;
-  4.13 `DatePicker` waits on 5.9 `Calendar`. **4.4 `Dialog` is `done`** (2026-09-27): built
+  an `Alert` that floats (D-077). 4.14 closes the tier, made of it with no
+  package added (D-078). 4.13 `DatePicker` waits on 5.9 `Calendar`. Next up
+  is **Tier 5**, starting with 5.1 `Card`. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -904,7 +906,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.11 | `Combobox` | `review` | fill | client | 4.2, 3.13 | [`Combobox.md`](docs/specs/Combobox.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-076. The one Tier 4 component whose behaviour is the library's own: the list on Popover's `Anchor`, its look DropdownMenu's stylesheet, the control Input's box; the keyboard, `aria-activedescendant`, the selection and the tokens written here. The consumer renders the options that match and `onInputValueChange` says why the text changed; `multiple` as tokens; `getLabel` for a value set from outside; `loading` for options from a server. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.12 | `Toast` | `review` | fill | client | 4.1 | [`Toast.md`](docs/specs/Toast.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-077. Region + imperative API, as promised: one `ToastProvider`, one `useToast()` (`toast`, `dismiss`, `update`), no element. A toast is an `Alert` that floats, drawn by Alert's stylesheet through two classes; the region is fixed at a logical corner, a token wide, with a `limit` and a queue; `live` is Alert's word for Radix's `type`. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.13 | `DatePicker` | `planned` | fill | client | 4.2, 5.9 | |
-| 4.14 | `CommandPalette` | `planned` | fill | client | 4.11, 4.4 | |
+| 4.14 | `CommandPalette` | `review` | fill | client | 4.11, 4.4 | [`CommandPalette.md`](docs/specs/CommandPalette.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-078. The last of Tier 4 and made of it, with no package added: Dialog's modal through two classes, Combobox's highlight through a shared hook, DropdownMenu's row through its class and private variables, Kbd's key caps. The consumer renders the matches; the first is highlighted as the user types; `hotkey="mod+k"` once on the root; focus returns to whatever had it. Gate B read 4.11's `review` (baseline only) as `done` (D-073 §2). In `review` for the CI-authored baseline only (D-069 §2) |
 
 ---
 

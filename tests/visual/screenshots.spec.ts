@@ -60,6 +60,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'accordion', path: '/components/accordion' },
   { name: 'combobox', path: '/components/combobox' },
   { name: 'toast', path: '/components/toast' },
+  { name: 'command-palette', path: '/components/command-palette' },
   { name: 'alert', path: '/components/alert' },
 ];
 

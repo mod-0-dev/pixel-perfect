@@ -79,5 +79,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'accordion', name: 'Accordion', tier: '4.10', summary: 'Sections under headings that open and close; one at a time, or many.' },
   { slug: 'combobox', name: 'Combobox', tier: '4.11', summary: 'A text input with a list of options; you render the matches, it does the rest.' },
   { slug: 'toast', name: 'Toast', tier: '4.12', summary: 'A brief message at a corner, announced, gone after a moment; toast() from a hook.' },
+  { slug: 'command-palette', name: 'CommandPalette', tier: '4.14', summary: 'Every command one keystroke away: a search field over a list, in a modal.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];

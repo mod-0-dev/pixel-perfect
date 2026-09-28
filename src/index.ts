@@ -56,6 +56,29 @@ export {
 } from './components/Checkbox/Checkbox';
 export { Code, type CodeProps } from './components/Code/Code';
 export {
+  CommandPalette,
+  CommandPaletteContent,
+  CommandPaletteEmpty,
+  CommandPaletteGroup,
+  CommandPaletteInput,
+  CommandPaletteItem,
+  CommandPaletteLabel,
+  CommandPaletteList,
+  CommandPaletteShortcut,
+  CommandPaletteTrigger,
+  type CommandPaletteContentProps,
+  type CommandPaletteEmptyProps,
+  type CommandPaletteGroupProps,
+  type CommandPaletteInputProps,
+  type CommandPaletteItemProps,
+  type CommandPaletteLabelProps,
+  type CommandPaletteListProps,
+  type CommandPaletteProps,
+  type CommandPaletteSelectEvent,
+  type CommandPaletteShortcutProps,
+  type CommandPaletteTriggerProps,
+} from './components/CommandPalette/CommandPalette';
+export {
   Combobox,
   ComboboxEmpty,
   ComboboxGroup,

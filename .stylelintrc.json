@@ -203,7 +203,8 @@
         "src/components/Switch/**/*.css",
         "src/components/RangeSlider/**/*.css",
         "src/components/Drawer/**/*.css",
-        "src/components/Toast/**/*.css"
+        "src/components/Toast/**/*.css",
+        "src/components/CommandPalette/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [
