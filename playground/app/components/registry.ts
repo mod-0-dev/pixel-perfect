@@ -78,5 +78,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'tabs', name: 'Tabs', tier: '4.9', summary: 'One panel of several, chosen by its tab; the strip scrolls, never wraps.' },
   { slug: 'accordion', name: 'Accordion', tier: '4.10', summary: 'Sections under headings that open and close; one at a time, or many.' },
   { slug: 'combobox', name: 'Combobox', tier: '4.11', summary: 'A text input with a list of options; you render the matches, it does the rest.' },
+  { slug: 'toast', name: 'Toast', tier: '4.12', summary: 'A brief message at a corner, announced, gone after a moment; toast() from a hook.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];

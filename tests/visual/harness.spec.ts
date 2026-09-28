@@ -6279,3 +6279,149 @@ test.describe('Combobox', () => {
     expect(read.every((r) => r.options === 2 && r.selected === 1 && r.fits), JSON.stringify(read)).toBe(true);
   });
 });
+
+test.describe('Toast', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="toast-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  test('the region is at the bottom-end corner one gutter in, the token wide; a toast fills it, the newest nearest the edge; still under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/toast');
+    const region = demo(page, 'corner');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('button', { name: 'Success' }).click();
+    await region.getByRole('button', { name: 'Polite' }).click();
+    const viewport = region.locator('.pp-toast__viewport');
+    const items = viewport.locator('.pp-toast');
+    await expect(items).toHaveCount(2);
+    const gutter = await px(page, '--pp-space-4');
+    const width = await px(page, '--pp-measure-xs');
+    const read = await viewport.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const toasts = Array.from(n.querySelectorAll('.pp-toast')).map((t) => t.getBoundingClientRect());
+      return {
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        vw: window.innerWidth,
+        vh: window.innerHeight,
+        pointer: getComputedStyle(n).pointerEvents,
+        toastPointer: getComputedStyle(n.querySelector('.pp-toast') as HTMLElement).pointerEvents,
+        toastWidth: toasts[0]!.width,
+        innerWidth: n.clientWidth - parseFloat(getComputedStyle(n).paddingLeft) - parseFloat(getComputedStyle(n).paddingRight),
+        firstBottom: toasts[0]!.bottom,
+        secondBottom: toasts[1]!.bottom,
+        animation: getComputedStyle(n.querySelector('.pp-toast') as HTMLElement).animationName,
+        zIndex: getComputedStyle(n).zIndex,
+        token: getComputedStyle(n).getPropertyValue('--pp-z-toast').trim(),
+      };
+    });
+    expect(Math.abs(read.right - read.vw)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.bottom - read.vh)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.toastWidth - read.innerWidth), 'a toast does not fill the region').toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - read.toastWidth - 2 * gutter), 'the gutter is not the token').toBeLessThanOrEqual(1);
+    expect(read.pointer).toBe('none');
+    expect(read.toastPointer).toBe('auto');
+    // Newest nearest the edge: the second toast fired sits lower than the first.
+    expect(read.secondBottom).toBeGreaterThan(read.firstBottom);
+    expect(read.animation, 'not still under reduced motion').toBe('none');
+    expect(read.zIndex).toBe(read.token);
+  });
+
+  test('F8 focuses the region and Escape dismisses; the limit shows three and the rest follow', async ({ page }) => {
+    await page.goto('/components/toast');
+    const region = demo(page, 'corner');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('button', { name: 'Five at once' }).click();
+    const items = region.locator('.pp-toast[data-state="open"]');
+    await expect(items).toHaveCount(3);
+    await expect(items.first().locator('.pp-alert__title')).toHaveText('Notification 1');
+    // The queue: dismissing one of the three lets the fourth in.
+    await items.first().getByRole('button', { name: 'Dismiss' }).click();
+    await expect(region.locator('.pp-toast[data-state="open"] .pp-alert__title').filter({ hasText: 'Notification 4' })).toHaveCount(1);
+    await expect(items).toHaveCount(3);
+    await expect(region.getByRole('region', { name: 'Notifications (F8)' })).toHaveCount(1);
+
+    // F8 focuses A list (this page has a provider per stage, and every one
+    // listens; an app has one), Tab reaches its first toast's button, and
+    // Escape dismisses that toast.
+    await page.keyboard.press('F8');
+    await expect(page.locator('.pp-toast__viewport:focus')).toHaveCount(1);
+    const index = await page.locator('.pp-toast__viewport').evaluateAll((els) => els.findIndex((el) => el === document.activeElement));
+    const list = page.locator('.pp-toast__viewport').nth(index);
+    const before = await list.locator('.pp-toast[data-state="open"]').count();
+    expect(before).toBeGreaterThan(0);
+    await page.keyboard.press('Tab');
+    const title = await page.evaluate(() => document.activeElement?.closest('.pp-toast')?.querySelector('.pp-alert__title')?.textContent ?? null);
+    expect(title).not.toBeNull();
+    await page.keyboard.press('Escape');
+    // That toast is gone; a queued one may have taken its place.
+    await expect(list.locator('.pp-toast[data-state="open"] .pp-alert__title').filter({ hasText: title! })).toHaveCount(0);
+    expect(await list.locator('.pp-toast[data-state="open"]').count()).toBeLessThanOrEqual(before);
+  });
+
+  test('four corners, logically, and bottom-end is the bottom left under dir="rtl"', async ({ page }) => {
+    await page.goto('/components/toast');
+    const stages = demo(page, 'placements');
+    await stages.scrollIntoViewIfNeeded();
+    const read = await stages.locator('.toast-stage').evaluateAll((els) =>
+      els.map((stage) => {
+        const s = stage.getBoundingClientRect();
+        const v = (stage.querySelector('.pp-toast__viewport') as HTMLElement).getBoundingClientRect();
+        return {
+          placement: stage.getAttribute('data-placement'),
+          left: Math.abs(v.left - s.left) <= 1,
+          right: Math.abs(v.right - s.right) <= 1,
+          top: Math.abs(v.top - s.top) <= 1,
+          bottom: Math.abs(v.bottom - s.bottom) <= 1,
+          toasts: stage.querySelectorAll('.pp-toast').length,
+          // The swipe, the one physical thing, toward the inline end.
+          swipe: stage.querySelector('.pp-toast')?.getAttribute('data-swipe-direction'),
+        };
+      }),
+    );
+    expect(read).toEqual([
+      { placement: 'top-start', left: true, right: false, top: true, bottom: false, toasts: 1, swipe: 'left' },
+      { placement: 'top-end', left: false, right: true, top: true, bottom: false, toasts: 1, swipe: 'right' },
+      { placement: 'bottom-start', left: true, right: false, top: false, bottom: true, toasts: 1, swipe: 'left' },
+      { placement: 'bottom-end', left: false, right: true, top: false, bottom: true, toasts: 1, swipe: 'right' },
+    ]);
+    const rtl = demo(page, 'rtl');
+    await rtl.scrollIntoViewIfNeeded();
+    const mirrored = await rtl.evaluate((stage) => {
+      const s = stage.getBoundingClientRect();
+      const v = (stage.querySelector('.pp-toast__viewport') as HTMLElement).getBoundingClientRect();
+      return {
+        left: Math.abs(v.left - s.left) <= 1,
+        bottom: Math.abs(v.bottom - s.bottom) <= 1,
+        // The swipe, the one physical thing, resolved from the direction.
+        swipe: stage.querySelector('.pp-toast')?.getAttribute('data-swipe-direction'),
+      };
+    });
+    expect(mirrored).toEqual({ left: true, bottom: true, swipe: 'left' });
+  });
+
+  test('the gallery holds a toast per cell, fixed inside its stage, the region the cell or the token wide', async ({ page }) => {
+    await page.goto('/components/toast');
+    const read = await page.locator('.matrix .toast-stage').evaluateAll((els) =>
+      els.map((stage) => {
+        const s = stage.getBoundingClientRect();
+        const v = (stage.querySelector('.pp-toast__viewport') as HTMLElement).getBoundingClientRect();
+        return { inside: v.left >= s.left - 1 && v.right <= s.right + 1 && v.bottom <= s.bottom + 1, width: v.width, stage: stage.clientWidth, toasts: stage.querySelectorAll('.pp-toast').length };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    expect(read.every((r) => r.inside && r.toasts === 1), JSON.stringify(read)).toBe(true);
+    expect(Math.abs(read[0]!.width - read[0]!.stage)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read[2]!.width - 320)).toBeLessThanOrEqual(1);
+  });
+});

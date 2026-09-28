@@ -90,6 +90,7 @@
 @import "../components/Tabs/Tabs.css";
 @import "../components/Accordion/Accordion.css";
 @import "../components/Combobox/Combobox.css";
+@import "../components/Toast/Toast.css";
 
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";

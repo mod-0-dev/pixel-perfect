@@ -517,6 +517,17 @@ body {
   opacity: 0.6;
 }
 
+/* A ToastProvider's region fixed inside a cell: `contain: layout` makes a
+   fixed box the stage's, the Dialog gallery's device. */
+.toast-stage {
+  position: relative;
+  contain: layout;
+  block-size: 12rem;
+  overflow: hidden;
+  border: 1px dashed var(--pp-color-border-subtle);
+  border-radius: var(--pp-radius-3);
+}
+
 .dialog-long p {
   margin: 0;
 }

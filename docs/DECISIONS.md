@@ -5207,3 +5207,108 @@ selected option's mark sat on its label); the scroll-into-view dropped
 (the seventeenth option was highlighted out of view); `getLabel` ignored
 (a value from outside showed as its code, in the input and as a token —
 the unit tests).
+
+## D-077 — `Toast` rulings: an event, not an element; an `Alert` that floats; `live`, not `type`; and what Radix's announcer is
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`Toast.css` in the `inline-size` group), `src/test/setup.ts` (pointer
+capture), `docs/specs/Toast.md` (status) · **Extends:** Alert.md §2 and §5,
+D-061 §3, D-070 §1, D-071 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. One provider, one hook, no `<Toast>` element
+
+A toast is an event, not a place in the tree. `ToastProvider` owns the
+queue and the region; `useToast()` returns `toast`, `dismiss` and
+`update`. Radix ships the element; this library ships the event, and
+does not also export the element under its own names, because two APIs
+for one thing are two APIs to keep in step. A progress toast is
+`update(id, …)`, not a controlled element.
+
+### 2. A toast is an `Alert` that floats
+
+Every toast carries `pp-alert pp-toast` and its parts carry `Alert`'s
+classes, so `Alert.css` draws the surface, the tone, the layout and the
+dismiss button (D-070 §1, the third component drawn by another's
+stylesheet) and `Toast.css` adds the region, the shadow, the motion and
+the swipe. Alert §2's ruling is the reason this component exists — a
+region that exists first and receives text afterwards is the reliable
+announcement — and Alert §3 and §5 hold: the tone is never the only
+signal, and there are no default icons.
+
+### 3. `live`, not `type`; `limit` at three; the region a token wide at a logical corner
+
+Radix's `type: 'foreground' | 'background'` is RULES §5's reserved word;
+`Alert` already says `live: 'polite' | 'assertive'`, so the toast says
+it too, `assertive` by default (a toast is almost always the result of
+what the user just did). `limit` defaults to three, with the rest
+waiting in order: a failing form must not wallpaper the screen. The
+region is fixed at `placement` — logical, `bottom-end` by default — its
+inline size `--pp-toast-width` (`--pp-measure-xs`) capped at the viewport:
+D-061 §3's exception in D-071 §1's form, the anchored axis of a floating
+box taking a token, with `Toast.css` in the `inline-size` group. The
+region takes no pointer events; its toasts do.
+
+### 4. The motion is from the block edge, and every placement stacks newest nearest its edge
+
+A toast slides in from the edge it is anchored to — the block edge, so
+top placements slide down and bottom placements up — and nothing in the
+motion is physical; the swipe, Radix's, is the one physical thing and is
+resolved from the region's direction at mount. The first draft reversed
+the *bottom* lists to put the newest nearest the edge and had it
+backwards: DOM order is oldest first, a bottom list grows upward from its
+edge, so it already reads down to its newest; it is the *top* list that
+needs `column-reverse`. The browser test measured the second toast above
+the first, and the rule is now stated as the list growing away from its
+edge.
+
+### 5. What Radix's announcer is, and what the toast element is not
+
+Radix renders a visually hidden `role="status"` region, `aria-live` per
+`live`, holding the toast's text prefixed by the provider's `label`, for
+one second on arrival and then not at all; the toast element itself
+carries no live role, so it is not read twice. The spec's first draft
+gave the element `role="status"` as well; the unit test asked for it and
+Radix had not written it. Corrected in the spec, the docs and the test,
+which now reads the announcer inside its second.
+
+### 6. Findings from the build
+
+- **jsdom has no pointer capture**, which Radix's swipe asks of the
+  element under a pointer; `hasPointerCapture` and its two companions are
+  stubbed in the test setup, as `scrollIntoView` and `ResizeObserver` are,
+  and the docs page tells consumers to do the same.
+- **No animation in jsdom means Radix's Presence unmounts a closing toast
+  at once**; the provider still forgets it after the leave duration, read
+  from `--pp-duration-fast` where the region sits.
+- **Every provider on a page listens for the hotkey**, and each focuses
+  its own list; the playground has eight, so `F8` there focuses the last
+  registered. An app has one. The browser test finds whichever list took
+  focus and dismisses a toast in it.
+- **A closed toast's place is taken by a queued one**, so a test that
+  counts open toasts after a dismissal counts wrong; it asserts the
+  dismissed toast is gone instead.
+
+### 7. Verified
+
+The region is at the bottom-end corner, the token wide, its gutter the
+token, taking no pointer events while its toasts do; a toast fills it;
+the newest is nearest the edge; the `z-index` is the token; the motion is
+none under reduced motion; the limit shows three of five and a dismissal
+lets the fourth in; `F8` focuses a list, `Tab` reaches a toast's button
+and `Escape` dismisses it; four placements sit at their logical corners
+and `bottom-end` is the bottom left under `dir="rtl"`; the gallery holds
+a toast per cell fixed inside its stage, the region the cell or the token
+wide. 8 unit and 4 browser tests. Break checks in §8.
+
+### 8. Break checks
+
+Five, each caught by its named test: `pointer-events: none` dropped from
+the region (the dead-zone read); the bottom list reversed (the newest
+above the older); the limit ignored (five open, not three); the swipe
+pinned to `right` (the right-to-left stage's toast said `right`); the
+reduced-motion rule dropped (the enter animation measured, and the
+gallery read no toasts mid-motion — collateral of the un-reduced run,
+D-035 §3).

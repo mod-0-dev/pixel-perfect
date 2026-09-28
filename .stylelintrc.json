@@ -202,7 +202,8 @@
         "src/components/Radio/Radio.css",
         "src/components/Switch/**/*.css",
         "src/components/RangeSlider/**/*.css",
-        "src/components/Drawer/**/*.css"
+        "src/components/Drawer/**/*.css",
+        "src/components/Toast/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [
