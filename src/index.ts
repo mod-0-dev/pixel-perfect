@@ -394,4 +394,5 @@ export {
   type TextTone,
   type TextWeight,
 } from './components/Text/Text';
+export { Tree, TreeItem, type TreeItemProps, type TreeProps } from './components/Tree/Tree';
 export { VisuallyHidden, type VisuallyHiddenProps } from './components/VisuallyHidden/VisuallyHidden';

@@ -6209,3 +6209,85 @@ surface dropped (the page's surface); the item hairline dropped (`0px`);
 the name's truncation dropped (`false`). Each failed on exactly the test
 named for it.
 
+## D-088 — `Tree` rulings: nested items with both states controllable, focus on the row that owns its group, and a ring the rule would not let me remove
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Tree.md`
+(status) · **Extends:** RULES §5.5 and §6, D-019, D-082 §4, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Two parts; a node with children is a parent; both states controllable; collapsed children unmounted
+
+`Tree` (`role="tree"`, `label` required) and `TreeItem` (`value`,
+`label`, `icon`, `disabled`, its child items as `children`). A node is a
+parent because it has child elements — counted, not declared. `expanded`
+(an array) and `selected` (one value) each come controlled or
+uncontrolled (RULES §5.5). A collapsed node's children are not rendered,
+so the DOM holds exactly the visible items and the keyboard walks
+`[role="treeitem"]` in document order; the ARIA pattern's optional
+type-ahead is deferred, as is multiple selection.
+
+### 2. Focus on the row, which is the `treeitem` and owns its group
+
+The first draft put `role="treeitem"` and focus on the `<li>`, as the
+APG example does, and drew the ring on the row with `outline: none` on
+the item — which Tier 0.7's lint refused, because RULES §6 says a ring
+is never removed, only replaced. The rule was right and the draft was
+the thing to change: a ring belongs on the element that has focus, and
+an `<li>` is the whole subtree, so a ring around it would circle every
+child. The row is the `treeitem` now — focus, the states, the ring
+(inset, so the row's own box holds it) — and it owns its group through
+`aria-owns`, the `<li>` being `role="none"`. One tab stop: the focused
+row, else the selected, else the first top-level item, which the root
+reads from its own children so no item has to ask the DOM. The APG keys:
+Down and Up through the visible rows, Right expands then enters, Left
+collapses then goes to the parent (the row's `<li>`, its group, that
+group's `<li>`, its row), Home and End, Enter and Space select and
+toggle a parent; the horizontal pair swaps under RTL. A disabled row is
+in the tree, skipped and unpickable. A pointer press on the row selects
+and toggles; on the chevron alone it toggles.
+
+### 3. Rows on the control scale, indented by one custom property
+
+Each row is `--pp-control-height-sm` tall and indented
+`--pp-tree-indent` per level through `--_pp-tree-level`, written on the
+`<li>` and read by the row's `padding-inline-start`, so nesting needs
+no per-level rule and RTL needs nothing. The chevron and the icon are
+`Icon`s at `sm` (D-019's sizing, not a width here); a leaf's toggle is
+an empty Icon of the same size, so every label starts at the same x.
+The chevron turns a quarter when open, Accordion's device, and is
+mirrored under `[dir="rtl"]` (D-082 §4). The selected row is
+`--pp-tone-bg` in the accent scope, medium; hover the ghost step; a
+label truncates with an ellipsis.
+
+### 4. The screenshot's finding: a mirror and a quarter turn point up
+
+Under `[dir="rtl"]` the chevron is mirrored (`scale: -1 1`) and an open
+parent turns it `90deg` — and the two compose into an arrow pointing
+up, which every RTL parent on the page showed while the assertions
+read only the scale. Open turns `-90deg` under the mirror, and the test
+reads both.
+
+### 5. Verified, and the six breaks
+
+Unit: ten tests — the roles, levels, names, `aria-expanded`, the group
+rendered only when open and owned by its row; the tab stop's fallbacks;
+Down, Up, Home, End and a disabled row skipped; Right expanding then
+entering and Left collapsing then rising, reported; Enter and Space
+selecting and toggling; presses on the row and the chevron and a child's
+press; an owner for both states and a holding controlled tree; `label`
+required at the type level and an item outside a tree; refs,
+`className`, `style` and the level variable; axe in both themes.
+Browser: the tree its cell's width and every row the tree's; the row
+height; the indent per level; the selected surface and weight; hover;
+the chevron turned when open and not when closed; a long label
+truncating at 240 and not at 960; Tab into the picked row with the ring
+on it and out of this tree; RTL indenting from the right with the
+chevron mirrored and Arrow Left expanding.
+
+Break checks (D-035 §3): the indent dropped; the selected surface
+dropped; the chevron's turn dropped; the row height dropped; the RTL
+mirror dropped; the RTL turn dropped. Each failed on exactly the test
+named for it.
+

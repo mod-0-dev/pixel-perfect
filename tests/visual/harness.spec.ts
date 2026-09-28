@@ -7648,3 +7648,128 @@ test.describe('FileUpload', () => {
     expect(await page.evaluate(() => document.activeElement?.getAttribute('aria-label'))).toMatch(/^Remove /);
   });
 });
+
+test.describe('Tree', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+
+  test('rows on the control scale, indented by level; the picked row on the accent surface; the chevron turned when open; the tree its cell\'s width and a long label truncating', async ({
+    page,
+  }) => {
+    await page.goto('/components/tree');
+    const indent = await px(page, '--pp-space-4');
+    const rowHeight = await px(page, '--pp-control-height-sm');
+    const cells = await page.locator('.matrix__cell .pp-tree').evaluateAll((els) =>
+      els.map((n) => {
+        const tree = n as HTMLElement;
+        const parent = tree.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const row = (value: string) => tree.querySelector(`[data-value="${value}"]`) as HTMLElement;
+        const start = (value: string) => row(value).getBoundingClientRect().left + parseFloat(getComputedStyle(row(value)).paddingLeft);
+        const label = tree.querySelector('[data-value="spec"] .pp-tree__label') as HTMLElement;
+        return {
+          treeWidth: tree.getBoundingClientRect().width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          rowHeight: row('docs').getBoundingClientRect().height,
+          rowWidth: row('docs').getBoundingClientRect().width,
+          level1: start('docs'),
+          level2: start('readme'),
+          level3: start('button'),
+          selectedBg: getComputedStyle(row('button')).backgroundColor,
+          selectedWeight: getComputedStyle(row('button')).fontWeight,
+          plainBg: getComputedStyle(row('readme')).backgroundColor,
+          openRotate: getComputedStyle(row('docs').querySelector('.pp-tree__toggle')!).rotate,
+          closedRotate: getComputedStyle((tree.querySelector('[data-value="index"]') as HTMLElement).querySelector('.pp-tree__toggle')!).rotate,
+          truncated: label.scrollWidth > label.clientWidth + 1 && getComputedStyle(label).textOverflow === 'ellipsis',
+          spills: tree.scrollWidth > tree.clientWidth + 1,
+          disabledColor: getComputedStyle(row('lock')).color,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const accent = await resolveIn(page, '--pp-tone-bg', 'accent');
+    for (const c of cells) {
+      expect(Math.abs(c.treeWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(Math.abs(c.rowWidth - c.treeWidth)).toBeLessThanOrEqual(1);
+      expect(c.spills).toBe(false);
+      expect(Math.abs(c.rowHeight - rowHeight)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.level2 - c.level1 - indent)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.level3 - c.level1 - 2 * indent)).toBeLessThanOrEqual(0.5);
+      expect(c.selectedBg).toBe(accent);
+      expect(c.selectedWeight).toBe('500');
+      expect(c.plainBg).toBe('rgba(0, 0, 0, 0)');
+      expect(c.openRotate).toBe('90deg');
+      expect(c.closedRotate).toBe('none');
+    }
+    expect(cells[0]!.truncated).toBe(true);
+    expect(cells[2]!.truncated).toBe(false);
+  });
+
+  test('hover, the ring on the focused row, one tab stop; in RTL the rows indent from the right and Arrow Left expands', async ({ page }) => {
+    await page.goto('/components/tree');
+    const tree = page.locator('.matrix__cell .pp-tree').last();
+    const row = tree.locator('[data-value="readme"]');
+    await row.hover();
+    await expect.poll(() => row.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg-hover', 'accent'));
+    /* Tab from before the tree lands on the picked item, and Tab again leaves. */
+    await page.locator('.matrix__cell').last().locator('.pp-tree').evaluate((n) => {
+      const before = document.createElement('button');
+      before.id = 'before-tree';
+      before.textContent = 'before';
+      n.parentElement!.insertBefore(before, n);
+    });
+    await page.locator('#before-tree').focus();
+    await page.keyboard.press('Tab');
+    await expect(tree.locator('[data-value="button"]')).toBeFocused();
+    await expect.poll(() => tree.locator('[data-value="button"]').evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    await page.keyboard.press('Tab');
+    /* Out of THIS tree: the next stop on the page is another tree's row. */
+    expect(await tree.evaluate((n) => n.contains(document.activeElement))).toBe(false);
+
+    const rtl = page.locator('[data-testid="tree-rtl"] .pp-tree');
+    const geometry = await rtl.evaluate((n) => {
+      const row = (value: string) => n.querySelector(`[data-value="${value}"]`) as HTMLElement;
+      const end = (value: string) => row(value).getBoundingClientRect().right - parseFloat(getComputedStyle(row(value)).paddingRight);
+      const toggle = row('docs').querySelector('.pp-tree__toggle')!;
+      return { level1: end('docs'), level2: end('readme'), scale: getComputedStyle(toggle).scale, rotate: getComputedStyle(toggle).rotate };
+    });
+    expect(geometry.level1 - geometry.level2).toBeGreaterThan(10);
+    expect(geometry.scale).toBe('-1 1');
+    /* Open turns the other way under the mirror, so the arrow points down and not up. */
+    expect(geometry.rotate).toBe('-90deg');
+    const closed = page.locator('[data-testid="tree-closed"] .pp-tree');
+    await closed.locator('[data-value="intro"]').focus();
+    /* Closed tree, LTR: Right opens. RTL: Left opens. */
+    await page.keyboard.press('ArrowRight');
+    await expect(closed.locator('[data-value="intro"]')).toHaveAttribute('aria-expanded', 'true');
+    await rtl.locator('[data-value="license"]').focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(rtl.locator('[data-value="lock"]')).not.toBeFocused();
+    await rtl.locator('[data-value="src"]').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(rtl.locator('[data-value="src"]')).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('ArrowLeft');
+    await expect(rtl.locator('[data-value="src"]')).toHaveAttribute('aria-expanded', 'true');
+  });
+});
