@@ -76,5 +76,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'dropdown-menu', name: 'DropdownMenu', tier: '4.7', summary: 'A list of commands under its trigger; arrows, typeahead, submenus.' },
   { slug: 'context-menu', name: 'ContextMenu', tier: '4.8', summary: 'The same list of commands, opened at the pointer by a secondary press.' },
   { slug: 'tabs', name: 'Tabs', tier: '4.9', summary: 'One panel of several, chosen by its tab; the strip scrolls, never wraps.' },
+  { slug: 'accordion', name: 'Accordion', tier: '4.10', summary: 'Sections under headings that open and close; one at a time, or many.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];

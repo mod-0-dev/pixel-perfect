@@ -5991,3 +5991,143 @@ test.describe('Tabs', () => {
     await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
   });
 });
+
+test.describe('Accordion', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="accordion-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  test('headings on hairlines: the trigger is the large control height, the chevron turns on the open item, still under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'single');
+    await region.scrollIntoViewIfNeeded();
+    const first = region.getByRole('button').first();
+    const height = await px(page, '--pp-control-height-lg');
+    const fontSize = await px(page, '--pp-font-size-3');
+    expect(height).toBe(48);
+    const read = await first.evaluate((n) => {
+      const heading = n.parentElement as HTMLElement;
+      const item = heading.parentElement as HTMLElement;
+      const root = item.parentElement as HTMLElement;
+      const chevron = n.querySelector('.pp-accordion__chevron') as SVGElement;
+      return {
+        height: n.getBoundingClientRect().height,
+        width: n.getBoundingClientRect().width,
+        itemWidth: item.getBoundingClientRect().width,
+        heading: heading.tagName,
+        headingMargin: getComputedStyle(heading).marginBlockStart,
+        fontSize: getComputedStyle(n).fontSize,
+        rootLine: getComputedStyle(root).borderTopWidth,
+        itemLine: getComputedStyle(item).borderBottomWidth,
+        rotate: getComputedStyle(chevron).rotate,
+        transition: getComputedStyle(chevron).transitionDuration,
+      };
+    });
+    expect(Math.abs(read.height - height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - read.itemWidth), 'the trigger does not fill the item').toBeLessThanOrEqual(1);
+    expect(read.heading).toBe('H3');
+    expect(read.headingMargin).toBe('0px');
+    expect(parseFloat(read.fontSize)).toBe(fontSize);
+    expect(read.rootLine).toBe('1px');
+    expect(read.itemLine).toBe('1px');
+    expect(read.rotate).toBe('none');
+    expect(read.transition, 'not still under reduced motion').toBe('0s');
+
+    await first.click();
+    await expect(first).toHaveAttribute('aria-expanded', 'true');
+    const open = await first.evaluate((n) => {
+      const content = document.getElementById(n.getAttribute('aria-controls')!) as HTMLElement;
+      return {
+        rotate: getComputedStyle(n.querySelector('.pp-accordion__chevron') as SVGElement).rotate,
+        animation: getComputedStyle(content).animationName,
+        overflow: getComputedStyle(content).overflow,
+        contentPadding: getComputedStyle(content).paddingBlockEnd,
+        bodyPadding: getComputedStyle(content.firstElementChild as HTMLElement).paddingBlockEnd,
+        visible: content.getBoundingClientRect().height > 0,
+      };
+    });
+    expect(open.rotate).toBe('180deg');
+    expect(open.animation, 'not still under reduced motion').toBe('none');
+    expect(open.overflow).toBe('hidden');
+    expect(open.contentPadding).toBe('0px');
+    expect(parseFloat(open.bodyPadding)).toBe(await px(page, '--pp-space-4'));
+    expect(open.visible).toBe(true);
+  });
+
+  test('single: opening one closes the other and the open one closes; strict keeps one open', async ({ page }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'single');
+    await region.scrollIntoViewIfNeeded();
+    const buttons = region.getByRole('button');
+    await buttons.nth(0).click();
+    await expect(region.locator('xpath=..')).toContainText('open: shipping');
+    await buttons.nth(1).click();
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'false');
+    await expect(buttons.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(region.getByRole('region')).toHaveCount(1);
+    await buttons.nth(1).click();
+    await expect(buttons.nth(1)).toHaveAttribute('aria-expanded', 'false');
+    await expect(region.locator('xpath=..')).toContainText('open: none');
+
+    const strict = demo(page, 'strict');
+    await strict.scrollIntoViewIfNeeded();
+    const strictButtons = strict.getByRole('button');
+    await strictButtons.nth(0).click();
+    await expect(strictButtons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await expect(strictButtons.nth(0)).toHaveAttribute('aria-disabled', 'true');
+    // Playwright will not click an aria-disabled control on its own; the
+    // point is that a press does nothing, so the press is forced.
+    await strictButtons.nth(0).click({ force: true });
+    await expect(strictButtons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('the arrows move between headings; Tab from an open heading reaches its content', async ({ page }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'multiple');
+    await region.scrollIntoViewIfNeeded();
+    const buttons = region.getByRole('button');
+    await expect(region.getByRole('heading', { level: 4 })).toHaveCount(4);
+    await buttons.nth(0).focus();
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('ArrowDown');
+    await expect(buttons.nth(1)).toBeFocused();
+    await page.keyboard.press('End');
+    // The disabled last section is skipped: End lands on the last enabled.
+    await expect(buttons.nth(2)).toBeFocused();
+    await expect(buttons.nth(3)).toBeDisabled();
+    await page.keyboard.press('Home');
+    await expect(buttons.nth(0)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Enter');
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    // Multiple: opening the second leaves the first open.
+    await buttons.nth(1).click();
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await expect(buttons.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(region.getByRole('region')).toHaveCount(2);
+  });
+
+  test('a kept panel keeps what was typed, hidden while closed; a fresh one empties', async ({ page }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'kept');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByPlaceholder('still here').fill('Ada');
+    await region.getByRole('button', { name: /Fresh/ }).click();
+    await expect(region.getByPlaceholder('still here')).toBeHidden();
+    await expect(region.locator('.pp-accordion__content[hidden]')).toHaveCount(1);
+    await region.getByPlaceholder('gone on return').fill('Lin');
+    await region.getByRole('button', { name: /Kept/ }).click();
+    await expect(region.getByPlaceholder('still here')).toHaveValue('Ada');
+    await region.getByRole('button', { name: /Fresh/ }).click();
+    await expect(region.getByPlaceholder('gone on return')).toHaveValue('');
+  });
+});

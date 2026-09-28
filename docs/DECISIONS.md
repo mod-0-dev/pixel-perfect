@@ -5005,3 +5005,86 @@ reduced-motion rule dropped (the transition measured). Two lessons on the
 checks themselves: dropping `flex-shrink` caught nothing (§5), and a
 mutation that leaves an import unused fails the library build the browser
 suite's server runs first, which reads as the server not starting.
+
+## D-075 — `Accordion` rulings: `multiple` not `type`, `collapsible` on by default, the heading level asked once, and a button that fills its heading
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Accordion.md`
+(status) · **Extends:** Alert.md §6, D-062 §5, D-074 §2 and §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The second Tier 4 component in flow.
+
+### 1. `multiple` is a boolean, and the value's shape follows it
+
+Radix's root takes `type: 'single' | 'multiple'`; RULES §5 reserves
+`type`. So the prop is `multiple?: boolean`, and `AccordionProps` is a
+discriminated union on it — `string` values and a `collapsible` for one,
+`string[]` for many — so `onValueChange` is typed to match and a
+consumer cannot hand a single accordion an array. The component
+branches on it to give Radix the `type` it wants.
+
+### 2. `collapsible` defaults to `true`
+
+Radix's default is `false`: the strict APG reading, where exactly one
+panel is always open and the open heading is `aria-disabled`. The
+expectation a user brings is that a section they opened, they can close;
+that is the default here, and `collapsible={false}` is the strict form.
+
+### 3. The heading's level is the root's, once, and defaults to `3`
+
+Alert.md §6 ruled that a component cannot know the right heading level,
+and rendered a `div`. An accordion's headings *must* be headings (APG)
+and are all one level, so the level is asked once, on the root
+(`headingLevel`, `2`–`6`), and the trigger renders the heading around
+itself — Radix's `Header` part folded into it, because a trigger outside
+a heading is the one shape the pattern forbids and a part nobody may
+omit is not a part. It defaults to `3`, unlike `Heading`'s required
+`level`: an accordion under a page's `h2` is `h3` far more often than
+not, and a wrong default here is an outline nit, not an inaccessible
+control.
+
+### 4. A button's `width: auto` is shrink-to-fit whatever its `display`; the heading is a grid
+
+The first draft made the trigger `display: flex`, expecting a block-level
+box to fill its heading. It did not: a `<button>`'s `width: auto` is
+shrink-to-fit even as a block-level flex container, and the browser test
+measured a label-wide button in a full-width item. A width is banned, so
+the heading is `display: grid` and the button, its one grid item,
+stretches to the track. The rule, for every full-width button the
+library draws from here: **a button fills its parent as a grid item, not
+by its own display.**
+
+### 5. Findings from the build
+
+- **Radix omits `aria-controls` on a closed trigger** (the region is in
+  the DOM, empty and hidden, labelled by the trigger either way). The
+  unit test asked for it closed and did not get it; it now asks for it
+  open. Recorded on the spec and the docs page.
+- **`forceMount` shows the panel**, as for Tabs (D-074 §3): the root
+  mirrors the open value — a string or an array — and a kept panel sets
+  `hidden` from it. A kept panel does not animate closed, because Radix's
+  exit runs on unmount and a kept panel never unmounts; the docs say so.
+- **Playwright will not press an `aria-disabled` control**: the strict
+  accordion's open heading is one, and the test that proves a press does
+  nothing forces the press.
+- **A `Presence` exit under real motion keeps a closing panel's children
+  mounted** for the duration, which the kept-panel test met when the
+  reduced-motion rule was dropped for its break check: the fresh panel's
+  input still held its value a frame later. Collateral of the check, not
+  a defect (D-035 §3's note on combined runs).
+
+### 6. Verified
+
+The trigger is at least the large control height, fills its item, is an
+`h3` with no margin and the body type size; the hairlines are one pixel
+above the root and below each item; the chevron turns 180° on the open
+item and its transition is none under reduced motion; the content's
+animation is none, its overflow hidden, its padding on the body; single
+opens one and closes the other and the open one closes, strict keeps one
+open and marks it `aria-disabled`; the arrows move between headings and
+skip a disabled one, `Home` / `End` reach the ends, `Enter` toggles;
+multiple keeps two open under level-four headings; a kept panel keeps
+what was typed, hidden while closed, and a fresh one empties. 12 unit and
+4 browser tests; five break checks (the chevron's turn, the
+reduced-motion rule, the heading's grid, the `hidden` mirror, `multiple`
+ignored), each caught by its named test.

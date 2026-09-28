@@ -7,6 +7,19 @@ export {
 export { Avatar, initialsOf, type AvatarLoadingStatus, type AvatarProps } from './components/Avatar/Avatar';
 export { Alert, type AlertLive, type AlertProps } from './components/Alert/Alert';
 export {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+  type AccordionContentProps,
+  type AccordionHeadingLevel,
+  type AccordionItemProps,
+  type AccordionMultipleProps,
+  type AccordionProps,
+  type AccordionSingleProps,
+  type AccordionTriggerProps,
+} from './components/Accordion/Accordion';
+export {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
