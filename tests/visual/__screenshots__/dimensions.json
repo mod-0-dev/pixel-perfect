@@ -367,6 +367,14 @@
     "width": 1280,
     "height": 6808
   },
+  "stepper-dark.png": {
+    "width": 1280,
+    "height": 1741
+  },
+  "stepper-light.png": {
+    "width": 1280,
+    "height": 1741
+  },
   "switch-dark.png": {
     "width": 1280,
     "height": 5962
