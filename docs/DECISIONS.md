@@ -6449,3 +6449,83 @@ dropped (`none`); the count's surface dropped (the tone's solid); the
 group's size dropped (the faces at Avatar's own sizes). Each failed on
 exactly the test named for it.
 
+
+## D-091 — `DatePicker` rulings: Input's box with a button and Calendar behind it, text parsed on commit in the locale's order, and the text the value's unless mid-edit
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/DatePicker.md`
+(status) · **Extends:** D-070 §1 (the two-class contract), D-076 (Input's
+box with a button in it), D-086 (`Calendar`), D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last of Tier 4, which waited on 5.9.
+
+### 1. Input's box with a text field and a calendar button; `Calendar` in a `Popover` behind it
+
+One part. The root carries `pp-input` and `pp-date-picker` (D-070 §1),
+so Input.css sets the size variables and the states; this stylesheet
+draws the box — a two-column grid holding a bare text field and the
+button — from Input's hooks, Combobox's device (D-076). The field's own
+ring is transparent, never removed (RULES §6), and the box carries the
+ring when the field has focus. The button is a Popover trigger
+(`aria-haspopup="dialog"`, `aria-expanded`); the panel is `pp-popover`
+and `pp-date-picker__panel`, a non-modal `role="dialog"` named by the
+button's label, placed below the box and start-aligned, holding a
+`Calendar` at `sm`. Opening puts focus on the calendar's tab stop, a
+pick sets the value and closes, and focus returns to the button;
+Arrow Down in the field opens it too. In RTL the button is at the
+start of the box with nothing said: the grid's columns are logical.
+The browser test reads the box's height, edge and radius against an
+Input beside it, the button inside at the end and the box's height
+less the border tall, the ring on the box, the panel's placement, the
+calendar's size and its padding, and the button at the left under RTL.
+
+### 2. Typed text is parsed on commit, in the locale's order; the text is the value's unless the reader is mid-edit
+
+`formatDate` writes the value with `Intl` in the locale's numeric form
+(`09/28/2026`, `28/09/2026`, `٢٠٢٦/٠٩/٢٨`); `parseTypedDate` reads
+`YYYY-MM-DD` as is, else three numbers in the order
+`formatToParts` gives the locale's year, month and day, a two-digit
+year this century. Both are exported and both are overridable by
+`format` and `parse`. Enter and blur commit; text that does not parse
+marks the field invalid and reports nothing; an emptied field reports
+`undefined`.
+
+**The first draft kept the text it had typed after a controlled owner
+refused the change.** It held the text in state, mirrored the value
+into it in an effect, and wrote the new formatted text on commit before
+calling `onValueChange` — so an owner that did not take the change was
+shown as if it had, and the unit test that renders a fixed `value` read
+the typed date back. The text is derived now: a draft holds what is
+typed until commit, and committing drops the draft, so the field shows
+whatever the value became — the new date when the owner took it, the
+old one when it did not. A draft that did not parse stays, marked
+invalid, until it is edited or emptied. No effect, no ref.
+
+### 3. `value` is the ISO date; a form gets it by `name`; the Field's precedence
+
+`value` / `defaultValue` / `onValueChange` (RULES §5.5), the value an
+ISO date or `undefined`. With `name`, a hidden input carries the ISO
+value, because the visible field carries the locale's text. `min`,
+`max`, `isDateDisabled`, `today`, `weekStartsOn` and `locale` pass to
+the calendar; `size`, `invalid`, `disabled`, `required` and `readOnly`
+follow the Field with the tier's precedence, the field's `id` and
+description landing on the text input its label points at. `readOnly`
+disables the button as well: a panel that could pick into a read-only
+field would be a lie.
+
+### 4. Verified, and the four breaks
+
+Unit: twelve tests — the helpers in three locales; the box and the
+button's name and state; typing, Enter, blur, ISO and an emptied
+field; unparsable text marking invalid; the dialog opening, a pick,
+and focus back; Arrow Down and Escape; `min`/`max` on the calendar;
+Field integration; the hidden input and a refusing controlled owner;
+ref, `className`, `style`, `readOnly`; axe closed and open in both
+themes (the `region` rule off, DropdownMenu's reason). Browser: the
+box against an Input in every cell, the ring, the panel, a pick
+filling the field and closing, RTL, and the five states' heights.
+
+Break checks (D-035 §3): the box's grid columns dropped (the button
+below the field); the box's ring dropped (`0px`); the button's height
+dropped (its content's height, 20px short); the panel's padding
+dropped (`0`). Each failed on exactly the test named for it.

@@ -91,6 +91,7 @@
 @import "../components/Accordion/Accordion.css";
 @import "../components/Combobox/Combobox.css";
 @import "../components/Toast/Toast.css";
+@import "../components/DatePicker/DatePicker.css";
 @import "../components/CommandPalette/CommandPalette.css";
 
 /* Tier 5 — composition & data. */

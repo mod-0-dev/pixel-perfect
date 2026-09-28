@@ -51,6 +51,7 @@ export {
 } from './components/Breadcrumb/Breadcrumb';
 export { Button, type ButtonProps } from './components/Button/Button';
 export { Calendar, type CalendarProps, type CalendarSize } from './components/Calendar/Calendar';
+export { DatePicker, datePattern, formatDate, parseTypedDate, type DatePickerProps } from './components/DatePicker/DatePicker';
 export { Card, CardBody, CardFooter, CardHeader, type CardBodyProps, type CardFooterProps, type CardHeaderProps, type CardProps } from './components/Card/Card';
 export {
   ButtonGroup,

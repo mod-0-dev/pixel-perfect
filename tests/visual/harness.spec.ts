@@ -7991,3 +7991,108 @@ test.describe('AvatarGroup', () => {
     expect(inline).toEqual({ faces: 5, more: true, hugs: true });
   });
 });
+
+test.describe('DatePicker', () => {
+  test('the box is Input\'s — the same height and edge as the Input beside it — with the button inside at its end; the ring on the box when the field has focus', async ({
+    page,
+  }) => {
+    await page.goto('/components/date-picker');
+    const cells = await page.locator('.matrix__cell').evaluateAll((els) =>
+      els.map((cell) => {
+        const box = cell.querySelector('.pp-date-picker__box') as HTMLElement;
+        const control = cell.querySelector('.pp-date-picker__control') as HTMLElement;
+        const toggle = cell.querySelector('.pp-date-picker__toggle') as HTMLElement;
+        const input = cell.querySelector('.pp-input:not(.pp-date-picker) .pp-input__control') as HTMLElement;
+        const b = box.getBoundingClientRect();
+        const t = toggle.getBoundingClientRect();
+        const i = input.getBoundingClientRect();
+        return {
+          boxHeight: b.height,
+          inputHeight: i.height,
+          boxWidth: b.width,
+          inputWidth: i.width,
+          boxEdge: getComputedStyle(box).borderTopColor,
+          inputEdge: getComputedStyle(input).borderTopColor,
+          boxRadius: getComputedStyle(box).borderTopLeftRadius,
+          inputRadius: getComputedStyle(input).borderTopLeftRadius,
+          toggleInside: t.right <= b.right + 0.5 && t.top >= b.top - 0.5 && t.bottom <= b.bottom + 0.5,
+          toggleAtEnd: b.right - t.right < 4,
+          toggleHeight: t.height,
+          controlBare: getComputedStyle(control).borderTopWidth,
+          sameRow: Math.abs(t.top + t.height / 2 - (control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2)) <= 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.boxHeight - c.inputHeight)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.boxWidth - c.inputWidth)).toBeLessThanOrEqual(1);
+      expect(c.boxEdge).toBe(c.inputEdge);
+      expect(c.boxRadius).toBe(c.inputRadius);
+      expect(c.toggleInside).toBe(true);
+      expect(c.toggleAtEnd).toBe(true);
+      expect(Math.abs(c.toggleHeight - (c.boxHeight - 2))).toBeLessThanOrEqual(0.5);
+      expect(c.controlBare).toBe('0px');
+      expect(c.sameRow).toBe(true);
+    }
+    const control = page.locator('.matrix__cell .pp-date-picker__control').last();
+    const box = page.locator('.matrix__cell .pp-date-picker__box').last();
+    await control.focus();
+    await expect.poll(() => box.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await box.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+    expect(await control.evaluate((n) => getComputedStyle(n).outlineColor)).toBe('rgba(0, 0, 0, 0)');
+  });
+
+  test('the panel opens below the box, start-aligned, with a small calendar and focus on the day; a pick fills the field and closes; RTL puts the button at the start', async ({
+    page,
+  }) => {
+    await page.goto('/components/date-picker');
+    const picker = page.locator('[data-testid="date-picker-controlled"] .pp-date-picker');
+    await picker.locator('.pp-date-picker__toggle').click();
+    const panel = page.locator('.pp-date-picker__panel');
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-date="2026-09-28"]')).toBeFocused();
+    const placed = await page.evaluate(() => {
+      const box = document.querySelector('[data-testid="date-picker-controlled"] .pp-date-picker__box')!.getBoundingClientRect();
+      const panel = document.querySelector('.pp-date-picker__panel')!.getBoundingClientRect();
+      const calendar = document.querySelector('.pp-date-picker__panel .pp-calendar') as HTMLElement;
+      return {
+        below: panel.top >= box.bottom,
+        gap: panel.top - box.bottom,
+        startAligned: Math.abs(panel.left - box.left),
+        size: calendar.getAttribute('data-size'),
+        day: (calendar.querySelector('[data-date]') as HTMLElement).getBoundingClientRect().height,
+        padding: parseFloat(getComputedStyle(document.querySelector('.pp-date-picker__panel')!).paddingTop),
+      };
+    });
+    expect(placed.below).toBe(true);
+    expect(placed.gap).toBeGreaterThanOrEqual(3);
+    expect(placed.startAligned).toBeLessThanOrEqual(1);
+    expect(placed.size).toBe('sm');
+    expect(Math.round(placed.day)).toBe(32);
+    expect(placed.padding).toBe(12);
+    await panel.locator('[data-date="2026-09-30"]').click();
+    await expect(panel).toHaveCount(0);
+    await expect(picker.locator('.pp-date-picker__control')).toHaveValue('30/09/2026');
+    await expect(page.locator('[data-testid="date-picker-controlled"] output')).toHaveText('2026-09-30');
+    await expect(picker.locator('.pp-date-picker__toggle')).toBeFocused();
+
+    const rtl = await page.locator('[data-testid="date-picker-rtl"] .pp-date-picker__box').evaluate((box) => {
+      const b = box.getBoundingClientRect();
+      const t = box.querySelector('.pp-date-picker__toggle')!.getBoundingClientRect();
+      return { toggleAtLeft: t.left - b.left < 4, direction: getComputedStyle(box).direction };
+    });
+    expect(rtl).toEqual({ toggleAtLeft: true, direction: 'rtl' });
+
+    const states = await page.locator('[data-testid="date-picker-states"] .pp-date-picker').evaluateAll((els) =>
+      els.map((n) => ({
+        h: Math.round(n.querySelector('.pp-date-picker__box')!.getBoundingClientRect().height),
+        invalid: n.hasAttribute('data-invalid'),
+        disabled: n.hasAttribute('data-disabled'),
+      })),
+    );
+    expect(states.map((s) => s.h)).toEqual([32, 40, 48, 40, 40]);
+    expect(states[3]!.invalid).toBe(true);
+    expect(states[4]!.disabled).toBe(true);
+  });
+});

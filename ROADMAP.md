@@ -132,8 +132,10 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   `review` (D-086), which unblocks 4.13 `DatePicker`; 5.10 `FileUpload` is
   in `review` (D-087); 5.11 `Tree` is in `review` (D-088); 5.12
   `CodeBlock` is in `review` (D-089); 5.13 `AvatarGroup` is in `review`
-  (D-090), the last of the tier's own items. Next up is **4.13
-  `DatePicker`**, which closes Tier 4. **4.4 `Dialog` is `done`** (2026-09-27): built
+  (D-090), the last of the tier's own items; and **4.13 `DatePicker` is in
+  `review`** (D-091), which closes Tier 4 — every item of Tiers 4 and 5 is
+  built. Next up is the batch's authoring run and the `review` → `done`
+  sweep. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -916,7 +918,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.10 | `Accordion` | `review` | fill | client | T3 | [`Accordion.md`](docs/specs/Accordion.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-075. Headings on hairlines, a chevron that turns, a height that animates; `multiple` is a boolean (RULES §5 reserves `type`) with the value's shape to match; `collapsible` defaults to `true`; `headingLevel` on the root sets every heading once; `keepMounted` as Tabs'. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.11 | `Combobox` | `review` | fill | client | 4.2, 3.13 | [`Combobox.md`](docs/specs/Combobox.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-076. The one Tier 4 component whose behaviour is the library's own: the list on Popover's `Anchor`, its look DropdownMenu's stylesheet, the control Input's box; the keyboard, `aria-activedescendant`, the selection and the tokens written here. The consumer renders the options that match and `onInputValueChange` says why the text changed; `multiple` as tokens; `getLabel` for a value set from outside; `loading` for options from a server. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.12 | `Toast` | `review` | fill | client | 4.1 | [`Toast.md`](docs/specs/Toast.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-077. Region + imperative API, as promised: one `ToastProvider`, one `useToast()` (`toast`, `dismiss`, `update`), no element. A toast is an `Alert` that floats, drawn by Alert's stylesheet through two classes; the region is fixed at a logical corner, a token wide, with a `limit` and a queue; `live` is Alert's word for Radix's `type`. In `review` for the CI-authored baseline only (D-069 §2) |
-| 4.13 | `DatePicker` | `planned` | fill | client | 4.2, 5.9 | |
+| 4.13 | `DatePicker` | `review` | fill | client | 4.2, 5.9 | [`DatePicker.md`](docs/specs/DatePicker.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-091; awaiting its CI-authored baseline (D-013). Input's box with a text field and a calendar button, `Calendar` at `sm` in a `Popover` behind it (§1); typed text parsed on commit in the locale's order, the text derived from the value unless mid-edit after a draft that lied to a refusing owner (§2); the ISO value, a hidden input by `name`, the Field's precedence (§3). Closes Tier 4 |
 | 4.14 | `CommandPalette` | `review` | fill | client | 4.11, 4.4 | [`CommandPalette.md`](docs/specs/CommandPalette.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-078. The last of Tier 4 and made of it, with no package added: Dialog's modal through two classes, Combobox's highlight through a shared hook, DropdownMenu's row through its class and private variables, Kbd's key caps. The consumer renders the matches; the first is highlighted as the user types; `hotkey="mod+k"` once on the root; focus returns to whatever had it. Gate B read 4.11's `review` (baseline only) as `done` (D-073 §2). In `review` for the CI-authored baseline only (D-069 §2) |
 
 ---
