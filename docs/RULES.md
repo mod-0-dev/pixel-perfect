@@ -198,7 +198,9 @@ Structural requirements for every component:
   server-compatible.
 - Every spec documents the component's RSC compatibility.
 - No `window`, `document`, or `matchMedia` access at module scope.
-- IDs come from `useId()`. Never a counter, never `Math.random()`.
+- IDs come from `useId()`. Never a counter, never `Math.random()`. `useId` is
+  not a reason for `'use client'`: React's server dispatcher implements it, so
+  a Server Component may name one element by another (D-081 §4).
 - No layout-shift-on-hydrate: server and first client render must match.
 
 ---

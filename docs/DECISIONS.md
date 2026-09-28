@@ -5571,3 +5571,121 @@ read 0, in LTR and RTL); the sweep dropped (`animation-name` read
 the `lg` thickness dropped (the heights). Each failed on exactly the
 test named for it.
 
+## D-081 — `Table` rulings: a named region that scrolls, `caption` as a prop, a table stretched by a grid, `useId` is not a client hook, a ring read in the frame it landed in, and two things only the screenshot said
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §7
+(`useId` is not a reason for `'use client'`), `scripts/lint-rules.mjs`
+(`useId` out of the client-only set) with a fixture in
+`tests/lint-fixtures/src/components/Bad/Ids.tsx`, `docs/specs/Table.md`
+(status) · **Extends:** D-022 §10, D-007, D-050, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The tier's data component, and the one the
+Tier 2 spec said `Scroller` would wait for.
+
+### 1. A semantic table in a named region that scrolls, focusable always
+
+The native `<table>`, `<thead>`, `<th scope="col">`, `<tbody>`, `<tfoot>`:
+a screen reader announces the header with each cell, and nothing here
+needs a data layer — sorting and selection are hooks (`sort` written as
+`aria-sort`, `selected` written as `data-state`), decided by the
+consumer's client component. Five columns do not fit a 240px sidebar,
+and the two ways to make them fit — break every word, or stack the
+columns into pairs — both destroy what a table is for. So the root is a
+`role="region"` that scrolls on the inline axis, inside its own box and
+never the page, with `tabindex="0"` so a keyboard user can scroll it and
+a name so the tab stop says what it is. A table that does not overflow
+carries that one tab stop too, and that is accepted: a Server Component
+cannot know whether it overflows, and a region that is focusable only
+sometimes is the thing a screen reader user cannot predict.
+
+### 2. `caption` is a prop of the root, and one of three names is required
+
+The region takes its name from the caption: `<caption id>` and
+`aria-labelledby`, one `useId`. A Server Component has no context, so a
+`<TableCaption>` part could not hand its id to the root; the caption is
+a prop instead — the one place this library prefers configuration to
+composition, because the alternative is a region whose name the
+consumer wires by hand. `TableProps` is a union: `caption`, or
+`aria-label`, or `aria-labelledby`, one required, never two.
+
+`align` on a head or a cell is ours and logical (`start | center |
+end`); the deprecated HTML attribute of the same name is omitted from
+the props, or TypeScript rejects the extension.
+
+### 3. The table is stretched by a grid, never by a width
+
+A `<table>` is shrink-to-fit, so a short table would sit at the start of
+its region with the frame running on past it; `width: 100%` is RULES
+§1's banned spelling. The region is `display: grid` with the table as
+its one item: an item stretches to its track, and the track is the
+region unless the table's min-content is wider, when the track is that
+and the region scrolls it. The break check measured the mechanism:
+`display: block` in its place left the wide cell's table 299px short of
+its region. No width, no allowance, one rule for both cases. `Grid`
+spans (D-022 §10) were left to be revisited here and still are not
+needed: a column is sized by its content.
+
+### 4. `useId` is not a client hook
+
+The rule lint counted `useId` among the hooks that require `'use
+client'`, and Table needs one on the server to name the region by its
+caption. React's server dispatcher implements `useId` (an id from the
+request's counter); it is the state, effect, ref and context hooks that
+do not exist there. `useId` is out of the set, RULES §7 says so, and a
+fixture that ships, calls `useId()` and carries no directive proves the
+rule still fires exactly once across the fixtures, for the file that
+uses `useState`.
+
+### 5. A ring read in the frame focus landed in is 0px wide
+
+"The ring on the focused region" read `outline-style: solid` and
+`outline-width: 0px` — a solid ring of zero width, D-052 §3's impossible
+combination, reproducibly, while a probe that focused the same element
+read 2px. The reset's reduced-motion rule (which the browser suite pins)
+crushes every transition to 0.01ms and leaves `transition-property:
+all`, so the outline that `:focus-visible` switches on is a transition
+from `0px` and `currentColor`, and a computed-style read before the next
+frame sees the start value. The test polls the width instead of reading
+it once. Earlier ring assertions read the style only, which is discrete
+and flips at the transition's midpoint — the same frame, most of the
+time; a width is the honest read, and it has to wait a frame.
+
+### 6. Two things the screenshot said that the tests had not: a `th` is centred by the UA, and a cell that wraps a date is worse than one that scrolls
+
+The first browser run was green and the page was wrong twice. Every
+column heading was centred: the UA stylesheet's `th { text-align:
+center }` is a rule on the element, and `text-align: start` on the
+table, inherited, does not reach past it. The head declares its own,
+and the test reads it. And the 240px cell wrapped `INV-0091` at its
+hyphen and `2026-09-04` at its second, because a table shrinks its
+columns to their min-content before it overflows, and the region's
+scroll only began once that was exhausted. A cell is `white-space:
+nowrap` now and a prose cell says `wrap` (`data-wrap`): the narrow cell
+scrolls a table of one-line rows, which is what the region is for, and
+the members table's note column wraps. D-051 §6 from the other side
+again: the assertions were reading true things, and the page was still
+wrong, because nothing asserted the two things that were.
+
+### 7. Verified, and the five breaks
+
+Unit: nine tests — the region and its name from the caption (one id,
+both ends), from `aria-label` and from `aria-labelledby`; the native
+parts and `scope="col"`; `size`, `striped` and `tableProps`; `align`,
+`sort` and `selected` without `aria-selected`; `wrap`; a nameless table rejected
+at the type level; refs, `className` and `style` on every part; axe in
+both themes with a sorted head, a selected row and a Badge. Browser: the
+region's box against its cell's content box at three widths, scrolling
+at 240px and not at 960px, the table's width the region's at 960px; the
+hairline count across six rows, the sunken header and foot, the head's
+colour, size and weight, the padding per size, tabular figures; striped
+even rows, the selected row in the accent ramp, `align="end"` and its
+RTL mirror measured by a Range, the polled ring; a head's text starts;
+the narrow cell's first cell is one line box and the note cell more.
+
+Break checks (D-035 §3): the grid dropped (the wide table 299px short);
+the hairline rule dropped (five lines read `0px`); the header's surface
+dropped (transparent); the selected row's surface dropped (transparent);
+the head's `text-align: start` dropped (the UA's `center`). Each failed
+on exactly the test named for it.
+

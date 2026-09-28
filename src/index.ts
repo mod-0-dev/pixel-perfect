@@ -252,6 +252,24 @@ export {
   type ContextMenuSubTriggerProps,
   type ContextMenuTriggerProps,
 } from './components/ContextMenu/ContextMenu';
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+  type TableAlign,
+  type TableBodyProps,
+  type TableCellProps,
+  type TableFooterProps,
+  type TableHeadProps,
+  type TableHeaderProps,
+  type TableProps,
+  type TableRowProps,
+  type TableSort,
+} from './components/Table/Table';
 export { Switch, type SwitchProps } from './components/Switch/Switch';
 export {
   Tabs,

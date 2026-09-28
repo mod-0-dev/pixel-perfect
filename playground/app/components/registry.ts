@@ -83,4 +83,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'card', name: 'Card', tier: '5.1', summary: 'A bordered surface with a header, a body and a foot, and hairlines between.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
   { slug: 'progress', name: 'Progress', tier: '5.3', summary: 'A bar filled as far as the value says; sweeping while there is none.' },
+  { slug: 'table', name: 'Table', tier: '5.4', summary: 'A semantic table in a named region that scrolls; sorting and selection are hooks.' },
 ];

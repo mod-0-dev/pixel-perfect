@@ -6790,3 +6790,167 @@ test.describe('Progress', () => {
     });
   });
 });
+
+test.describe('Table', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolveIn = (page: Page, token: string, tone?: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        if (tn) scope.setAttribute('data-pp-tone', tn);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone ?? ''] as const,
+    );
+
+  test('at 240px the region scrolls inside its own box; at 960px the table is stretched to the region by the grid', async ({ page }) => {
+    await page.goto('/components/table');
+    const cells = await page.locator('.matrix__cell .pp-table').evaluateAll((els) =>
+      els.map((el) => {
+        const table = el.querySelector('table') as HTMLElement;
+        const parent = el.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        return {
+          region: el.getBoundingClientRect().width,
+          /* The cell's CONTENT box: the matrix pads its cells. */
+          parent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          scrolls: el.scrollWidth > el.clientWidth + 1,
+          table: table.getBoundingClientRect().width,
+          client: el.clientWidth,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) expect(Math.abs(c.region - c.parent)).toBeLessThanOrEqual(1);
+    expect(cells[0]!.scrolls, 'the narrow cell should scroll').toBe(true);
+    /* And it scrolls rather than wraps: an id or a date stays on one line
+       in the narrow cell; a `wrap` cell may break. */
+    const lines = await page.locator('.matrix__cell').first().locator('tbody td').first().evaluate((n) => {
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      return { rects: range.getClientRects().length, ws: getComputedStyle(n).whiteSpace };
+    });
+    expect(lines).toEqual({ rects: 1, ws: 'nowrap' });
+    const prose = await page.locator('[data-testid="table-labelled"] td[data-wrap]').first().evaluate((n) => {
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      return { rects: range.getClientRects().length, ws: getComputedStyle(n).whiteSpace };
+    });
+    expect(prose.ws).toBe('normal');
+    expect(prose.rects).toBeGreaterThan(1);
+    expect(cells[2]!.scrolls, 'the wide cell should not scroll').toBe(false);
+    /* The grid's stretch: a table narrower than its region by content is
+       made the region's width (less the frame). */
+    expect(Math.abs(cells[2]!.table - cells[2]!.client)).toBeLessThanOrEqual(1);
+    expect(cells[2]!.table).toBeGreaterThan(cells[1]!.table);
+  });
+
+  test('hairlines on every row but the last; the header and the foot sunken, the head\'s text small, medium and muted; the padding per size; tabular figures', async ({
+    page,
+  }) => {
+    await page.goto('/components/table');
+    const sunken = await resolveIn(page, '--pp-color-bg-sunken');
+    const muted = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.color = 'var(--pp-color-text-muted)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    const read = await page.locator('[data-testid="table-sizes"] .pp-table').evaluateAll((els) =>
+      els.map((el) => {
+        const rows = Array.from(el.querySelectorAll('tr'));
+        const firstCell = (r: Element) => r.querySelector('th, td') as HTMLElement;
+        const head = el.querySelector('th') as HTMLElement;
+        const headStyle = getComputedStyle(head);
+        return {
+          lines: rows.map((r) => getComputedStyle(firstCell(r)).borderBottomWidth),
+          headerBg: getComputedStyle(el.querySelector('thead')!).backgroundColor,
+          footerBg: getComputedStyle(el.querySelector('tfoot')!).backgroundColor,
+          headColor: headStyle.color,
+          headSize: headStyle.fontSize,
+          headWeight: headStyle.fontWeight,
+          headAlign: headStyle.textAlign,
+          padding: [getComputedStyle(head).paddingTop, getComputedStyle(head).paddingLeft],
+          numeric: getComputedStyle(el.querySelector('td')!).fontVariantNumeric,
+        };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    const px1 = await px(page, '--pp-space-1');
+    const px2 = await px(page, '--pp-space-2');
+    const px3 = await px(page, '--pp-space-3');
+    const px4 = await px(page, '--pp-space-4');
+    expect(read.map((r) => r.padding.map(parseFloat))).toEqual([
+      [px1, px3],
+      [px2, px4],
+      [px3, px4],
+    ]);
+    for (const r of read) {
+      /* header row, four body rows, footer row: a line under each but the last. */
+      expect(r.lines).toEqual(['1px', '1px', '1px', '1px', '1px', '0px']);
+      expect(r.headerBg).toBe(sunken);
+      expect(r.footerBg).toBe(sunken);
+      expect(r.headColor).toBe(muted);
+      expect(parseFloat(r.headSize)).toBe(await px(page, '--pp-font-size-2'));
+      expect(r.headWeight).toBe('500');
+      /* Not the UA's centre: a heading starts where its column does. */
+      expect(r.headAlign).toBe('start');
+      expect(r.numeric).toBe('tabular-nums');
+    }
+  });
+
+  test('striped even rows; a selected row in the accent ramp; align=end; the ring on the focused region', async ({ page }) => {
+    await page.goto('/components/table');
+    const sunken = await resolveIn(page, '--pp-color-bg-sunken');
+    const striped = await page.locator('[data-testid="table-striped"] tbody tr').evaluateAll((rows) =>
+      rows.map((r) => getComputedStyle(r).backgroundColor),
+    );
+    expect(striped).toHaveLength(4);
+    expect(striped[1]).toBe(sunken);
+    expect(striped[3]).toBe(sunken);
+    expect(striped[0]).not.toBe(sunken);
+    expect(striped[2]).not.toBe(sunken);
+
+    const selected = page.locator('[data-testid="table-selected"] tr[data-state="selected"]');
+    expect(await selected.evaluate((r) => getComputedStyle(r).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg', 'accent'));
+    const unselected = await page.locator('[data-testid="table-selected"] tbody tr').first().evaluate((r) => getComputedStyle(r).backgroundColor);
+    expect(unselected).not.toBe(await resolveIn(page, '--pp-tone-bg', 'accent'));
+
+    const amount = page.locator('[data-testid="table-selected"] td[data-align="end"]').first();
+    expect(await amount.evaluate((n) => getComputedStyle(n).textAlign)).toBe('end');
+    /* And in RTL, `end` is the left: the number's box ends at the cell's left padding edge. */
+    const rtl = await page.locator('[data-testid="table-rtl"] td[data-align="end"]').first().evaluate((n) => {
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      const text = range.getBoundingClientRect();
+      const cell = n.getBoundingClientRect();
+      return { textLeft: text.left - cell.left, pad: parseFloat(getComputedStyle(n).paddingLeft) };
+    });
+    expect(Math.abs(rtl.textLeft - rtl.pad)).toBeLessThanOrEqual(1);
+
+    /* The ring is POLLED, not read in the frame focus landed in: the reset
+       crushes every transition to 0.01ms under reduced motion (which this
+       suite pins) and leaves `transition-property: all`, so the outline
+       focus switches on is a transition from 0px, and a read in the same
+       frame sees its start value (D-081 §5). */
+    const region = page.locator('[data-testid="table-labelled"] .pp-table');
+    await region.focus();
+    await expect.poll(() => region.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await region.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+  });
+});

@@ -64,6 +64,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'card', path: '/components/card' },
   { name: 'alert', path: '/components/alert' },
   { name: 'progress', path: '/components/progress' },
+  { name: 'table', path: '/components/table' },
 ];
 
 /**
