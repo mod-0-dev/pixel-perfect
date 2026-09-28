@@ -1,7 +1,23 @@
 {
+  "accordion-dark.png": {
+    "width": 1280,
+    "height": 2553
+  },
+  "accordion-light.png": {
+    "width": 1280,
+    "height": 2553
+  },
   "alert-dark.png": {
     "width": 1280,
     "height": 9133
+  },
+  "alert-dialog-dark.png": {
+    "width": 1280,
+    "height": 2154
+  },
+  "alert-dialog-light.png": {
+    "width": 1280,
+    "height": 2154
   },
   "alert-light.png": {
     "width": 1280,
@@ -86,6 +102,38 @@
   "container-light.png": {
     "width": 1280,
     "height": 12061
+  },
+  "context-menu-dark.png": {
+    "width": 1280,
+    "height": 3006
+  },
+  "context-menu-light.png": {
+    "width": 1280,
+    "height": 3006
+  },
+  "dialog-dark.png": {
+    "width": 1280,
+    "height": 3207
+  },
+  "dialog-light.png": {
+    "width": 1280,
+    "height": 3207
+  },
+  "drawer-dark.png": {
+    "width": 1280,
+    "height": 2362
+  },
+  "drawer-light.png": {
+    "width": 1280,
+    "height": 2362
+  },
+  "dropdown-menu-dark.png": {
+    "width": 1280,
+    "height": 1851
+  },
+  "dropdown-menu-light.png": {
+    "width": 1280,
+    "height": 1851
   },
   "field-dark.png": {
     "width": 1280,
@@ -278,6 +326,14 @@
   "switch-light.png": {
     "width": 1280,
     "height": 5962
+  },
+  "tabs-dark.png": {
+    "width": 1280,
+    "height": 2019
+  },
+  "tabs-light.png": {
+    "width": 1280,
+    "height": 2019
   },
   "text-dark.png": {
     "width": 1280,
