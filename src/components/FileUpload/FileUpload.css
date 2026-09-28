@@ -1,0 +1,120 @@
+/*
+ * FileUpload — spec docs/specs/FileUpload.md
+ *
+ * THE INPUT IS HIDDEN AND OUT OF THE TAB ORDER (spec §1): the clip-path
+ * technique VisuallyHidden uses, on the native file input, which stays in
+ * the form and opens the dialog when the Trigger asks.
+ *
+ * THE DROPZONE IS A DASHED CONTROL EDGE (spec §4), the 3:1 boundary
+ * (D-050), centred content, and while a drag is over it the accent edge
+ * and surface — every colour a tone token, the accent scope written on the
+ * dropzone and the danger scope on the root when invalid (D-007).
+ *
+ * AN ITEM IS A ROW: the name, the size, the remove button, and under them
+ * the bar and the error line — a grid so the name truncates with an
+ * ellipsis instead of pushing the row (spec §Container).
+ */
+
+@layer pp.components {
+  .pp-file-upload {
+    --_edge: var(--pp-file-upload-border-color, var(--pp-color-border));
+    --_radius: var(--pp-file-upload-radius, var(--pp-radius-3));
+    --_padding: var(--pp-file-upload-padding, var(--pp-space-6));
+
+    display: grid;
+    row-gap: var(--pp-space-3);
+    min-inline-size: 0;
+  }
+
+  .pp-file-upload__input {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .pp-file-upload__dropzone {
+    display: grid;
+    justify-items: center;
+    row-gap: var(--pp-space-2);
+    min-inline-size: 0;
+    padding: var(--_padding);
+    border: var(--pp-border-width-1) dashed var(--_edge);
+    border-radius: var(--_radius);
+    background-color: var(--pp-color-bg-surface);
+    text-align: center;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-file-upload__dropzone {
+      transition-property: none;
+    }
+  }
+
+  .pp-file-upload__dropzone[data-state="dragging"] {
+    --_edge: var(--pp-tone-solid);
+
+    background-color: var(--pp-file-upload-dragging-bg, var(--pp-tone-bg));
+  }
+
+  .pp-file-upload[data-invalid] .pp-file-upload__dropzone {
+    --_edge: var(--pp-tone-border);
+  }
+
+  .pp-file-upload[data-disabled] .pp-file-upload__dropzone {
+    --_edge: var(--pp-color-border-subtle);
+
+    color: var(--pp-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  .pp-file-upload__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pp-file-upload__item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: var(--pp-space-3);
+    row-gap: var(--pp-space-1);
+    align-items: center;
+    min-inline-size: 0;
+    padding-block: var(--pp-space-2);
+    border-block-end: var(--pp-border-width-1) solid var(--pp-color-border-subtle);
+    font-size: var(--pp-font-size-2);
+    line-height: var(--pp-line-height-snug);
+  }
+
+  .pp-file-upload__item:last-child {
+    border-block-end: 0;
+  }
+
+  .pp-file-upload__name {
+    overflow: hidden;
+    color: var(--pp-color-text);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pp-file-upload__size {
+    color: var(--pp-color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pp-file-upload__progress,
+  .pp-file-upload__error {
+    grid-column: 1 / -1;
+  }
+
+  /* The item carries the danger scope when it errs, so this resolves there
+     and names no colour (D-007). */
+  .pp-file-upload__error {
+    color: var(--pp-tone-text);
+  }
+}

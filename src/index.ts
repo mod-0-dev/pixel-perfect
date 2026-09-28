@@ -180,6 +180,22 @@ export {
   type EmptyStateTitleProps,
   type EmptyStateVariant,
 } from './components/EmptyState/EmptyState';
+export {
+  FileUpload,
+  FileUploadDropzone,
+  FileUploadItem,
+  FileUploadList,
+  FileUploadTrigger,
+  formatBytes,
+  type FileRejection,
+  type FileRejectionReason,
+  type FileUploadDropzoneProps,
+  type FileUploadItemProps,
+  type FileUploadListProps,
+  type FileUploadProps,
+  type FileUploadStatus,
+  type FileUploadTriggerProps,
+} from './components/FileUpload/FileUpload';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export { Input, type InputProps, type InputType } from './components/Input/Input';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';

@@ -6125,3 +6125,87 @@ dropped (the page's text); the day's height dropped (26px short); the
 RTL mirror dropped (`scale: none`). Each failed on exactly the test
 named for it.
 
+## D-087 — `FileUpload` rulings: the hidden input is the mechanism and the Trigger the keyboard path, refusals with reasons, and a file field is a group
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/FileUpload.md`
+(status) · **Extends:** D-030 §3 / D-035 §8 (`type="file"` excluded from
+Input for this), D-007, D-035 §3, D-039 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Five parts; the hidden input is the mechanism and the Trigger is the one tab stop
+
+`FileUpload` holds a native `<input type="file">` — the only thing that
+opens the file dialog and the only thing a form submits — visually
+hidden and `tabindex="-1"`, because a second stop beside the button
+would be the same control twice. `FileUploadTrigger` is a `Button`
+(`outline`) that opens the dialog and is the labelled control;
+`FileUploadDropzone` takes a drop and a click on itself (not on its
+children) and is never focusable, because a drop needs a pointer and
+the keyboard's path is the button inside it; `FileUploadList` and
+`FileUploadItem` show what was chosen. The component selects and
+shows; uploading is the consumer's, so the list is their state and an
+item takes the `progress` they know.
+
+### 2. `onSelect(accepted, rejected)`: refused by type, size and count, with reasons
+
+The dialog honours `accept`; a drop does not, and neither honours a
+size, so every path runs the same check — `accept`'s own grammar (MIME,
+a `*` subtype, an extension), `maxSize`, `maxFiles` with `multiple`,
+one without — and every refused file comes back with `type | size |
+count`, so the consumer can say why. The input's value is cleared after
+a selection, so the same file chosen twice reports twice. The drag
+state is a depth count, because enter and leave fire for every child
+crossed and a single boolean flickers.
+
+### 3. In a `Field`, make it a group
+
+A `<label for>` pointing at a button *replaces* the button's name: in a
+plain Field the Trigger read "Attachments" and not "Choose files", and
+the test that looked for the verb found nothing. So a `group` Field is
+the shape: its `aria-labelledby` and description land on the root,
+which becomes the named group, and the Trigger keeps its own name; a
+plain Field still works, with the Trigger named by the label, and the
+docs say which to prefer. `invalid`, `disabled` and `size` follow the
+field with the tier's precedence; `data-invalid` puts the dropzone in
+the danger scope, and a drag puts it in the accent one — the scope is
+written on the dropzone (`accent`, or `danger` when invalid), so every
+colour is a tone token (D-007). The rule lint caught the first draft's
+`--pp-palette-danger-11` on an erring item; the item carries the danger
+scope now and the error line reads `--pp-tone-text` in it.
+
+### 4. An item is a row that truncates
+
+Name, size (formatted by `Intl` in the locale's unit: "182 kB"), the
+remove button, and under them a `Progress` at `sm` labelled by the name
+while `0 ≤ progress < 100`, or the error line; `data-state` is `idle |
+uploading | complete | error`, derived unless given. The row is a grid
+with `minmax(0, 1fr)` for the name, so a long name truncates with an
+ellipsis in a 240px cell rather than pushing the row; a hairline between
+items and none after the last.
+
+### 5. Verified, and the four breaks
+
+Unit: thirteen tests — the hidden input's attributes and the Trigger
+and the zone opening it (and the text inside not); a selection reported
+and the input cleared; refusal by type, size and count with reasons
+(user-event's own `accept` filter off, since the component's check is
+what is under test); a single input's count; `matchesAccept`; a drop, the
+drag depth, and both ignored when disabled; a group Field and a plain
+one; an item's name, size, bar, error, remove button, statuses;
+`formatBytes`; a part outside the root; refs, `className`, `style`; axe
+in both themes. Browser: the dashed control edge, the zone the root's
+width and its content centred, hairlines between items, the long name
+truncating at 240 and not at 960, the bar present; a dispatched
+`dragenter` with a real `DataTransfer` turning the zone accent and a
+`dragleave` turning it back; the error Field's danger edge; the
+disabled instance's subtle edge and disabled Trigger; the ring on the
+Trigger and Tab from it landing on the first remove button, never on
+the input.
+
+Break checks (D-035 §3): the dashed edge dropped (`solid`); the dragging
+surface dropped (the page's surface); the item hairline dropped (`0px`);
+the name's truncation dropped (`false`). Each failed on exactly the test
+named for it.
+

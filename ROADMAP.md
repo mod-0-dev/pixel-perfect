@@ -129,8 +129,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   `Pagination` is in `review` (D-082), compact by its container; 5.6
   `Breadcrumb` is in `review` (D-083); 5.7 `Stepper` is in `review`
   (D-084); 5.8 `EmptyState` is in `review` (D-085); 5.9 `Calendar` is in
-  `review` (D-086), which unblocks 4.13 `DatePicker`. Next up is **5.10
-  `FileUpload`**, then 5.11–5.13 and 4.13. **4.4 `Dialog` is `done`** (2026-09-27): built
+  `review` (D-086), which unblocks 4.13 `DatePicker`; 5.10 `FileUpload` is
+  in `review` (D-087). Next up is **5.11 `Tree`**, then 5.12, 5.13 and 4.13.
+  **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -931,7 +932,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 5.7 | `Stepper` | `review` | fill | server | T2 | [`Stepper.md`](docs/specs/Stepper.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-084; awaiting its CI-authored baseline (D-013). Two parts; the number a counter, done a check, `aria-current="step"` (§1); vertical the base, a row above 28rem by its container (§2); every colour a tone token in the accent scope (§3). Found by the rectangles and the screenshot: grid auto-placement seated the circle after the label, and an `auto` column left the row's connector zero wide (§4) |
 | 5.8 | `EmptyState` | `review` | fill | server | 5.1 | [`EmptyState.md`](docs/specs/EmptyState.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-085; awaiting its CI-authored baseline (D-013). Five parts on the Tier 1–2 primitives (§1); centred and held to `measure-xs` by a grid track, never a width (§2); `outline` is Card's frame made dashed by the two-class contract (§3) |
 | 5.9 | `Calendar` | `review` | fill | client | T3 | [`Calendar.md`](docs/specs/Calendar.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-086; awaiting its CI-authored baseline (D-013). An ISO value and a `YYYY-MM` month, both controllable, no date library — `src/internal/date.ts` (§1); our own grid on `div`s with one tab stop and the APG keys, arrows mirrored in RTL (§2); names and digits by `Intl` (§3). A sixth week of fillers is hidden as a row (§4). Standalone; 4.13 `DatePicker` consumes it and is unblocked |
-| 5.10 | `FileUpload` | `planned` | fill | client | 3.7 | Drag/drop, progress |
+| 5.10 | `FileUpload` | `review` | fill | client | 3.7 | [`FileUpload.md`](docs/specs/FileUpload.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-087; awaiting its CI-authored baseline (D-013). The hidden native input is the mechanism and the Trigger the one tab stop (§1); `onSelect(accepted, rejected)` with reasons by type, size and count, drop and dialog checked alike (§2); a file field is a `group` Field, because a label pointing at a button replaces its name (§3); items with a `Progress` bar, truncating (§4). It selects and shows; uploading is the consumer's |
 | 5.11 | `Tree` | `planned` | fill | client | T3 | |
 | 5.12 | `CodeBlock` | `planned` | fill | client | 1.11 | Highlighting is a peer dep |
 | 5.13 | `AvatarGroup` | `planned` | hug | server | 1.9, 2.2 | Overlapping stack with overflow count. Added per D-016 |

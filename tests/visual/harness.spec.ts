@@ -7550,3 +7550,101 @@ test.describe('Calendar', () => {
     expect(await page.evaluate(() => document.activeElement?.closest('.pp-calendar__grid') === null)).toBe(true);
   });
 });
+
+test.describe('FileUpload', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+
+  test('the dropzone is a dashed control edge, centred, the cell\'s width; the items in rows with a hairline; the long name truncates', async ({ page }) => {
+    await page.goto('/components/file-upload');
+    const edge = await resolveIn(page, '--pp-color-border', 'neutral');
+    const hairline = await resolveIn(page, '--pp-color-border-subtle', 'neutral');
+    const cells = await page.locator('.matrix__cell .pp-file-upload').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const zone = root.querySelector('.pp-file-upload__dropzone') as HTMLElement;
+        const zs = getComputedStyle(zone);
+        const trigger = zone.querySelector('.pp-file-upload__trigger') as HTMLElement;
+        const items = Array.from(root.querySelectorAll<HTMLElement>('.pp-file-upload__item'));
+        const names = items.map((i) => i.querySelector('.pp-file-upload__name') as HTMLElement);
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          zoneWidth: zone.getBoundingClientRect().width,
+          style: zs.borderTopStyle,
+          color: zs.borderTopColor,
+          width: zs.borderTopWidth,
+          state: zone.getAttribute('data-state'),
+          centred: Math.abs(trigger.getBoundingClientRect().left - zone.getBoundingClientRect().left - (zone.getBoundingClientRect().right - trigger.getBoundingClientRect().right)),
+          lines: items.map((i) => getComputedStyle(i).borderBottomWidth),
+          truncated: names.map((nm) => nm.scrollWidth > nm.clientWidth + 1 && getComputedStyle(nm).textOverflow === 'ellipsis'),
+          rowsInside: items.every((i) => i.getBoundingClientRect().right <= root.getBoundingClientRect().right + 0.5),
+          spills: root.scrollWidth > root.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.zoneWidth - c.rootWidth)).toBeLessThanOrEqual(1);
+      expect(c.style).toBe('dashed');
+      expect(c.color).toBe(edge);
+      expect(c.width).toBe('1px');
+      expect(c.state).toBe('idle');
+      expect(c.centred).toBeLessThanOrEqual(1);
+      expect(c.lines).toEqual(['1px', '1px', '0px']);
+      expect(c.rowsInside).toBe(true);
+      expect(c.spills).toBe(false);
+    }
+    /* The long name truncates at 240px, and fits at 960px. */
+    expect(cells[0]!.truncated[1]).toBe(true);
+    expect(cells[2]!.truncated[1]).toBe(false);
+    const ev = await page.locator('.matrix__cell .pp-file-upload__item').first().evaluate((i) => ({
+      hair: getComputedStyle(i).borderBottomColor,
+      progress: i.querySelector('.pp-progress') !== null,
+    }));
+    expect(ev.hair).toBe(hairline);
+    expect(ev.progress).toBe(true);
+  });
+
+  test('dragging over the zone is the accent edge and surface, and leaves with the drag; the error Field is the danger edge; disabled is muted; the ring on the Trigger', async ({
+    page,
+  }) => {
+    await page.goto('/components/file-upload');
+    const zone = page.locator('.matrix__cell .pp-file-upload__dropzone').last();
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    await zone.dispatchEvent('dragenter', { dataTransfer });
+    await expect(zone).toHaveAttribute('data-state', 'dragging');
+    await expect.poll(() => zone.evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-tone-solid', 'accent'));
+    expect(await zone.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg', 'accent'));
+    await zone.dispatchEvent('dragleave');
+    await expect(zone).toHaveAttribute('data-state', 'idle');
+    await expect.poll(() => zone.evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-color-border', 'neutral'));
+
+    const errorZone = page.locator('[data-testid="file-upload-error"] .pp-file-upload__dropzone');
+    expect(await errorZone.evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-tone-border', 'danger'));
+    const disabled = page.locator('[data-testid="file-upload-disabled"] .pp-file-upload');
+    expect(await disabled.getAttribute('data-disabled')).not.toBeNull();
+    await expect(disabled.locator('.pp-file-upload__trigger')).toBeDisabled();
+    expect(await disabled.locator('.pp-file-upload__dropzone').evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-color-border-subtle', 'neutral'));
+
+    const trigger = page.locator('.matrix__cell .pp-file-upload__trigger').first();
+    await trigger.focus();
+    await expect.poll(() => trigger.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    /* The hidden input is not a stop: Tab from the Trigger lands on the first remove button. */
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('aria-label'))).toMatch(/^Remove /);
+  });
+});
