@@ -66,6 +66,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'progress', path: '/components/progress' },
   { name: 'table', path: '/components/table' },
   { name: 'pagination', path: '/components/pagination' },
+  { name: 'breadcrumb', path: '/components/breadcrumb' },
 ];
 
 /**

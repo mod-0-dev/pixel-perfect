@@ -5805,3 +5805,73 @@ the RTL mirror dropped (`scale: none`); the centring dropped (the row at
 the start). Each failed on exactly the test named for it; the fifth,
 `container-type` in the matrix, is §2.
 
+## D-083 — `Breadcrumb` rulings: the separator is the stylesheet's and follows its crumb, the page is a span, and a `nowrap` the break check found wrong
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Breadcrumb.md`
+(status) · **Extends:** D-035 §3, D-053 §5, D-079 §3, D-082 §4
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Five parts, and the separator is drawn, not rendered
+
+`Breadcrumb` (a `<nav aria-label="Breadcrumb">` around an `<ol>`),
+`BreadcrumbItem`, `BreadcrumbLink` (a neutral `Link`, underlined on
+hover, muted through Link's own `--pp-link-color` hook and the page's
+colour on hover), `BreadcrumbPage` (a `<span aria-current="page">`,
+never a link, because a link to where you are moves nothing) and
+`BreadcrumbEllipsis` (a named "More levels" where the consumer cut the
+trail; the menu of hidden levels is theirs). No separator part: a
+separator between every pair of items is a fact of the list, not
+content, so it is each item's `::after` from
+`--pp-breadcrumb-separator`, `"/"` by default — symmetric, so RTL
+needs nothing — and never in the accessibility tree. The consumer
+decides which item is last; a Server Component with no context could
+not count children, and should not.
+
+### 2. `fill`, and a trail wraps at its separators
+
+A landmark spans its line; the list inside is a flex row that wraps, so
+a trail wider than a 240px sidebar is two lines of whole crumbs, which
+reads, where a scrolling or cut-off trail does not.
+
+### 3. Two things the checks said about the separator and the wrap
+
+**`white-space: nowrap` caught nothing, and was wrong.** The spec said
+a crumb "never breaks mid-label" and put `nowrap` on the item; the break
+check that dropped it changed nothing, because a wrapped flex item takes
+its max-content width on its new line and a crumb breaks inside itself
+only when it alone is wider than the line. Followed through, that is
+the one case where `nowrap` would act, and there it would make the
+crumb spill out of the landmark rather than wrap its words — the worse
+outcome. The declaration is gone, and the spec says what the flex row
+does instead. D-079 §3's shape: a declaration the check cannot observe
+is a claim to re-examine, not a line to keep.
+
+**The separator follows its crumb.** The first draft drew it as each
+item's `::before` except the first's, and the screenshot's 240px cell
+began its second line with a stray slash. It is `::after` on every item
+but the last now, so a wrapped line ends with its separator and the next
+begins with a crumb. The first colour-break check on the separator also
+caught nothing, because the test read the ellipsis item, whose `<li>`
+carries the muted colour itself; it reads a plain item now, and the
+break is caught.
+
+### 4. Verified, and the four breaks
+
+Unit: eight tests — the landmark, the `<ol>`, the items in order and no
+slash in the text; a crumb's href, class, neutral tone and hover
+underline; the page a span with `aria-current` and no link; the
+ellipsis named and renamed; `asChild` on a router link; refs,
+`className`, `style` and `label`; axe in both themes. Browser: a
+separator after every item but the last and none in the text; the trail
+two lines of whole crumbs at 240px and one at 960px, spilling nothing;
+a crumb muted and unadorned at rest, the page's colour and underlined
+on hover; the page's colour and weight; the separator's colour and
+gap; a custom glyph; RTL from the right.
+
+Break checks (D-035 §3): the separator's `content` dropped (`none`,
+both tests); `flex-wrap` dropped (the trail spilled); the page's weight
+dropped (`400`); the separator's colour dropped (the page's colour).
+Each failed on exactly the test named for it; `nowrap` is §3.
+

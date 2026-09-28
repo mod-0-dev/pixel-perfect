@@ -7102,3 +7102,80 @@ test.describe('Pagination', () => {
     expect(linked).toEqual({ decoration: 'none', currentTag: 'SPAN', sameHeight: true });
   });
 });
+
+test.describe('Breadcrumb', () => {
+  type Page = import('@playwright/test').Page;
+  const color = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.color = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, token);
+  test('a separator after every item but the last, out of the tree; a five-crumb trail wraps into whole crumbs at 240px and is one line at 960px, spilling nothing', async ({
+    page,
+  }) => {
+    await page.goto('/components/breadcrumb');
+    const cells = await page.locator('.matrix__cell .pp-breadcrumb').evaluateAll((navs) =>
+      navs.map((n) => {
+        const nav = n as HTMLElement;
+        const items = Array.from(nav.querySelectorAll<HTMLElement>('.pp-breadcrumb__item'));
+        const tops = items.map((li) => Math.round(li.getBoundingClientRect().top));
+        return {
+          separators: items.map((li) => getComputedStyle(li, '::after').content),
+          lines: new Set(tops).size,
+          whole: items.every((li) => li.getBoundingClientRect().height < parseFloat(getComputedStyle(li).fontSize) * 2),
+          spills: nav.scrollWidth > nav.clientWidth + 1,
+          text: nav.textContent,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(c.separators).toEqual(['"/"', '"/"', '"/"', '"/"', 'none']);
+      expect(c.text).not.toContain('/');
+      expect(c.whole, 'a crumb broke mid-label').toBe(true);
+      expect(c.spills, 'the trail spilled').toBe(false);
+    }
+    expect(cells[0]!.lines).toBeGreaterThanOrEqual(2);
+    expect(cells[2]!.lines).toBe(1);
+  });
+
+  test('a crumb is muted and unadorned at rest, the page\'s colour and underlined on hover; the page is the text colour, medium; a custom separator; RTL runs from the right', async ({
+    page,
+  }) => {
+    await page.goto('/components/breadcrumb');
+    const muted = await color(page, '--pp-color-text-muted');
+    const text = await color(page, '--pp-color-text');
+    const nav = page.locator('[data-testid="breadcrumb-ellipsis"] .pp-breadcrumb');
+    const home = nav.getByRole('link', { name: 'Home' });
+    const rest = await home.evaluate((n) => ({ color: getComputedStyle(n).color, decoration: getComputedStyle(n).textDecorationLine }));
+    expect(rest).toEqual({ color: muted, decoration: 'none' });
+    await home.hover();
+    await expect.poll(() => home.evaluate((n) => getComputedStyle(n).color)).toBe(text);
+    expect(await home.evaluate((n) => getComputedStyle(n).textDecorationLine)).toBe('underline');
+    const current = await nav.locator('[aria-current="page"]').evaluate((n) => ({ color: getComputedStyle(n).color, weight: getComputedStyle(n).fontWeight }));
+    expect(current).toEqual({ color: text, weight: '500' });
+    expect(await nav.locator('.pp-breadcrumb__ellipsis').evaluate((n) => getComputedStyle(n, '::after').content)).toBe('"/"');
+    /* The separator is muted, and takes the gap each side — read on a plain
+       item (the ellipsis item carries the colour itself, so it would read
+       muted with the pseudo-element's own declaration gone). */
+    const sep = await nav.locator('.pp-breadcrumb__item').nth(2).evaluate((n) => ({
+      color: getComputedStyle(n, '::after').color,
+      pad: getComputedStyle(n, '::after').paddingLeft,
+    }));
+    expect(sep.color).toBe(muted);
+    expect(parseFloat(sep.pad)).toBe(await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pp-space-2')) * parseFloat(getComputedStyle(document.documentElement).fontSize)));
+
+    const chevron = await page.locator('[data-testid="breadcrumb-chevron"] .pp-breadcrumb__item').nth(1).evaluate((n) => getComputedStyle(n, '::after').content);
+    expect(chevron).toBe('"›"');
+
+    const rtl = await page.locator('[data-testid="breadcrumb-rtl"] .pp-breadcrumb').evaluate((n) => {
+      const items = Array.from(n.querySelectorAll('.pp-breadcrumb__item'));
+      return { first: items[0]!.getBoundingClientRect().left, last: items[items.length - 1]!.getBoundingClientRect().left };
+    });
+    expect(rtl.first).toBeGreaterThan(rtl.last);
+  });
+});

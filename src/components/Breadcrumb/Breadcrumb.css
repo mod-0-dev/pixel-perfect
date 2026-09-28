@@ -1,0 +1,72 @@
+/*
+ * Breadcrumb — spec docs/specs/Breadcrumb.md
+ *
+ * THE SEPARATOR IS EACH ITEM'S `::after`, EXCEPT THE LAST'S (spec §1):
+ * drawn from `--pp-breadcrumb-separator`, "/" by default — symmetric, so
+ * RTL needs nothing — and never in the accessibility tree. After, not
+ * before: a trail that wraps then ends a line with its separator and starts
+ * the next with a crumb, where a leading separator was a stray slash at the
+ * start of the second line (D-083 §3). A consumer who sets a chevron sets
+ * its mirror under `[dir="rtl"]` themselves (RULES §1).
+ *
+ * A LONG TRAIL WRAPS AT A SEPARATOR AND EVERY CRUMB STAYS WHOLE (spec §4):
+ * the list is a flex row that wraps, and a wrapped flex item takes its
+ * max-content width on its new line, so a crumb breaks inside itself only
+ * when it alone is wider than the line — and then it should, rather than
+ * spill. No `white-space: nowrap`: the first draft had one, the break check
+ * found it unobservable, and following it through found it wrong (D-083 §3).
+ *
+ * A CRUMB IS A LINK WITH THE CRUMB'S COLOUR (spec §3): muted at rest and
+ * the page's colour on hover, through Link's own `--pp-link-color` hooks,
+ * so Link.css keeps drawing the underline and the ring.
+ */
+
+@layer pp.components {
+  .pp-breadcrumb {
+    --_gap: var(--pp-breadcrumb-gap, var(--pp-space-2));
+    --_color: var(--pp-breadcrumb-color, var(--pp-color-text-muted));
+    --_current: var(--pp-breadcrumb-current-color, var(--pp-color-text));
+
+    display: block;
+    min-inline-size: 0;
+    font-size: var(--pp-font-size-2);
+    line-height: var(--pp-line-height-snug);
+  }
+
+  .pp-breadcrumb__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pp-breadcrumb__item {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .pp-breadcrumb__item:not(:last-child)::after {
+    content: var(--pp-breadcrumb-separator, "/");
+    /* Padding, not margin: RULES §2 holds for a pseudo-element too. */
+    padding-inline: var(--_gap);
+    color: var(--_color);
+    user-select: none;
+  }
+
+  .pp-breadcrumb__link {
+    --pp-link-color: var(--_color);
+    --pp-link-color-hover: var(--_current);
+  }
+
+  .pp-breadcrumb__page {
+    color: var(--_current);
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-breadcrumb__ellipsis {
+    color: var(--_color);
+    font-variant-numeric: tabular-nums;
+  }
+}
