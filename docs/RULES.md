@@ -121,7 +121,9 @@ There is no `Spacer` component. `gap` exists.
 Visual state is exposed on the DOM so consumers can style it without prop
 drilling and without knowing our internals:
 
-`data-state="open|closed|checked|unchecked|indeterminate"`, `data-disabled`,
+`data-state="open|closed|checked|unchecked|indeterminate|active|inactive"`
+(`active` / `inactive` is the selected-of-several state — a tab and its
+panel — which is neither shown-or-not nor pressed, D-074 §1), `data-disabled`,
 `data-invalid`, `data-loading`, `data-readonly`, `data-orientation`,
 `data-side`, `data-align`, `data-highlighted` (the row of a menu or a
 listbox the pointer is over or the arrow keys reached — a state of its own,

@@ -56,6 +56,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'drawer', path: '/components/drawer' },
   { name: 'dropdown-menu', path: '/components/dropdown-menu' },
   { name: 'context-menu', path: '/components/context-menu' },
+  { name: 'tabs', path: '/components/tabs' },
   { name: 'alert', path: '/components/alert' },
 ];
 

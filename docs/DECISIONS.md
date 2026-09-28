@@ -4899,3 +4899,109 @@ point inside its region. 9 unit and 6 browser tests; three break checks
 and the row lost its height; the `dir` hand-off dropped — the RTL submenu
 opened on the wrong key; the region as Radix's `<span>` — the unit test),
 each caught by its named test.
+
+## D-074 — `Tabs` rulings: `active | inactive` joins RULES §4, the page's direction is the component's, and a kept panel hides itself
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §4
+(the `data-state` values), `docs/specs/Tabs.md` (status) · **Extends:** D-061 §5
+and §6, D-064 §3, D-072 §2
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The first Tier 4 component that is not an overlay.
+
+### 1. `data-state="active | inactive"` is the selected-of-several state
+
+Radix writes it on a tab and its panel. RULES §4 had `open | closed` for
+shown-or-not and `on | off` for pressed; a selected tab is neither — its
+panel is shown *because* it is selected, and it is chosen, not pressed.
+Added to the vocabulary, the way D-064 §3 added the tooltip's two, and
+for the same reason: a real state with no existing word. It is the pair
+for anything that selects one of a set from now on.
+
+### 2. Radix's `dir` attribute is removed, and its value is read at mount
+
+Radix's tabs root writes `dir` on its element, `ltr` unless told, which
+inside a right-to-left page flips the whole strip to left-to-right — on
+the server, before any script could correct it. The root is rendered
+`asChild` onto an element of ours that sets `dir={undefined}` after
+Radix's props: Radix's Slot lets the child's value win, and an undefined
+one is no attribute at all. The tabs inherit the page's direction, on the
+server and on the client, with no flash. The value Radix's arrow keys need
+(`ArrowLeft` is "next" in RTL) is read from the element in a layout
+effect at mount and handed to Radix as `dir`, before paint. A direction
+that changes after mount is not tracked, 4.1 §3's ruling for the theme.
+The rule for the tier's non-overlays: **a component in flow never writes
+a direction; it reads the page's when it needs the value.**
+
+### 3. An inactive panel is an empty, hidden element, and a kept one hides itself
+
+Radix renders every panel's element always — empty and `hidden` while
+inactive, so `aria-controls` always resolves — and the children of the
+selected one only. `keepMounted` (Radix's `forceMount`, named for what it
+is for) keeps a panel's children rendered so a form does not lose what
+was typed; but `forceMount` also drops `hidden`, and leaves two panels
+showing: Radix expects the consumer to hide the inactive one. The
+component does it: the root mirrors the selected value (Radix exposes it
+to nothing outside its parts) and a kept panel sets `hidden` from the
+mirror, so it is hidden exactly when a fresh one would be empty. Found by
+the unit test, which asked for `hidden` and did not get it; the browser
+test had passed by counting the *fresh* panel's `hidden` and was
+corrected to count both.
+
+### 4. The bar sits on the hairline: a pseudo-element hung one hairline past the edge
+
+The list draws a hairline on its far edge; the selected tab draws a
+two-pixel bar on the same edge. Adjacent, the two read as a three-pixel
+bar where the tab is selected and one pixel elsewhere; overlapping, the
+bar *is* the line for that tab's width, which is what every tab strip
+means. A tab cannot extend into its list's border without a negative
+margin (RULES §2), so the bar is `::after`: a zero-size box at
+`inset-block-end: -1px` (the hairline's width, as a token) with a
+two-pixel `border-block-end`, logical, so the column form uses
+`border-inline-end` and `inset-inline-end`. The browser test reads the
+pseudo-element's offset and the tab's and list's edges and asserts the
+bar's outer edge is the list's outer edge.
+
+### 5. The strip scrolls and the list grows
+
+A row of tabs wider than its container must neither wrap nor overflow
+the page. The list sits in a strip of the component's own, a
+flex row with `overflow-x: auto`, and is a flex item in it: `flex-grow: 1`
+makes it at least the strip, and a flex item's automatic minimum size —
+its min-content, which for a row of non-wrapping tabs is all of them —
+means it is never narrower than its tabs. So its hairline runs under
+every tab and not only the visible ones. The first break check dropped
+`flex-shrink` and caught nothing, which is how the minimum-size half was
+found to be the mechanism; the checks now make the strip a block (the
+list becomes the strip's width and its tabs overflow it) and drop
+`flex-grow` (a short list's hairline stops at its last tab).
+`min-inline-size: max-content` would say the same and is banned by the
+value list. Not `Scroller`, which is a
+labelled, focusable region for content and would add a tab stop a strip
+does not need. The strip clips, so the tab's focus ring is inset.
+
+### 6. Verified
+
+A tab is the medium control height; the selected label is the text
+colour and an unselected one muted, resolved; the bar is two pixels of
+the accent's solid step with its outer edge on the list's; the arrows
+select in automatic mode, skip a disabled tab, and `Tab` reaches the
+panel; manual mode selects on `Enter`; at 240px the strip scrolls, the
+page does not, and the hairline ends where the last tab does; the column
+form is beside its panel with the bar on its inline-end edge and
+`ArrowDown` moving; a kept panel keeps what was typed and a fresh one
+does not, both hidden; the RTL strip reads right to left with no `dir` of
+its own and `ArrowLeft` is next; the transition is none under reduced
+motion. 10 unit and 6 browser tests.
+
+### 7. Break checks
+
+Five, each caught by its named test: the pseudo-element's overhang zeroed
+(the bar's outer edge no longer the list's); the strip made a block (the
+hairline stopped short of the last tab at 240px); the list's `flex-grow`
+dropped (a short strip's hairline stopped at its last tab); the direction
+pinned to `ltr` (the RTL strip's `ArrowLeft` went the wrong way); the
+reduced-motion rule dropped (the transition measured). Two lessons on the
+checks themselves: dropping `flex-shrink` caught nothing (§5), and a
+mutation that leaves an import unused fails the library build the browser
+suite's server runs first, which reads as the server not starting.

@@ -196,6 +196,18 @@ export {
 } from './components/ContextMenu/ContextMenu';
 export { Switch, type SwitchProps } from './components/Switch/Switch';
 export {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  type TabsActivationMode,
+  type TabsContentProps,
+  type TabsListProps,
+  type TabsOrientation,
+  type TabsProps,
+  type TabsTriggerProps,
+} from './components/Tabs/Tabs';
+export {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,

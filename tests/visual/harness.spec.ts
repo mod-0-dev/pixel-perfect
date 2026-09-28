@@ -5792,3 +5792,202 @@ test.describe('ContextMenu', () => {
     expect(read.every((r) => r.state === 'open' && r.inside && r.items === 4), JSON.stringify(read)).toBe(true);
   });
 });
+
+test.describe('Tabs', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="tabs-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.color = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, token);
+
+  test('a tab is the medium control; the selected one is the text colour with a two-pixel accent bar on the hairline', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'settings');
+    await region.scrollIntoViewIfNeeded();
+    const active = region.getByRole('tab', { name: 'General' });
+    const inactive = region.getByRole('tab', { name: 'Members' });
+    const list = region.getByRole('tablist');
+    const height = await px(page, '--pp-control-height-md');
+    expect(height).toBe(40);
+    const read = await active.evaluate((n) => {
+      const after = getComputedStyle(n, '::after');
+      const list = n.parentElement as HTMLElement;
+      return {
+        height: n.getBoundingClientRect().height,
+        color: getComputedStyle(n).color,
+        barWidth: after.borderBottomWidth,
+        barColor: after.borderBottomColor,
+        barOffset: after.bottom,
+        lineWidth: getComputedStyle(list).borderBottomWidth,
+        lineColor: getComputedStyle(list).borderBottomColor,
+        tabBottom: n.getBoundingClientRect().bottom,
+        listBottom: list.getBoundingClientRect().bottom,
+        transition: getComputedStyle(n).transitionDuration,
+      };
+    });
+    expect(Math.abs(read.height - height)).toBeLessThanOrEqual(1);
+    expect(read.color).toBe(await resolve(page, '--pp-color-text'));
+    expect(await inactive.evaluate((n) => getComputedStyle(n).color)).toBe(await resolve(page, '--pp-color-text-muted'));
+    // The bar: two pixels, the accent's solid step, its outer edge one
+    // hairline past the tab's edge — which is the list's outer edge.
+    expect(read.barWidth).toBe('2px');
+    expect(read.barOffset).toBe('-1px');
+    expect(read.lineWidth).toBe('1px');
+    expect(Math.abs(read.tabBottom + 1 - read.listBottom), 'the bar does not sit on the line').toBeLessThanOrEqual(0.5);
+    const accent = await active.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-tone-solid').trim());
+    const accentResolved = await active.evaluate((n, token) => {
+      const probe = document.createElement('i');
+      probe.style.color = token;
+      n.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, accent);
+    expect(read.barColor).toBe(accentResolved);
+    expect(read.barColor).not.toBe(read.lineColor);
+    expect(read.transition, 'not still under reduced motion').toBe('0s');
+    await expect(list).toHaveAttribute('aria-orientation', 'horizontal');
+    // Four short tabs: the list is still the strip's full width, so the
+    // hairline runs the whole way.
+    const span = await list.evaluate((n) => ({ list: n.getBoundingClientRect().width, strip: (n.parentElement as HTMLElement).clientWidth }));
+    expect(Math.abs(span.list - span.strip), 'the hairline stops at the last tab').toBeLessThanOrEqual(1);
+  });
+
+  test('the arrows select; Tab leaves the strip for the panel; manual mode selects on Enter', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'settings');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('tab', { name: 'General' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(region.getByRole('tab', { name: 'Members' })).toBeFocused();
+    await expect(region.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true');
+    await expect(region.locator('xpath=..')).toContainText('selected: members');
+    // Billing is disabled: skipped.
+    await page.keyboard.press('ArrowRight');
+    await expect(region.getByRole('tab', { name: 'Advanced' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(region.getByRole('tabpanel')).toBeFocused();
+
+    const manual = demo(page, 'manual');
+    await manual.scrollIntoViewIfNeeded();
+    await manual.getByRole('tab', { name: 'General' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(manual.getByRole('tab', { name: 'Members' })).toBeFocused();
+    await expect(manual.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'false');
+    await page.keyboard.press('Enter');
+    await expect(manual.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('at 240px the strip scrolls, the page does not, and the hairline runs under every tab', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const narrow = page.locator('.matrix__cell').first().locator('.pp-tabs');
+    await narrow.scrollIntoViewIfNeeded();
+    const before = await page.evaluate(() => window.scrollY);
+    const read = await narrow.evaluate((n) => {
+      const strip = n.querySelector('.pp-tabs__strip') as HTMLElement;
+      const list = n.querySelector('.pp-tabs__list') as HTMLElement;
+      const tabs = Array.from(n.querySelectorAll('.pp-tabs__tab')) as HTMLElement[];
+      return {
+        rootWidth: n.getBoundingClientRect().width,
+        stripClient: strip.clientWidth,
+        stripScroll: strip.scrollWidth,
+        listWidth: list.getBoundingClientRect().width,
+        lastTabRight: tabs[tabs.length - 1]!.getBoundingClientRect().right,
+        listRight: list.getBoundingClientRect().right,
+        overflowX: getComputedStyle(strip).overflowX,
+        wrap: getComputedStyle(list).flexWrap,
+      };
+    });
+    expect(read.overflowX).toBe('auto');
+    expect(read.wrap).toBe('nowrap');
+    expect(read.stripScroll, 'the strip did not overflow').toBeGreaterThan(read.stripClient);
+    expect(Math.abs(read.stripClient - read.rootWidth)).toBeLessThanOrEqual(1);
+    // The list grew with its tabs: its hairline ends where the last tab does.
+    expect(Math.abs(read.listRight - read.lastTabRight), 'the hairline stops short of the last tab').toBeLessThanOrEqual(1);
+    const strip = narrow.locator('.pp-tabs__strip');
+    const box = (await strip.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(200, 0);
+    await expect.poll(() => strip.evaluate((n) => n.scrollLeft)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  });
+
+  test('vertical: the strip is a column beside its panel, the bar on the inline-end edge', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'vertical');
+    await region.scrollIntoViewIfNeeded();
+    const [list, panel] = await Promise.all([region.getByRole('tablist').boundingBox(), region.getByRole('tabpanel').boundingBox()]);
+    expect(list!.x + list!.width, 'the panel is not beside the strip').toBeLessThanOrEqual(panel!.x + 1);
+    expect(Math.abs(list!.y - panel!.y)).toBeLessThanOrEqual(1);
+    const read = await region.getByRole('tab', { name: 'Profile' }).evaluate((n) => {
+      const after = getComputedStyle(n, '::after');
+      const list = n.parentElement as HTMLElement;
+      return {
+        barWidth: after.borderRightWidth,
+        barBottom: after.borderBottomWidth,
+        offset: after.right,
+        lineWidth: getComputedStyle(list).borderRightWidth,
+        lineBottom: getComputedStyle(list).borderBottomWidth,
+        tabRight: n.getBoundingClientRect().right,
+        listRight: list.getBoundingClientRect().right,
+      };
+    });
+    expect(read.barWidth).toBe('2px');
+    expect(read.barBottom).toBe('0px');
+    expect(read.offset).toBe('-1px');
+    expect(read.lineWidth).toBe('1px');
+    expect(read.lineBottom).toBe('0px');
+    expect(Math.abs(read.tabRight + 1 - read.listRight)).toBeLessThanOrEqual(0.5);
+    await region.getByRole('tab', { name: 'Profile' }).focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(region.getByRole('tab', { name: 'Security' })).toBeFocused();
+  });
+
+  test('a kept panel keeps what was typed; a fresh one does not', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'kept');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByPlaceholder('still here').fill('Ada');
+    await region.getByRole('tab', { name: 'Fresh' }).click();
+    await region.getByPlaceholder('gone on return').fill('Lin');
+    await region.getByRole('tab', { name: 'Other' }).click();
+    // Both inactive panels are hidden; the kept one still holds its input,
+    // the fresh one is empty (D-074 §3).
+    const hidden = region.locator('.pp-tabs__panel[hidden]');
+    await expect(hidden).toHaveCount(2);
+    await expect(hidden.filter({ has: page.getByPlaceholder('still here') })).toHaveCount(1);
+    await expect(region.getByPlaceholder('still here')).toBeHidden();
+    expect(await hidden.evaluateAll((els) => els.filter((n) => n.childElementCount === 0).length)).toBe(1);
+    await region.getByRole('tab', { name: 'Kept' }).click();
+    await expect(region.getByPlaceholder('still here')).toHaveValue('Ada');
+    await region.getByRole('tab', { name: 'Fresh' }).click();
+    await expect(region.getByPlaceholder('gone on return')).toHaveValue('');
+  });
+
+  test('a right-to-left strip reads right to left with no dir of its own, and ArrowLeft is next', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'rtl');
+    await region.scrollIntoViewIfNeeded();
+    await expect(region.locator('.pp-tabs')).not.toHaveAttribute('dir', /.*/);
+    const tabs = region.getByRole('tab');
+    const [first, second] = await Promise.all([tabs.nth(0).boundingBox(), tabs.nth(1).boundingBox()]);
+    expect(second!.x + second!.width, 'the second tab is not to the left of the first').toBeLessThanOrEqual(first!.x + 1);
+    await tabs.nth(0).focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(tabs.nth(1)).toBeFocused();
+    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+  });
+});

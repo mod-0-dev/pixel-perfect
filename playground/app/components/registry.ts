@@ -75,5 +75,6 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'drawer', name: 'Drawer', tier: '4.6', summary: 'A modal sheet from an edge of the viewport, sized by a token.' },
   { slug: 'dropdown-menu', name: 'DropdownMenu', tier: '4.7', summary: 'A list of commands under its trigger; arrows, typeahead, submenus.' },
   { slug: 'context-menu', name: 'ContextMenu', tier: '4.8', summary: 'The same list of commands, opened at the pointer by a secondary press.' },
+  { slug: 'tabs', name: 'Tabs', tier: '4.9', summary: 'One panel of several, chosen by its tab; the strip scrolls, never wraps.' },
   { slug: 'alert', name: 'Alert', tier: '5.2', summary: 'A tone-coloured block for something that happened or is true.' },
 ];
