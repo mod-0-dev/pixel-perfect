@@ -7328,3 +7328,111 @@ test.describe('Stepper', () => {
     expect(rtl.indicatorRightOfLabel).toBe(true);
   });
 });
+
+test.describe('EmptyState', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string, property: 'backgroundColor' | 'color' = 'backgroundColor') =>
+    page.evaluate(
+      ([t, prop]) => {
+        const probe = document.createElement('div');
+        probe.style[prop as 'backgroundColor' | 'color'] = `var(${t})`;
+        document.body.appendChild(probe);
+        const c = getComputedStyle(probe)[prop as 'backgroundColor' | 'color'];
+        probe.remove();
+        return c;
+      },
+      [token, property] as const,
+    );
+
+  test('the column is the cell at 240px and the measure, centred, at 960px; the parts stacked; the description centred and muted; the tile round and sunken', async ({
+    page,
+  }) => {
+    await page.goto('/components/empty-state');
+    const measure = await px(page, '--pp-measure-xs');
+    const padInline = await px(page, '--pp-space-5');
+    const padBlock = await px(page, '--pp-space-7');
+    const tile = await px(page, '--pp-size-12');
+    const cells = await page.locator('.matrix__cell .pp-empty-state').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const parent = root.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const box = root.getBoundingClientRect();
+        const title = root.querySelector('.pp-empty-state__title') as HTMLElement;
+        const t = title.getBoundingClientRect();
+        const parts = ['icon', 'title', 'description', 'actions'].map((p) => (root.querySelector(`.pp-empty-state__${p}`) as HTMLElement).getBoundingClientRect());
+        const icon = root.querySelector('.pp-empty-state__icon') as HTMLElement;
+        const description = root.querySelector('.pp-empty-state__description') as HTMLElement;
+        return {
+          rootWidth: box.width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          column: t.width,
+          startGap: t.left - box.left,
+          endGap: box.right - t.right,
+          stacked: parts.every((r, i) => i === 0 || r.top >= parts[i - 1]!.bottom - 0.5),
+          paddingTop: parseFloat(getComputedStyle(root).paddingTop),
+          descriptionAlign: getComputedStyle(description).textAlign,
+          /* The title has no alignment of its own: the root's `text-align`
+             is what centres it (and any plain child). */
+          titleAlign: getComputedStyle(title).textAlign,
+          descriptionColor: getComputedStyle(description).color,
+          tile: [icon.getBoundingClientRect().width, icon.getBoundingClientRect().height, getComputedStyle(icon).borderTopLeftRadius, getComputedStyle(icon).backgroundColor],
+          glyph: (icon.querySelector('svg') as SVGElement).getBoundingClientRect().width,
+          spills: root.scrollWidth > root.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const [narrow, , wide] = cells as [(typeof cells)[number], (typeof cells)[number], (typeof cells)[number]];
+    for (const c of cells) {
+      expect(Math.abs(c.rootWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(c.spills).toBe(false);
+      expect(c.stacked).toBe(true);
+      expect(Math.abs(c.startGap - c.endGap)).toBeLessThanOrEqual(1);
+      expect(c.paddingTop).toBe(padBlock);
+      expect(c.descriptionAlign).toBe('center');
+      expect(c.titleAlign).toBe('center');
+      expect(c.descriptionColor).toBe(await resolve(page, '--pp-color-text-muted', 'color'));
+      expect(Math.abs(c.tile[0] - tile)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.tile[1] - tile)).toBeLessThanOrEqual(0.5);
+      expect(c.tile[2]).toBe('9999px');
+      expect(c.tile[3]).toBe(await resolve(page, '--pp-color-bg-sunken'));
+      expect(Math.abs(c.glyph - (await px(page, '--pp-size-6')))).toBeLessThanOrEqual(0.5);
+    }
+    /* The whole cell less the padding at 240; the measure, no more, at 960. */
+    expect(Math.abs(narrow.column - (narrow.rootWidth - 2 * padInline))).toBeLessThanOrEqual(1);
+    expect(Math.abs(wide.column - measure)).toBeLessThanOrEqual(1);
+  });
+
+  test('outline is Card\'s surface with a dashed hairline; plain has no frame; the actions stand off by their padding', async ({ page }) => {
+    await page.goto('/components/empty-state');
+    const outline = await page.locator('[data-testid="empty-state-outline"] .pp-empty-state').evaluate((n) => {
+      const s = getComputedStyle(n);
+      return { classes: n.className, style: s.borderTopStyle, width: s.borderTopWidth, bg: s.backgroundColor, radius: s.borderTopLeftRadius, color: s.borderTopColor };
+    });
+    expect(outline.classes).toBe('pp-card pp-empty-state');
+    expect(outline.style).toBe('dashed');
+    expect(outline.width).toBe('1px');
+    expect(outline.bg).toBe(await resolve(page, '--pp-color-bg-raised'));
+    expect(parseFloat(outline.radius)).toBe(await px(page, '--pp-radius-3'));
+    expect(outline.color).toBe(await resolve(page, '--pp-color-border-subtle'));
+    const plain = await page.locator('.matrix__cell .pp-empty-state').first().evaluate((n) => getComputedStyle(n).borderTopStyle);
+    expect(plain).toBe('none');
+    const actions = await page.locator('.matrix__cell .pp-empty-state__actions').first().evaluate((n) => parseFloat(getComputedStyle(n).paddingTop));
+    expect(actions).toBe(await px(page, '--pp-space-2'));
+    /* Inside a Card body the empty state is the body's width, centred. */
+    const inCard = await page.locator('[data-testid="empty-state-card"] .pp-empty-state').evaluate((n) => {
+      const body = n.parentElement as HTMLElement;
+      const bs = getComputedStyle(body);
+      return Math.abs(n.getBoundingClientRect().width - (body.clientWidth - parseFloat(bs.paddingLeft) - parseFloat(bs.paddingRight)));
+    });
+    expect(inCard).toBeLessThanOrEqual(1);
+  });
+});

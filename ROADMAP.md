@@ -128,7 +128,8 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   5.4 `Table` is in `review` (D-081), the tier's data component; 5.5
   `Pagination` is in `review` (D-082), compact by its container; 5.6
   `Breadcrumb` is in `review` (D-083); 5.7 `Stepper` is in `review`
-  (D-084). Next up is **5.8 `EmptyState`**. **4.4 `Dialog` is `done`** (2026-09-27): built
+  (D-084); 5.8 `EmptyState` is in `review` (D-085). Next up is **5.9
+  `Calendar`**, which unblocks 4.13 `DatePicker`. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -927,7 +928,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 5.5 | `Pagination` | `review` | fill | client | 3.1 | [`Pagination.md`](docs/specs/Pagination.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-082; awaiting its CI-authored baseline (D-013). A window with a constant number of slots, buttons or links by `getHref` (§1); the compact form is a container query, which is why the contract is `fill` (§2); the current page is Toggle's `on` in the accent ramp (§3). Found on the way: `:dir()` does not ship — the build rewrites it into `:lang()` — so RULES §1 says `[dir="rtl"]` and the Scroller's RTL swap is fixed (§4); a Button drawn on an `<a>` was underlined, fixed in Button.css (§5) |
 | 5.6 | `Breadcrumb` | `review` | fill | server | 3.3 | [`Breadcrumb.md`](docs/specs/Breadcrumb.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-083; awaiting its CI-authored baseline (D-013). Five named parts, the last a span with `aria-current`; the separator is the stylesheet's, after each crumb, out of the tree (§1); a trail wraps at its separators (§2). A `nowrap` the break check could not observe was followed through and found wrong (§3) |
 | 5.7 | `Stepper` | `review` | fill | server | T2 | [`Stepper.md`](docs/specs/Stepper.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-084; awaiting its CI-authored baseline (D-013). Two parts; the number a counter, done a check, `aria-current="step"` (§1); vertical the base, a row above 28rem by its container (§2); every colour a tone token in the accent scope (§3). Found by the rectangles and the screenshot: grid auto-placement seated the circle after the label, and an `auto` column left the row's connector zero wide (§4) |
-| 5.8 | `EmptyState` | `planned` | fill | server | 5.1 | |
+| 5.8 | `EmptyState` | `review` | fill | server | 5.1 | [`EmptyState.md`](docs/specs/EmptyState.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-085; awaiting its CI-authored baseline (D-013). Five parts on the Tier 1–2 primitives (§1); centred and held to `measure-xs` by a grid track, never a width (§2); `outline` is Card's frame made dashed by the two-class contract (§3) |
 | 5.9 | `Calendar` | `planned` | fill | client | T3 | Standalone; `DatePicker` consumes it |
 | 5.10 | `FileUpload` | `planned` | fill | client | 3.7 | Drag/drop, progress |
 | 5.11 | `Tree` | `planned` | fill | client | T3 | |

@@ -5968,3 +5968,67 @@ dropped (the circle after the label, both tests). Each failed on the
 test named for it. The indicator's placement alone caught nothing — the
 body's column is the mechanism — and the comment says so.
 
+## D-085 — `EmptyState` rulings: parts on the primitives, a measure by a grid, and `outline` as Card's frame made dashed
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/EmptyState.md`
+(status) · **Extends:** D-021, D-070 §1, D-081 §3, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Five parts, each the Tier 1–2 primitive with the empty state's class
+
+`EmptyState`, `EmptyStateIcon` (an `Icon`, decorative, `lg`, in a round
+tile on the sunken surface — the tile is the Icon itself, given a box
+through Icon's own `--pp-icon-size` hook and padded so the glyph stays
+the `lg` size), `EmptyStateTitle` (a `Heading`, `size="md"`, `level`
+required because Heading's is), `EmptyStateDescription` (a `Text`,
+muted, centred) and `EmptyStateActions` (a `Cluster`, centred,
+`gap="2"`). The props are the primitives', so a description holds a
+`Link` and a title takes any size; no `title` / `description` props
+(RULES §5.6). No live region by default: an empty page is content; a
+search that returns nothing in place puts `role="status"` on the root
+through props.
+
+### 2. Centred and held to a measure by a grid, never by a width
+
+The root is a grid with one column, `minmax(0, --pp-measure-xs)`,
+centred, so the description is a readable line on a wide page and the
+whole cell in a 240px sidebar with no `max-inline-size` on any child:
+the parent sizing the box it created (D-021), Table's device for its
+table (D-081 §3). Dropping the ceiling put the 960px column 566px past
+the measure. Rhythm is the grid's one `row-gap`; the actions stand
+further off by their own `padding-block-start`, because a margin is
+RULES §2's. `text-align: center` on the root is what centres the
+title — the description centres itself through Text — and the test
+reads the title for it, because the first break check read only the
+description and caught nothing.
+
+### 3. `plain` by default; `outline` is Card's surface with a dashed edge
+
+The root carries `pp-card` before its own class when outlined, so
+Card.css draws the raised surface, the radius and the hairline, and
+this file makes the hairline dashed: the two-class contract (D-070 §1),
+one stylesheet drawing the frame and the other changing one thing. Not
+`solid`, not `ghost`: an empty state has nothing to fill, and a tinted
+one reads as an `Alert`.
+
+### 4. Verified, and the four breaks
+
+Unit: five tests — the parts on their primitives with the right
+attributes, in order; `pp-card` only when outlined; the primitives'
+props through (a title size, a description tone, an actions gap); refs,
+`className` and `style` on every part; axe in both themes and variants.
+Browser: the root its cell's content width, the column the cell less
+the padding at 240 and the measure at 960, centred; the parts stacked;
+the block padding; the title and the description centred, the
+description muted; the tile 48px, round and sunken with a 24px glyph;
+`outline`'s classes, dashed hairline, Card's surface, radius and edge
+colour; `plain` with no frame; the actions' padding; the empty state
+the body's width inside a Card.
+
+Break checks (D-035 §3): the measure dropped (566px over); the dashed
+edge dropped (`solid`); `text-align` dropped (the title at `start`, once
+the test read it); the tile's surface dropped (transparent). Each failed
+on exactly the test named for it.
+

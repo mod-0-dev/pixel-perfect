@@ -166,6 +166,19 @@ export {
   type GridMode,
   type GridProps,
 } from './components/Grid/Grid';
+export {
+  EmptyState,
+  EmptyStateActions,
+  EmptyStateDescription,
+  EmptyStateIcon,
+  EmptyStateTitle,
+  type EmptyStateActionsProps,
+  type EmptyStateDescriptionProps,
+  type EmptyStateIconProps,
+  type EmptyStateProps,
+  type EmptyStateTitleProps,
+  type EmptyStateVariant,
+} from './components/EmptyState/EmptyState';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export { Input, type InputProps, type InputType } from './components/Input/Input';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
