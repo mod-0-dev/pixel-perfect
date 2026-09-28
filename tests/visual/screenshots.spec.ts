@@ -72,6 +72,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'calendar', path: '/components/calendar' },
   { name: 'file-upload', path: '/components/file-upload' },
   { name: 'tree', path: '/components/tree' },
+  { name: 'code-block', path: '/components/code-block' },
 ];
 
 /**

@@ -68,6 +68,7 @@ export {
   type CheckboxProps,
   type CheckedState,
 } from './components/Checkbox/Checkbox';
+export { CodeBlock, CodeBlockLine, type CodeBlockLineProps, type CodeBlockProps } from './components/CodeBlock/CodeBlock';
 export { Code, type CodeProps } from './components/Code/Code';
 export {
   CommandPalette,

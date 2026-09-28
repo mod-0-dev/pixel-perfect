@@ -7773,3 +7773,114 @@ test.describe('Tree', () => {
     await expect(rtl.locator('[data-value="src"]')).toHaveAttribute('aria-expanded', 'true');
   });
 });
+
+test.describe('CodeBlock', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+
+  test('the sunken frame in the mono face; a counter gutter that is not selectable; the pointed line\'s surface across the whole width; a long line scrolls inside the region and spills nothing', async ({
+    page,
+  }) => {
+    await page.goto('/components/code-block');
+    const sunken = await resolveIn(page, '--pp-color-bg-sunken', 'neutral');
+    const highlight = await resolveIn(page, '--pp-tone-bg', 'accent');
+    const cells = await page.locator('.matrix__cell .pp-code-block').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const parent = root.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const pre = root.querySelector('.pp-code-block__pre') as HTMLElement;
+        const code = root.querySelector('.pp-code-block__code') as HTMLElement;
+        const lines = Array.from(root.querySelectorAll<HTMLElement>('.pp-code-block__line'));
+        const pointed = lines.find((l) => l.hasAttribute('data-highlighted'))!;
+        const gutter = (l: HTMLElement) => getComputedStyle(l, '::before');
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          bg: getComputedStyle(root).backgroundColor,
+          family: getComputedStyle(code).fontFamily,
+          borderWidth: getComputedStyle(root).borderTopWidth,
+          counters: lines.map((l) => gutter(l).content),
+          gutterSelect: gutter(lines[0]!).userSelect,
+          gutterWidths: lines.map((l) => parseFloat(gutter(l).width)),
+          pointedBg: getComputedStyle(pointed).backgroundColor,
+          pointedShadow: getComputedStyle(pointed).boxShadow,
+          pointedWidth: pointed.getBoundingClientRect().width,
+          codeWidth: code.getBoundingClientRect().width,
+          preScrolls: pre.scrollWidth > pre.clientWidth + 1,
+          preOverflow: getComputedStyle(pre).overflowX,
+          rootSpills: root.scrollWidth > root.clientWidth + 1,
+          pageSpills: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.rootWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(c.bg).toBe(sunken);
+      expect(c.family.toLowerCase()).toMatch(/mono|menlo|consolas|courier/);
+      expect(c.borderWidth).toBe('1px');
+      expect(c.counters).toEqual(['counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)']);
+      expect(c.gutterSelect).toBe('none');
+      for (const w of c.gutterWidths) expect(Math.abs(w - c.gutterWidths[0]!)).toBeLessThanOrEqual(0.5);
+      expect(c.pointedBg).toBe(highlight);
+      expect(c.pointedShadow).not.toBe('none');
+      /* The pointed line is as wide as the code, which is as wide as its longest line. */
+      expect(Math.abs(c.pointedWidth - c.codeWidth)).toBeLessThanOrEqual(1);
+      expect(c.preOverflow).toBe('auto');
+      expect(c.rootSpills).toBe(false);
+      expect(c.pageSpills).toBe(false);
+    }
+    /* The long fifth line: scrolls at 240 and 480, and the code is wider than the frame there. */
+    expect(cells[0]!.preScrolls).toBe(true);
+    expect(cells[0]!.codeWidth).toBeGreaterThan(cells[0]!.rootWidth);
+    expect(cells[2]!.preScrolls).toBe(true);
+  });
+
+  test('wrap wraps the long line; the ring on the region and on the copy button; the button copies and says Copied', async ({ page, context }) => {
+    await page.goto('/components/code-block');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const wrapped = await page.locator('[data-testid="code-block-wrap"] .pp-code-block').evaluate((n) => {
+      const pre = n.querySelector('.pp-code-block__pre') as HTMLElement;
+      const line = n.querySelector('.pp-code-block__line') as HTMLElement;
+      return {
+        whiteSpace: getComputedStyle(n.querySelector('.pp-code-block__code')!).whiteSpace,
+        scrolls: pre.scrollWidth > pre.clientWidth + 1,
+        lines: Math.round(line.getBoundingClientRect().height / (parseFloat(getComputedStyle(line).fontSize) * 1.6)),
+      };
+    });
+    expect(wrapped.whiteSpace).toBe('pre-wrap');
+    expect(wrapped.scrolls).toBe(false);
+    expect(wrapped.lines).toBeGreaterThanOrEqual(2);
+
+    const block = page.locator('.matrix__cell .pp-code-block').last();
+    const region = block.locator('.pp-code-block__pre');
+    await region.focus();
+    await expect.poll(() => region.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    const copy = block.getByRole('button', { name: 'Copy code' });
+    await copy.focus();
+    await expect.poll(() => copy.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    await copy.click();
+    await expect(block.getByRole('button', { name: 'Copied' })).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("theme: 'dark'");
+    await expect(block.getByRole('button', { name: 'Copy code' })).toBeVisible({ timeout: 4000 });
+
+    const bare = page.locator('[data-testid="code-block-bare"] .pp-code-block');
+    expect(await bare.locator('.pp-code-block__header').count()).toBe(0);
+    await expect(bare.getByRole('region', { name: 'Two commands' })).toBeVisible();
+  });
+});

@@ -6291,3 +6291,83 @@ dropped; the chevron's turn dropped; the row height dropped; the RTL
 mirror dropped; the RTL turn dropped. Each failed on exactly the test
 named for it.
 
+## D-089 — `CodeBlock` rulings: the frame and not the highlighter, a `<pre>` that is a region, the code stretched by a grid, and a gutter under the D-019 exemption
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`CodeBlock.css` in the D-019 group), `docs/specs/CodeBlock.md` (status) ·
+**Extends:** D-019, D-021, D-081 §1 and §3, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. The frame, not the highlighter; `code` for text, `CodeBlockLine`s for tokens
+
+Highlighting is a peer, as the roadmap said: a highlighter is large,
+opinionated about grammars and themes, and best run at build time or
+by the consumer's choice, so the component takes plain text (`code`,
+split into lines, a trailing newline not a line) or the consumer's
+lines (`CodeBlockLine`, holding whatever their highlighter produced,
+`highlighted` to point) and draws the frame, the gutter, the pointing
+and the copy button around either. Both given warns, and the children
+win. `title` is a node and replaces the HTML attribute of the same name.
+
+### 2. The `<pre>` is a named region that scrolls; `wrap` wraps
+
+A long line never pushes the page: the `<pre>` scrolls on the inline
+axis, and it is `role="region"` with `tabindex="0"` named by the title
+or `label` — Table's reasoning (D-081 §1) — so a keyboard user can
+scroll it. `wrap` makes long lines wrap instead. The code inside is
+stretched by a grid, Table's device (D-081 §3): the `<pre>` is a grid
+with one item, so the code is the pre's width when the lines are short
+and the longest line's width when they are not, and a pointed line's
+surface runs under every column, including the ones scrolled out of
+view — with no width on anything. Dropping the grid left the code two
+pixels short of the frame, which the test reads.
+
+### 3. The gutter is an intrinsic box, and declares `inline-size` under D-019
+
+Line numbers are a CSS counter in each line's `::before`, `user-select:
+none` so a hand copy never takes them, right-aligned in a box three
+digits wide. That box declares `inline-size`: not a decision about the
+parent's space but the size of a fixed thing, like an icon's, which is
+what the D-019 exemption is for; the file joins that stylelint group.
+The spacing beside it is padding, and the header's copy button sits at
+the end by `justify-content`, not by an auto margin — both of which the
+value rules refused first, rightly. A pointed line is the accent `bg`
+step across the whole width with an inset accent bar at its start
+(mirrored under RTL); the surface, frame, radius and mono face are
+Code's and Card's.
+
+### 4. The copy button and its test
+
+The button writes the block's text (`code`, or the lines' text) with
+the Clipboard API, says "Copied" in its label and a hidden
+`role="status"` for two seconds, and is absent when the API is missing
+or `copy={false}`. user-event's `setup()` installs a clipboard stub of
+its own, so the unit test's mock is installed after it; and the stub
+under fake timers never settled, so the return after two seconds is
+waited for on real timers rather than advanced. The browser test grants
+the clipboard permissions and reads the text back.
+
+### 5. Verified, and the five breaks
+
+Unit: eight tests — the frame, the region named by the title and by
+`label`, the lines of `code`, `lineNumbers`, `highlightLines`, the
+header and its absence; children lines and both forms given; the copy
+button writing, saying "Copied" and returning; the lines' text copied;
+no button without a clipboard or with `copy={false}`; `wrap`, refs,
+`className`, `style`; axe in both themes. Browser: the sunken surface,
+the hairline, the mono face; the counters and their `user-select`,
+the gutter one width; the pointed line's surface and bar as wide as the
+code; the long line scrolling inside the region at 240 and 960 with
+nothing spilling from the block or the page; wrap wrapping in a narrow
+parent; the ring on the region and the button; a copy read back from
+the clipboard and the label returning; the bare block with no header
+and its `label`.
+
+Break checks (D-035 §3): the highlight surface dropped (transparent);
+the counter dropped (`none`); the pre's `overflow` dropped (`visible`,
+both tests); `pre-wrap` dropped (`pre`); the grid dropped (the code
+two pixels short of the frame). Each failed on exactly the test named
+for it.
+

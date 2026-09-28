@@ -91,4 +91,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'calendar', name: 'Calendar', tier: '5.9', summary: 'A month of days to pick one from; one tab stop, the APG keys, an ISO value.' },
   { slug: 'file-upload', name: 'FileUpload', tier: '5.10', summary: 'Files chosen or dropped, and a list of them with progress; the upload is yours.' },
   { slug: 'tree', name: 'Tree', tier: '5.11', summary: 'A hierarchy to walk and pick from: the ARIA tree view, one tab stop.' },
+  { slug: 'code-block', name: 'CodeBlock', tier: '5.12', summary: 'Block code in a frame: numbered, pointed at, copied; the highlighter is yours.' },
 ];
