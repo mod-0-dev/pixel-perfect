@@ -5649,3 +5649,146 @@ test.describe('DropdownMenu', () => {
     expect(read.every((r) => r.state === 'open' && r.items === 4 && r.marks === 1 && r.inset > 8), JSON.stringify(read)).toBe(true);
   });
 });
+
+test.describe('ContextMenu', () => {
+  type Page = import('@playwright/test').Page;
+  const panel = (page: Page) => page.locator('.pp-context-menu:not([data-gallery]):not(.pp-dropdown-menu__sub)');
+  const sub = (page: Page) => page.locator('.pp-context-menu.pp-dropdown-menu__sub');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="context-menu-${id}"]`);
+  const region = (page: Page, id: string) => demo(page, id).locator('.pp-context-menu__trigger');
+
+  /* A secondary press at a point inside the region; the list is returned
+     once its first item is placed. */
+  const pressAt = async (page: Page, id: string, dx = 24, dy = 24) => {
+    const el = region(page, id);
+    await el.scrollIntoViewIfNeeded();
+    const box = (await el.boundingBox())!;
+    // A negative dx counts from the region's right edge.
+    const point = { x: dx >= 0 ? box.x + dx : box.x + box.width + dx, y: box.y + dy };
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    const list = panel(page);
+    await expect(list).toBeVisible();
+    return { list, point, box };
+  };
+
+  test('a secondary press opens DropdownMenu\'s list at the pointer: the two-class contract, the row, the token', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const { list, point } = await pressAt(page, 'region');
+    await expect(region(page, 'region')).toHaveAttribute('data-state', 'open');
+    await expect(page.getByRole('menu', { name: 'File' })).toBeVisible();
+    const box = await placedBox(list);
+    // Radix anchors a zero-size rect at the point and places the list to
+    // its right (its own two-pixel offset), aligned to its top (spec §4).
+    expect(Math.abs(box!.x - (point.x + 2)), 'the list did not open at the pointer').toBeLessThanOrEqual(1);
+    expect(Math.abs(box!.y - point.y)).toBeLessThanOrEqual(1);
+    const read = await list.evaluate((n) => ({
+      z: getComputedStyle(n).zIndex,
+      token: getComputedStyle(n).getPropertyValue('--pp-z-popover').trim(),
+      wrapper: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+      row: (n.querySelector('.pp-dropdown-menu__item') as HTMLElement).getBoundingClientRect().height,
+      animation: getComputedStyle(n).animationName,
+    }));
+    expect(read.z).toBe(read.token);
+    expect(read.wrapper).toBe(read.token);
+    expect(Math.abs(read.row - 32)).toBeLessThanOrEqual(1);
+    expect(read.animation).toBe('none');
+    await page.keyboard.press('Escape');
+    await expect(list).toHaveCount(0);
+    await expect(region(page, 'region')).toHaveAttribute('data-state', 'closed');
+  });
+
+  test('Shift+F10 on the focused region opens the list; Enter on an item acts, closes, and focus returns', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const el = region(page, 'region');
+    await el.scrollIntoViewIfNeeded();
+    await el.focus();
+    await page.keyboard.press('Shift+F10');
+    const list = panel(page);
+    await expect(list).toBeVisible();
+    // Opened from the keyboard, so the entry focus lands on the first item.
+    await expect(list.getByRole('menuitem', { name: 'Rename' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(list).toHaveCount(0);
+    await expect(el).toBeFocused();
+    await expect(demo(page, 'region').locator('xpath=..')).toContainText('last: rename');
+  });
+
+  test('under dir="rtl" the submenu opens on ArrowLeft, to the left, the chevron flipped', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    // Pressed near the region's right edge, so a submenu has room on the left.
+    const { list } = await pressAt(page, 'region-rtl', -40);
+    await expect(list).toHaveAttribute('dir', 'rtl');
+    await page.keyboard.press('ArrowDown');
+    await expect(list.getByRole('menuitem', { name: 'Rename' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(list.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    const trigger = list.getByRole('menuitem', { name: 'Move to' });
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(sub(page)).toHaveCount(0);
+    await page.keyboard.press('ArrowLeft');
+    const s = sub(page);
+    await expect(s).toBeVisible();
+    await expect(s.getByRole('menuitem', { name: 'Archive' })).toBeFocused();
+    const [t, sp] = await Promise.all([trigger.boundingBox(), placedBox(s)]);
+    expect(sp!.x + sp!.width, 'the submenu is not on the left').toBeLessThanOrEqual(t!.x + 1);
+    expect(await trigger.locator('.pp-dropdown-menu__chevron').evaluate((n) => getComputedStyle(n).scale)).toBe('-1 1');
+  });
+
+  test('a disabled region opens nothing, and a controlled one closes from outside', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const disabled = region(page, 'disabled');
+    await disabled.scrollIntoViewIfNeeded();
+    await expect(disabled).toHaveAttribute('data-disabled', '');
+    const box = (await disabled.boundingBox())!;
+    await page.mouse.click(box.x + 24, box.y + 24, { button: 'right' });
+    await page.waitForTimeout(250);
+    await expect(panel(page)).toHaveCount(0);
+
+    const { list } = await pressAt(page, 'controlled');
+    await expect(demo(page, 'controlled').locator('xpath=..')).toContainText('open: true');
+    await page.keyboard.press('Escape');
+    await expect(list).toHaveCount(0);
+    await expect(demo(page, 'controlled').locator('xpath=..')).toContainText('open: false');
+  });
+
+  test('the theme crosses the portal, in resolved colour', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const { list } = await pressAt(page, 'region');
+    const lightBg = await list.evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(list).toHaveCount(0);
+    const dark = await pressAt(page, 'theme');
+    await expect(dark.list).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await dark.list.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="context-menu-theme"]') !== null,
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg).not.toBe(lightBg);
+  });
+
+  /*
+   * A list opened at a point is anchored to VIEWPORT coordinates, and the
+   * three regions run past a 900px viewport, so the lower lists are shifted
+   * up to fit. The full-page screenshot resizes the viewport to the page
+   * and floating-ui re-places them (D-062 §2's finding for Popover); this
+   * test does the same, so it measures what the screenshot shows.
+   */
+  test('the gallery holds three, each opened at a point inside its region', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1800 });
+    await page.goto('/components/context-menu');
+    const panels = page.locator('.pp-context-menu[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const b = el.getBoundingClientRect();
+        const regions = Array.from(document.querySelectorAll('.matrix .pp-context-menu__trigger')).map((r) => r.getBoundingClientRect());
+        const inside = regions.some((r) => b.x >= r.x && b.y >= r.y && b.y <= r.y + r.height);
+        return { state: el.getAttribute('data-state'), inside, items: el.querySelectorAll('.pp-dropdown-menu__item').length };
+      }),
+    );
+    expect(read.every((r) => r.state === 'open' && r.inside && r.items === 4), JSON.stringify(read)).toBe(true);
+  });
+});

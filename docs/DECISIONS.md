@@ -4791,3 +4791,111 @@ ceiling dropped (the long label ran past the measure); the reduced-motion
 rule dropped (`animationName` was the keyframe); the submenu's
 `alignOffset` zeroed (the first sub-item four pixels below its trigger's
 row). The tone attribute's break is a unit test's (`data-pp-tone`).
+
+## D-073 — `ContextMenu` rulings: a menu's parts are built once, Gate B under the batch, and a region that renders a `<div>`
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.claude/skills/component/SKILL.md`
+(Gate B), `docs/specs/ContextMenu.md` (status) · **Extends:** D-069 §2, D-070 §1,
+D-072
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. The twelve parts of a menu are one implementation, in `src/internal/menu/parts.tsx`
+
+Radix composes `@radix-ui/react-menu` twice — a dropdown menu and a
+context menu — with different scopes, so `DropdownMenuItem` cannot render
+inside a `ContextMenu`. But nothing in an item, a checkable item, a radio
+group, an indicator, a group, a label, a separator, a shortcut or a
+submenu is about how the menu opened. The D-070 §1 contract keeps the CSS
+in one place; a second copy of 4.7's parts would have kept the *behaviour*
+in two — the tone attribute, the uncontrolled halves, the indicator's
+marks, the group's name, the submenu's row alignment — which is D-045's
+drift with a different face. So an internal factory takes either Radix
+namespace and returns the library's parts for it, typed against
+`@radix-ui/react-dropdown-menu`'s shapes (the context menu's are the same
+shapes with another scope), and each component exports them under its own
+names with its own `displayName`s and guard message. Both components'
+unit suites ran unchanged after the move. A `MenuPrimitives` interface is
+the seam: a future menubar composes the same primitive and gets the same
+parts.
+
+### 2. Gate B reads a `review` waiting only on its baseline as `done`, under the batch
+
+4.8 depends on 4.7, which was in `review` with every box checked but the
+CI-authored baseline. D-069 §2 carved that wait out of the WIP limit
+because it is CI's, not the work's; the same reasoning applies to Gate B,
+whose purpose is that a dependent builds on a final API — and 4.7's API
+was final. Holding 4.8 for two CI cycles (an authoring run, then a compare
+run) would have serialised the batch behind exactly the wait D-069 §2
+removed. Recorded in the skill's Gate B text, scoped to the D-069 batch;
+outside it, `done` means `done`.
+
+### 3. The trigger is a region that renders a `<div>`, through Radix's `asChild`
+
+Radix's trigger is a `<span>`. A region wraps the thing the menu is about —
+a card, a row, a canvas — which is block content, and an inline box around
+block content is not a box a layout can reason about. The component
+renders Radix's trigger `asChild` onto its own `<div
+class="pp-context-menu__trigger">`, or onto the consumer's element with
+`asChild` of its own: two slots deep, one element rendered, and Radix's
+handlers, `data-state` and `data-disabled` land on it. It is *not* made
+focusable: `Shift+F10` opens a context menu at the focused element, and
+the thing inside the region is what should be focusable; a tab stop on a
+box that does nothing when focused is a cost every keyboard user pays.
+The docs page says so twice, and once more that every command in a
+context menu needs a visible way in.
+
+### 4. No stylesheet, no `side`, and Radix's two pixels
+
+`AlertDialog` changed two rules and had a two-rule file; this component
+changes none and ships no CSS file — a file that changes nothing is where
+drift starts. Radix places the list to the right of the press point,
+aligned to its top, flipping at collisions, fixed inside its content in
+physical terms, which is how every platform opens a context menu in every
+direction; so `Content` has no `side`, `align` or `sideOffset`. Radix's
+own `sideOffset: 2` is hardcoded in its source and cannot be tokenised
+from here: the list starts two pixels right of the pointer, recorded as
+Radix's number, not ours.
+
+### 5. `defaultOpen` exists because RULES §5.5 has no exceptions
+
+Radix's root has no `defaultOpen` — a context menu has no point to open at
+until a press. The root holds `open` through `useControllableState` and
+hands Radix the controlled pair, so both halves exist; `defaultOpen` opens
+the list at the document's origin, which the docs page calls of little
+use. What the pair is for is closing from outside.
+
+### 6. Findings from the build
+
+- **A list opened at a point is anchored to viewport coordinates**, so in
+  a 900px viewport the gallery's lower lists are shifted up to fit. The
+  full-page screenshot resizes the viewport to the page and floating-ui
+  re-places them at their points — D-062 §2's finding for Popover, from
+  the other side. The gallery test sets a tall viewport so it measures
+  what the screenshot shows; the gallery opens each list with a
+  `contextmenu` event dispatched at a point inside its region after mount,
+  since `defaultOpen` has no point.
+- **Opened from the keyboard, the entry focus lands on the first item**
+  (Radix's `isUsingKeyboardRef`), so `Shift+F10` then `Enter` activates
+  the first command; opened by a press, the list itself holds focus and
+  the first `ArrowDown` reaches the first item. Both tested.
+- **A submenu needs room on its side**: pressed near a region's left edge
+  in the RTL row, the submenu had none on the left and flipped right; the
+  test presses near the right edge. Not a bug — the collision handling
+  doing its job — but a thing a test must know.
+
+### 7. Verified
+
+A secondary press opens the list at the pointer (its top-left two pixels
+right of the point) with 4.7's row height and the z-index token on the
+wrapper, and the region reports `data-state`; `Shift+F10` on the focused
+region opens it with the first item focused, `Enter` acts, closes and
+returns focus; the RTL region's submenu opens on `ArrowLeft`, to the left,
+the chevron flipped; a disabled region opens nothing and a controlled one
+closes from outside; the theme crosses; the gallery holds three, each at a
+point inside its region. 9 unit and 6 browser tests; three break checks
+(DropdownMenu's class dropped from the content — the z-index read `auto`
+and the row lost its height; the `dir` hand-off dropped — the RTL submenu
+opened on the wrong key; the region as Radix's `<span>` — the unit test),
+each caught by its named test.

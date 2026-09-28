@@ -49,7 +49,10 @@ baseline does not hold the limit — that wait is CI's, and the next build may
 start; one PR then closes several components with one authoring run.
 
 **Gate B — Dependencies.** Every item in the target's **Deps** column must be
-`done`. Tier 0 must be fully `done` before any component starts.
+`done`. Tier 0 must be fully `done` before any component starts. Under the
+D-069 batch a dependency in `review` whose only open box is the CI-authored
+baseline counts as `done` here too (D-073 §2): its API is final, and the
+wait is CI's, not the work's.
 
 **Gate C — Spec approval.** After writing the spec, **stop and ask the user to
 approve the API.** Do not write implementation code in the same turn. API

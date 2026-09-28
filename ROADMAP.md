@@ -95,9 +95,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight: 4.5 `AlertDialog`, 4.6 `Drawer` and 4.7 `DropdownMenu` (all
-  `review`, waiting only on their CI-authored baselines, D-069 §2) and the
-  batch that follows them.** Under the standing delegation of D-069 §1 the rest of
+- **In flight: 4.5 `AlertDialog`, 4.6 `Drawer`, 4.7 `DropdownMenu` and 4.8
+  `ContextMenu` (all `review`, waiting only on their CI-authored baselines,
+  D-069 §2) and the batch that follows them.** Under the standing delegation of D-069 §1 the rest of
   Tier 4 is built in sequence, one in `build` at a time, each moved to
   `review` with every box but the baseline checked, and one authoring run
   at the end of the PR closes them together. 4.5 is `Dialog` with two
@@ -108,8 +108,9 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   pads a wrapper now, and the gap is documented on the Dialog page. 4.7 is
   the tier's first list of commands: Radix's menu with the direction read
   from the trigger at open time, `align` starting, and a gutter only where
-  a mark can appear (D-072). Next up is **4.8 `ContextMenu`**, the same
-  list from a right-click, on 4.7's stylesheet. **4.4 `Dialog` is `done`** (2026-09-27): built
+  a mark can appear (D-072). 4.8 is that list opened at the pointer, its
+  twelve shared parts built once by an internal factory and drawn by 4.7's
+  stylesheet, with no CSS of its own (D-073). Next up is **4.9 `Tabs`**. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -887,7 +888,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.5 | `AlertDialog` | `review` | hug | client | 4.4 | [`AlertDialog.md`](docs/specs/AlertDialog.md), written and built 2026-09-28 under the standing delegation (D-069); findings in D-070. `Dialog` with two rules changed — no close on a scrim press, focus on `Cancel` — drawn by Dialog's stylesheet through two classes per part; ceiling `--pp-measure-xs`. In `review` for the CI-authored baseline only, which does not hold the WIP limit (D-069 §2) |
 | 4.6 | `Drawer` | `review` | hug | client | 4.4 | [`Drawer.md`](docs/specs/Drawer.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-071. A modal sheet from one of four logical sides, built on Radix's dialog (no new package) and drawn on Dialog's scrim; the anchored axis is a token, `--pp-drawer-size`, and the panel scrolls, not the scrim. The build found Radix's scroll lock stripping a padded `<body>` of its gutter (D-071 §6): the playground now pads a wrapper, and the Dialog page documents the gap. In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.7 | `DropdownMenu` | `review` | hug | client | 4.2 | [`DropdownMenu.md`](docs/specs/DropdownMenu.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-072. Typeahead and submenus are Radix's; the direction is read from the trigger at open time and handed to Radix as `dir`, so the arrow keys and the submenu's side read correctly in RTL. Fifteen named parts; `align` defaults to `start` (D-072 §1); rows are the small control height; a checkable item earns the list its gutter by `:has()`; `data-highlighted` joins RULES §4 (D-072 §2). The stylesheet is shared with 4.8. In `review` for the CI-authored baseline only (D-069 §2) |
-| 4.8 | `ContextMenu` | `planned` | hug | client | 4.7 | |
+| 4.8 | `ContextMenu` | `review` | hug | client | 4.7 | [`ContextMenu.md`](docs/specs/ContextMenu.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-073. `DropdownMenu`'s list opened at the pointer: the twelve parts a menu is made of are built once by an internal factory and drawn by 4.7's stylesheet through two classes, so this component ships no CSS; the trigger is a region that renders a `<div>`; the direction is read from the region at open time. Gate B read 4.7's `review` (baseline only) as `done` (D-073 §2). In `review` for the CI-authored baseline only (D-069 §2) |
 | 4.9 | `Tabs` | `planned` | fill | client | T3 | |
 | 4.10 | `Accordion` | `planned` | fill | client | T3 | |
 | 4.11 | `Combobox` | `planned` | fill | client | 4.2, 3.13 | Async options, multi-select |

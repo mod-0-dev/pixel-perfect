@@ -5,8 +5,6 @@ import {
   createContext,
   forwardRef,
   useContext,
-  useEffect,
-  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -18,11 +16,26 @@ import {
 } from 'react';
 
 import { cx } from '../../internal/cx';
+import {
+  createMenuParts,
+  type MenuCheckboxItemProps,
+  type MenuGroupProps,
+  type MenuItemIndicatorProps,
+  type MenuItemProps,
+  type MenuItemTone,
+  type MenuLabelProps,
+  type MenuRadioGroupProps,
+  type MenuRadioItemProps,
+  type MenuSeparatorProps,
+  type MenuShortcutProps,
+  type MenuSubContentProps,
+  type MenuSubProps,
+  type MenuSubTriggerProps,
+} from '../../internal/menu/parts';
 import { directionOf, resolveSide, type Direction, type LogicalSide } from '../../internal/overlay/side';
 import { resolveSpace } from '../../internal/overlay/space';
 import { useInheritedTheme } from '../../internal/overlay/theme';
 import { mergeRefs } from '../../internal/refs';
-import { useControllableState } from '../../internal/useControllableState';
 import type { Space } from '../../types';
 
 /**
@@ -43,8 +56,7 @@ import type { Space } from '../../types';
 
 export type DropdownMenuSide = LogicalSide;
 export type DropdownMenuAlign = 'start' | 'center' | 'end';
-export type DropdownMenuItemTone = 'neutral' | 'danger';
-type CheckedState = boolean | 'indeterminate';
+export type DropdownMenuItemTone = MenuItemTone;
 
 interface DropdownMenuContextValue {
   /** The trigger: the theme's scope and the direction's source. */
@@ -61,9 +73,6 @@ function useDropdownMenuContext(part: string): DropdownMenuContextValue {
   }
   return context;
 }
-
-declare const process: { env?: { NODE_ENV?: string } } | undefined;
-const isProduction = () => typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production';
 
 // ---------------------------------------------------------------------------
 // Root
@@ -207,370 +216,33 @@ const MenuPanel = forwardRef<HTMLDivElement, Omit<DropdownMenuContentProps, 'con
 });
 
 // ---------------------------------------------------------------------------
-// Items
+// Items, groups, labels, separators, shortcuts and submenus: the parts a
+// menu shares with ContextMenu, built once (src/internal/menu/parts.tsx).
 
-export interface DropdownMenuItemProps extends ComponentPropsWithoutRef<typeof RadixMenu.Item> {
-  /** `danger` for a destructive command. Nothing else: a menu item is a command, not a status (spec §7). */
-  tone?: DropdownMenuItemTone;
-}
+const parts = createMenuParts(RadixMenu, { name: 'DropdownMenu', useMenuContext: useDropdownMenuContext });
 
-export const DropdownMenuItem = forwardRef<HTMLDivElement, DropdownMenuItemProps>(function DropdownMenuItem(
-  { tone = 'neutral', className, ...props },
-  ref,
-) {
-  useDropdownMenuContext('Item');
-  return <RadixMenu.Item ref={ref} className={cx('pp-dropdown-menu__item', className)} data-pp-tone={tone} {...props} />;
-});
+export type DropdownMenuItemProps = MenuItemProps;
+export type DropdownMenuCheckboxItemProps = MenuCheckboxItemProps;
+export type DropdownMenuRadioGroupProps = MenuRadioGroupProps;
+export type DropdownMenuRadioItemProps = MenuRadioItemProps;
+export type DropdownMenuItemIndicatorProps = MenuItemIndicatorProps;
+export type DropdownMenuGroupProps = MenuGroupProps;
+export type DropdownMenuLabelProps = MenuLabelProps;
+export type DropdownMenuSeparatorProps = MenuSeparatorProps;
+export type DropdownMenuShortcutProps = MenuShortcutProps;
+export type DropdownMenuSubProps = MenuSubProps;
+export type DropdownMenuSubTriggerProps = MenuSubTriggerProps;
+export type DropdownMenuSubContentProps = MenuSubContentProps;
 
-/** What the indicator inside a checkable item draws when it is given no children. */
-interface IndicatorContextValue {
-  kind: 'checkbox' | 'radio';
-  checked: CheckedState;
-}
-
-const IndicatorContext = createContext<IndicatorContextValue>({ kind: 'checkbox', checked: false });
-
-export interface DropdownMenuCheckboxItemProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixMenu.CheckboxItem>, 'checked' | 'defaultChecked' | 'onCheckedChange'> {
-  checked?: CheckedState;
-  defaultChecked?: CheckedState;
-  onCheckedChange?: (checked: boolean) => void;
-  tone?: DropdownMenuItemTone;
-}
-
-export const DropdownMenuCheckboxItem = forwardRef<HTMLDivElement, DropdownMenuCheckboxItemProps>(
-  function DropdownMenuCheckboxItem(
-    { checked: checkedProp, defaultChecked, onCheckedChange, tone = 'neutral', className, children, ...props },
-    ref,
-  ) {
-    useDropdownMenuContext('CheckboxItem');
-    /* Radix's item is controlled-only; RULES §5.5 wants both halves. */
-    const [checked, setChecked] = useControllableState<CheckedState>({
-      value: checkedProp,
-      defaultValue: defaultChecked ?? false,
-      onChange: (next) => onCheckedChange?.(next === true),
-      component: 'DropdownMenuCheckboxItem',
-      prop: 'checked',
-    });
-    const indicator = useMemo<IndicatorContextValue>(() => ({ kind: 'checkbox', checked }), [checked]);
-    return (
-      <IndicatorContext.Provider value={indicator}>
-        <RadixMenu.CheckboxItem
-          ref={ref}
-          className={cx('pp-dropdown-menu__item', className)}
-          data-pp-tone={tone}
-          checked={checked}
-          onCheckedChange={setChecked}
-          {...props}
-        >
-          {children}
-        </RadixMenu.CheckboxItem>
-      </IndicatorContext.Provider>
-    );
-  },
-);
-
-export interface DropdownMenuRadioGroupProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixMenu.RadioGroup>, 'value' | 'onValueChange'> {
-  value?: string;
-  defaultValue?: string;
-  onValueChange?: (value: string) => void;
-}
-
-const RadioGroupValueContext = createContext<string | undefined>(undefined);
-
-export const DropdownMenuRadioGroup = forwardRef<HTMLDivElement, DropdownMenuRadioGroupProps>(
-  function DropdownMenuRadioGroup({ value: valueProp, defaultValue, onValueChange, className, ...props }, ref) {
-    useDropdownMenuContext('RadioGroup');
-    const [value, setValue] = useControllableState<string | undefined>({
-      value: valueProp,
-      defaultValue,
-      onChange: (next) => {
-        if (next !== undefined) onValueChange?.(next);
-      },
-      component: 'DropdownMenuRadioGroup',
-      prop: 'value',
-    });
-    return (
-      <RadioGroupValueContext.Provider value={value}>
-        <RadixMenu.RadioGroup
-          ref={ref}
-          className={cx('pp-dropdown-menu__radio-group', className)}
-          {...(value !== undefined ? { value } : {})}
-          onValueChange={setValue}
-          {...props}
-        />
-      </RadioGroupValueContext.Provider>
-    );
-  },
-);
-
-export interface DropdownMenuRadioItemProps extends ComponentPropsWithoutRef<typeof RadixMenu.RadioItem> {
-  tone?: DropdownMenuItemTone;
-}
-
-export const DropdownMenuRadioItem = forwardRef<HTMLDivElement, DropdownMenuRadioItemProps>(
-  function DropdownMenuRadioItem({ tone = 'neutral', className, children, value, ...props }, ref) {
-    useDropdownMenuContext('RadioItem');
-    const groupValue = useContext(RadioGroupValueContext);
-    const indicator = useMemo<IndicatorContextValue>(
-      () => ({ kind: 'radio', checked: groupValue === value }),
-      [groupValue, value],
-    );
-    return (
-      <IndicatorContext.Provider value={indicator}>
-        <RadixMenu.RadioItem
-          ref={ref}
-          className={cx('pp-dropdown-menu__item', className)}
-          data-pp-tone={tone}
-          value={value}
-          {...props}
-        >
-          {children}
-        </RadixMenu.RadioItem>
-      </IndicatorContext.Provider>
-    );
-  },
-);
-
-export interface DropdownMenuItemIndicatorProps extends Omit<ComponentPropsWithoutRef<typeof RadixMenu.ItemIndicator>, 'forceMount'> {}
-
-/**
- * The marks, as markup rather than a `mask-image` (D-039 §3): the Checkbox's
- * check, a dash for `indeterminate`, a dot for a radio item. `currentColor`,
- * so the tone reaches them.
- */
-function Check() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="m5 12.5 4.5 4.5L19 7" />
-    </svg>
-  );
-}
-
-function Dash() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
-      <path d="M6 12h12" />
-    </svg>
-  );
-}
-
-function Dot() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <circle cx="12" cy="12" r="5" />
-    </svg>
-  );
-}
-
-function Chevron() {
-  return (
-    <svg
-      className="pp-dropdown-menu__chevron"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m9 6 6 6-6 6" />
-    </svg>
-  );
-}
-
-/** Present while its item is checked (Radix's Presence). Draws the library's mark unless given children. */
-export const DropdownMenuItemIndicator = forwardRef<HTMLSpanElement, DropdownMenuItemIndicatorProps>(
-  function DropdownMenuItemIndicator({ className, children, ...props }, ref) {
-    useDropdownMenuContext('ItemIndicator');
-    const { kind, checked } = useContext(IndicatorContext);
-    const mark = kind === 'radio' ? <Dot /> : checked === 'indeterminate' ? <Dash /> : <Check />;
-    return (
-      <RadixMenu.ItemIndicator ref={ref} className={cx('pp-dropdown-menu__indicator', className)} {...props}>
-        {children ?? mark}
-      </RadixMenu.ItemIndicator>
-    );
-  },
-);
-
-// ---------------------------------------------------------------------------
-// Group, Label, Separator, Shortcut
-
-const GroupLabelContext = createContext<string | null>(null);
-
-export interface DropdownMenuGroupProps extends ComponentPropsWithoutRef<typeof RadixMenu.Group> {}
-
-/**
- * `role="group"`, named by the `Label` inside it: the wiring is unconditional
- * and the gap is warned about, the Popover title's shape (Popover §2, D-036).
- */
-export const DropdownMenuGroup = forwardRef<HTMLDivElement, DropdownMenuGroupProps>(function DropdownMenuGroup(
-  { className, 'aria-labelledby': ariaLabelledby, 'aria-label': ariaLabel, ...props },
-  ref,
-) {
-  useDropdownMenuContext('Group');
-  const labelId = useId();
-  const wiresLabel = ariaLabel === undefined && ariaLabelledby === undefined;
-  useEffect(() => {
-    if (isProduction() || !wiresLabel) return;
-    if (!document.getElementById(labelId)) {
-      console.warn(
-        '[pixel-perfect] <DropdownMenuGroup> has no accessible name. Render a <DropdownMenuLabel> inside it, or pass `aria-label` or `aria-labelledby`.',
-      );
-    }
-  }, [wiresLabel, labelId]);
-  return (
-    <GroupLabelContext.Provider value={labelId}>
-      <RadixMenu.Group
-        ref={ref}
-        className={cx('pp-dropdown-menu__group', className)}
-        {...(ariaLabel !== undefined ? { 'aria-label': ariaLabel } : {})}
-        aria-labelledby={wiresLabel ? labelId : ariaLabelledby}
-        {...props}
-      />
-    </GroupLabelContext.Provider>
-  );
-});
-
-export interface DropdownMenuLabelProps extends ComponentPropsWithoutRef<typeof RadixMenu.Label> {}
-
-export const DropdownMenuLabel = forwardRef<HTMLDivElement, DropdownMenuLabelProps>(function DropdownMenuLabel(
-  { className, id, ...props },
-  ref,
-) {
-  useDropdownMenuContext('Label');
-  const labelId = useContext(GroupLabelContext);
-  return (
-    <RadixMenu.Label
-      ref={ref}
-      id={id ?? labelId ?? undefined}
-      className={cx('pp-dropdown-menu__label', className)}
-      {...props}
-    />
-  );
-});
-
-export interface DropdownMenuSeparatorProps extends ComponentPropsWithoutRef<typeof RadixMenu.Separator> {}
-
-export const DropdownMenuSeparator = forwardRef<HTMLDivElement, DropdownMenuSeparatorProps>(
-  function DropdownMenuSeparator({ className, ...props }, ref) {
-    useDropdownMenuContext('Separator');
-    return <RadixMenu.Separator ref={ref} className={cx('pp-dropdown-menu__separator', className)} {...props} />;
-  },
-);
-
-export interface DropdownMenuShortcutProps extends ComponentPropsWithoutRef<'span'> {}
-
-/** The hint a command carries, as muted text at the item's end. Hidden from assistive tech: the command's name is the item's text (spec §7). */
-export const DropdownMenuShortcut = forwardRef<HTMLSpanElement, DropdownMenuShortcutProps>(
-  function DropdownMenuShortcut({ className, ...props }, ref) {
-    useDropdownMenuContext('Shortcut');
-    return <span ref={ref} className={cx('pp-dropdown-menu__shortcut', className)} aria-hidden="true" {...props} />;
-  },
-);
-
-// ---------------------------------------------------------------------------
-// Sub
-
-export interface DropdownMenuSubProps {
-  open?: boolean;
-  defaultOpen?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  children?: ReactNode;
-}
-
-export function DropdownMenuSub({ open, defaultOpen, onOpenChange, children }: DropdownMenuSubProps) {
-  useDropdownMenuContext('Sub');
-  return (
-    <RadixMenu.Sub
-      {...(open !== undefined ? { open } : {})}
-      {...(defaultOpen !== undefined ? { defaultOpen } : {})}
-      {...(onOpenChange !== undefined ? { onOpenChange } : {})}
-    >
-      {children}
-    </RadixMenu.Sub>
-  );
-}
-
-export interface DropdownMenuSubTriggerProps extends ComponentPropsWithoutRef<typeof RadixMenu.SubTrigger> {}
-
-export const DropdownMenuSubTrigger = forwardRef<HTMLDivElement, DropdownMenuSubTriggerProps>(
-  function DropdownMenuSubTrigger({ className, children, ...props }, ref) {
-    useDropdownMenuContext('SubTrigger');
-    return (
-      <RadixMenu.SubTrigger
-        ref={ref}
-        className={cx('pp-dropdown-menu__item', 'pp-dropdown-menu__sub-trigger', className)}
-        data-pp-tone="neutral"
-        {...props}
-      >
-        {children}
-        <Chevron />
-      </RadixMenu.SubTrigger>
-    );
-  },
-);
-
-export interface DropdownMenuSubContentProps
-  extends Omit<
-    ComponentPropsWithoutRef<typeof RadixMenu.SubContent>,
-    'sideOffset' | 'alignOffset' | 'collisionPadding' | 'asChild' | 'forceMount'
-  > {
-  sideOffset?: Space;
-  collisionPadding?: Space;
-  container?: Element | null;
-}
-
-export const DropdownMenuSubContent = forwardRef<HTMLDivElement, DropdownMenuSubContentProps>(
-  function DropdownMenuSubContent({ container, ...props }, ref) {
-    return (
-      <RadixMenu.Portal container={container ?? undefined}>
-        <SubPanel ref={ref} {...props} />
-      </RadixMenu.Portal>
-    );
-  },
-);
-
-const SubPanel = forwardRef<HTMLDivElement, Omit<DropdownMenuSubContentProps, 'container'>>(function SubPanel(
-  { sideOffset = '1', collisionPadding = '2', className, ...props },
-  ref,
-) {
-  const { triggerRef } = useDropdownMenuContext('SubContent');
-  const theme = useInheritedTheme(triggerRef);
-  const panelRef = useRef<HTMLDivElement | null>(null);
-  const setRef = useMemo(() => mergeRefs<HTMLDivElement>(ref, panelRef), [ref]);
-
-  /*
-   * Radix places a submenu on the side the root's `dir` says (spec §5); the
-   * offsets are ours. `alignOffset` is minus this panel's own top edge —
-   * border and padding, read from the element so a consumer's
-   * `--pp-dropdown-menu-padding` is honoured — so the first sub-item sits
-   * on the row of the item that opened it.
-   */
-  const [resolved, setResolved] = useState({ sideOffset: 0, collisionPadding: 0, alignOffset: 0 });
-  useLayoutEffect(() => {
-    const trigger = triggerRef.current;
-    const panel = panelRef.current;
-    const view = panel?.ownerDocument.defaultView;
-    const edge = panel && view ? parseFloat(view.getComputedStyle(panel).paddingBlockStart) + parseFloat(view.getComputedStyle(panel).borderBlockStartWidth) : 0;
-    setResolved({
-      sideOffset: resolveSpace(trigger, sideOffset),
-      collisionPadding: resolveSpace(trigger, collisionPadding),
-      alignOffset: Number.isFinite(edge) ? -edge : 0,
-    });
-  }, [triggerRef, sideOffset, collisionPadding]);
-
-  return (
-    <RadixMenu.SubContent
-      ref={setRef}
-      className={cx('pp-dropdown-menu', 'pp-dropdown-menu__sub', className)}
-      data-pp-theme={theme}
-      sideOffset={resolved.sideOffset}
-      alignOffset={resolved.alignOffset}
-      collisionPadding={resolved.collisionPadding}
-      {...props}
-    />
-  );
-});
+export const DropdownMenuItem = parts.Item;
+export const DropdownMenuCheckboxItem = parts.CheckboxItem;
+export const DropdownMenuRadioGroup = parts.RadioGroup;
+export const DropdownMenuRadioItem = parts.RadioItem;
+export const DropdownMenuItemIndicator = parts.ItemIndicator;
+export const DropdownMenuGroup = parts.Group;
+export const DropdownMenuLabel = parts.Label;
+export const DropdownMenuSeparator = parts.Separator;
+export const DropdownMenuShortcut = parts.Shortcut;
+export const DropdownMenuSub = parts.Sub;
+export const DropdownMenuSubTrigger = parts.SubTrigger;
+export const DropdownMenuSubContent = parts.SubContent;

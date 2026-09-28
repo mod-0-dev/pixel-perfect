@@ -496,6 +496,27 @@ body {
 }
 
 /* A long paragraph block for the "taller than the viewport" demo. */
+/* A ContextMenu region for the gallery and the demos: a box that says what
+   it is for, tall enough for the list a press opens inside it. */
+.context-region {
+  display: grid;
+  place-items: center;
+  min-block-size: 14rem;
+  border: 1px dashed var(--pp-color-border);
+  border-radius: var(--pp-radius-3);
+  color: var(--pp-color-text-muted);
+  font-size: var(--pp-font-size-2);
+  text-align: center;
+}
+
+.context-region[data-state="open"] {
+  border-style: solid;
+}
+
+.context-region[data-disabled] {
+  opacity: 0.6;
+}
+
 .dialog-long p {
   margin: 0;
 }
