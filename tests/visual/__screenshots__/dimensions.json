@@ -47,6 +47,10 @@
     "width": 1280,
     "height": 2539
   },
+  "button-dark.png": {
+    "width": 1280,
+    "height": 5767
+  },
   "button-group-dark.png": {
     "width": 1280,
     "height": 3448
@@ -54,6 +58,10 @@
   "button-group-light.png": {
     "width": 1280,
     "height": 3448
+  },
+  "button-light.png": {
+    "width": 1280,
+    "height": 5767
   },
   "card-dark.png": {
     "width": 1280,
@@ -246,6 +254,14 @@
   "number-input-light.png": {
     "width": 1280,
     "height": 8123
+  },
+  "pagination-dark.png": {
+    "width": 1280,
+    "height": 1768
+  },
+  "pagination-light.png": {
+    "width": 1280,
+    "height": 1768
   },
   "popover-dark.png": {
     "width": 1280,
