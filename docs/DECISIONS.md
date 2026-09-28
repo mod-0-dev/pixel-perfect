@@ -4646,6 +4646,16 @@ and Drawer's defer to — records the gap next to the RTL scrollbar one:
 The Drawer's tall test now also asserts the document's height across the
 open, so a future lock that shrinks the page fails by name.
 
+*Amended the same day, from CI run 141:* the Dialog page's baselines,
+authored on run 137, had been captured **under the lock** — the gallery's
+three modal dialogs are open at load, so the page in the PNG had lost its
+top and left gutter — and the moved gutter changed them by exactly that.
+CI classified it as a regression and authored nothing (D-066 §1 doing
+its job). The pair is re-baselined (`npm run dimensions -- --rebaseline
+dialog`) so CI authors them again with the gutter where it belongs; the
+AlertDialog and Drawer pages, whose galleries are modal too, had no
+baseline yet and are authored right the first time.
+
 ### 7. The facing edge is an inset shadow
 
 The edge a drawer shows the page carries a hairline; the edge on the
