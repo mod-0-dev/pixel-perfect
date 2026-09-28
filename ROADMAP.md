@@ -127,8 +127,8 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   5.3 `Progress` is in `review` (D-080), the determinate half of Spinner;
   5.4 `Table` is in `review` (D-081), the tier's data component; 5.5
   `Pagination` is in `review` (D-082), compact by its container; 5.6
-  `Breadcrumb` is in `review` (D-083). Next up is **5.7 `Stepper`**.
-  **4.4 `Dialog` is `done`** (2026-09-27): built
+  `Breadcrumb` is in `review` (D-083); 5.7 `Stepper` is in `review`
+  (D-084). Next up is **5.8 `EmptyState`**. **4.4 `Dialog` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-067, the shape of D-057,
   D-061 and D-064), its baselines CI-authored on the PR branch and compared
   green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
@@ -926,7 +926,7 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 5.4 | `Table` | `review` | fill | server | T2 | [`Table.md`](docs/specs/Table.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-081; awaiting its CI-authored baseline (D-013). A semantic table in a named region that scrolls, focusable always (§1); `caption` a prop of the root, one of three names required (§2); the table stretched by a grid, never by a width (§3); sorting and selection are hooks, `sort` → `aria-sort`, `selected` → `data-state`. Found on the way: `useId` is not a client hook, and the rule lint and RULES §7 now say so (§4); a ring read in the frame focus landed in is 0px wide under the reset's reduced-motion crush (§5); the UA centres a `th` and a cell that wraps a date is worse than one that scrolls, both seen on the screenshot and not by the first green run (§6) |
 | 5.5 | `Pagination` | `review` | fill | client | 3.1 | [`Pagination.md`](docs/specs/Pagination.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-082; awaiting its CI-authored baseline (D-013). A window with a constant number of slots, buttons or links by `getHref` (§1); the compact form is a container query, which is why the contract is `fill` (§2); the current page is Toggle's `on` in the accent ramp (§3). Found on the way: `:dir()` does not ship — the build rewrites it into `:lang()` — so RULES §1 says `[dir="rtl"]` and the Scroller's RTL swap is fixed (§4); a Button drawn on an `<a>` was underlined, fixed in Button.css (§5) |
 | 5.6 | `Breadcrumb` | `review` | fill | server | 3.3 | [`Breadcrumb.md`](docs/specs/Breadcrumb.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-083; awaiting its CI-authored baseline (D-013). Five named parts, the last a span with `aria-current`; the separator is the stylesheet's, after each crumb, out of the tree (§1); a trail wraps at its separators (§2). A `nowrap` the break check could not observe was followed through and found wrong (§3) |
-| 5.7 | `Stepper` | `planned` | fill | server | T2 | |
+| 5.7 | `Stepper` | `review` | fill | server | T2 | [`Stepper.md`](docs/specs/Stepper.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-084; awaiting its CI-authored baseline (D-013). Two parts; the number a counter, done a check, `aria-current="step"` (§1); vertical the base, a row above 28rem by its container (§2); every colour a tone token in the accent scope (§3). Found by the rectangles and the screenshot: grid auto-placement seated the circle after the label, and an `auto` column left the row's connector zero wide (§4) |
 | 5.8 | `EmptyState` | `planned` | fill | server | 5.1 | |
 | 5.9 | `Calendar` | `planned` | fill | client | T3 | Standalone; `DatePicker` consumes it |
 | 5.10 | `FileUpload` | `planned` | fill | client | 3.7 | Drag/drop, progress |

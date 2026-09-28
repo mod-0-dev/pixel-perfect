@@ -204,7 +204,8 @@
         "src/components/RangeSlider/**/*.css",
         "src/components/Drawer/**/*.css",
         "src/components/Toast/**/*.css",
-        "src/components/CommandPalette/**/*.css"
+        "src/components/CommandPalette/**/*.css",
+        "src/components/Stepper/Stepper.css"
       ],
       "rules": {
         "property-disallowed-list": [

@@ -5875,3 +5875,96 @@ both tests); `flex-wrap` dropped (the trail spilled); the page's weight
 dropped (`400`); the separator's colour dropped (the page's colour).
 Each failed on exactly the test named for it; `nowrap` is §3.
 
+## D-084 — `Stepper` rulings: a counter and a check, a row that is a column by its container, and a grid that seated the circle after the label
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`Stepper.css` in the D-019 group), `docs/specs/Stepper.md` (status) ·
+**Extends:** D-019, D-021, D-082 §2, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Two parts; the number is a counter and "done" is a check
+
+`Stepper` (a `<nav aria-label="Progress">` around an `<ol>`) and `Step`
+(`<li>`), `status` as `complete | current | upcoming` written to
+`data-state`, `aria-current="step"` on the current one. The visible
+number is a CSS counter on an `aria-hidden` indicator, because an
+`<ol>` already tells a screen reader "2 of 4" and a number in the
+markup would be said twice; a completed step's indicator holds a check
+(through `Icon`, so no bare svg is sized here) and its label carries a
+visually hidden "Completed". A status display: it holds no state and
+moves nothing; a clickable completed step is the consumer's `Link` in
+its label.
+
+### 2. Vertical is the base; horizontal is a query-gated enhancement
+
+A step is a two-column grid — the indicator, then the body — with the
+connector a zero-wide box with a border in the second row of the first
+column, running down from the circle. Above 28rem a horizontal
+stepper's list is a row and each step a three-column grid, the
+connector a box in the third column with the line drawn as its inset
+bottom shadow at the circle's middle; below it a horizontal stepper *is*
+the vertical one, by its container (Pagination's device, D-082 §2), so
+a checkout's row in the page is a column in a card with nothing
+configured. The `<nav>` is the container and the `<ol>` is what the
+query switches, because a query cannot target its own container. The
+indicator declares `inline-size` under the D-019 exemption — a square,
+intrinsic, hugging box, the same kind as Icon and IconButton — and the
+file joins that stylelint group. The label is a box the indicator's
+height with its text centred, rather than padding arithmetic on the
+line height, which the value rules refuse anyway.
+
+### 3. Every colour is a tone token in the accent scope the root writes
+
+Solid indicator and accent connector after a completed step; accent
+ring and accent number on the current one; hairline and muted on an
+upcoming one. `data-pp-tone="accent"` on the `<nav>`, so a consumer's
+tone on a wrapper recolours all of it (D-007).
+
+### 4. Three things the screenshot and the rectangles said
+
+**The circle was after the label.** The body had `grid-row: 1 / span 2`
+and the indicator nothing, and grid auto-placement seats items with a
+definite row before the rest: the body took column 1 and the circle
+column 2, in both directions. The LTR assertions did not read the
+order; the RTL one did, and failed for the wrong-looking reason. Both
+are placed now (`grid-column` on each), the test asserts the circle
+ends before its label begins, and the break that drops both placements
+fails it.
+
+**The horizontal connector was zero wide.** Its column was `auto` and
+its content empty, so the line — drawn as a box shadow — had no box,
+while the assertion on the shadow's *colour* passed. The connector's
+track is `minmax(space-5, 1fr)` now: the rest of the step's share of the
+line, never less than a floor, so a row that is only just a row (three
+steps at 480px) still draws a line between the labels while the labels
+wrap first. The test reads the box's width, at 960 and at 480.
+
+**`getComputedStyle` reports a counter's declaration, not its digit.**
+`content` on the indicator's `::before` reads `counter(pp-step)`, so
+the test asserts the declaration and `none` on the completed step, and
+the digits are the baseline's to show.
+
+### 5. Verified, and the five breaks
+
+Unit: six tests — the landmark, the `<ol>`, the states in order and the
+accent tone; `aria-current` on the current step only; the check and the
+hidden "Completed" on the completed step and nowhere else, the
+description; `upcoming` by default, the orientation and the label;
+refs, `className`, `style`; axe in both themes and orientations.
+Browser: the counters and the check, the indicators' size, the fills and
+rings per state, the label weights, no connector after the last, the
+circle before its label; a column at 240 and a row at 480 and 960 with
+the vertical connector's colour, width and height and the horizontal
+one's colour, width and height; vertical at every width; the plain
+parent; five steps in one row; RTL from the right with the circle after
+the label.
+
+Break checks (D-035 §3): `container-type` dropped (the plain parent a
+row); the done connector's colour dropped (a hairline); the current ring
+dropped (a hairline); the counter dropped (`none`); the placements
+dropped (the circle after the label, both tests). Each failed on the
+test named for it. The indicator's placement alone caught nothing — the
+body's column is the mechanism — and the comment says so.
+

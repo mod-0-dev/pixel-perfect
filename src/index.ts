@@ -283,6 +283,7 @@ export {
   type TableRowProps,
   type TableSort,
 } from './components/Table/Table';
+export { Step, Stepper, type StepProps, type StepStatus, type StepperOrientation, type StepperProps } from './components/Stepper/Stepper';
 export { Switch, type SwitchProps } from './components/Switch/Switch';
 export {
   Tabs,

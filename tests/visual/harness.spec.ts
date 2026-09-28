@@ -7179,3 +7179,152 @@ test.describe('Breadcrumb', () => {
     expect(rtl.first).toBeGreaterThan(rtl.last);
   });
 });
+
+test.describe('Stepper', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  test('counters on the indicators and a check on the completed one; the states\' colours and the connectors; a row at 480px and 960px, a column at 240px', async ({
+    page,
+  }) => {
+    await page.goto('/components/stepper');
+    const solid = await resolveIn(page, '--pp-tone-solid', 'accent');
+    const hairline = await resolveIn(page, '--pp-color-border-subtle', 'accent');
+    const size = await px(page, '--pp-control-height-sm');
+    const cells = await page.locator('.matrix__cell .pp-stepper').evaluateAll((navs) =>
+      navs.map((n) => {
+        const nav = n as HTMLElement;
+        const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+        const tops = new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top)));
+        const ind = (s: HTMLElement) => s.querySelector('.pp-stepper__indicator') as HTMLElement;
+        const connector = (s: HTMLElement) => {
+          const after = getComputedStyle(s, '::after');
+          const vertical = after.borderInlineStartColor;
+          const horizontal = after.boxShadow;
+          return {
+            content: after.content,
+            vertical,
+            horizontal,
+            verticalWidth: after.borderInlineStartWidth,
+            /* The box the line is drawn in: tall in the column, wide in the row. */
+            width: parseFloat(after.width),
+            height: parseFloat(after.height),
+          };
+        };
+        const order = steps.map((s) => {
+          const ind = (s.querySelector('.pp-stepper__indicator') as HTMLElement).getBoundingClientRect();
+          const label = (s.querySelector('.pp-stepper__label') as HTMLElement).getBoundingClientRect();
+          return ind.right <= label.left + 0.5;
+        });
+        return {
+          rows: tops.size,
+          spills: nav.scrollWidth > nav.clientWidth + 1,
+          counters: steps.map((s) => getComputedStyle(ind(s), '::before').content),
+          checks: steps.map((s) => ind(s).querySelector('svg') !== null),
+          sizes: steps.map((s) => [ind(s).getBoundingClientRect().width, ind(s).getBoundingClientRect().height]),
+          fills: steps.map((s) => getComputedStyle(ind(s)).backgroundColor),
+          rings: steps.map((s) => getComputedStyle(ind(s)).borderTopColor),
+          labelWeights: steps.map((s) => getComputedStyle(s.querySelector('.pp-stepper__label')!).fontWeight),
+          connectors: steps.map(connector),
+          /* The circle before its label, in LTR. */
+          order,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const [narrow, medium, wide] = cells as [(typeof cells)[number], (typeof cells)[number], (typeof cells)[number]];
+    for (const c of cells) {
+      expect(c.spills, 'the stepper spilled').toBe(false);
+      /* The computed `content` is the declaration, not the rendered digit;
+         the baseline shows the digits. */
+      expect(c.counters).toEqual(['none', 'counter(pp-step)', 'counter(pp-step)']);
+      expect(c.checks).toEqual([true, false, false]);
+      for (const [w, h] of c.sizes) {
+        expect(Math.abs(w! - size)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(h! - size)).toBeLessThanOrEqual(0.5);
+      }
+      expect(c.fills[0]).toBe(solid);
+      expect(c.fills[1]).toBe('rgba(0, 0, 0, 0)');
+      expect(c.rings[0]).toBe(solid);
+      expect(c.rings[1]).toBe(solid);
+      expect(c.rings[2]).toBe(hairline);
+      expect(c.labelWeights).toEqual(['400', '500', '400']);
+      /* No connector after the last. */
+      expect(c.connectors[2]!.content).toBe('none');
+      expect(c.order).toEqual([true, true, true]);
+    }
+    expect(narrow.rows).toBe(3);
+    expect(medium.rows).toBe(1);
+    expect(wide.rows).toBe(1);
+    /* Vertical connectors in the column: the done one accent, the next a hairline. */
+    expect(narrow.connectors[0]!.vertical).toBe(solid);
+    expect(narrow.connectors[1]!.vertical).toBe(hairline);
+    expect(parseFloat(narrow.connectors[0]!.verticalWidth)).toBe(2);
+    expect(narrow.connectors[0]!.height).toBeGreaterThanOrEqual(await px(page, '--pp-space-5'));
+    /* Horizontal connectors in the row: drawn as the inset shadow's colour,
+       in a box that is the rest of the step's share of the line. */
+    expect(wide.connectors[0]!.horizontal).toContain(solid);
+    expect(wide.connectors[1]!.horizontal).toContain(hairline);
+    expect(wide.connectors[0]!.verticalWidth).toBe('0px');
+    expect(wide.connectors[0]!.width).toBeGreaterThan(40);
+    expect(wide.connectors[1]!.width).toBeGreaterThan(40);
+    /* And a row that is only just a row still draws a line at least the
+       floor long. */
+    const floor = await px(page, '--pp-space-5');
+    expect(medium.connectors[0]!.width).toBeGreaterThanOrEqual(floor - 0.5);
+    expect(medium.connectors[1]!.width).toBeGreaterThanOrEqual(floor - 0.5);
+    expect(Math.abs(wide.connectors[0]!.height - size / 2)).toBeLessThanOrEqual(0.5);
+  });
+
+  test('vertical is a column at every width; a plain narrow parent gets the column from the component\'s own container; RTL runs from the right', async ({
+    page,
+  }) => {
+    await page.goto('/components/stepper');
+    const vertical = await page.locator('[data-testid="stepper-vertical"] .pp-stepper').evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      return { rows: new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top))).size, width: nav.getBoundingClientRect().width };
+    });
+    expect(vertical.rows).toBe(3);
+    expect(vertical.width).toBeGreaterThan(600);
+
+    const plain = await page.locator('[data-testid="stepper-compact"] .pp-stepper').evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      return { rows: new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top))).size, container: getComputedStyle(nav).containerType };
+    });
+    expect(plain).toEqual({ rows: 3, container: 'inline-size' });
+
+    const more = await page.locator('[data-testid="stepper-more"] .pp-stepper').first().evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      return { rows: new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top))).size, steps: steps.length, spills: nav.scrollWidth > nav.clientWidth + 1 };
+    });
+    expect(more).toEqual({ rows: 1, steps: 5, spills: false });
+
+    const rtl = await page.locator('[data-testid="stepper-rtl"] .pp-stepper').evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      const ind = (s: HTMLElement) => (s.querySelector('.pp-stepper__indicator') as HTMLElement).getBoundingClientRect();
+      return { first: ind(steps[0]!).left, last: ind(steps[2]!).left, indicatorRightOfLabel: ind(steps[0]!).left > steps[0]!.querySelector('.pp-stepper__label')!.getBoundingClientRect().left };
+    });
+    expect(rtl.first).toBeGreaterThan(rtl.last);
+    expect(rtl.indicatorRightOfLabel).toBe(true);
+  });
+});

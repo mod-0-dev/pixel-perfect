@@ -1,0 +1,192 @@
+/*
+ * Stepper — spec docs/specs/Stepper.md
+ *
+ * VERTICAL IS THE BASE AND HORIZONTAL IS A QUERY-GATED ENHANCEMENT (spec
+ * §2): a step is a two-column grid — the indicator, then the body — with
+ * the connector in the second row of the first column, a line running down
+ * from the indicator. Above 28rem a horizontal stepper's steps become a row,
+ * each an equal share of the line, and the connector a line running on
+ * from the label. Below it a horizontal stepper IS the vertical one, and
+ * nothing is configured: the <nav> is the container (a query cannot target
+ * its own container) and the <ol> is what it switches.
+ *
+ * THE NUMBER IS A COUNTER (spec §1): `counter-increment` on the step and
+ * `content: counter()` on the indicator, which is aria-hidden — an <ol>
+ * already announces the position. A completed step's indicator holds the
+ * check instead, and its counter content is `none`.
+ *
+ * `inline-size` IS DECLARED ON THE INDICATOR under the D-019 exemption: a
+ * square, intrinsic, hugging box, the same kind as Icon, Spinner, Avatar and
+ * IconButton; `.stylelintrc.json` names this file for it.
+ *
+ * EVERY COLOUR IS A TONE TOKEN in the accent scope the component writes on
+ * its root (spec §3, D-007).
+ */
+
+@layer pp.components {
+  .pp-stepper {
+    --_gap: var(--pp-stepper-gap, var(--pp-space-3));
+    --_size: var(--pp-control-height-sm);
+    --_line: var(--pp-stepper-connector-color, var(--pp-color-border-subtle));
+    --_done: var(--pp-stepper-connector-done-color, var(--pp-tone-solid));
+
+    container-type: inline-size;
+    display: block;
+    min-inline-size: 0;
+    font-size: var(--pp-font-size-2);
+    line-height: var(--pp-line-height-snug);
+  }
+
+  .pp-stepper__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: pp-step;
+  }
+
+  .pp-stepper__step {
+    --_ring: var(--pp-color-border-subtle);
+    --_fill: transparent;
+    --_mark: var(--pp-color-text-muted);
+    --_text: var(--pp-color-text-muted);
+    --_weight: var(--pp-font-weight-regular);
+    --_after: var(--_line);
+
+    counter-increment: pp-step;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--_gap);
+    align-items: start;
+    min-inline-size: 0;
+  }
+
+  .pp-stepper__step[data-state="current"] {
+    --_ring: var(--pp-tone-solid);
+    --_mark: var(--pp-tone-text);
+    --_text: var(--pp-color-text);
+    --_weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-stepper__step[data-state="complete"] {
+    --_ring: var(--pp-tone-solid);
+    --_fill: var(--pp-tone-solid);
+    --_mark: var(--pp-tone-on-solid);
+    --_text: var(--pp-color-text);
+    --_after: var(--_done);
+  }
+
+  /* PLACED, NOT AUTO-PLACED (D-084 §4): the body has a definite row, and grid
+     auto-placement seats items with a definite row first — so with only the
+     row on the body, it took column 1 and the circle column 2, in both
+     directions. The body's `grid-column: 2` is the fix; the indicator's
+     placement below says the same thing from the other side. */
+  .pp-stepper__indicator {
+    grid-column: 1;
+    grid-row: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    inline-size: var(--_size);
+    block-size: var(--_size);
+    border: var(--pp-border-width-2) solid var(--_ring);
+    border-radius: var(--pp-radius-full);
+    background-color: var(--_fill);
+    color: var(--_mark);
+    font-weight: var(--pp-font-weight-medium);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pp-stepper__indicator::before {
+    content: counter(pp-step);
+  }
+
+  .pp-stepper__step[data-state="complete"] .pp-stepper__indicator::before {
+    content: none;
+  }
+
+  .pp-stepper__body {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: var(--pp-space-1);
+    min-inline-size: 0;
+  }
+
+  /* The label's box is the indicator's height with the text centred in it,
+     so a one-line label sits on the circle's middle and a description hangs
+     below. A box, not padding arithmetic on the line height. */
+  .pp-stepper__label {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--_size);
+    color: var(--_text);
+    font-weight: var(--_weight);
+  }
+
+  .pp-stepper__description {
+    color: var(--pp-color-text-muted);
+  }
+
+  /* The connector, vertical: the second row of the indicator's column, a
+     line running down from the circle to the next. Zero wide plus a border,
+     so it needs no inline-size. */
+  .pp-stepper__step:not(:last-child)::after {
+    content: "";
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: center;
+    min-block-size: var(--pp-space-5);
+    border-inline-start: var(--pp-border-width-2) solid var(--_after);
+  }
+
+  /* Above the threshold a horizontal stepper is a row. */
+  @container (min-inline-size: 28.01rem) {
+    .pp-stepper[data-orientation="horizontal"] .pp-stepper__list {
+      flex-direction: row;
+      align-items: start;
+      gap: var(--_gap);
+    }
+
+    /* The indicator, the body hugging its label, and the connector taking
+       the rest of the step's share of the line. An `auto` third column held
+       an empty pseudo-element at 0px — a connector nobody could see, whose
+       colour assertion passed (D-084 §4). */
+    .pp-stepper[data-orientation="horizontal"] .pp-stepper__step {
+      flex: 1 1 0;
+      /* The connector's track has a floor, so a row that is only just a row
+         (480px, three steps) still draws a line between the labels rather
+         than three columns of text; the labels wrap before the line goes. */
+      grid-template-columns: auto auto minmax(var(--pp-space-5), 1fr);
+    }
+
+    .pp-stepper[data-orientation="horizontal"] .pp-stepper__step:last-child {
+      flex: 0 0 auto;
+      grid-template-columns: auto auto;
+    }
+
+    .pp-stepper[data-orientation="horizontal"] .pp-stepper__body {
+      grid-row: 1;
+    }
+
+    /* The connector, horizontal: the third column, a line running on from
+       the label at the indicator's middle. */
+    .pp-stepper[data-orientation="horizontal"] .pp-stepper__step:not(:last-child)::after {
+      grid-column: 3;
+      grid-row: 1;
+      justify-self: stretch;
+      align-self: start;
+      min-block-size: 0;
+      margin-block-start: 0;
+      padding-block-start: calc(var(--_size) / 2);
+      border-inline-start: 0;
+      border-block-start: 0;
+      /* The line is drawn as the bottom edge of a box whose height is half
+         the indicator, so it sits at the circle's middle. */
+      box-shadow: inset 0 calc(-1 * var(--pp-border-width-2)) 0 var(--_after);
+    }
+  }
+}
