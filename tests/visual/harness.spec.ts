@@ -6661,3 +6661,132 @@ test.describe('Card', () => {
     expect(fits, 'the URL pushed the card past its cell').toBe(true);
   });
 });
+
+test.describe('Progress', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  /* A token resolved INSIDE a tone scope, because the fill and the track are
+     `--pp-tone-*` and read differently under `accent` and `neutral`. */
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+  const geometry = (el: HTMLElement) => {
+    const fill = el.firstElementChild as HTMLElement;
+    const t = el.getBoundingClientRect();
+    const f = fill.getBoundingClientRect();
+    return {
+      height: t.height,
+      ratio: f.width / t.width,
+      startGap: f.left - t.left,
+      endGap: t.right - f.right,
+      fillColor: getComputedStyle(fill).backgroundColor,
+      trackColor: getComputedStyle(el).backgroundColor,
+      transition: getComputedStyle(fill).transitionProperty,
+      animation: getComputedStyle(fill).animationName,
+    };
+  };
+
+  test('the fill is the value of the track and starts at its start; the thickness per size is the token; the colours are the tone\'s', async ({
+    page,
+  }) => {
+    await page.goto('/components/progress');
+    const read = await page.locator('[data-testid="progress-sizes"] .pp-progress').evaluateAll((els) =>
+      els.map((el) => {
+        const fill = el.firstElementChild as HTMLElement;
+        const t = el.getBoundingClientRect();
+        const f = fill.getBoundingClientRect();
+        return {
+          height: t.height,
+          ratio: f.width / t.width,
+          startGap: f.left - t.left,
+          fillColor: getComputedStyle(fill).backgroundColor,
+          trackColor: getComputedStyle(el).backgroundColor,
+        };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    expect(read.map((r) => r.height)).toEqual([await px(page, '--pp-space-1'), await px(page, '--pp-space-2'), await px(page, '--pp-space-3')]);
+    for (const r of read) {
+      expect(Math.abs(r.ratio - 0.6)).toBeLessThanOrEqual(0.005);
+      expect(Math.abs(r.startGap)).toBeLessThanOrEqual(0.5);
+      expect(r.fillColor).toBe(await resolveIn(page, '--pp-tone-solid', 'accent'));
+      expect(r.trackColor).toBe(await resolveIn(page, '--pp-tone-border-subtle', 'accent'));
+    }
+    /* A neutral bar reads the neutral ramp: the tone is the root's scope. */
+    const neutral = page.locator('[data-testid="progress-tones"] .pp-progress').nth(1);
+    expect(await neutral.evaluate((n) => getComputedStyle(n.firstElementChild as HTMLElement).backgroundColor)).toBe(
+      await resolveIn(page, '--pp-tone-solid', 'neutral'),
+    );
+  });
+
+  test('in RTL the fill grows from the right edge with no rule for it; the bar fills its cell at three widths', async ({ page }) => {
+    await page.goto('/components/progress');
+    const rtl = await page.locator('[data-testid="progress-rtl"] .pp-progress').first().evaluate(geometry);
+    expect(Math.abs(rtl.ratio - 0.4)).toBeLessThanOrEqual(0.005);
+    expect(Math.abs(rtl.endGap)).toBeLessThanOrEqual(0.5);
+    expect(rtl.startGap).toBeGreaterThan(1);
+
+    const cells = await page.locator('.matrix__cell .pp-progress').evaluateAll((els) =>
+      els.map((el) => {
+        const parent = el.parentElement as HTMLElement;
+        return { bar: el.getBoundingClientRect().width, parent: parent.getBoundingClientRect().width };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) expect(Math.abs(c.bar - c.parent)).toBeLessThanOrEqual(1);
+    expect(cells[0]!.bar).toBeLessThan(cells[2]!.bar);
+  });
+
+  /* playwright.config.ts pins reducedMotion: 'reduce' for every test, so
+     this is the reduced-motion half by default: the segment is the whole
+     bar and pulses, and the slide is off (spec §4). */
+  test('under reduced motion the indeterminate segment is the whole bar, pulsing, and the slide is off', async ({ page }) => {
+    await page.goto('/components/progress');
+    const still = await page.locator('[data-testid="progress-indeterminate"] .pp-progress').evaluate(geometry);
+    expect(still.animation).toBe('pp-progress-pulse');
+    expect(Math.abs(still.ratio - 1)).toBeLessThanOrEqual(0.005);
+    const slide = await page.locator('[data-testid="progress-sizes"] .pp-progress').first().evaluate(geometry);
+    expect(slide.transition).toBe('none');
+  });
+
+  test.describe('with motion', () => {
+    test.use({ reducedMotion: 'no-preference' });
+
+    test('the indeterminate segment is two fifths of the bar and moves; the slide is a flex-basis transition at the normal duration', async ({
+      page,
+    }) => {
+      await page.goto('/components/progress');
+      const bar = page.locator('[data-testid="progress-indeterminate"] .pp-progress');
+      const first = await bar.evaluate(geometry);
+      expect(first.animation).toBe('pp-progress-sweep');
+      expect(Math.abs(first.ratio - 0.4)).toBeLessThanOrEqual(0.005);
+      const at = () => bar.evaluate((el) => (el.firstElementChild as HTMLElement).getBoundingClientRect().left);
+      const before = await at();
+      await expect.poll(at, { message: 'the segment did not move' }).not.toBe(before);
+
+      const slide = await page.locator('[data-testid="progress-sizes"] .pp-progress').first().evaluate((el) => {
+        const style = getComputedStyle(el.firstElementChild as HTMLElement);
+        return { property: style.transitionProperty, duration: style.transitionDuration };
+      });
+      expect(slide).toEqual({ property: 'flex-basis', duration: '0.22s' });
+    });
+  });
+});

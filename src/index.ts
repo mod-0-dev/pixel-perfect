@@ -180,6 +180,7 @@ export {
   type PopoverTitleProps,
   type PopoverTriggerProps,
 } from './components/Popover/Popover';
+export { Progress, type ProgressProps } from './components/Progress/Progress';
 export { Radio, type RadioProps } from './components/Radio/Radio';
 export {
   RadioGroup,

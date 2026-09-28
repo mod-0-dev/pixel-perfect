@@ -96,3 +96,4 @@
 /* Tier 5 — composition & data. */
 @import "../components/Alert/Alert.css";
 @import "../components/Card/Card.css";
+@import "../components/Progress/Progress.css";

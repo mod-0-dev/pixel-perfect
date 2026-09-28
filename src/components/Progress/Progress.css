@@ -1,0 +1,99 @@
+/*
+ * Progress — spec docs/specs/Progress.md
+ *
+ * THE ROOT IS THE TRACK, AND THE FILL IS A FLEX ITEM (spec §3). Slider draws
+ * its fill as a grid column; a progress bar's fill MOVES, and a grid track
+ * does not interpolate in Safari, so this one is `flex-basis` — it animates
+ * everywhere, and a flex row follows the writing direction, so in RTL the
+ * fill grows from the right edge with nothing said here. The percentage
+ * arrives as `--_pp-progress-fill`, written inline by the component.
+ *
+ * INDETERMINATE SWEEPS A SEGMENT BY `inset-inline-start` (spec §4): a
+ * logical property, so the sweep starts at the start in both directions,
+ * where a `translate` would need a second keyframe set for RTL. The track
+ * clips it. Under reduced motion the segment becomes the whole bar and
+ * pulses (Spinner, decision 6): a frozen segment reads as a hung page.
+ * Every duration here is declared in pp.components and so outranks the
+ * reset's crush (D-062 §5), which is why the reduced-motion block is here.
+ *
+ * `fill` (RULES §1): block-level, no width declaration, `min-inline-size:
+ * 0`. The thickness is the size.
+ */
+
+@layer pp.components {
+  .pp-progress {
+    --_size: var(--pp-space-2);
+    --_track: var(--pp-progress-track-color, var(--pp-tone-border-subtle));
+    --_fill: var(--pp-progress-fill-color, var(--pp-tone-solid));
+
+    display: flex;
+    min-inline-size: 0;
+    block-size: var(--pp-progress-size, var(--_size));
+    border-radius: var(--pp-progress-radius, var(--pp-radius-full));
+    background-color: var(--_track);
+    /* The fill's far corner and the sweeping segment are clipped to the
+       track's own rounding, so the filled end is a cap rather than a square,
+       and the segment is only ever seen inside the bar. */
+    overflow: hidden;
+  }
+
+  .pp-progress[data-size="sm"] {
+    --_size: var(--pp-space-1);
+  }
+
+  .pp-progress[data-size="lg"] {
+    --_size: var(--pp-space-3);
+  }
+
+  .pp-progress__fill {
+    /* Column one of the flex row, a percentage of the track. `flex-basis` is
+       the one sizing property that both interpolates everywhere and follows
+       the direction (spec §3). */
+    flex: 0 0 var(--_pp-progress-fill, 0%);
+    /* The same rounding as the track, so a partial fill has a cap at its
+       growing end too, not only where the clip rounds it. */
+    border-radius: var(--pp-progress-radius, var(--pp-radius-full));
+    background-color: var(--_fill);
+    transition-property: flex-basis;
+    transition-duration: var(--pp-progress-duration, var(--pp-duration-normal));
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  .pp-progress[data-state="indeterminate"] .pp-progress__fill {
+    position: relative;
+    flex-basis: 40%;
+    transition-property: none;
+    animation: pp-progress-sweep calc(var(--pp-duration-slow) * 4) var(--pp-easing-standard) infinite;
+  }
+
+  @keyframes pp-progress-sweep {
+    from {
+      inset-inline-start: -40%;
+    }
+
+    to {
+      inset-inline-start: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-progress__fill {
+      transition-property: none;
+    }
+
+    .pp-progress[data-state="indeterminate"] .pp-progress__fill {
+      flex-basis: 100%;
+      animation: pp-progress-pulse calc(var(--pp-duration-slow) * 5) ease-in-out infinite alternate;
+    }
+  }
+
+  @keyframes pp-progress-pulse {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0.4;
+    }
+  }
+}

@@ -5478,3 +5478,96 @@ surface dropped (transparent); the hover lift dropped (`box-shadow` stayed
 Each failed on exactly the test named for it; the fifth, `min-inline-size:
 0`, is §3.
 
+## D-080 — `Progress` rulings: `value` absent is indeterminate, a name at the type level, a fill that is a flex item, and `accent` by default
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Progress.md`
+(status) · **Extends:** RULES §4 (the `data-state` vocabulary gains
+`determinate`), D-062 §5, D-035 §3; the Spinner spec's decision 6
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The determinate half of what 1.6 `Spinner` began.
+
+### 1. `value` present is determinate; absent is indeterminate; `determinate` joins `data-state`
+
+No `indeterminate` boolean beside a `value`: two props for one state are
+two props to keep in step, and a `value` of `undefined` already says the
+size of the work is unknown. `aria-valuenow` is written only when there
+is a value, which is ARIA 1.2's reading of an indeterminate progressbar
+(NumberInput §5 verified the same for `spinbutton`). `max` defaults to
+100 and falls back to it, with a development warning, when it is not a
+positive finite number; the value is clamped to `[0, max]`.
+
+The root carries `data-state="determinate" | "indeterminate"`.
+`indeterminate` was already in RULES §4's vocabulary as a checkbox's
+third state; `determinate` extends it under §4's extension rule (D-064
+§3's shape): "the value is known" is a real state the stylesheet
+switches on, and `:not([data-state="indeterminate"])` is a worse
+spelling of it.
+
+### 2. A name at the type level, and the fill is a flex item
+
+`ProgressProps` is a union: `label` (written as `aria-label`) or
+`aria-labelledby`, one required and not both. Spinner's union is
+`label | decorative`; a progress bar has no decorative case, because it
+exists to report a number, and a number of nothing is not decoration.
+Nothing is rendered visually hidden: the visible label beside a bar is
+the consumer's `Text`, named once by `aria-labelledby`.
+
+Slider draws its fill as a grid column. A progress bar's fill *moves*,
+and `grid-template-columns` does not interpolate in Safari, so a bar
+built Slider's way would slide in one browser and jump in another. The
+fill is `flex: 0 0 var(--_pp-progress-fill)`, the percentage written
+inline by the component (Slider's device for the value), transitioned on
+`flex-basis` over `--pp-duration-normal`. A flex row follows the writing
+direction the way a grid does, so in RTL the fill grows from the right
+edge with no rule for it; the browser suite reads the fill's end edge
+against the track's under `dir="rtl"`. The indeterminate segment sweeps
+by `inset-inline-start`, from `-40%` to `100%` — a logical property, so
+the sweep starts at the start in both directions, where a `translate`
+would need a second keyframe set for RTL.
+
+### 3. `accent` by default, where Spinner is `neutral`; the track is the decorative step
+
+A spinner sits inside a control and takes the control's colour; a bar
+stands alone on the page, where a grey fill reads as disabled. So `tone`
+defaults to `accent` here and the two defaults are recorded side by
+side rather than made to agree. Track `--pp-tone-border-subtle` and fill
+`--pp-tone-solid`, both in the root's `data-pp-tone` scope, so a
+`success` bar at 100 and a `danger` bar for a failed upload need no rule
+of their own. The fill on the page is the solid step every solid button
+already carries; the track is decoration, no obligation by design
+(D-050).
+
+### 4. Reduced motion is the suite's default, and the moving half runs in its own context
+
+`playwright.config.ts` pins `reducedMotion: 'reduce'` for every test, so
+the first draft's "the segment moves" read the pulse and "the slide is a
+`flex-basis` transition" read `none` — the component was right and the
+test was in the wrong context. The block is now two halves: the default
+context asserts the reduced-motion rules (the segment is the whole bar,
+its animation the pulse, the fill's transition `none` — declared here
+because a duration in `pp.components` outranks the reset's crush, D-062
+§5), and a nested `describe` with `reducedMotion: 'no-preference'`
+asserts the sweep's name and that the segment's position changes
+between two reads, and the transition's property and duration. The
+Popover suite's shape (its own `test.use`), applied to a component whose
+motion is the feature.
+
+### 5. Verified, and the four breaks
+
+Unit: nine tests — the role and the name by `label` and by
+`aria-labelledby`; the values and the state with and without a value;
+clamping and the fill variable; the `max` fallback and its warning;
+`aria-valuetext`, `size` and `tone`; ref, `className` and a consumer's
+`style` merged with the fill variable; a nameless bar and a bar named
+twice rejected at the type level; axe in both themes. Browser: the fill
+at 60% of the track from its start, the thickness per size against the
+tokens, the fill and the track resolved in the accent scope and the
+neutral one; RTL; the bar at three widths; the two motion halves.
+
+Break checks (D-035 §3): the fill's `flex-basis` dropped (the ratio
+read 0, in LTR and RTL); the sweep dropped (`animation-name` read
+`none`); the reduced-motion swap dropped (the pulse read as the sweep);
+the `lg` thickness dropped (the heights). Each failed on exactly the
+test named for it.
+

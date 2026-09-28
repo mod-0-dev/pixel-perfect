@@ -63,6 +63,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'command-palette', path: '/components/command-palette' },
   { name: 'card', path: '/components/card' },
   { name: 'alert', path: '/components/alert' },
+  { name: 'progress', path: '/components/progress' },
 ];
 
 /**
