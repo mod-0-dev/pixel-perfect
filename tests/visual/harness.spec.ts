@@ -516,6 +516,7 @@ test.describe('KeyHints', () => {
     await page.keyboard.down('Alt');
     const overlay = page.locator('.pp-key-hints');
     await expect(overlay).toBeVisible();
+    await settled(page);
     const read = await overlay.evaluate((o) => {
       const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-pp-hotkey]')).map((t) => t.getBoundingClientRect());
       const hints = Array.from(o.querySelectorAll<HTMLElement>('.pp-key-hints__hint'));

@@ -7364,6 +7364,16 @@ for `document.fonts.ready` before holding the key. The screenshot suite
 has waited for fonts since D-026; the harness had no reason to until a
 component measured text.
 
+Repeating the test locally then failed it once in six with fonts cached,
+which the font could not explain. The stagger measured each hint's
+rendered box and computed its offset from there — and a second pass
+(after a scroll, a font, any re-place) measured boxes that already
+carried the first pass's offsets and staggered them again, against
+themselves. Each measurement is now taken back to the hint's base
+position by subtracting the offset it was rendered with, so every pass
+starts from the same place; the test also settles two frames before
+reading. Sixteen of sixteen runs pass.
+
 ### 4. What was not done
 
 No test was retried to see if it passes, none was given a tolerance,

@@ -459,36 +459,47 @@ export function KeyHints({
 
   /* HINTS THAT WOULD OVERLAP ARE STAGGERED UPWARD (D-100 §3): two shortcut
      buttons side by side have hints wider than the gap between them. After
-     the hints render, each is measured against the ones placed before it
-     and lifted by its own height until it clears them, so the stack climbs
-     away from the controls instead of covering them; at the viewport's top
-     it climbs down instead. A picture may be rearranged; the page may not. */
+     the hints render, each is measured, and the boxes are laid out again in
+     order: one that would intersect an earlier one is lifted by its own
+     height until it clears them, so the stack climbs away from the controls
+     instead of covering them; at the viewport's top it climbs down instead.
+     The measurement is taken back to the hint's BASE position by subtracting
+     the offset it was rendered with, so a second pass — after a font loads,
+     after a scroll — starts from the same place as the first and cannot
+     stagger a hint against its own earlier offset (D-101 §3). A picture may
+     be rearranged; the page may not. */
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [stagger, setStagger] = useState<number[]>([]);
+  const applied = useRef<number[]>([]);
+  applied.current = stagger;
   useLayoutEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) {
       setStagger([]);
       return;
     }
-    const boxes: Array<{ left: number; right: number; top: number; bottom: number }> = [];
-    const offsets: number[] = [];
-    for (const el of Array.from(overlay.querySelectorAll<HTMLElement>('.pp-key-hints__hint'))) {
+    const elements = Array.from(overlay.querySelectorAll<HTMLElement>('.pp-key-hints__hint'));
+    const bases = elements.map((el, i) => {
       const r = el.getBoundingClientRect();
-      const box = { left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+      const was = applied.current[i] ?? 0;
+      return { left: r.left, right: r.right, top: r.top - was, bottom: r.bottom - was, height: r.height };
+    });
+    const placed: Array<{ left: number; right: number; top: number; bottom: number }> = [];
+    const offsets = bases.map((base) => {
+      const step = base.height + 2;
+      const box = { ...base };
       let offset = 0;
-      const step = r.height + 2;
-      const collides = () => boxes.some((b) => box.left < b.right && box.right > b.left && box.top < b.bottom && box.bottom > b.top);
+      const collides = () => placed.some((b) => box.left < b.right && box.right > b.left && box.top < b.bottom && box.bottom > b.top);
       const move = (by: number) => {
         offset += by;
-        box.top = r.top + offset;
-        box.bottom = r.bottom + offset;
+        box.top = base.top + offset;
+        box.bottom = base.bottom + offset;
       };
-      while (r.height > 0 && collides() && offset > -step * 8 && box.top - step >= 0) move(-step);
-      while (r.height > 0 && collides() && offset < step * 8) move(step);
-      boxes.push(box);
-      offsets.push(offset);
-    }
+      while (base.height > 0 && collides() && offset > -step * 8 && box.top - step >= 0) move(-step);
+      while (base.height > 0 && collides() && offset < step * 8) move(step);
+      placed.push(box);
+      return offset;
+    });
     setStagger((prev) => (prev.length === offsets.length && prev.every((o, i) => o === offsets[i]) ? prev : offsets));
   }, [hints]);
 
