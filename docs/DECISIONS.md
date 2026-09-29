@@ -7057,3 +7057,77 @@ breadcrumb in place, the DOM order, level 1 by default and 2 when told,
 `tone="muted"` and `gap="2"` by default and overridable, refs,
 `className`, `style` and rest on every part, a server render, axe in both
 themes. 4 unit and 3 browser assertions.
+
+## D-098 — `Toolbar` rulings and findings: a text field is never the stop, the controls are re-read by an observer, and a press remembers without focusing
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/Toolbar.md`
+(§2, §4, tests, status) · **Extends:** D-020, D-030 §7, D-035 §3, D-069 §1,
+D-086 §2
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted; one ruling added by the first unit run.
+
+### 1. A text field is never the remembered stop
+
+Spec §4 leaves the arrows to a text field and says "`Tab` out and back is
+the way from the field to the buttons". The first build remembered the
+field like any control, and the unit test for §4 showed the two rules
+contradicting each other: focused, the field became the stop; `Tab` out
+and back landed on the field; its arrows were the caret's; and every
+control after it in the toolbar was unreachable from outside by
+keyboard. The stop now skips a text-editing control — `remember()`
+returns for `textarea`, `contenteditable` and an `input` whose type is
+not one of the eight that do not edit text — so the stop stays on the
+last button focused (else the first), the field is reached by the
+arrows, and `Tab` back in lands on a control the arrows work from. The
+test walks it: from the field, `Tab` leaves, `Shift+Tab` returns to the
+remembered button, `End` reaches the control after the field; a click in
+the field does not make it the stop either. Spec §2 and §4 say so now.
+
+### 2. Found by the DOM, and re-read by a MutationObserver
+
+Spec §1 says the set is "re-read after every render and on every key". A
+render of the *toolbar* is `useLayoutEffect` with no dependencies, but a
+control that a child component disables from its own state re-renders
+that child and not the toolbar, so a MutationObserver on the root watches
+`childList`, `subtree`, and the attributes that change what is a control
+or its tabindex (`disabled`, `aria-disabled`, `hidden`, `href`,
+`tabindex` — the last for a consumer's own write). The toolbar writes
+`tabindex` only where it differs, so its own pass produces no mutation
+the observer would loop on. Asserted with a button enabled by another
+button's state after mount.
+
+### 3. A pointer press remembers its control without focusing it
+
+Chromium focuses a pressed button; Safari does not. The root's click
+handler finds the control under the press and makes it the stop without
+calling `focus()`, so the next `Tab` in lands there on either engine and
+nothing is focused that the user did not focus.
+
+### 4. Verified, and the three breaks
+
+Unit: ten tests — the role, name, `data-orientation`, `aria-orientation`
+only when vertical, the first control at `0` and the rest at `-1`, a
+disabled control and a Separator untouched, a ButtonGroup keeping its
+group; the arrows through the group and past the disabled control,
+wrapping, `Home`/`End`, vertical arrows ignored in a row; `loop={false}`
+and the vertical keys; RTL by `direction: rtl`; the remembered stop
+across `Tab` out and `Shift+Tab` back, a click as the stop; the stop
+handed to the first when it unmounts and a control enabled later picked
+up (§2); the text field (§1); the consumer's `onKeyDown` first and
+`preventDefault` respected, `gap`, ref, `className`, `style`, rest,
+`label` required at the type level; a server render with the role and
+no `tabindex`; axe in both themes. Browser: one tab stop from a button
+before to a button after and back to the remembered control, exactly one
+`tabindex="0"`; the row wrapping at 240, one row at 960, the toolbar as
+wide as the cell in all three, 8px between controls; under `dir="rtl"`
+`ArrowRight` moving to the control on the right; the vertical toolbar
+stacked at one left edge with `aria-orientation`, `ArrowDown` moving,
+`ArrowRight` not, `End` then `ArrowDown` staying with `loop={false}`.
+
+Break checks (D-035 §3): `flex-wrap` dropped (the narrow cell overflows);
+`gap` dropped (0px between controls, in the row and the column);
+`flex-direction: column` dropped (the vertical toolbar a row). Each
+failed on exactly the test named for it. `align-items: center` and
+`min-inline-size: 0` are stated, not claimed: every control in the
+gallery is the same height, and the row wraps by its content (D-079 §3).

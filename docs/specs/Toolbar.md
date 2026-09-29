@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `spec` — written 2026-09-29 under the standing delegation (D-069 §1); every recommendation below is adopted as written and the build starts in the same session |
+| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-098; awaiting its CI-authored baseline (D-013) |
 | **Sizing contract** | `fill` — a bar across its container; block-level, `min-inline-size: 0` |
 | **RSC** | `client` — a roving tabindex is key handling and focus tracking |
 | **Depends on** | 3.4 `ButtonGroup` (`done`): the attached groups inside it, and the ruling that it is *not* this component (D-030 §7, D-031); 3.1 `Button`, 3.2 `IconButton`, 3.5 `Toggle`, 1.5 `Separator`: what goes in it |
@@ -62,6 +62,7 @@ the APG's recommendation, so a user who left at "Italic" returns to
 "Italic" — and on the first control the first time or when that control
 is gone. A pointer click on any control makes it the stop. Tracked by
 element, not by index, so a control inserted before it does not move it.
+A text field is the one control that is never remembered (§4).
 
 ### 3. Arrows by orientation, mirrored in RTL, wrapping at the ends
 
@@ -84,6 +85,12 @@ toolbar leaves a key alone when it was pressed in a text-editing control
 and back is the way from the field to the buttons. Not a caret-position
 heuristic (navigate only at the edges): it is a surprise the first time
 and a habit never, and the APG's own textbox example does not do it.
+
+For "out and back" to reach the buttons, **a text field is never the
+remembered stop** (D-098 §1): focused, it keeps the stop where it was,
+so `Tab` back in lands on a button the arrows work from. Remembered, the
+field would be where `Tab` lands, its arrows would be the caret's, and
+every control after it would be unreachable from outside by keyboard.
 
 ### 5. `ButtonGroup`s, `Separator`s and menus inside
 
@@ -227,7 +234,8 @@ The row wraps by its own content at any width; no query.
   `Home` / `End`; vertical uses `Up` / `Down` and ignores `Left` / `Right`;
   a disabled control is skipped; a control that unmounts while it is the
   stop hands the stop to the first; a click on a control makes it the
-  stop; inside a text input the arrows and `Home` / `End` are left alone;
+  stop; inside a text input the arrows and `Home` / `End` are left alone
+  and the field is never the stop, so `Tab` out and back lands on a button;
   a `ButtonGroup`'s buttons are controls and it keeps its group; RTL
   mirrors `Left` / `Right`; `gap` writes `data-pp-gap`; `ref`,
   `className`, `style`, rest; `label` required at the type level; axe.

@@ -506,6 +506,106 @@ test.describe('PageHeader', () => {
   });
 });
 
+test.describe('Toolbar', () => {
+  test('one tab stop: Tab from the button before lands on the remembered control and Tab again leaves for the button after; ArrowRight walks the row, End and Home jump (spec §1, §2, §3)', async ({ page }) => {
+    await page.goto('/components/toolbar');
+    const cell = page.getByTestId('toolbar-tab').locator('.matrix__cell').last();
+    const before = cell.locator('[data-role="before"]');
+    const after = cell.locator('[data-role="after"]');
+    const focusedName = () => page.evaluate(() => (document.activeElement as HTMLElement).getAttribute('aria-label') ?? (document.activeElement as HTMLElement).textContent);
+    await before.focus();
+    await page.keyboard.press('Tab');
+    expect(await focusedName()).toBe('Bold');
+    await page.keyboard.press('ArrowRight');
+    expect(await focusedName()).toBe('Italic');
+    await page.keyboard.press('ArrowRight');
+    expect(await focusedName()).toBe('Underline');
+    await page.keyboard.press('ArrowRight');
+    expect(await focusedName()).toBe('Insert link');
+    await page.keyboard.press('End');
+    expect(await focusedName()).toBe('Publish');
+    await page.keyboard.press('Home');
+    expect(await focusedName()).toBe('Bold');
+    await page.keyboard.press('ArrowLeft');
+    expect(await focusedName()).toBe('Publish');
+    await page.keyboard.press('ArrowLeft');
+    expect(await focusedName()).toBe('Insert code');
+    // Leave past the rest, and come back to the remembered control.
+    await page.keyboard.press('Tab');
+    await expect(after).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    expect(await focusedName()).toBe('Insert code');
+    await page.keyboard.press('Shift+Tab');
+    await expect(before).toBeFocused();
+    // Exactly one control carries tabindex="0".
+    expect(await cell.locator('.pp-toolbar [tabindex="0"]').count()).toBe(1);
+  });
+
+  test('the row wraps in the narrow cell and spans the wide one with the gap between controls; under dir="rtl" ArrowRight goes to the control on the right (spec §3, §6)', async ({ page }) => {
+    await page.goto('/components/toolbar');
+    const cells = await page.getByTestId('toolbar-formatting').locator('.matrix__cell').evaluateAll((els) =>
+      els.map((cell) => {
+        const bar = cell.querySelector('.pp-toolbar') as HTMLElement;
+        const viewport = cell.querySelector('.matrix__viewport') as HTMLElement;
+        const cs = getComputedStyle(viewport);
+        const available = viewport.clientWidth - parseFloat(cs.paddingInlineStart) - parseFloat(cs.paddingInlineEnd);
+        const items = Array.from(bar.children).map((n) => n.getBoundingClientRect());
+        return {
+          width: bar.getBoundingClientRect().width,
+          available,
+          rows: new Set(items.map((r) => Math.round(r.top))).size,
+          gap: items[1]!.left - items[0]!.right,
+          overflowing: viewport.hasAttribute('data-overflowing'),
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.width - c.available)).toBeLessThanOrEqual(1);
+      expect(c.overflowing).toBe(false);
+      expect(Math.abs(c.gap - 8)).toBeLessThanOrEqual(0.5); // gap="2" is --pp-space-2
+    }
+    expect(cells[0]!.rows).toBeGreaterThan(1);
+    expect(cells[2]!.rows).toBe(1);
+
+    const rtl = page.getByTestId('toolbar-rtl').locator('.matrix__cell').last().locator('.pp-toolbar');
+    const italic = rtl.locator('[aria-label="مائل"]');
+    await italic.focus();
+    const from = (await italic.boundingBox())!;
+    await page.keyboard.press('ArrowRight');
+    const to = (await page.evaluateHandle(() => document.activeElement)).asElement()!;
+    const toBox = (await to.boundingBox())!;
+    expect(await to.getAttribute('aria-label')).toBe('عريض');
+    expect(toBox.x).toBeGreaterThan(from.x);
+    const direction = await rtl.evaluate((n) => getComputedStyle(n).direction);
+    expect(direction).toBe('rtl');
+  });
+
+  test('the vertical toolbar is a column that answers ArrowDown and stops at its ends with loop={false} (spec §3, §6)', async ({ page }) => {
+    await page.goto('/components/toolbar');
+    const bar = page.getByTestId('toolbar-vertical').locator('.matrix__cell').last().locator('.pp-toolbar');
+    const column = await bar.evaluate((n) => {
+      const items = Array.from(n.children).map((c) => c.getBoundingClientRect());
+      return {
+        stacked: items.every((r, i) => i === 0 || r.top >= items[i - 1]!.bottom),
+        sameLeft: items.every((r) => Math.abs(r.left - items[0]!.left) <= 0.5),
+        gap: items[1]!.top - items[0]!.bottom,
+        orientation: n.getAttribute('aria-orientation'),
+      };
+    });
+    expect(column).toEqual({ stacked: true, sameLeft: true, gap: 8, orientation: 'vertical' });
+    await bar.locator('[aria-label="Select"]').focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(bar.locator('[aria-label="Draw"]')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(bar.locator('[aria-label="Draw"]')).toBeFocused();
+    await page.keyboard.press('End');
+    await expect(bar.locator('[aria-label="Text"]')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(bar.locator('[aria-label="Text"]')).toBeFocused();
+  });
+});
+
 /**
  * Computed-style assertions that jsdom cannot make. D-011 was found this way
  * and nowhere else: reading the CSS proved nothing, and only a real browser

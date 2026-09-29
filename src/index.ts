@@ -387,6 +387,7 @@ export {
   type ToastProviderProps,
 } from './components/Toast/Toast';
 export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
+export { Toolbar, type ToolbarOrientation, type ToolbarProps } from './components/Toolbar/Toolbar';
 export {
   Tooltip,
   TooltipContent,

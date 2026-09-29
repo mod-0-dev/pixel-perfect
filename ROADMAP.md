@@ -40,8 +40,10 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   size and never the viewport's (D-096). **6.5 `PageHeader` is in
   `review`** (D-097): four parts and the consumer's Breadcrumb in one
   flex row that wraps, the description read after the title and painted
-  after the actions. **6.6 `Toolbar` is in `spec`**, built next; then
-  **6.4 `NavSidebar`**, which waits on 6.3.
+  after the actions. **6.6 `Toolbar` is in `review`** (D-098):
+  one tab stop over the controls found in its subtree, a text field never
+  the stop. Next is **6.4 `NavSidebar`**, the last component of the
+  roadmap, which waits on 6.3.
   6.2 is the control over 6.1: a square button whose two faces are both
   in the DOM and one of which the stylesheet displays from the document's
   theme, so it is right before React is (D-095). The library
@@ -1017,7 +1019,7 @@ Opinionated patterns. Only build what the consuming app actually needs.
 | 6.3 | `AppShell` | `review` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-096; awaiting its CI-authored baseline (D-013). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1, D-096 §1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7) |
 | 6.4 | `NavSidebar` | `planned` | fill | client | 6.3, 5.11 | |
 | 6.5 | `PageHeader` | `review` | fill | server | 2.2, 5.6 | [`PageHeader.md`](docs/specs/PageHeader.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-097; awaiting its CI-authored baseline (D-013). Four named parts — title, description, actions, the root — and the consumer's `Breadcrumb` first, placed by its class (§1); one flex row that wraps, so an absent part costs no gap and nothing is placed by area (§2); the description reads after the title and paints after the actions by `order`, the library's one visual reorder, of a paragraph nothing focuses (§3); the title a `Heading` at level 1 (§4) |
-| 6.6 | `Toolbar` | `spec` | fill | client | 3.4 | [`Toolbar.md`](docs/specs/Toolbar.md), written 2026-09-29 under the standing delegation (D-069 §1). The roving component `ButtonGroup`'s spec promised (D-030 §7): `role="toolbar"` with a required name, one tab stop over the controls found in its own subtree with no wrapper part (§1), the last-focused control remembered (§2), arrows by orientation mirrored in RTL and wrapping unless `loop={false}` (§3), left alone inside a text field (§4), `ButtonGroup`s and `Separator`s inside as they are (§5), a wrapping row with a `gap` and not a `Cluster` (§6). Five open questions, each with a recommendation |
+| 6.6 | `Toolbar` | `review` | fill | client | 3.4 | [`Toolbar.md`](docs/specs/Toolbar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-098; awaiting its CI-authored baseline (D-013). The roving component `ButtonGroup`'s spec promised (D-030 §7): `role="toolbar"` with a required name, one tab stop over the controls found in its own subtree and re-read by an observer, no wrapper part (§1, D-098 §2); the last-focused control remembered — never a text field, whose arrows are the caret's and which would strand the controls after it (§2, §4, D-098 §1); arrows by orientation mirrored in RTL, wrapping unless `loop={false}` (§3); a wrapping row with a `gap`, not a `Cluster` (§6) |
 
 ---
 
