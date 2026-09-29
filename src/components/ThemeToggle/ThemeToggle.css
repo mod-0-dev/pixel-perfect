@@ -1,0 +1,38 @@
+/*
+ * ThemeToggle — spec docs/specs/ThemeToggle.md
+ *
+ * Button draws the button; IconButton.css squares it, because the root
+ * carries `pp-icon-button` too. This file does ONE thing: hides the face that
+ * does not apply, so the other is displayed at its own `display` — Icon's
+ * inline-flex, VisuallyHidden's default — with nothing restated.
+ *
+ * THE DOCUMENT'S THEME, READ AT :root (spec §2, §5). These are the token
+ * layer's four scopes (D-010) from the toggle's side: an explicit attribute
+ * on <html>, or the system's preference when there is none. `:root`, not the
+ * nearest [data-pp-theme]: the toggle controls the document, so a toggle
+ * inside a dark sidebar on a light page shows the light face and offers dark.
+ * `display: none` removes the hidden face from the accessibility tree as well,
+ * which is what makes the displayed label the button's whole name.
+ *
+ * `prefers-color-scheme` is a preference query — what the tokens themselves
+ * read — not the viewport query RULES §1 forbids a component to know.
+ */
+
+@layer pp.components {
+  :root[data-pp-theme="light"] .pp-theme-toggle [data-when="dark"],
+  :root[data-pp-theme="dark"] .pp-theme-toggle [data-when="light"] {
+    display: none;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-pp-theme]) .pp-theme-toggle [data-when="dark"] {
+      display: none;
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-pp-theme]) .pp-theme-toggle [data-when="light"] {
+      display: none;
+    }
+  }
+}

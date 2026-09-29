@@ -96,4 +96,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'code-block', name: 'CodeBlock', tier: '5.12', summary: 'Block code in a frame: numbered, pointed at, copied; the highlighter is yours.' },
   { slug: 'avatar-group', name: 'AvatarGroup', tier: '5.13', summary: 'A few faces overlapping in a row, and a count for the rest.' },
   { slug: 'theme-provider', name: 'ThemeProvider', tier: '6.1', summary: 'The page\'s theme, set before the first paint: system, light or dark, kept across loads.' },
+  { slug: 'theme-toggle', name: 'ThemeToggle', tier: '6.2', summary: 'A square button that flips light and dark; its face is chosen by the stylesheet, so it is right before React is.' },
 ];

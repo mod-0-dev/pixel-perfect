@@ -6822,3 +6822,80 @@ system's after mount, and follows a `change`. 15 unit and 3 browser
 assertions; a crawl of every page finds no hydration error. jsdom needs a
 `matchMedia` stub, added to the suite's setup and documented on the docs
 page as the ResizeObserver one is.
+
+## D-095 — `ThemeToggle` rulings and findings: the face is the stylesheet's, the name is content, and hiding the other face is the only rule it needs
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/ThemeToggle.md`
+(status, anatomy) · **Extends:** D-010, D-030 §2, D-030 §10, D-070 §1,
+D-073 §2, D-094
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. Gate B read 6.1's `review` — baseline only — as
+`done` (D-073 §2).
+
+### 1. Both faces in the DOM, one displayed by the token layer's own scopes
+
+`resolvedTheme` is `undefined` until mounted (D-094), so a toggle that
+rendered from it would swap its face after hydration on every load. The
+toggle renders a sun, a moon and two visually hidden labels, and four
+rules hide the pair that does not apply: `:root[data-pp-theme="light"]`
+hides the dark pair, `:root[data-pp-theme="dark"]` the light pair, and
+with no attribute `prefers-color-scheme` decides — the four scopes the
+tokens are generated for (D-010), read from the toggle's side. The face
+and the page's colours are therefore the same decision, made by the
+browser before React runs, and `display: none` takes the hidden label out
+of the accessibility tree, so the displayed label is the button's whole
+name. The served HTML carries both strings; the browser suite asserts
+which is displayed and what the button is called under each scope.
+
+`prefers-color-scheme` in a component stylesheet is new and is not the
+media query RULES §1 bans: that ban is viewport features, and the stylelint
+list (`width`, `min-width`, `max-width`, `device-width`) says so. A
+component knowing the user's colour preference knows what its own tokens
+know.
+
+### 2. Hide the other face; restate nothing
+
+The first draft hid every face by default and then displayed the right
+one — which meant writing `display: inline-flex` for the icon (Icon's
+value) and `display: inline` for the label (VisuallyHidden's), two facts
+about other components' stylesheets copied here to drift. The rule set
+now only hides: each face keeps its own component's `display`, and this
+file states nothing about either. Four selectors, one declaration.
+
+### 3. `:root`, so a toggle in a dark panel on a light page offers dark
+
+D-010 scopes nest, and the descendant combinator would match a nearer
+`[data-pp-theme]` — inside `<aside data-pp-theme="dark">` on a light page
+both a "light" and a "dark" rule would apply and both faces would show.
+`:root[data-pp-theme]` reads the document only, which is what the toggle
+controls. Asserted with that markup: the panel's background is the dark
+page colour and the toggle in it shows the sun.
+
+### 4. Button, with IconButton's class
+
+IconButton's `label` is `aria-label`, which wins over content; the name
+here must be content (§1). So the root is `Button` carrying `pp-button
+pp-icon-button pp-theme-toggle` — the two-class contract (D-070 §1),
+which IconButton.css's own comment invites ("the root carries BOTH") —
+with `variant="ghost"` and the icon `size` passed through exactly as
+IconButton does them (D-030 §10). Button wraps children in
+`pp-button__content` (D-030 §2), so the anatomy has that span; the spec's
+anatomy was corrected before the build. The browser suite measures the
+toggle beside an `IconButton` of each size: square, the same height,
+sm < md < lg.
+
+### 5. Verified
+
+Under `light` the sun is `inline-flex`, the moon `none`, the name "Switch
+to dark theme", no `aria-pressed`, no `aria-label`; a press writes `dark`
+on `<html>` and to storage, the faces swap and the name flips; under
+`system` with an emulated dark system the moon shows with no attribute
+and a press chooses `light`; the nested-scope case of §3; the boxes of
+§4; the served HTML has both labels. In jsdom: the classes and Button's
+attributes, both faces with `data-when`, the press setting the opposite
+of `resolvedTheme` from light, dark and a dark system, `onClick` first
+with `preventDefault()` respected, `disabled`, custom labels and icons,
+the empty-label warning, the throw outside a provider, axe in both
+themes. 7 unit and 5 browser assertions. The chrome keeps its three-way
+switcher (spec §7): no existing baseline moves; the index gains a card.

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `spec` — written 2026-09-29 under the standing delegation (D-069 §1); every recommendation below is adopted as written and the build starts in the same session |
+| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-095; awaiting its CI-authored baseline (D-013) |
 | **Sizing contract** | `hug` — a square button, Button's box through the two-class contract with `IconButton` |
 | **RSC** | `client` — reads and sets `ThemeProvider`'s context |
 | **Depends on** | 6.1 `ThemeProvider` (`review`, baseline only — `done` for Gate B under D-073 §2): the context it reads; 3.2 `IconButton` (`done`): the square box, by its class; 3.1 `Button`: the element; 1.3 `Icon`; 1.4 `VisuallyHidden` |
@@ -131,15 +131,17 @@ Nothing here declares a size.
 
 ```
 <button class="pp-button pp-icon-button pp-theme-toggle" type="button" data-variant="ghost" data-size="md" data-pp-tone="neutral">
-  ├── <span class="pp-icon pp-theme-toggle__icon" data-when="light" aria-hidden>   the sun
-  ├── <span class="pp-icon pp-theme-toggle__icon" data-when="dark"  aria-hidden>   the moon
-  ├── <span class="pp-visually-hidden pp-theme-toggle__label" data-when="light">   "Switch to dark theme"
-  └── <span class="pp-visually-hidden pp-theme-toggle__label" data-when="dark">    "Switch to light theme"
+  └── <span class="pp-button__content">                                            Button's own wrapper (D-030 §2)
+        ├── <span class="pp-icon pp-theme-toggle__icon" data-when="light" aria-hidden>   the sun
+        ├── <span class="pp-icon pp-theme-toggle__icon" data-when="dark"  aria-hidden>   the moon
+        ├── <span class="pp-visually-hidden pp-theme-toggle__label" data-when="light">   "Switch to dark theme"
+        └── <span class="pp-visually-hidden pp-theme-toggle__label" data-when="dark">    "Switch to light theme"
 ```
 
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | root | `pp-button pp-icon-button pp-theme-toggle` | `<button>` | Button's, squared by IconButton's class (§4) |
+| content | `pp-button__content` | `<span>` | Button's, as on every Button |
 | icon | `pp-icon pp-theme-toggle__icon` | `Icon` (`decorative`) | Two; `data-when` says which theme shows it (§2) |
 | label | `pp-visually-hidden pp-theme-toggle__label` | `VisuallyHidden` | Two; the displayed one is the button's name (§3) |
 

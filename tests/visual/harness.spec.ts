@@ -213,6 +213,108 @@ test.describe('ThemeProvider', () => {
 });
 
 /**
+ * 6.2 `ThemeToggle` — the face is the stylesheet's (spec §2), so the
+ * assertions are computed-style ones: which face is displayed, and what the
+ * button is therefore called.
+ */
+test.describe('ThemeToggle', () => {
+  type Page = import('@playwright/test').Page;
+  type Locator = import('@playwright/test').Locator;
+  const first = (page: Page) => page.getByTestId('theme-toggle-sizes').locator('.pp-theme-toggle').first();
+  /* Displayed or not. Not the display VALUE: inside Button's flex content
+     span a child is blockified, so the shown icon reads `flex` and the shown
+     label `block` — each its own component's display, which this stylesheet
+     never restates (D-095 §2). */
+  const face = (toggle: Locator) =>
+    toggle.evaluate((n) => {
+      const shown = (selector: string) => getComputedStyle(n.querySelector(selector)!).display !== 'none';
+      return {
+        light: shown('.pp-theme-toggle__icon[data-when="light"]'),
+        dark: shown('.pp-theme-toggle__icon[data-when="dark"]'),
+        lightLabel: shown('.pp-theme-toggle__label[data-when="light"]'),
+        darkLabel: shown('.pp-theme-toggle__label[data-when="dark"]'),
+      };
+    });
+
+  test('shows the sun and is named for dark while light shows; a press flips the page, the face and the name (spec §2, §3)', async ({ page }) => {
+    await page.goto('/components/theme-toggle');
+    await setTheme(page, 'light');
+    const toggle = first(page);
+    await settled(page);
+    expect(await face(toggle)).toEqual({ light: true, dark: false, lightLabel: true, darkLabel: false });
+    await expect(toggle).toHaveAccessibleName('Switch to dark theme');
+    expect(await toggle.evaluate((n) => n.hasAttribute('aria-pressed') || n.hasAttribute('aria-label'))).toBe(false);
+
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'dark');
+    await settled(page);
+    expect(await face(toggle)).toEqual({ light: false, dark: true, lightLabel: false, darkLabel: true });
+    await expect(toggle).toHaveAccessibleName('Switch to light theme');
+    expect(await page.evaluate(() => localStorage.getItem('pp-theme'))).toBe('dark');
+
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'light');
+    await expect(toggle).toHaveAccessibleName('Switch to dark theme');
+  });
+
+  test('under system the face is the system\'s, with no attribute on <html>; a press then chooses (spec §1, §2)', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/components/theme-toggle');
+    await setTheme(page, 'system');
+    const toggle = first(page);
+    await settled(page);
+    expect(await face(toggle)).toMatchObject({ light: false, dark: true });
+    await expect(toggle).toHaveAccessibleName('Switch to light theme');
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'light');
+    await expect(toggle).toHaveAccessibleName('Switch to dark theme');
+  });
+
+  test('inside a dark scope on a light page it shows the document\'s face (spec §5)', async ({ page }) => {
+    await page.goto('/components/theme-toggle');
+    await setTheme(page, 'light');
+    const nested = page.getByTestId('theme-toggle-nested').locator('.pp-theme-toggle').first();
+    // The scope is dark: the panel's own background is the dark page colour.
+    const scope = page.getByTestId('theme-toggle-nested').locator('[data-pp-theme="dark"]').first();
+    const [panel, pageBg] = await Promise.all([
+      scope.evaluate((n) => getComputedStyle(n).backgroundColor),
+      page.locator('.matrix').first().evaluate((n) => getComputedStyle(n).backgroundColor),
+    ]);
+    expect(panel).not.toBe(pageBg);
+    await settled(page);
+    expect(await face(nested)).toMatchObject({ light: true, dark: false });
+    await expect(nested).toHaveAccessibleName('Switch to dark theme');
+  });
+
+  test('the box is IconButton\'s: square, the control height, beside an IconButton of the same size (spec §4)', async ({ page }) => {
+    await page.goto('/components/theme-toggle');
+    const cell = page.getByTestId('theme-toggle-sizes').locator('.matrix__cell').last();
+    const boxes = await cell.evaluate((c) =>
+      Array.from(c.querySelectorAll<HTMLElement>('.pp-theme-toggle, .pp-icon-button:not(.pp-theme-toggle)')).map((n) => {
+        const r = n.getBoundingClientRect();
+        return { size: n.getAttribute('data-size'), toggle: n.classList.contains('pp-theme-toggle'), w: r.width, h: r.height };
+      }),
+    );
+    expect(boxes).toHaveLength(6);
+    for (const b of boxes) expect(Math.abs(b.w - b.h), `${b.size} is not square`).toBeLessThanOrEqual(0.5);
+    for (const size of ['sm', 'md', 'lg']) {
+      const [toggle, icon] = boxes.filter((b) => b.size === size);
+      expect(toggle!.toggle).toBe(true);
+      expect(Math.abs(toggle!.h - icon!.h), `${size} differs from IconButton`).toBeLessThanOrEqual(0.5);
+    }
+    const [sm, md, lg] = ['sm', 'md', 'lg'].map((s) => boxes.find((b) => b.size === s && b.toggle)!.h);
+    expect(sm).toBeLessThan(md!);
+    expect(md).toBeLessThan(lg!);
+  });
+
+  test('the served HTML carries both labels, so the name is right from the first byte (spec §2)', async ({ page }) => {
+    const html = await (await page.request.get('/components/theme-toggle')).text();
+    expect(html).toContain('Switch to dark theme');
+    expect(html).toContain('Switch to light theme');
+  });
+});
+
+/**
  * Computed-style assertions that jsdom cannot make. D-011 was found this way
  * and nowhere else: reading the CSS proved nothing, and only a real browser
  * resolving a real `var()` chain caught it.

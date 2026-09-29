@@ -397,6 +397,7 @@ export {
   type ThemeContextValue,
   type ThemeProviderProps,
 } from './components/ThemeProvider/ThemeProvider';
+export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export {
   Text,
   type TextAlign,
