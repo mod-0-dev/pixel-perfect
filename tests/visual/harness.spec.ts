@@ -506,6 +506,130 @@ test.describe('PageHeader', () => {
   });
 });
 
+test.describe('NavSidebar', () => {
+  test('every row is the control height; a nested item starts one indent in; the current link has the accent surface; a closed group\'s list is not laid out and its chevron is not turned; the ring is on the link (spec §3, §5)', async ({ page }) => {
+    await page.goto('/components/nav-sidebar');
+    const nav = page.getByTestId('nav-sidebar-alone').locator('.matrix__cell').last().locator('.pp-nav-sidebar');
+    const read = await nav.evaluate((n) => {
+      const rows = Array.from(n.querySelectorAll<HTMLElement>('.pp-nav-sidebar__link')).filter((r) => r.getClientRects().length > 0);
+      const projects = n.querySelector('.pp-nav-sidebar__group') as HTMLElement;
+      const toggle = projects.querySelector(':scope > .pp-nav-sidebar__toggle') as HTMLElement;
+      const alpha = projects.querySelector('a[aria-current="page"]') as HTMLElement;
+      const archive = projects.querySelector('.pp-nav-sidebar__group') as HTMLElement;
+      const archiveList = archive.querySelector(':scope > ul') as HTMLElement;
+      const chevronOf = (g: HTMLElement) => getComputedStyle(g.querySelector(':scope > .pp-nav-sidebar__toggle > .pp-nav-sidebar__chevron')!).rotate;
+      const home = n.querySelector('a.pp-nav-sidebar__link') as HTMLElement;
+      return {
+        heights: rows.map((r) => Math.round(r.getBoundingClientRect().height)),
+        widths: rows.map((r) => Math.round(r.getBoundingClientRect().width)),
+        navWidth: Math.round(n.getBoundingClientRect().width),
+        // Rows fill the line; the indent is the row's start padding, so it is read
+        // where the content starts: each row's first child.
+        indent: alpha.firstElementChild!.getBoundingClientRect().left - toggle.firstElementChild!.getBoundingClientRect().left,
+        currentBg: getComputedStyle(alpha).backgroundColor,
+        homeBg: getComputedStyle(home).backgroundColor,
+        currentColor: getComputedStyle(alpha).color,
+        pageColor: getComputedStyle(n).color,
+        currentWeight: getComputedStyle(alpha).fontWeight,
+        projectsWeight: getComputedStyle(toggle).fontWeight,
+        homeWeight: getComputedStyle(home).fontWeight,
+        projectsState: projects.getAttribute('data-state'),
+        archiveState: archive.getAttribute('data-state'),
+        archiveLaidOut: archiveList.getClientRects().length,
+        projectsChevron: chevronOf(projects),
+        archiveChevron: chevronOf(archive),
+      };
+    });
+    // The long label truncates where the nav is narrow (the 240 cell), not where it fits.
+    const truncated = await page.getByTestId('nav-sidebar-alone').locator('.matrix__cell').first().locator('.pp-nav-sidebar__label').last().evaluate((label) => ({
+      overflowing: label.scrollWidth > label.clientWidth,
+      ellipsis: getComputedStyle(label).textOverflow === 'ellipsis',
+      rowWidth: Math.round(label.closest('.pp-nav-sidebar__link')!.getBoundingClientRect().width),
+      navWidth: Math.round(label.closest('.pp-nav-sidebar')!.getBoundingClientRect().width),
+    }));
+    expect(read.heights.every((h) => h === 32)).toBe(true); // --pp-control-height-sm
+    expect(read.widths.every((w) => Math.abs(w - read.navWidth) <= 1)).toBe(true);
+    expect(read.indent).toBe(16); // --pp-space-4
+    expect(read.currentBg).not.toBe(read.homeBg);
+    expect(read.homeBg).toBe('rgba(0, 0, 0, 0)');
+    expect(read.currentColor).toBe(read.pageColor);
+    expect(read.currentWeight).toBe('500');
+    expect(read.projectsWeight).toBe('500');
+    expect(read.homeWeight).toBe('400');
+    expect(read.projectsState).toBe('open');
+    expect(read.archiveState).toBe('closed');
+    expect(read.archiveLaidOut).toBe(0);
+    expect(read.projectsChevron).toBe('90deg');
+    expect(read.archiveChevron).toBe('none');
+    expect(truncated.overflowing).toBe(true);
+    expect(truncated.ellipsis).toBe(true);
+    expect(truncated.rowWidth).toBe(truncated.navWidth);
+    const home = nav.locator('a.pp-nav-sidebar__link').first();
+    await home.focus();
+    await expect.poll(() => home.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await home.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+    // Opening Archive lays its list out and turns its chevron.
+    await nav.locator('.pp-nav-sidebar__group .pp-nav-sidebar__group > .pp-nav-sidebar__toggle').click();
+    await settled(page);
+    const opened = await nav.locator('.pp-nav-sidebar__group .pp-nav-sidebar__group').evaluate((g) => ({
+      state: g.getAttribute('data-state'),
+      laidOut: (g.querySelector(':scope > ul') as HTMLElement).getClientRects().length,
+      chevron: getComputedStyle(g.querySelector(':scope > .pp-nav-sidebar__toggle > .pp-nav-sidebar__chevron')!).rotate,
+    }));
+    expect(opened).toEqual({ state: 'open', laidOut: 1, chevron: '90deg' });
+  });
+
+  test('in AppShell the nav is the sidebar\'s width beside the main at 960 and above it at 240 and 480, every row the full width (spec §6)', async ({ page }) => {
+    await page.goto('/components/nav-sidebar');
+    const cells = await page.getByTestId('nav-sidebar-shell').locator('.matrix__cell').evaluateAll((els) =>
+      els.map((cell) => {
+        const nav = cell.querySelector('.pp-nav-sidebar')!.getBoundingClientRect();
+        const main = cell.querySelector('.pp-app-shell__main')!.getBoundingClientRect();
+        const sidebar = cell.querySelector('.pp-app-shell__sidebar')!.getBoundingClientRect();
+        const rows = Array.from(cell.querySelectorAll<HTMLElement>('.pp-nav-sidebar__link')).filter((r) => r.getClientRects().length > 0);
+        return {
+          beside: nav.right <= main.left + 0.5 && Math.abs(nav.top - main.top) <= 16,
+          above: nav.bottom <= main.top + 0.5,
+          sidebarWidth: Math.round(sidebar.width),
+          navFills: Math.abs(nav.width - (sidebar.width - 32)) <= 1, // the sidebar's padding, space-4 each side
+          rowsFill: rows.every((r) => Math.abs(r.getBoundingClientRect().width - nav.width) <= 1),
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(c.navFills).toBe(true);
+      expect(c.rowsFill).toBe(true);
+    }
+    expect(cells[2]!.beside).toBe(true);
+    expect(cells[2]!.sidebarWidth).toBe(256);
+    expect(cells[0]!.above).toBe(true);
+    expect(cells[1]!.above).toBe(true);
+  });
+
+  test('under dir="rtl" the indent is on the right and the chevron is mirrored, turned the other way when open (spec §5)', async ({ page }) => {
+    await page.goto('/components/nav-sidebar');
+    const nav = page.getByTestId('nav-sidebar-rtl').locator('.matrix__cell').last().locator('.pp-nav-sidebar');
+    const read = await nav.evaluate((n) => {
+      const groups = Array.from(n.querySelectorAll<HTMLElement>('.pp-nav-sidebar__group'));
+      const open = groups.find((g) => g.getAttribute('data-state') === 'open')!;
+      const closed = groups.find((g) => g.getAttribute('data-state') === 'closed')!;
+      const toggle = open.querySelector(':scope > .pp-nav-sidebar__toggle') as HTMLElement;
+      const child = open.querySelector('a') as HTMLElement;
+      const chevron = (g: HTMLElement) => getComputedStyle(g.querySelector(':scope > .pp-nav-sidebar__toggle > .pp-nav-sidebar__chevron')!);
+      return {
+        direction: getComputedStyle(n).direction,
+        indent: toggle.firstElementChild!.getBoundingClientRect().right - child.firstElementChild!.getBoundingClientRect().right,
+        openScale: chevron(open).scale,
+        openRotate: chevron(open).rotate,
+        closedScale: chevron(closed).scale,
+        closedRotate: chevron(closed).rotate,
+      };
+    });
+    expect(read).toEqual({ direction: 'rtl', indent: 16, openScale: '-1 1', openRotate: '-90deg', closedScale: '-1 1', closedRotate: 'none' });
+  });
+});
+
 test.describe('Toolbar', () => {
   test('one tab stop: Tab from the button before lands on the remembered control and Tab again leaves for the button after; ArrowRight walks the row, End and Home jump (spec §1, §2, §3)', async ({ page }) => {
     await page.goto('/components/toolbar');

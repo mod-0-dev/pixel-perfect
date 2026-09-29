@@ -98,6 +98,7 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'theme-provider', name: 'ThemeProvider', tier: '6.1', summary: 'The page\'s theme, set before the first paint: system, light or dark, kept across loads.' },
   { slug: 'theme-toggle', name: 'ThemeToggle', tier: '6.2', summary: 'A square button that flips light and dark; its face is chosen by the stylesheet, so it is right before React is.' },
   { slug: 'app-shell', name: 'AppShell', tier: '6.3', summary: 'The page frame: header, sidebar, main and footer, a skip link first; the sidebar stacks by the shell\'s own width.' },
+  { slug: 'nav-sidebar', name: 'NavSidebar', tier: '6.4', summary: 'An app\'s navigation for the sidebar: sections of links and groups that open; the app marks the current one.' },
   { slug: 'page-header', name: 'PageHeader', tier: '6.5', summary: 'The top of a page: a breadcrumb, the h1, one line about it, and the page\'s actions at the end of the title row.' },
   { slug: 'toolbar', name: 'Toolbar', tier: '6.6', summary: 'A named row of controls with one tab stop: arrows walk them, Home and End jump, and a text field keeps its keys.' },
 ];

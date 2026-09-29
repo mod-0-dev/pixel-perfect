@@ -1,0 +1,153 @@
+/*
+ * NavSidebar — spec docs/specs/NavSidebar.md
+ *
+ * ROWS DRAWN AS TREE'S (spec §5): the control scale's small height and font,
+ * the start padding grown by the indent per level through one custom
+ * property the <li> writes (`--_pp-nav-level`), so nesting needs no per-level
+ * rule and RTL needs nothing — it is `padding-inline-start`. The current
+ * link is the accent surface in the scope the root writes (D-007), hover the
+ * ghost Button's step; the ring is on the link or the button, the element
+ * that has focus (RULES §6), inset so the row holds it.
+ *
+ * AN ITEM AND A GROUP ARE GRIDS so the <a> and the <button> stretch to the
+ * row: a <button> is shrink-to-fit under any display of its own, and a grid
+ * item is not (D-075). The chevron turns a quarter when open — Accordion's
+ * and Tree's device — and under RTL is mirrored and turned the other way,
+ * because a mirror and a quarter turn compose into an arrow pointing up
+ * (D-088 §4).
+ *
+ * `min-inline-size: 0` on the root is RULES §1's definition of `fill`,
+ * stated rather than claimed: a label truncates by its own rule, so nothing
+ * here observes it (D-079 §3).
+ */
+
+@layer pp.components {
+  .pp-nav-sidebar {
+    --_row: var(--pp-nav-sidebar-row-height, var(--pp-control-height-sm));
+    --_indent: var(--pp-nav-sidebar-indent, var(--pp-space-4));
+    --_radius: var(--pp-nav-sidebar-radius, var(--pp-control-radius));
+
+    display: grid;
+    gap: var(--pp-nav-sidebar-gap, var(--pp-space-5));
+    min-inline-size: 0;
+    font-size: var(--pp-control-font-size-sm);
+    line-height: var(--pp-line-height-normal);
+  }
+
+  .pp-nav-sidebar__section {
+    display: grid;
+    gap: var(--pp-space-1);
+    min-inline-size: 0;
+  }
+
+  /* The small muted label with the wide tracking: Text's `xs` on the muted tone. */
+  .pp-nav-sidebar__title {
+    padding-inline: var(--pp-control-padding-inline-sm);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-1);
+    font-weight: var(--pp-font-weight-medium);
+    letter-spacing: var(--pp-letter-spacing-wide);
+    text-transform: uppercase;
+  }
+
+  .pp-nav-sidebar__list {
+    display: grid;
+    gap: var(--pp-space-0);
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* A closed group's list is `hidden` (spec §3), and an author `display` beats
+     the user agent's `[hidden] { display: none }` whatever the layer — the
+     first build laid the closed list out, and the browser test read it
+     (D-099 §1). */
+  .pp-nav-sidebar__list[hidden] {
+    display: none;
+  }
+
+  .pp-nav-sidebar__item,
+  .pp-nav-sidebar__group {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .pp-nav-sidebar__link {
+    display: flex;
+    align-items: center;
+    gap: var(--pp-control-gap-md);
+    min-inline-size: 0;
+    block-size: var(--_row);
+    padding-block: 0;
+    padding-inline-start: calc(var(--_indent) * (var(--_pp-nav-level, 1) - 1) + var(--pp-control-padding-inline-sm));
+    padding-inline-end: var(--pp-control-padding-inline-sm);
+    border: 0;
+    border-radius: var(--_radius);
+    background: none;
+    color: var(--pp-color-text);
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .pp-nav-sidebar__link:hover {
+    background-color: var(--pp-tone-bg-hover);
+  }
+
+  .pp-nav-sidebar__link[aria-current="page"] {
+    background-color: var(--pp-nav-sidebar-current-bg, var(--pp-tone-bg));
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-nav-sidebar__group[data-current] > .pp-nav-sidebar__toggle {
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-nav-sidebar__link:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  .pp-nav-sidebar__icon,
+  .pp-nav-sidebar__chevron {
+    flex-shrink: 0;
+    color: var(--pp-color-text-muted);
+  }
+
+  .pp-nav-sidebar__label {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .pp-nav-sidebar__end {
+    flex-shrink: 0;
+  }
+
+  .pp-nav-sidebar__chevron {
+    transition: rotate var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-nav-sidebar__chevron {
+      transition: none;
+    }
+  }
+
+  .pp-nav-sidebar__group[data-state="open"] > .pp-nav-sidebar__toggle > .pp-nav-sidebar__chevron {
+    rotate: 90deg;
+  }
+
+  [dir="rtl"] .pp-nav-sidebar__chevron {
+    scale: -1 1;
+  }
+
+  [dir="rtl"] .pp-nav-sidebar__group[data-state="open"] > .pp-nav-sidebar__toggle > .pp-nav-sidebar__chevron {
+    rotate: -90deg;
+  }
+}

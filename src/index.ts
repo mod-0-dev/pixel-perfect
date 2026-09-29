@@ -236,6 +236,16 @@ export {
   type PageHeaderProps,
   type PageHeaderTitleProps,
 } from './components/PageHeader/PageHeader';
+export {
+  NavSidebar,
+  NavSidebarGroup,
+  NavSidebarItem,
+  NavSidebarSection,
+  type NavSidebarGroupProps,
+  type NavSidebarItemProps,
+  type NavSidebarProps,
+  type NavSidebarSectionProps,
+} from './components/NavSidebar/NavSidebar';
 export { Pagination, type PaginationProps } from './components/Pagination/Pagination';
 export { Progress, type ProgressProps } from './components/Progress/Progress';
 export { Radio, type RadioProps } from './components/Radio/Radio';

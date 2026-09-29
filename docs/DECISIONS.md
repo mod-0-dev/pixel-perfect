@@ -7131,3 +7131,94 @@ Break checks (D-035 §3): `flex-wrap` dropped (the narrow cell overflows);
 failed on exactly the test named for it. `align-items: center` and
 `min-inline-size: 0` are stated, not claimed: every control in the
 gallery is the same height, and the row wraps by its content (D-079 §3).
+
+## D-099 — `NavSidebar` rulings and findings: plain links over a roving tree, a closed list that is `hidden`, and an author `display` that beat the user agent's `hidden`
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/NavSidebar.md`
+(status) · **Extends:** D-030 §7, D-048 §1, D-069 §1, D-075, D-088 §4,
+D-096 §3, D-096 §8
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last component of the roadmap.
+
+### 1. `hidden` needs its own rule where a component declares `display`
+
+Spec §3 renders a closed group's list and marks it `hidden`, so the map is
+in the HTML and the closed part is out of the accessibility tree and the
+tab order. The first build gave every list `display: grid` in
+`pp.components`, and an author declaration beats the user agent's
+`[hidden] { display: none }` whatever its layer: the closed list was
+laid out, its links painted, its chevron still pointing right. jsdom
+could not see it (no layout); the browser test read the closed list's
+client rects and got one. `.pp-nav-sidebar__list[hidden] { display: none }`
+is the rule, and the same hazard holds for any component that sets
+`display` on an element a consumer or the component may hide with the
+attribute. Asserted by the closed list having no rects and by the break
+check that drops the rule.
+
+### 2. A second "fix" the break check removed
+
+Reading the same failure, a `grid-template-columns: minmax(0, 1fr)` was
+added to the item and group on the theory that an auto track took the
+long label's max-content width. The break check for it passed every
+test: an auto track in a container of definite width does not exceed
+that width, and the row's `min-inline-size: 0` with the label's
+`overflow: hidden` already hold the row. The declaration and its comment
+are gone; a mechanism that no test observes is not stated as one (D-079
+§3, D-035 §3). What the widths had measured was the same defect as §1,
+read before it was understood.
+
+### 3. Plain links, and why the dependency on `Tree` is its row
+
+The APG's navigation treeview would make every link a `treeitem` under
+one tab stop; the disclosure navigation menu keeps them links, each a
+tab stop, a group a button with `aria-expanded`. An app sidebar is
+short, and a roving nav costs "Tab to the next link", the browser's own
+link navigation, and find-in-page matching the keyboard model. The row
+is drawn as `Tree`'s (D-088): the small control height, the indent per
+level through one custom property the `<li>` writes, the accent surface
+for the current link, the chevron turned a quarter when open and
+mirrored under `[dir="rtl"]` the way D-088 §4 found. The `<a>` and the
+`<button>` fill their rows because an item and a group are grids: a
+button is shrink-to-fit under any display of its own (D-075).
+
+### 4. Not a drawer, by composition
+
+`AppShell` §3 sent "a sidebar that becomes a drawer" here. It is not a
+mode: it would render the nav twice with each half hidden by a query
+whose threshold is restated from `Split` (D-045's drift) or move a
+landmark in an effect, and its trigger belongs in the app's header. An
+app composes a `NavSidebar` inside a `Drawer` and shows the trigger
+below its own threshold.
+
+### 5. Verified, and the eight breaks
+
+Unit: eight tests — the landmark and its name, a titled section's list
+named by `aria-labelledby` and an untitled one not, the item's icon
+decorative and its `end` in the row (and in the name: "Inbox 3" is what
+a count means); `aria-current` on the current link only, the group
+holding it open by default and `data-current`, the level per `<li>`; a
+group's button with `aria-expanded` and `aria-controls` over a list that
+is rendered and `hidden`, a click and Enter toggling it, `onOpenChange`,
+controlled holding; Tab reaching every link and toggle in order and
+skipping a closed group's links; `asChild` with the class, `aria-current`
+and the ref on the child and the row built around its children; an item
+outside a section throwing; refs, `className`, `style` and rest on every
+part; a server render with the whole map and the closed list `hidden`;
+axe in both themes, closed and open. Browser: every row 32px and the
+nav's width; a nested row's content one indent (16px) in; the current
+link on a surface the others lack, in the page's text colour at medium
+weight, the holding group's toggle at medium too; the closed list with
+no rects and an unturned chevron, the open one turned; the long label
+truncating at 240 with its row still the nav's width; the ring on the
+link; in `AppShell` the nav beside the main at 960 in a 256px sidebar and
+above it at 240 and 480; under `dir="rtl"` the indent on the right and
+the chevron mirrored, turned the other way when open.
+
+Break checks (D-035 §3): the `[hidden]` rule dropped (the closed list
+laid out); the indent dropped (0 in LTR and RTL); the current surface
+dropped (transparent); the row height dropped; the chevron's turn
+dropped; the RTL mirror dropped; the item's grid dropped (rows narrower
+than the nav, in the shell too); the truncation dropped. Each failed on
+exactly the test named for it; §2's track minimum failed none and was
+removed.
