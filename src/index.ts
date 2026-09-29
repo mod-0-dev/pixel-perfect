@@ -226,6 +226,16 @@ export {
   type PopoverTitleProps,
   type PopoverTriggerProps,
 } from './components/Popover/Popover';
+export {
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderDescription,
+  PageHeaderTitle,
+  type PageHeaderActionsProps,
+  type PageHeaderDescriptionProps,
+  type PageHeaderProps,
+  type PageHeaderTitleProps,
+} from './components/PageHeader/PageHeader';
 export { Pagination, type PaginationProps } from './components/Pagination/Pagination';
 export { Progress, type ProgressProps } from './components/Progress/Progress';
 export { Radio, type RadioProps } from './components/Radio/Radio';

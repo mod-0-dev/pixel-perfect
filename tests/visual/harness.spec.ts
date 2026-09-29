@@ -440,6 +440,73 @@ test.describe('AppShell', () => {
 });
 
 /**
+ * 6.5 `PageHeader` — where the parts land, which is all it does.
+ */
+test.describe('PageHeader', () => {
+  type Page = import('@playwright/test').Page;
+  const boxes = (page: Page, section: string) =>
+    page.getByTestId(section).locator('.matrix__cell').evaluateAll((cells) =>
+      cells.map((cell) => {
+        const q = (sel: string) => cell.querySelector(sel)?.getBoundingClientRect() ?? null;
+        return {
+          header: q('.pp-page-header')!,
+          crumbs: q('.pp-page-header > .pp-breadcrumb'),
+          title: q('.pp-page-header__title')!,
+          description: q('.pp-page-header__description'),
+          actions: q('.pp-page-header__actions'),
+        };
+      }),
+    );
+
+  test('the actions are at the end of the title row at 960 and under the title at 240 and 480; the breadcrumb above, the description below (spec §2, §3)', async ({ page }) => {
+    await page.goto('/components/page-header');
+    const [narrow, medium, wide] = await boxes(page, 'page-header-full');
+    for (const b of [narrow!, medium!, wide!]) {
+      expect(b.crumbs!.bottom).toBeLessThanOrEqual(b.title.top + 0.5);
+      expect(b.description!.top).toBeGreaterThanOrEqual(b.actions!.bottom - 0.5);
+      expect(Math.abs(b.crumbs!.left - b.header.left)).toBeLessThanOrEqual(0.5);
+    }
+    // Wide: the actions on the title's row, at its end.
+    expect(Math.abs(wide!.actions!.top - wide!.title.top)).toBeLessThanOrEqual(1);
+    expect(Math.abs(wide!.actions!.right - wide!.header.right)).toBeLessThanOrEqual(1);
+    expect(wide!.title.right).toBeLessThanOrEqual(wide!.actions!.left);
+    // Narrow and medium: the actions under the title, above the description.
+    for (const b of [narrow!, medium!]) {
+      expect(b.actions!.top).toBeGreaterThanOrEqual(b.title.bottom - 0.5);
+      expect(Math.abs(b.actions!.left - b.header.left)).toBeLessThanOrEqual(0.5);
+    }
+  });
+
+  test('no breadcrumb, no empty row: the title starts at the header\'s top; the description alone sits under the title (spec §2)', async ({ page }) => {
+    await page.goto('/components/page-header');
+    const cell = page.getByTestId('page-header-bare').locator('.matrix__cell').last();
+    const rows = await cell.locator('.pp-page-header').evaluateAll((headers) =>
+      headers.map((h) => {
+        const header = h.getBoundingClientRect();
+        const title = h.querySelector('.pp-page-header__title')!.getBoundingClientRect();
+        const description = h.querySelector('.pp-page-header__description')?.getBoundingClientRect();
+        const actions = h.querySelector('.pp-page-header__actions')?.getBoundingClientRect();
+        return { headerTop: header.top, titleTop: title.top, titleBottom: title.bottom, descriptionTop: description?.top, actionsTop: actions?.top, headerBottom: header.bottom, actionsBottom: actions?.bottom, level: h.querySelector('.pp-page-header__title')!.tagName };
+      }),
+    );
+    expect(rows).toHaveLength(3);
+    for (const r of rows) expect(Math.abs(r.titleTop - r.headerTop)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(rows[0]!.actionsTop! - rows[0]!.titleTop)).toBeLessThanOrEqual(1);
+    expect(rows[1]!.descriptionTop!).toBeGreaterThan(rows[1]!.titleBottom);
+    expect(rows[1]!.descriptionTop! - rows[1]!.titleBottom).toBeLessThanOrEqual(8.5); // row-gap space-2
+    expect(rows[2]!.level).toBe('H2');
+  });
+
+  test('under dir="rtl" the actions are at the left end of the title row and the breadcrumb starts at the right (spec §3)', async ({ page }) => {
+    await page.goto('/components/page-header');
+    const [, , wide] = await boxes(page, 'page-header-rtl');
+    expect(Math.abs(wide!.actions!.left - wide!.header.left)).toBeLessThanOrEqual(1);
+    expect(Math.abs(wide!.crumbs!.right - wide!.header.right)).toBeLessThanOrEqual(1);
+    expect(wide!.title.left).toBeGreaterThanOrEqual(wide!.actions!.right);
+  });
+});
+
+/**
  * Computed-style assertions that jsdom cannot make. D-011 was found this way
  * and nowhere else: reading the CSS proved nothing, and only a real browser
  * resolving a real `var()` chain caught it.

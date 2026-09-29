@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `spec` — written 2026-09-29 under the standing delegation (D-069 §1); every recommendation below is adopted as written and the build starts in the same session |
+| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-097; awaiting its CI-authored baseline (D-013) |
 | **Sizing contract** | `fill` — the top of a page's content; block-level, `min-inline-size: 0` |
 | **RSC** | `server` — four parts, no state |
 | **Depends on** | 2.2 `Cluster` (`done`): the actions; 5.6 `Breadcrumb` (`done`): the trail, as a child; 1.2 `Heading` and 1.1 `Text`: the title and the description |

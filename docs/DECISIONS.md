@@ -6999,3 +6999,61 @@ already has three `<main>`s on purpose and now has three equal ids for
 the same reason. The test targets the first cell and says why. D-035 §1's
 rule — nothing in the chrome writes an id — was about this hazard from
 the other side.
+
+## D-097 — `PageHeader` rulings and findings: a wrapping row instead of areas, and the library's one visual reorder
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/PageHeader.md`
+(status) · **Extends:** D-020, D-070 §1, D-079 §1, D-083
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. A wrapping flex row, because a grid area you did not fill still costs its gap
+
+The natural shape — `grid-template-areas: "crumbs crumbs" "title actions"
+"description actions"` — has two faults the flex row does not. A row that
+exists in the template exists in the layout, so a header with no
+breadcrumb starts with a `row-gap` above its title; and parts placed by
+area can be written in any DOM order, which lets the reading order and
+the painted order disagree by accident. In a flex row that wraps, an
+absent part is an absent row, `gap` sits only between rows that exist,
+and the painted order is the DOM order except where §2 says otherwise on
+purpose. The title's `flex-basis` of `--pp-measure-xs` is the one number:
+a row that cannot hold that much title beside the actions sends the
+actions down, which in the playground happens at 240 and 480 and not at
+960 — no container query, no threshold restated from anywhere.
+
+### 2. `order: 1` on the description
+
+DOM order title, description, actions is what a screen reader should
+hear: the page, its line, then its buttons. Painted order title, actions,
+description is what every page header looks like. The description
+carries `order: 1`, and the divergence is acceptable for a reason that is
+checkable rather than argued: the description takes no focus, so no
+sequence a keyboard user follows is reordered — the tab order is the
+breadcrumb's links then the actions' buttons in both orders. Recorded as
+the library's one visual reorder, so the next one has to say why it is
+also harmless.
+
+### 3. The breadcrumb is placed by its class
+
+`Breadcrumb` (5.6) is a landmark with its own name and needs nothing
+added; the header names `.pp-breadcrumb` once, to give it a row. The
+roadmap's Deps cell says 5.6 for exactly this. A `PageHeaderBreadcrumb`
+wrapper would be a part that only sets `flex-basis`.
+
+### 4. Verified
+
+At 960 the actions share the title's row and end at the header's end,
+with the title ending before them; at 240 and 480 they are under the
+title and above the description, starting at the header's start; the
+breadcrumb is above the title in all three and starts at the header's
+start. Without a breadcrumb the title starts at the header's top in all
+three headers of the second section; a description alone sits `--pp-space-2`
+under the title; `level={2}` renders an `<h2>`. Under `dir="rtl"` the
+actions end at the header's left and the breadcrumb starts at its right.
+In jsdom: the four parts on their base components with both classes, the
+breadcrumb in place, the DOM order, level 1 by default and 2 when told,
+`tone="muted"` and `gap="2"` by default and overridable, refs,
+`className`, `style` and rest on every part, a server render, axe in both
+themes. 4 unit and 3 browser assertions.

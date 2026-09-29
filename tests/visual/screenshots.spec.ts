@@ -78,6 +78,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'theme-provider', path: '/components/theme-provider' },
   { name: 'theme-toggle', path: '/components/theme-toggle' },
   { name: 'app-shell', path: '/components/app-shell' },
+  { name: 'page-header', path: '/components/page-header' },
 ];
 
 /**

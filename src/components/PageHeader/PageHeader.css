@@ -1,0 +1,49 @@
+/*
+ * PageHeader — spec docs/specs/PageHeader.md
+ *
+ * ONE FLEX ROW THAT WRAPS, NOT A GRID OF AREAS (spec §2). A grid whose top
+ * row is the breadcrumb pays its row-gap for that row whether or not a
+ * breadcrumb was given, and places parts by name so DOM and visual order can
+ * disagree. Here a part that is absent is a row that is absent, and `gap`
+ * only sits between rows that exist.
+ *
+ * The breadcrumb is the one other component this file names, by its class:
+ * the roadmap's Deps cell for this component says 5.6, and Breadcrumb needs
+ * nothing added to be placed.
+ *
+ * THE DESCRIPTION PAINTS AFTER THE ACTIONS (spec §3): DOM order title,
+ * description, actions is the reading order; `order: 1` on the description
+ * puts the actions on the title's row and the paragraph under both. It moves
+ * nothing focusable.
+ */
+
+@layer pp.components {
+  .pp-page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: var(--pp-page-header-row-gap, var(--pp-space-2));
+    column-gap: var(--pp-page-header-column-gap, var(--pp-space-4));
+    min-inline-size: 0;
+  }
+
+  .pp-page-header > .pp-breadcrumb,
+  .pp-page-header__description {
+    flex-basis: 100%;
+  }
+
+  .pp-page-header__description {
+    order: 1;
+  }
+
+  /* Grows to fill its row; when the row cannot hold this much title beside
+     the actions, the actions wrap to the next line. */
+  .pp-page-header__title {
+    flex: 1 1 var(--pp-page-header-title-basis, var(--pp-measure-xs));
+    min-inline-size: 0;
+  }
+
+  .pp-page-header__actions {
+    flex: 0 0 auto;
+  }
+}
