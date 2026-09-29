@@ -8680,6 +8680,10 @@ test.describe('DatePicker', () => {
     const panel = page.locator('.pp-date-picker__panel');
     await expect(panel).toBeVisible();
     await expect(panel.locator('[data-date="2026-09-28"]')).toBeFocused();
+    // Placed and still before its box is read (D-066 §3): under the full
+    // suite's load the box was read once while Radix still had the panel
+    // parked off-screen, and "below the field" was false.
+    await placedBox(panel);
     const placed = await page.evaluate(() => {
       const box = document.querySelector('[data-testid="date-picker-controlled"] .pp-date-picker__box')!.getBoundingClientRect();
       const panel = document.querySelector('.pp-date-picker__panel')!.getBoundingClientRect();
