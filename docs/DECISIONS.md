@@ -6529,3 +6529,67 @@ Break checks (D-035 §3): the box's grid columns dropped (the button
 below the field); the box's ring dropped (`0px`); the button's height
 dropped (its content's height, 20px short); the panel's padding
 dropped (`0`). Each failed on exactly the test named for it.
+
+## D-092 — The authoring commit records the geometry of what it authors
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** D-013 (the
+authoring loop), D-042 (an authoring commit as a PR's head), the
+`/component` build step · **Extends:** D-050 §5, D-066 §2
+
+### 1. What failed
+
+Run 174 on PR #33 was a `pull_request` run whose head was CI's own
+authoring commit for 4.13 `DatePicker` — the commit the workflow's
+comment said could not get a run, because a push made with
+`GITHUB_TOKEN` triggers none. Its actor was the bot, and it was re-run
+by hand the next morning. `npm test` was red on it: the geometry guard
+(`tests/unit/screenshot-dimensions.test.ts`) counts baselines without a
+manifest entry and allows fewer than three, and the commit carried four
+— the component's two and the index's two, which are always authored
+together when a page joins the index. Every authoring commit of this
+batch had the same shape; the earlier ones were superseded within
+minutes by the local recording push, and this one was the head when
+the day ended.
+
+The loop of D-066 §2 was: `--rebaseline index`, push, CI authors, pull,
+`npm run dimensions`, push again. The recording step was local, so
+between the authoring commit and the recording push every authoring
+commit was, by construction, a commit the guard fails. D-063 §3 accepted
+exactly that red run "by design" for the one-off re-authoring of every
+baseline, and the workflow's own comment ("an authoring commit should
+never be the final head of a PR, and nothing here can enforce that")
+described the gap without closing it. A red run that is expected is
+still a red run somebody has to read, and this one was read as a test
+failure, which is what it was.
+
+### 2. The commit records what it authors
+
+The `visual` job's authoring step now runs `npm run dimensions` before
+`git add tests/visual/__screenshots__`, so the manifest entries for
+the authored files land in the same commit, at the runner's geometry.
+That is the geometry the manifest exists to hold: the recorder's own
+caveat says to run it against committed baselines because a local PNG
+is a different Chromium build, and CI's authored file is that
+committed baseline before it is committed. The default mode adds
+missing entries only, so nothing an earlier commit recorded is
+overwritten (the D-050 §5 rule stands); the deliberate window that
+`--rebaseline` opens — no file, no entry — still exists, and CI still
+closes it, now completely.
+
+Consequences: an authoring commit passes `npm test` on its own, so it
+may be a PR's head; the local step after a pull is gone from the
+`/component` build box, which now says to pull the authoring commit
+before the next push; the guard's unguarded count should read zero on
+every commit, and its limit is for a baseline that arrived some other
+way. The one recording that this decision does not cover is this
+round's own, made locally against the already-committed files, as the
+loop always was.
+
+### 3. What was not changed
+
+The guard's limit of three stays: lowering it to zero would be right
+after this change but would fail the very push that carries it if any
+baseline were still unrecorded, and the number was never the point.
+The `workflow_dispatch` fallback stays, for the case the comment was
+written for. The `checks` job does not run the recorder: recording on
+a compare run would bless drift, which is what D-050 §5 forbids.

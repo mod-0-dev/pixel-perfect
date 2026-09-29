@@ -99,8 +99,9 @@ On approval, set status to `build` and implement:
   run `npm run dimensions -- --rebaseline index` in the same commit: it
   deletes the index baselines and their manifest entries so CI re-authors
   them alongside the component's own, and the unit guard fails the build
-  until it is done (D-066 §2). After CI has authored, `npm run dimensions`
-  records the new set
+  until it is done (D-066 §2). CI authors the new set and records its
+  geometry in the same commit (D-092); pull that commit before the next
+  push
 - Docs page with usage plus at least one explicit "don't"
 - Changeset
 

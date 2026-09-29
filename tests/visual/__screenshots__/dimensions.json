@@ -167,6 +167,14 @@
     "width": 1280,
     "height": 3006
   },
+  "date-picker-dark.png": {
+    "width": 1280,
+    "height": 1746
+  },
+  "date-picker-light.png": {
+    "width": 1280,
+    "height": 1746
+  },
   "dialog-dark.png": {
     "width": 1280,
     "height": 3207
@@ -262,6 +270,16 @@
   "icon-light.png": {
     "width": 1280,
     "height": 2532
+  },
+  "index-dark.png": {
+    "width": 1280,
+    "height": 3720,
+    "components": 62
+  },
+  "index-light.png": {
+    "width": 1280,
+    "height": 3720,
+    "components": 62
   },
   "input-dark.png": {
     "width": 1280,

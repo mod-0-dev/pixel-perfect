@@ -26,6 +26,13 @@
  * CI (D-013), so run this against COMMITTED baselines. A locally rendered PNG
  * is a different Chromium build and 2-4px shorter; recording one would write
  * this machine's geometry in as the truth.
+ *
+ * WHICH IS WHY CI RUNS IT (D-092): the `visual` job's authoring step records
+ * what it authors in the same commit, so the manifest holds the runner's
+ * geometry from the first commit a baseline exists in, and an authoring
+ * commit passes the guard on its own. Locally this is for the deliberate
+ * moves — `--rebaseline`, `--all` — and for a baseline that somehow landed
+ * unrecorded.
  */
 import { readdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 
@@ -43,9 +50,9 @@ const recorded = JSON.parse(readFileSync(MANIFEST, 'utf8'));
  * the same step, so that the window between deleting and re-recording is
  * one the guard skips (no file, no entry) rather than one it fails (a new
  * file against an old entry — the red run D-063 §3 accepted by design).
- * Push; CI authors the replacements; run `npm run dimensions` to record
- * them. The index page needs this whenever a component is added, because
- * it draws one card per registry entry.
+ * Push; CI authors the replacements and records them in the same commit
+ * (D-092). The index page needs this whenever a component is added,
+ * because it draws one card per registry entry.
  */
 const rebaselineAt = process.argv.indexOf('--rebaseline');
 if (rebaselineAt !== -1) {
@@ -65,7 +72,7 @@ if (rebaselineAt !== -1) {
   }
   writeFileSync(MANIFEST, `${JSON.stringify(recorded, null, 2)}\n`);
   console.log(`deleted ${targets.join(', ')} and their manifest entries.`);
-  console.log('Commit and push; CI authors the replacements on the PR branch; then run `npm run dimensions` to record them.');
+  console.log('Commit and push; CI authors the replacements on the PR branch and records their geometry in the same commit.');
   process.exit(0);
 }
 

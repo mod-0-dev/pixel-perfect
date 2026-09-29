@@ -31,6 +31,15 @@ display combinations — a Tier 6 spec of its own, once the components exist.
 
 ### Current state
 
+- **CI's authoring commit records what it authors** (**D-092**). Run 174
+  was a PR run on the authoring commit for 4.13, and `npm test` was red on
+  it: four baselines with no manifest entry against the guard's limit of
+  three, the shape of every authoring commit that adds a page, because the
+  recording step was local and came after the pull. The `visual` job now
+  runs `npm run dimensions` before it commits, so the manifest lands with
+  the files at the runner's geometry and an authoring commit is green on
+  its own; the `/component` build box says to pull that commit, not to
+  record after it
 - **The playground shows one theme at a time, and the index is a page**
   (**D-063**). The Matrix rendered every subtree six times, three widths in
   each of two theme columns; it now renders three, in the theme a switcher in

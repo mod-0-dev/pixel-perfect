@@ -93,8 +93,10 @@ describe('screenshot baselines keep their geometry', () => {
     ).toEqual([]);
   });
 
-  /* Not a failure, but worth printing: an unrecorded page is unguarded, and
-     the count going up silently is how a guard stops guarding. */
+  /* An unrecorded page is unguarded, and the count going up silently is how
+     a guard stops guarding. Since D-092 the authoring commit records what it
+     authors, so on any commit this should read zero: the limit is for a
+     baseline that arrived some other way. */
   it('reports how many baselines are unguarded', () => {
     const unguarded = present.filter((f) => !recorded[f]);
     expect(unguarded.length, `unguarded baselines: ${unguarded.join(', ') || 'none'}`).toBeLessThan(
