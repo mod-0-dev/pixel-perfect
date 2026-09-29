@@ -1,0 +1,93 @@
+/*
+ * Card — spec docs/specs/Card.md
+ *
+ * A BORDERED RAISED SURFACE WITH SECTIONS (spec §2): the raised surface, a
+ * hairline edge, no shadow — a shadow is for what floats. Every section
+ * pads the same; a hairline runs between adjacent sections, drawn as the
+ * later section's block-start border, so a lone body has no line and all
+ * three have two. The foot is the sunken surface (spec §4): a row of
+ * actions reads as the card's foot.
+ *
+ * AN INTERACTIVE CARD IS THE CONSUMER'S LINK OR BUTTON (spec §3): `asChild`
+ * puts the class on their element, and `:is(a, button)` gives it the hover
+ * edge, a lift, the ring, and its text back — a link's underline and colour
+ * are reset, because a card is not a run of text.
+ *
+ * A URL IN THE BODY WRAPS BECAUSE THE CARD SAYS SO (D-079 §3):
+ * `overflow-wrap: anywhere`, inherited, so a bare string in a section breaks
+ * — the card clips (`overflow: hidden`, for the radius), and without it an
+ * unbreakable string would be cut off silently, which is worse than Alert's
+ * "painting past the edge". `min-inline-size: 0` on the root is RULES §1's
+ * definition of `fill`, stated rather than claimed: the clip already makes
+ * the automatic minimum zero, so nothing here observes it (D-079 §3).
+ */
+
+@layer pp.components {
+  .pp-card {
+    --_border: var(--pp-card-border-color, var(--pp-color-border-subtle));
+    --_padding-inline: var(--pp-card-padding-inline, var(--pp-space-5));
+    --_padding-block: var(--pp-card-padding-block, var(--pp-space-4));
+
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    border: var(--pp-border-width-1) solid var(--_border);
+    border-radius: var(--pp-card-radius, var(--pp-radius-3));
+    background-color: var(--pp-card-bg, var(--pp-color-bg-raised));
+    box-shadow: var(--pp-card-shadow, none);
+    overflow: hidden;
+    overflow-wrap: anywhere;
+  }
+
+  .pp-card__header,
+  .pp-card__body,
+  .pp-card__footer {
+    padding-block: var(--_padding-block);
+    padding-inline: var(--_padding-inline);
+  }
+
+  /* The hairline between adjacent sections: the later one's top edge. */
+  .pp-card__header + .pp-card__body,
+  .pp-card__header + .pp-card__footer,
+  .pp-card__body + .pp-card__footer {
+    border-block-start: var(--pp-border-width-1) solid var(--_border);
+  }
+
+  .pp-card__body {
+    flex: 1 1 auto;
+  }
+
+  .pp-card__footer {
+    background-color: var(--pp-card-footer-bg, var(--pp-color-bg-sunken));
+  }
+
+  /* An interactive card: the consumer's link or button with the class. */
+  .pp-card:is(a, button) {
+    padding: 0;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+    transition-property: border-color, box-shadow;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  .pp-card:is(a, button):hover {
+    --_border: var(--pp-card-border-color, var(--pp-color-border));
+
+    box-shadow: var(--pp-card-shadow, var(--pp-shadow-1));
+  }
+
+  .pp-card:is(a, button):focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-card:is(a, button) {
+      transition-property: none;
+    }
+  }
+}

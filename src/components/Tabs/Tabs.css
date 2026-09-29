@@ -1,0 +1,136 @@
+/*
+ * Tabs — spec docs/specs/Tabs.md
+ *
+ * A ROW OF LABELS ON A HAIRLINE, ONE OF THEM UNDERLINED. The list draws a
+ * hairline on its far edge; the selected tab draws a two-pixel accent bar
+ * on the same edge, ON the line rather than above it: a pseudo-element hung
+ * one hairline past the tab's edge (spec §3). Logical edges throughout —
+ * block-end for a row, inline-end for a column — so a right-to-left page
+ * needs nothing, and the tabs carry `data-pp-tone="accent"` so the bar is
+ * the accent's solid step while the label keeps the page's text colour.
+ *
+ * THE STRIP SCROLLS, THE LIST GROWS (spec §2). A row of tabs wider than its
+ * container neither wraps nor overflows the page: the strip is a flex row
+ * that scrolls, and the list inside it is a flex item — at least the strip
+ * (`flex-grow: 1`) and never narrower than its tabs (a flex item's automatic
+ * minimum size is its min-content, and the tabs do not wrap) — so its
+ * hairline runs under every tab, the visible and the scrolled-to alike.
+ * Were the strip a block, the list would be the strip's width and its tabs
+ * would overflow it, and the hairline would stop short (D-074 §5).
+ *
+ * THE TAB IS A BUTTON'S MEDIUM METRICS (spec §3), from the control tokens
+ * Tier 3 defined so that a tab beside a Button is the same height.
+ */
+
+@layer pp.components {
+  .pp-tabs {
+    --_gap: var(--pp-tabs-gap, var(--pp-space-4));
+    --_line: var(--pp-tabs-line-color, var(--pp-color-border-subtle));
+
+    display: flex;
+    flex-direction: column;
+    gap: var(--_gap);
+  }
+
+  .pp-tabs[data-orientation="vertical"] {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .pp-tabs__strip {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .pp-tabs[data-orientation="vertical"] > .pp-tabs__strip {
+    flex: none;
+    overflow: visible;
+  }
+
+  .pp-tabs__list {
+    display: flex;
+    flex: 1 0 auto;
+    border-block-end: var(--pp-border-width-1) solid var(--_line);
+  }
+
+  .pp-tabs__list[data-orientation="vertical"] {
+    flex-direction: column;
+    border-block-end: 0;
+    border-inline-end: var(--pp-border-width-1) solid var(--_line);
+  }
+
+  .pp-tabs__tab {
+    position: relative;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--pp-control-gap-md);
+    block-size: var(--pp-tabs-tab-height, var(--pp-control-height-md));
+    padding-inline: var(--pp-tabs-tab-padding-inline, var(--pp-control-padding-inline-md));
+    border: 0;
+    background: none;
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-control-font-size-md);
+    font-weight: var(--pp-font-weight-medium);
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  .pp-tabs__tab:hover,
+  .pp-tabs__tab[data-state="active"] {
+    color: var(--pp-color-text);
+  }
+
+  .pp-tabs__tab:disabled {
+    color: var(--pp-color-text-disabled);
+    cursor: default;
+  }
+
+  /* Inset, because the strip clips at its edges. */
+  .pp-tabs__tab:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  /* The bar: a zero-size box hung one hairline past the tab's far edge,
+     drawing a two-pixel border on that edge — so the bar's outer edge is
+     the hairline's outer edge, and the bar covers the line. */
+  .pp-tabs__tab::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: calc(-1 * var(--pp-border-width-1));
+    border-block-end: var(--pp-border-width-2) solid transparent;
+    pointer-events: none;
+  }
+
+  .pp-tabs__tab[data-orientation="vertical"]::after {
+    inset-inline: auto calc(-1 * var(--pp-border-width-1));
+    inset-block: 0;
+    border-block-end: 0;
+    border-inline-end: var(--pp-border-width-2) solid transparent;
+  }
+
+  .pp-tabs__tab[data-state="active"]::after {
+    border-color: var(--pp-tabs-indicator-color, var(--pp-tone-solid));
+  }
+
+  .pp-tabs__panel {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+
+  .pp-tabs__panel:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-tabs__tab {
+      transition: none;
+    }
+  }
+}

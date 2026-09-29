@@ -1,0 +1,221 @@
+/*
+ * Drawer — spec docs/specs/Drawer.md
+ *
+ * THE SCRIM IS DIALOG'S; THE PANEL IS NOT. The scrim carries Dialog's class
+ * first, so Dialog.css gives it the viewport box (`position: fixed; inset:
+ * 0`, D-067 §2), the layer, the fill, the fade and its reduced-motion rule.
+ * This file changes what a sheet needs changed: no gutter, and a placement
+ * per side instead of a centred one. The panel, `.pp-drawer`, is its own
+ * element: nothing about a centred, content-sized box applies to a sheet.
+ *
+ * PLACEMENT IS THE GRID, PER PHYSICAL SIDE (spec §4). `data-side` is
+ * physical (4.1 §5), resolved from the logical prop before paint, so the
+ * placement uses the PHYSICAL keywords the grid alignment properties
+ * accept — `justify-items: left | right` — and RTL needed nothing here
+ * because it was resolved already.
+ *
+ * THE ANCHORED AXIS IS A TOKEN (spec §3, D-071 §1). A Dialog hugs; a sheet
+ * cannot — a navigation list is a Stack of `fill` items, and a hug panel
+ * around it would be as wide as its longest label. So the panel declares
+ * `inline-size` (side drawers) or `block-size` (top and bottom) from
+ * `--pp-drawer-size`, capped at the scrim. `.stylelintrc.json` names this
+ * file for both, the D-019 shape. On the other axis the grid stretches the
+ * panel to the scrim's full extent.
+ *
+ * THE PANEL SCROLLS, NOT THE SCRIM (spec §3): a sheet is the viewport's
+ * height by construction, so there is nothing for the scrim to scroll to.
+ *
+ * MOTION (spec §5): the panel slides from its edge over the normal
+ * duration — a sheet travels further than a dialog's 4% scale — and the
+ * scrim fades over the fast one. Presence keeps both mounted until the
+ * longer exit ends. Every animation is `none` under reduced motion, here,
+ * because an `animation` shorthand in pp.components outranks the reset's
+ * crush (D-062 §5).
+ */
+
+@layer pp.components {
+  .pp-drawer__scrim {
+    padding: 0;
+  }
+
+  .pp-drawer__scrim[data-side="left"] {
+    justify-items: left;
+    align-items: stretch;
+  }
+
+  .pp-drawer__scrim[data-side="right"] {
+    justify-items: right;
+    align-items: stretch;
+  }
+
+  .pp-drawer__scrim[data-side="top"] {
+    justify-items: stretch;
+    align-items: start;
+  }
+
+  .pp-drawer__scrim[data-side="bottom"] {
+    justify-items: stretch;
+    align-items: end;
+  }
+
+  .pp-drawer {
+    --_bg: var(--pp-color-bg-raised);
+    --_border: var(--pp-color-border-subtle);
+    --_radius: var(--pp-drawer-radius, var(--pp-radius-4));
+
+    z-index: var(--pp-z-modal);
+    min-inline-size: 0;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    padding: var(--pp-drawer-padding, var(--pp-space-5));
+    background-color: var(--pp-drawer-bg, var(--_bg));
+    color: var(--pp-color-text);
+  }
+
+  /* Side drawers: the token on the inline axis, the full height on the other. */
+  .pp-drawer[data-side="left"],
+  .pp-drawer[data-side="right"] {
+    inline-size: min(var(--pp-drawer-size, var(--pp-measure-xs)), 100%);
+  }
+
+  /* Top and bottom sheets: the token on the block axis, the full width on the other. */
+  .pp-drawer[data-side="top"],
+  .pp-drawer[data-side="bottom"] {
+    block-size: min(var(--pp-drawer-size, 50%), 100%);
+  }
+
+  /* The edge facing the page carries a hairline and the rounded corners; the
+     edge on the viewport is square and flush. Physical, like the side — and
+     drawn as an inset shadow rather than a border, because the one physical
+     border property a physical side would need (`border-left` for a drawer
+     on the right) is exactly what RULES §1 bans, and there is no logical
+     spelling of "the edge away from the viewport" without knowing the
+     direction. The elevation shadow rides in the same declaration. */
+  .pp-drawer[data-side="left"] {
+    border-top-right-radius: var(--_radius);
+    border-bottom-right-radius: var(--_radius);
+    box-shadow:
+      inset calc(-1 * var(--pp-border-width-1)) 0 0 var(--pp-drawer-border-color, var(--_border)),
+      var(--pp-drawer-shadow, var(--pp-shadow-3));
+    animation: pp-drawer-in-left var(--pp-duration-normal) var(--pp-easing-decelerate);
+  }
+
+  .pp-drawer[data-side="right"] {
+    border-top-left-radius: var(--_radius);
+    border-bottom-left-radius: var(--_radius);
+    box-shadow:
+      inset var(--pp-border-width-1) 0 0 var(--pp-drawer-border-color, var(--_border)),
+      var(--pp-drawer-shadow, var(--pp-shadow-3));
+    animation: pp-drawer-in-right var(--pp-duration-normal) var(--pp-easing-decelerate);
+  }
+
+  .pp-drawer[data-side="top"] {
+    border-bottom-left-radius: var(--_radius);
+    border-bottom-right-radius: var(--_radius);
+    box-shadow:
+      inset 0 calc(-1 * var(--pp-border-width-1)) 0 var(--pp-drawer-border-color, var(--_border)),
+      var(--pp-drawer-shadow, var(--pp-shadow-3));
+    animation: pp-drawer-in-top var(--pp-duration-normal) var(--pp-easing-decelerate);
+  }
+
+  .pp-drawer[data-side="bottom"] {
+    border-top-left-radius: var(--_radius);
+    border-top-right-radius: var(--_radius);
+    box-shadow:
+      inset 0 var(--pp-border-width-1) 0 var(--pp-drawer-border-color, var(--_border)),
+      var(--pp-drawer-shadow, var(--pp-shadow-3));
+    animation: pp-drawer-in-bottom var(--pp-duration-normal) var(--pp-easing-decelerate);
+  }
+
+  .pp-drawer[data-state="closed"][data-side="left"] {
+    animation: pp-drawer-out-left var(--pp-duration-normal) var(--pp-easing-accelerate);
+  }
+
+  .pp-drawer[data-state="closed"][data-side="right"] {
+    animation: pp-drawer-out-right var(--pp-duration-normal) var(--pp-easing-accelerate);
+  }
+
+  .pp-drawer[data-state="closed"][data-side="top"] {
+    animation: pp-drawer-out-top var(--pp-duration-normal) var(--pp-easing-accelerate);
+  }
+
+  .pp-drawer[data-state="closed"][data-side="bottom"] {
+    animation: pp-drawer-out-bottom var(--pp-duration-normal) var(--pp-easing-accelerate);
+  }
+
+  /* Two attributes in the selector, because the entry animations above are
+     set per `[data-side]` at (0,2,0) and a bare `.pp-drawer` here would lose
+     to them — the first draft did, and the motion test said so (D-071 §5). */
+  @media (prefers-reduced-motion: reduce) {
+    .pp-drawer[data-side],
+    .pp-drawer[data-state="closed"][data-side] {
+      animation: none;
+    }
+  }
+
+  .pp-drawer:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-drawer__title {
+    font-size: var(--pp-font-size-4);
+    font-weight: var(--pp-font-weight-semibold);
+    line-height: var(--pp-line-height-tight);
+  }
+
+  .pp-drawer__description {
+    margin: 0;
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-3);
+    line-height: var(--pp-line-height-normal);
+  }
+
+  @keyframes pp-drawer-in-left {
+    from {
+      translate: -100% 0;
+    }
+  }
+
+  @keyframes pp-drawer-out-left {
+    to {
+      translate: -100% 0;
+    }
+  }
+
+  @keyframes pp-drawer-in-right {
+    from {
+      translate: 100% 0;
+    }
+  }
+
+  @keyframes pp-drawer-out-right {
+    to {
+      translate: 100% 0;
+    }
+  }
+
+  @keyframes pp-drawer-in-top {
+    from {
+      translate: 0 -100%;
+    }
+  }
+
+  @keyframes pp-drawer-out-top {
+    to {
+      translate: 0 -100%;
+    }
+  }
+
+  @keyframes pp-drawer-in-bottom {
+    from {
+      translate: 0 100%;
+    }
+  }
+
+  @keyframes pp-drawer-out-bottom {
+    to {
+      translate: 0 100%;
+    }
+  }
+}

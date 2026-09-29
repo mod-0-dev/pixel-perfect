@@ -22,10 +22,24 @@ Definition of Done: [`.claude/skills/component/references/definition-of-done.md`
 group at a time, so any number of components in a group may sit in `spec`
 together ([D-014](docs/DECISIONS.md)). Implementation remains strictly one at a
 time. A component may not enter `spec` until every entry in its **Deps** column
-is `done`.
+is `done`. An item in `review` waiting only on its CI-authored baseline does
+not hold the limit ([D-069 §2](docs/DECISIONS.md)); Gate C is satisfied in
+advance for every remaining item by the standing delegation of D-069 §1.
+
+**Parked idea (D-069 §3):** a modifier key that switches the components into
+display combinations — a Tier 6 spec of its own, once the components exist.
 
 ### Current state
 
+- **CI's authoring commit records what it authors** (**D-092**). Run 174
+  was a PR run on the authoring commit for 4.13, and `npm test` was red on
+  it: four baselines with no manifest entry against the guard's limit of
+  three, the shape of every authoring commit that adds a page, because the
+  recording step was local and came after the pull. The `visual` job now
+  runs `npm run dimensions` before it commits, so the manifest lands with
+  the files at the runner's geometry and an authoring commit is green on
+  its own; the `/component` build box says to pull that commit, not to
+  record after it
 - **The playground shows one theme at a time, and the index is a page**
   (**D-063**). The Matrix rendered every subtree six times, three widths in
   each of two theme columns; it now renders three, in the theme a switcher in
@@ -90,11 +104,92 @@ is `done`.
   meant hand-edited JSON. `npm run dimensions` is that missing half, and it adds
   missing entries only: overwriting one is how a guard is made to bless the
   drift it exists to catch
-- **In flight:** nothing. **4.3 `Tooltip` is `done`** (2026-09-27): built
+- **In flight: 4.5 `AlertDialog`, 4.6 `Drawer`, 4.7 `DropdownMenu`, 4.8
+  `ContextMenu`, 4.9 `Tabs`, 4.10 `Accordion`, 4.11 `Combobox`, 4.12
+  `Toast` and 4.14 `CommandPalette` (all `review`, waiting only on their
+  CI-authored baselines, D-069 §2): the whole of Tier 4 but 4.13, which
+  waits on 5.9.** Under the standing delegation of D-069 §1 the rest of
+  Tier 4 is built in sequence, one in `build` at a time, each moved to
+  `review` with every box but the baseline checked, and one authoring run
+  at the end of the PR closes them together. 4.5 is `Dialog` with two
+  rules changed (D-070); 4.6 is `Dialog` placed at an edge, on the same
+  package, with the anchored axis a token (D-071 §1, §2). Building 4.6
+  found that Radix's scroll lock strips a padded `<body>` of its gutter
+  while any modal is open, shifting the page (D-071 §6): the playground
+  pads a wrapper now, and the gap is documented on the Dialog page. 4.7 is
+  the tier's first list of commands: Radix's menu with the direction read
+  from the trigger at open time, `align` starting, and a gutter only where
+  a mark can appear (D-072). 4.8 is that list opened at the pointer, its
+  twelve shared parts built once by an internal factory and drawn by 4.7's
+  stylesheet, with no CSS of its own (D-073). 4.9 is the tier's first
+  non-overlay: a hairline, a bar on it, a strip that scrolls, and the
+  page's direction as the component's (D-074). 4.10 is the second: headings
+  on hairlines, `multiple` as a boolean, the heading level asked once
+  (D-075). 4.11 is the tier's largest and the one whose behaviour is the
+  library's own — Popover's anchor, the menu's stylesheet, Input's box,
+  and a keyboard model written here; the consumer renders the matches
+  (D-076). 4.12 is the region and the imperative API the roadmap promised,
+  an `Alert` that floats (D-077). 4.14 closes the tier, made of it with no
+  package added (D-078). 4.13 `DatePicker` waits on 5.9 `Calendar`. **Tier 5
+  is under way**: 5.1 `Card` is in `review` (2026-09-28, D-079), the first
+  Server Component compound, its parts named exports like every other's;
+  5.3 `Progress` is in `review` (D-080), the determinate half of Spinner;
+  5.4 `Table` is in `review` (D-081), the tier's data component; 5.5
+  `Pagination` is in `review` (D-082), compact by its container; 5.6
+  `Breadcrumb` is in `review` (D-083); 5.7 `Stepper` is in `review`
+  (D-084); 5.8 `EmptyState` is in `review` (D-085); 5.9 `Calendar` is in
+  `review` (D-086), which unblocks 4.13 `DatePicker`; 5.10 `FileUpload` is
+  in `review` (D-087); 5.11 `Tree` is in `review` (D-088); 5.12
+  `CodeBlock` is in `review` (D-089); 5.13 `AvatarGroup` is in `review`
+  (D-090), the last of the tier's own items; and **4.13 `DatePicker` is in
+  `review`** (D-091), which closes Tier 4 — every item of Tiers 4 and 5 is
+  built. Next up is the batch's authoring run and the `review` → `done`
+  sweep. **4.4 `Dialog` is `done`** (2026-09-27): built
+  the day its spec was approved by delegation (D-067, the shape of D-057,
+  D-061 and D-064), its baselines CI-authored on the PR branch and compared
+  green on run 139 (D-013). Next up is **4.5 `AlertDialog`**, which is this
+  component with two rules changed: no close on a scrim press, and focus on
+  the least destructive button. Findings in **D-068**: a hug panel is as wide as
+  its content asks, not as wide as its ceiling — a short form is 26rem, a
+  paragraph reaches 40rem (§1); `min-inline-size: 0` lets the panel shrink
+  and `overflow-wrap: anywhere` is what makes an unbreakable string wrap
+  inside it, and the spec had named only the first (§2); an explicit
+  `aria-labelledby={undefined}` spread after Radix's own erased every
+  titled dialog's name, which axe caught (§3); and a page a dialog hides is
+  a page a role locator cannot see, in Testing Library and in Playwright
+  (§4). Everything §11 promised held (§5): containment holds the scrim to
+  the cell, a page under three locks still has a height, Radix drops a
+  trigger-less dialog's focus to the body, the RTL scrollbar compensation
+  is on the wrong side by source and unmeasurable in headless Chromium, a
+  popover from inside is neither hidden nor below the scrim, axe passes with
+  no rule disabled, and the Radix dialog chunk is referenced by no other
+  page. 26 unit and 14 browser assertions; six browser breaks and two unit
+  breaks, each caught by its named test, in two rounds because the first
+  combined run was a wash (§7).
+  [`Dialog.md`](docs/specs/Dialog.md) went to Gate C with eight open
+  questions and a recommendation on each. The first modal, which 4.5, 4.6 and 4.14
+  gate on, and the first component that takes the page away from the user —
+  scroll lock, `aria-hidden` on the rest, a focus trap — so each is decided
+  in the spec rather than inherited. What it asks for: modal only, no
+  `modal` prop (§2); the scrim is Radix's `Overlay` rendered by `Content`
+  and is the panel's *parent*, positioner and scroll container in one,
+  centred by a grid because the logical spelling of the usual `translate`
+  centring lands a full panel off centre in RTL (§4); `position: fixed;
+  inset: 0` on the scrim as the other half of D-061 §3's exception (§4);
+  the ceiling is `--pp-measure-sm` and there is no `size` (§3); no
+  automatic close button (§5); `aria-modal="true"` written by us, since
+  Radix relies on its `aria-hidden` sweep alone (§6); and the one change to
+  Radix's behaviour — a dialog opened with no trigger returns focus to the
+  element that had it, where Radix drops it to `<body>` (read in the 1.1.23
+  source, §7). The gallery portals a `defaultOpen` dialog into a
+  `contain: layout` box in each Matrix cell, so a cell is a viewport and the
+  three widths show the shrink a real viewport gets (§10); two assumptions
+  behind that are named for the build (§11). Next up after it: 4.5
+  `AlertDialog`, which is this component with two rules changed
+- **4.3 `Tooltip` is `done`** (2026-09-27): built
   the day its spec was approved by delegation (D-064, the shape of D-057
   and D-061), its baselines CI-authored on the PR branch and compared green
-  on run 132 (D-013). Next up is **4.4 `Dialog`**, the first modal, which
-  4.5, 4.6 and 4.14 gate on. The first component to build on 4.1 alone. The
+  on run 132 (D-013). The first component to build on 4.1 alone. The
   three assumptions the spec named were checked first and all held (D-065
   §6): a disabled trigger opens in Chromium, three `defaultOpen` tooltips
   coexist, `instant-open` skips the entry animation. Findings in **D-065**:
@@ -706,10 +801,10 @@ is `done`.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 50 / 80 tracked items (11 foundations + 69 components) — 10
-  foundations + 40 components, 4.3 `Tooltip` the latest, 4.1 the overlay
-  foundation and 4.2 `Popover` the first of Tier 4, 3.17 `RangeSlider` the
-  last of Tier 3. The denominator moved from 79 to 80 when **0.11**
+- **Done:** 51 / 80 tracked items (11 foundations + 69 components) — 10
+  foundations + 41 components, 4.4 `Dialog` the latest and the first modal,
+  4.1 the overlay foundation and 4.2 `Popover` the first of Tier 4, 3.17
+  `RangeSlider` the last of Tier 3. The denominator moved from 79 to 80 when **0.11**
   (the focus ring off the page) was added by D-053 §2 and closed the same day by
   D-056; it had moved from 78 to 79 when 3.17 `RangeSlider` was added (D-052
   §5). The one foundation not `done` is 0.10 docs site, deferred since there
@@ -823,17 +918,17 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 | 4.1 | Overlay foundation | `done` | n/a | client | T3 | [`overlay-foundation.md`](docs/specs/overlay-foundation.md), written and approved by delegation 2026-09-26 (D-061). Settles **Radix Primitives**, one package per Tier 4 component as a `dependency`; theme copied across the portal, tone not; a logical `side` vocabulary (`top \| bottom \| start \| end`); the five `--pp-z-*` tokens mapped to layers; and that 4.1 is `done` with 4.2 `Popover`, tested through it, in one PR (spec §9) |
 | 4.2 | `Popover` | `done` | hug | client | 4.1 | [`Popover.md`](docs/specs/Popover.md), approved by delegation 2026-09-26 (D-061 §2 — written after the delegation; its decisions are listed for reversal before merge). The sizing exception the row promised is D-061 §3: an overlay has no parent in flow and takes its ceiling from `--pp-measure-xs`. Built with 4.1 in one PR |
 | 4.3 | `Tooltip` | `done` | hug | client | 4.1 | [`Tooltip.md`](docs/specs/Tooltip.md), written and approved by delegation 2026-09-27 (D-064); built the same day, findings in D-065; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 132, D-013). Its PR also found and fixed the CI classification that could author over a regression (D-066). The tier's compound shape plus an optional `TooltipProvider` with a fallback; a description (`aria-describedby`), never a name; two new Tier 0.2 tokens for the inverse surface; Radix's three `data-state` values kept as an extension of RULES §4; no arrow, settling `Popover` §8. Six open questions, each with a recommendation |
-| 4.4 | `Dialog` | `planned` | hug | client | 4.1 | |
-| 4.5 | `AlertDialog` | `planned` | hug | client | 4.4 | |
-| 4.6 | `Drawer` | `planned` | hug | client | 4.4 | |
-| 4.7 | `DropdownMenu` | `planned` | hug | client | 4.2 | Typeahead, submenus |
-| 4.8 | `ContextMenu` | `planned` | hug | client | 4.7 | |
-| 4.9 | `Tabs` | `planned` | fill | client | T3 | |
-| 4.10 | `Accordion` | `planned` | fill | client | T3 | |
-| 4.11 | `Combobox` | `planned` | fill | client | 4.2, 3.13 | Async options, multi-select |
-| 4.12 | `Toast` | `planned` | fill | client | 4.1 | Region + imperative API |
-| 4.13 | `DatePicker` | `planned` | fill | client | 4.2, 5.9 | |
-| 4.14 | `CommandPalette` | `planned` | fill | client | 4.11, 4.4 | |
+| 4.4 | `Dialog` | `done` | hug | client | 4.1 | [`Dialog.md`](docs/specs/Dialog.md), approved by delegation 2026-09-27 (D-067), every one of its eight recommendations adopted as written; built the same day, findings in D-068; **done** 2026-09-27 once its CI-authored baselines had been compared green (run 139, D-013). The first modal, and the one 4.5, 4.6 and 4.14 gate on. Modal only, no `modal` prop; the scrim is Radix's `Overlay` rendered by `Content` and is the panel's parent — positioner and scroll container in one, centred by a grid so RTL needs nothing; ceiling `--pp-measure-sm`, no `size`; `aria-modal` and a focus restore for a trigger-less dialog are the two things added over Radix; the gallery portals into `contain: layout` cells, so a cell is a viewport |
+| 4.5 | `AlertDialog` | `review` | hug | client | 4.4 | [`AlertDialog.md`](docs/specs/AlertDialog.md), written and built 2026-09-28 under the standing delegation (D-069); findings in D-070. `Dialog` with two rules changed — no close on a scrim press, focus on `Cancel` — drawn by Dialog's stylesheet through two classes per part; ceiling `--pp-measure-xs`. In `review` for the CI-authored baseline only, which does not hold the WIP limit (D-069 §2) |
+| 4.6 | `Drawer` | `review` | hug | client | 4.4 | [`Drawer.md`](docs/specs/Drawer.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-071. A modal sheet from one of four logical sides, built on Radix's dialog (no new package) and drawn on Dialog's scrim; the anchored axis is a token, `--pp-drawer-size`, and the panel scrolls, not the scrim. The build found Radix's scroll lock stripping a padded `<body>` of its gutter (D-071 §6): the playground now pads a wrapper, and the Dialog page documents the gap. In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.7 | `DropdownMenu` | `review` | hug | client | 4.2 | [`DropdownMenu.md`](docs/specs/DropdownMenu.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-072. Typeahead and submenus are Radix's; the direction is read from the trigger at open time and handed to Radix as `dir`, so the arrow keys and the submenu's side read correctly in RTL. Fifteen named parts; `align` defaults to `start` (D-072 §1); rows are the small control height; a checkable item earns the list its gutter by `:has()`; `data-highlighted` joins RULES §4 (D-072 §2). The stylesheet is shared with 4.8. In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.8 | `ContextMenu` | `review` | hug | client | 4.7 | [`ContextMenu.md`](docs/specs/ContextMenu.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-073. `DropdownMenu`'s list opened at the pointer: the twelve parts a menu is made of are built once by an internal factory and drawn by 4.7's stylesheet through two classes, so this component ships no CSS; the trigger is a region that renders a `<div>`; the direction is read from the region at open time. Gate B read 4.7's `review` (baseline only) as `done` (D-073 §2). In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.9 | `Tabs` | `review` | fill | client | T3 | [`Tabs.md`](docs/specs/Tabs.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-074. The tier's first non-overlay: one look (a hairline, a two-pixel accent bar on it under the selected tab), the strip scrolls at a narrow width rather than wrapping, `keepMounted` for a panel that holds a form, and the page's direction is the component's — Radix's `dir` attribute is not written. `data-state="active\|inactive"` joins RULES §4. In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.10 | `Accordion` | `review` | fill | client | T3 | [`Accordion.md`](docs/specs/Accordion.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-075. Headings on hairlines, a chevron that turns, a height that animates; `multiple` is a boolean (RULES §5 reserves `type`) with the value's shape to match; `collapsible` defaults to `true`; `headingLevel` on the root sets every heading once; `keepMounted` as Tabs'. In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.11 | `Combobox` | `review` | fill | client | 4.2, 3.13 | [`Combobox.md`](docs/specs/Combobox.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-076. The one Tier 4 component whose behaviour is the library's own: the list on Popover's `Anchor`, its look DropdownMenu's stylesheet, the control Input's box; the keyboard, `aria-activedescendant`, the selection and the tokens written here. The consumer renders the options that match and `onInputValueChange` says why the text changed; `multiple` as tokens; `getLabel` for a value set from outside; `loading` for options from a server. In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.12 | `Toast` | `review` | fill | client | 4.1 | [`Toast.md`](docs/specs/Toast.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-077. Region + imperative API, as promised: one `ToastProvider`, one `useToast()` (`toast`, `dismiss`, `update`), no element. A toast is an `Alert` that floats, drawn by Alert's stylesheet through two classes; the region is fixed at a logical corner, a token wide, with a `limit` and a queue; `live` is Alert's word for Radix's `type`. In `review` for the CI-authored baseline only (D-069 §2) |
+| 4.13 | `DatePicker` | `review` | fill | client | 4.2, 5.9 | [`DatePicker.md`](docs/specs/DatePicker.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-091; awaiting its CI-authored baseline (D-013). Input's box with a text field and a calendar button, `Calendar` at `sm` in a `Popover` behind it (§1); typed text parsed on commit in the locale's order, the text derived from the value unless mid-edit after a draft that lied to a refusing owner (§2); the ISO value, a hidden input by `name`, the Field's precedence (§3). Closes Tier 4 |
+| 4.14 | `CommandPalette` | `review` | fill | client | 4.11, 4.4 | [`CommandPalette.md`](docs/specs/CommandPalette.md), written and built 2026-09-28 under the standing delegation (D-069); rulings and findings in D-078. The last of Tier 4 and made of it, with no package added: Dialog's modal through two classes, Combobox's highlight through a shared hook, DropdownMenu's row through its class and private variables, Kbd's key caps. The consumer renders the matches; the first is highlighted as the user types; `hotkey="mod+k"` once on the root; focus returns to whatever had it. Gate B read 4.11's `review` (baseline only) as `done` (D-073 §2). In `review` for the CI-authored baseline only (D-069 §2) |
 
 ---
 
@@ -841,19 +936,19 @@ Behavior from **Radix Primitives** (D-061; D-002 had left the choice open). We o
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 5.1 | `Card` | `planned` | fill | server | T2 | Compound: `Card.Header` / `.Body` / `.Footer` |
+| 5.1 | `Card` | `review` | fill | server | T2 | [`Card.md`](docs/specs/Card.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-079; awaiting its CI-authored baseline (D-013). The first Server Component compound: `Card` / `CardHeader` / `CardBody` / `CardFooter` as named exports, and RULES §5.6 now says every compound's parts are (§1). A bordered raised surface, no shadow, no `tone` / `variant` / `size`; one hairline per adjacent pair of sections; the foot sunken (§2). An interactive card is the consumer's link or button by `asChild` (§2). The wrap of a URL in the body is the card's `overflow-wrap`, not `min-inline-size: 0`, which the clip makes unobservable — found by the break check (§3) |
 | 5.2 | `Alert` | `done` | fill | server | 1.3, 3.2 | [`Alert.md`](docs/specs/Alert.md). No `variant` and no `size`: an alert is the only component whose children are arbitrary, and a `solid` fill puts a `plain` `Button` at 1.04:1 (spec §1). `role="alert"` is opt-in — the default is no live region (§2). Holds no state, so `onDismiss` reports the intent and the caller unmounts it — which is what keeps it `server` (§4). **Deps corrected from 2.2 to 3.2 at approval**: it composes `IconButton` and does not compose `Cluster`. The root is flex, not a grid — a grid gaps between *tracks*, so an alert with no icon paid 12px for the empty one (D-053 §3) |
-| 5.3 | `Progress` | `planned` | fill | server | T0 | Determinate + indeterminate |
-| 5.4 | `Table` | `planned` | fill | server | T2 | Semantic table; sorting/selection hooks, no data layer |
-| 5.5 | `Pagination` | `planned` | fill | client | 3.1 | |
-| 5.6 | `Breadcrumb` | `planned` | fill | server | 3.3 | |
-| 5.7 | `Stepper` | `planned` | fill | server | T2 | |
-| 5.8 | `EmptyState` | `planned` | fill | server | 5.1 | |
-| 5.9 | `Calendar` | `planned` | fill | client | T3 | Standalone; `DatePicker` consumes it |
-| 5.10 | `FileUpload` | `planned` | fill | client | 3.7 | Drag/drop, progress |
-| 5.11 | `Tree` | `planned` | fill | client | T3 | |
-| 5.12 | `CodeBlock` | `planned` | fill | client | 1.11 | Highlighting is a peer dep |
-| 5.13 | `AvatarGroup` | `planned` | hug | server | 1.9, 2.2 | Overlapping stack with overflow count. Added per D-016 |
+| 5.3 | `Progress` | `review` | fill | server | T0 | [`Progress.md`](docs/specs/Progress.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-080; awaiting its CI-authored baseline (D-013). `value` present is determinate, absent is indeterminate, `aria-valuenow` omitted when there is none; `determinate` joins `data-state` (§1). A name is required at the type level, `label` or `aria-labelledby` (§2). The fill is a flex item so it slides in every browser and grows from the right in RTL with no rule (§2); the sweep moves by `inset-inline-start`; reduced motion pulses the whole bar. `tone` defaults to `accent`, recorded beside Spinner's `neutral` (§3) |
+| 5.4 | `Table` | `review` | fill | server | T2 | [`Table.md`](docs/specs/Table.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-081; awaiting its CI-authored baseline (D-013). A semantic table in a named region that scrolls, focusable always (§1); `caption` a prop of the root, one of three names required (§2); the table stretched by a grid, never by a width (§3); sorting and selection are hooks, `sort` → `aria-sort`, `selected` → `data-state`. Found on the way: `useId` is not a client hook, and the rule lint and RULES §7 now say so (§4); a ring read in the frame focus landed in is 0px wide under the reset's reduced-motion crush (§5); the UA centres a `th` and a cell that wraps a date is worse than one that scrolls, both seen on the screenshot and not by the first green run (§6) |
+| 5.5 | `Pagination` | `review` | fill | client | 3.1 | [`Pagination.md`](docs/specs/Pagination.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-082; awaiting its CI-authored baseline (D-013). A window with a constant number of slots, buttons or links by `getHref` (§1); the compact form is a container query, which is why the contract is `fill` (§2); the current page is Toggle's `on` in the accent ramp (§3). Found on the way: `:dir()` does not ship — the build rewrites it into `:lang()` — so RULES §1 says `[dir="rtl"]` and the Scroller's RTL swap is fixed (§4); a Button drawn on an `<a>` was underlined, fixed in Button.css (§5) |
+| 5.6 | `Breadcrumb` | `review` | fill | server | 3.3 | [`Breadcrumb.md`](docs/specs/Breadcrumb.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-083; awaiting its CI-authored baseline (D-013). Five named parts, the last a span with `aria-current`; the separator is the stylesheet's, after each crumb, out of the tree (§1); a trail wraps at its separators (§2). A `nowrap` the break check could not observe was followed through and found wrong (§3) |
+| 5.7 | `Stepper` | `review` | fill | server | T2 | [`Stepper.md`](docs/specs/Stepper.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-084; awaiting its CI-authored baseline (D-013). Two parts; the number a counter, done a check, `aria-current="step"` (§1); vertical the base, a row above 28rem by its container (§2); every colour a tone token in the accent scope (§3). Found by the rectangles and the screenshot: grid auto-placement seated the circle after the label, and an `auto` column left the row's connector zero wide (§4) |
+| 5.8 | `EmptyState` | `review` | fill | server | 5.1 | [`EmptyState.md`](docs/specs/EmptyState.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-085; awaiting its CI-authored baseline (D-013). Five parts on the Tier 1–2 primitives (§1); centred and held to `measure-xs` by a grid track, never a width (§2); `outline` is Card's frame made dashed by the two-class contract (§3) |
+| 5.9 | `Calendar` | `review` | fill | client | T3 | [`Calendar.md`](docs/specs/Calendar.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-086; awaiting its CI-authored baseline (D-013). An ISO value and a `YYYY-MM` month, both controllable, no date library — `src/internal/date.ts` (§1); our own grid on `div`s with one tab stop and the APG keys, arrows mirrored in RTL (§2); names and digits by `Intl` (§3). A sixth week of fillers is hidden as a row (§4). Standalone; 4.13 `DatePicker` consumes it and is unblocked |
+| 5.10 | `FileUpload` | `review` | fill | client | 3.7 | [`FileUpload.md`](docs/specs/FileUpload.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-087; awaiting its CI-authored baseline (D-013). The hidden native input is the mechanism and the Trigger the one tab stop (§1); `onSelect(accepted, rejected)` with reasons by type, size and count, drop and dialog checked alike (§2); a file field is a `group` Field, because a label pointing at a button replaces its name (§3); items with a `Progress` bar, truncating (§4). It selects and shows; uploading is the consumer's |
+| 5.11 | `Tree` | `review` | fill | client | T3 | [`Tree.md`](docs/specs/Tree.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-088; awaiting its CI-authored baseline (D-013). Nested items, a parent by its children, `expanded` and `selected` each controllable, collapsed children unmounted (§1); focus on the row, which is the `treeitem` and owns its group — the ring rule refused `outline: none` on the `<li>`, rightly (§2); rows on the control scale indented by one custom property (§3) |
+| 5.12 | `CodeBlock` | `review` | fill | client | 1.11 | [`CodeBlock.md`](docs/specs/CodeBlock.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-089; awaiting its CI-authored baseline (D-013). The frame and not the highlighter: `code` for text or `CodeBlockLine` children for tokens (§1); the `<pre>` a named region that scrolls, the code stretched by a grid (§2); a counter gutter under the D-019 exemption, a pointed line across the whole width (§3); a copy button that says "Copied" (§4). Highlighting stays a peer |
+| 5.13 | `AvatarGroup` | `review` | hug | server | 1.9, 2.2 | [`AvatarGroup.md`](docs/specs/AvatarGroup.md), written and built 2026-09-28 by delegation (D-069 §1), rulings and findings in D-090; awaiting its CI-authored baseline (D-013). A list of the children with the first `max` shown and the rest a count drawn as an avatar (§1); overlap by a grid whose columns are narrower than a face, no margin (§2); `size` on the group written into the faces, the group's variables their own names after a self-referencing cycle (§3). Added per D-016 §7 |
 
 ---
 

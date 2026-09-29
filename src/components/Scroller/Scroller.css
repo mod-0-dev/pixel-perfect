@@ -25,8 +25,11 @@
  * The default (`scroll`) pins it to the element, which is the whole point.
  *
  * RTL: background-position takes no logical keywords, so the two inline
- * values are held in custom properties and swapped once by :dir(rtl). The
- * block axis needs no swap — it does not flip between LTR and RTL.
+ * values are held in custom properties and swapped once under a `dir="rtl"`
+ * attribute on the element or an ancestor. Not `:dir(rtl)`, which the first
+ * version used: the build rewrites `:dir()` into a `:lang()` list, so the
+ * swap never applied to an RTL page in English (D-082 §4). The block axis
+ * needs no swap — it does not flip between LTR and RTL.
  */
 
 @layer pp.components {
@@ -65,7 +68,8 @@
     background-repeat: no-repeat;
   }
 
-  .pp-scroller:dir(rtl) {
+  [dir="rtl"] .pp-scroller,
+  .pp-scroller[dir="rtl"] {
     --_pp-scroller-start-pos: right;
     --_pp-scroller-end-pos: left;
     --_pp-scroller-start-dir: to left;

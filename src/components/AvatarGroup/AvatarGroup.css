@@ -1,0 +1,68 @@
+/*
+ * AvatarGroup — spec docs/specs/AvatarGroup.md
+ *
+ * OVERLAP WITHOUT A MARGIN (spec §2): the group is an inline grid whose
+ * columns are an avatar's size less the overlap, so each item starts inside
+ * the one before it; the last runs past its column by the overlap and the
+ * group pads its end by the same amount, so its hug box holds it. The
+ * parent sizing the boxes it created (D-021); RULES §2 keeps its margins.
+ * Later items sit over earlier ones — document order, which RTL reverses
+ * with nothing said here.
+ *
+ * `size` IS THE GROUP'S (spec §3): written into Avatar's private variables
+ * from here, the way Toggle writes Button's, so one `size` sizes every face
+ * and the count, and an avatar's own `size` inside is overridden — that is
+ * the point.
+ */
+
+@layer pp.components {
+  .pp-avatar-group {
+    --_face: var(--pp-size-8);
+    --_face-font: var(--pp-font-size-2);
+    /* A fifth of the face: 8px on a 32px face is the whole margin beside a
+       pair of initials, and the second letter went under the next face
+       (D-090 §4). */
+    --_overlap: var(--pp-avatar-group-overlap, calc(var(--_face) / 5));
+    --_ring: var(--pp-avatar-group-ring-color, var(--pp-color-bg-surface));
+
+    display: inline-grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc(var(--_face) - var(--_overlap));
+    margin: 0;
+    padding-block: 0;
+    padding-inline: 0 var(--_overlap);
+    list-style: none;
+    vertical-align: middle;
+  }
+
+  .pp-avatar-group[data-size="sm"] {
+    --_face: var(--pp-size-6);
+    --_face-font: var(--pp-font-size-1);
+  }
+
+  .pp-avatar-group[data-size="lg"] {
+    --_face: var(--pp-size-10);
+    --_face-font: var(--pp-font-size-3);
+  }
+
+  .pp-avatar-group__item {
+    display: block;
+  }
+
+  /* Every face takes the group's size, and a ring the colour of the
+     surface, so the stack reads as faces and not a smear. Specificity
+     (0,3,0) outranks Avatar's own `[data-size]` rule on purpose. The
+     group's variables have their own names: `--_size: var(--_size)` is a
+     cycle, and a cycle is invalid at computed-value time (D-090 §3). */
+  .pp-avatar-group[data-size] .pp-avatar {
+    --_size: var(--_face);
+    --_font-size: var(--_face-font);
+
+    box-shadow: 0 0 0 var(--pp-border-width-2) var(--_ring);
+  }
+
+  .pp-avatar-group__more {
+    --pp-avatar-bg: var(--pp-avatar-group-more-bg, var(--pp-color-bg-sunken));
+    --pp-avatar-color: var(--pp-avatar-group-more-color, var(--pp-color-text-muted));
+  }
+}

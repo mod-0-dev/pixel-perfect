@@ -1,0 +1,26 @@
+/*
+ * AlertDialog — spec docs/specs/AlertDialog.md
+ *
+ * DIALOG'S STYLESHEET DRAWS THIS COMPONENT. Every part carries Dialog's
+ * class first and this component's second (`pp-dialog pp-alert-dialog`),
+ * the way IconButton carries `pp-button pp-icon-button`: the scrim, the
+ * centring grid, the scroll behaviour, the panel's surface, the title and
+ * description type and the motion are all Dialog.css's, and every
+ * `--pp-dialog-*` override a consumer sets applies here too. This file
+ * declares only what differs.
+ *
+ * A SMALLER CEILING (spec §2). A confirmation is a sentence and two
+ * buttons, and `--pp-measure-sm` would let a one-line description sprawl to
+ * 40rem. The ceiling is `--pp-measure-xs`, through this component's own
+ * public property — its OWN, not Dialog's, so an app that widened every
+ * Dialog has not widened its confirmations, and vice versa. Declared with
+ * `min(…, 100%)` exactly as Dialog's is, so the narrow-viewport shrink and
+ * the gutter are the same; `.stylelintrc.json` names this file for
+ * `max-inline-size` (D-061 §3).
+ */
+
+@layer pp.components {
+  .pp-alert-dialog {
+    max-inline-size: min(var(--pp-alert-dialog-max-inline-size, var(--pp-measure-xs)), 100%);
+  }
+}

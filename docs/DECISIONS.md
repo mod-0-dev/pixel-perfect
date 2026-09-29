@@ -4310,3 +4310,2286 @@ is not always the final one. Both suites now read the box through one
 helper that trusts it only once x and y are positive and unchanged across
 two reads a frame apart. This was a flake in the harness, not in either
 component, and it predated `Tooltip`: the Popover test was unchanged.
+
+## D-067 — Gate C for 4.4 `Dialog` approved by delegation; a modal's scrim is the other half of the overlay exception
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:** RULES §1 (the
+`Container` consequence); `.stylelintrc.json`; `docs/specs/Dialog.md`
+(status) · **Extends:** D-057, D-061 §3, D-064 §4
+
+### 1. Approved by delegation, the fourth time
+
+The spec went to Gate C with eight open questions and a recommendation on
+each. The approval was **"Build it so it's pixel perfect"** — a delegation,
+recorded as D-057, D-061 §2 and D-064 §1 recorded the others: one pair of
+eyes, every recommendation adopted as written. No `modal` prop (§2);
+`--pp-measure-sm` and no `size` (§3); the scrim scrolls and the panel does
+not (§4); `DialogTitle` is a `<div>` (§6); no automatic close button (§5);
+`aria-modal="true"` written by us (§6); the no-trigger focus restore (§7);
+the gallery in contained cells (§10). What that means for the build is
+D-057's list, and the spec's §11 names what is checked first.
+
+### 2. A modal's scrim is the viewport-sized box, and `inset: 0` is how a box is that box
+
+D-061 §3 let an overlay panel declare a ceiling because it has no parent in
+flow to size it. A modal has the same problem one level up: the box the
+viewport gives it — the scrim, which positions the panel, dims the page and
+scrolls when the panel is taller — is a box nothing in flow provides. So a
+scrim may declare `position: fixed; inset: 0`, logical and one property,
+and that is the exception's other half. RULES §1's consequence says so;
+`.stylelintrc.json`'s overlay override (`max-inline-size` allowed, nothing
+else relaxed) names `Dialog.css` as it named `Tooltip.css` (D-064 §4).
+Nothing in flow ever qualifies, and the panel itself declares no position:
+it is a grid item, centred by the scrim.
+
+## D-068 — `Dialog` build findings: a hug panel is as wide as its content asks, an explicit `undefined` erases what Radix wired, and a page a dialog hides is a page a role locator cannot see
+
+**Date:** 2026-09-27 · **Status:** accepted · **Amends:**
+`docs/specs/Dialog.md` §3, §11, Usage; `docs/components/Dialog.md`
+
+The first modal. Seven findings; two corrected the spec, one corrected the
+first draft of the component, and the rest are what the spec promised
+would be verified.
+
+### 1. A hug panel is as wide as its content asks, not as wide as its ceiling
+
+The spec's gallery section said the wide cell would show the panel "at its
+40rem ceiling with scrim on either side". It showed it at 26rem: a hug panel
+is a grid item sized by its content's max-content width, and a title, a
+one-line description, a `Field` and two buttons ask for about 416px. That is
+the contract working, not failing — `Popover`'s "a two-button confirmation
+is two buttons wide" — and the spec's own §3 argument ("a dialog holding a
+`Field` would grow to the viewport") was wrong about *why* the ceiling is
+needed: a `fill` child cannot widen a hug parent; a paragraph can. The
+gallery's description is now a sentence long enough to want more than
+40rem, so the wide cell shows the ceiling and the narrow cells show the
+shrink; the docs page says a short form is about 26rem and a paragraph
+reaches the ceiling.
+
+### 2. `min-inline-size: 0` lets the panel shrink; `overflow-wrap` is what makes the string wrap
+
+Spec §3 said `min-inline-size: 0` keeps an unbreakable string from pushing
+the panel past its ceiling "instead of wrapping inside it". Half right: it
+lets the panel shrink below its content's minimum, and the string then runs
+*out* of the panel, because nothing told it to break. `overflow-wrap:
+anywhere` on the panel is the other half, and a dialog that shows a path or
+a URL — a rename, a share — needs it. Both are declared; the 320px test puts
+one such path in the description and asserts the panel's `scrollWidth`
+does not exceed its `clientWidth`. Dropping either fails it.
+
+### 3. An explicit `undefined` erases what Radix wired
+
+The first draft passed `aria-label={ariaLabel}` and
+`aria-labelledby={ariaLabelledby}` to Radix's `Content` unconditionally.
+Radix sets `aria-labelledby` to its Title's id *before* spreading the
+consumer's props, so an `aria-labelledby={undefined}` after it erased the
+name: every titled dialog was nameless, and axe said so
+(`aria-dialog-name`) before any human would have. Both are now spread only
+when given — the `exactOptionalPropertyTypes` pattern every Tier 4 root
+already uses for Radix's optionals, seen from the other side. A prop
+forwarded as "whatever the caller passed" is not the same as a prop not
+forwarded.
+
+### 4. A page a dialog hides is a page a role locator cannot see
+
+Radix's `aria-hidden` sweep removes everything outside the panel from the
+accessibility tree, and Testing Library's `getByRole` and Playwright's
+`getByRole` honour it: the trigger a test just clicked stops resolving the
+moment the dialog opens, and a test that holds a role locator for it hangs.
+The unit suite reads the owner's `<output>` by text while the dialog is
+open; the browser suite's `open` helper returns the trigger as a text
+locator. On the docs page, because a consumer's test hits the same thing on
+its first `getByRole` after opening.
+
+### 5. Verified, as §11 promised
+
+- **`contain: layout` holds the scrim to the cell**: each gallery scrim's
+  box is its stage's box, and each panel is centred in its stage, at all
+  three widths.
+- **A page under three scroll locks is still a page**: its `scrollHeight`
+  exceeds the viewport, so the full-page capture has a height to capture.
+  The capture itself is CI's (D-013).
+- **Radix's close handler is as read**: with the restore removed, a
+  trigger-less dialog's close lands focus on `<body>`, in jsdom and in
+  Chromium (the break checks below).
+- **The RTL scrollbar compensation** measured 0: headless Chromium hides
+  scrollbars, so there was nothing to compensate. The source of
+  `react-remove-scroll-bar` writes `padding-right` and `margin-right`
+  unconditionally, so on a classic scrollbar under `dir="rtl"` the page
+  shifts by the bar's width while a dialog is open. Recorded on the docs
+  page as a gap, per spec §9; there is no switch for it.
+- **The sweep and a portal from inside**: a `Popover` opened from the open
+  dialog is found by a role query (so it is not hidden) and is at
+  `--pp-z-popover`, above the scrim; a second `Dialog` is a later sibling
+  at the same `--pp-z-overlay`, and Escape closes only it.
+- **axe passes on an open dialog with no rule disabled**, in both themes.
+  The `region` rule D-065 §6 had to switch off for a tooltip does not fire:
+  a dialog is exempt, and the scrim has no content of its own.
+- **Tree-shaking**: the chunk holding `@radix-ui/react-dialog` (22,011
+  bytes) is referenced by the Dialog page's payload and by none of the
+  Button, Popover or Tooltip pages'.
+
+### 6. Two usage typos in the spec
+
+`justify="space-between"` is `between` in this library's `Justify`
+vocabulary, and `Heading`'s `size` is `sm`, not `"4"`. Corrected in the
+spec's usage block; the playground and the docs page use the real names.
+
+### 7. Six browser breaks and two unit breaks, each caught by the test named for it
+
+The first combined run was a wash: dropping the reduced-motion rule slowed
+every gallery dialog's exit, the helper that closes the gallery pressed
+Escape three times faster than three exits, and thirteen tests failed on
+setup. The helper now waits each dialog out before the next press — an
+exit still running is still the topmost layer — and the breaks ran in two
+rounds. Round one: the panel's `z-index` (the layer test, `auto` against
+`1100` — observable after all, because the assertion compares the computed
+value to the token, not two elements to each other); the theme attribute
+(the theme test); the grid centring replaced by the logical `translate`
+(the RTL test: the panel never settled at a placed position — off the left
+edge, a full width off centre, as spec §4 predicted); `min-inline-size: 0`
+and `overflow-wrap` (the 320px test, 41px too wide); the no-trigger restore
+(the focus test). Round two: the reduced-motion rule alone (that test). In
+the unit suite: `aria-modal` (the name test) and the restore (the
+no-trigger test). Collateral failures — the tall-dialog test once the panel
+was `position: fixed` and no longer overflowed the scrim, the gallery's
+wide panel mid-animation — are what a combined run costs and why the named
+test is what is read.
+
+## D-069 — A standing delegation for the rest of the roadmap; a component waiting only on its CI-authored baseline does not hold the WIP limit; one parked idea
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.claude/skills/component/SKILL.md`
+(Gate A, Gate C); ROADMAP.md (WIP limit, a parked idea) · **Extends:** D-014,
+D-057, D-061 §2, D-064 §1, D-067 §1
+
+### 1. Gate C is satisfied in advance, for every remaining item
+
+Four components in a row were approved by delegation with the same words,
+and the user has now said so for the rest: *"Tired of approving single
+components. Just build and keep in mind the pixel perfect mentality."*
+That is a standing delegation. Gate C's purpose — a second pair of eyes on
+an API before it is permanent — is not served by asking a question whose
+answer is known, so from here:
+
+- **Every spec is still written**, to the template, with its decisions and
+  its open questions each carrying a recommendation. The spec is the
+  record a reversal is made against and the document the build is checked
+  against; none of that depends on who approves it.
+- **Every recommendation is adopted as written**, and the build starts in
+  the same session. The spec's decisions are listed in the PR body, as
+  D-061 §2 required for a spec written after its delegation, so the user
+  reverses before merge what they would have reversed at the gate.
+- **The assumptions a spec names are still checked first** (D-057), and a
+  ruling the spec did not anticipate is still a DECISIONS finding.
+
+The delegation ends when the user says so, or when a spec would bend a
+RULE: that still stops and asks, because a rule is not a default.
+
+### 2. A component whose only open box is the CI-authored baseline does not count against the WIP limit
+
+The WIP limit is one item in `build` or `review`. Since D-013 every
+component sits in `review` for one box it cannot close itself — the
+baseline CI authors on the next run — and that wait is CI's, not the
+work's. Holding the next build for it serialises components behind a
+five-minute job. So: an item in `review` with every box checked but the
+baseline (and, from D-066, the index re-baseline that rides with it) does
+not hold the limit. One PR may then close several components with one
+authoring run and one recording commit. Everything else about the limit
+stands: one item in `build` at a time, and a `review` with any *other* box
+open still holds it.
+
+### 3. Parked: a modifier key that composes the components' display
+
+The user's idea, recorded so it is not lost: holding a modifier (Ctrl, or
+another) while using the page would switch the components into
+combinations that expose more of what they can do, in one simple gesture.
+Parked at the user's request until the components exist; when it is
+picked up it is a Tier 6 item with a spec of its own, because it touches
+every component's state vocabulary (RULES §4) at once.
+
+## D-070 — `AlertDialog` build findings: one stylesheet draws two components, and a Cancel-less alert dialog leaves focus outside its own trap
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/AlertDialog.md`
+(status) · **Extends:** D-030 §10 (IconButton's two classes), D-068
+
+Built under the standing delegation (D-069 §1), every recommendation
+adopted. Three findings, none against the spec.
+
+### 1. Two classes per part is how one stylesheet draws two components
+
+`AlertDialog` is `Dialog` with two rules changed, and its parts carry
+Dialog's class first and their own second (`pp-dialog pp-alert-dialog`),
+the way `IconButton` carries `pp-button pp-icon-button`. `AlertDialog.css`
+is one rule — the smaller ceiling, through its own property. The browser
+suite asserts the contract by what it *buys*, resolved: the scrim is the
+viewport, the layers are the tokens, the motion is `none` under reduced
+motion; dropping `pp-dialog` from the panel fails that test (`auto`
+against `1100`). The alternative, a copy of Dialog.css, is the drift
+D-045 wrote about: two files that must agree and nothing that checks it.
+
+### 2. Without a Cancel, Radix leaves focus outside the trap
+
+Radix's alert dialog prevents the focus scope's autofocus and focuses its
+Cancel part. With no Cancel rendered that is `undefined?.focus()` and
+focus stays on the trigger — *outside* a trapped scope, with the rest of
+the page `aria-hidden`. The panel now takes focus itself in that case, and
+development warns that a Cancel is missing: a decision the user cannot
+decline is not a decision. The break check (fallback removed) fails the
+named test with focus still on the trigger.
+
+### 3. Verified
+
+Focus lands on Cancel and returns to the trigger; a scrim press leaves the
+dialog open and presses nothing under it; Action closes after its
+`onClick`; the gallery's three scrims are the size of their cells; axe
+passes with no rule disabled on `role="alertdialog"`. The chunk holding
+`@radix-ui/react-alert-dialog` (14,028 bytes) is referenced by the
+AlertDialog page's payload only. 13 unit and 5 browser assertions; one
+browser break and two unit breaks, each caught by its named test.
+
+## D-071 — `Drawer` rulings and build findings: a token on the anchored axis, no new package, and Radix's scroll lock strips a padded body of its gutter
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Drawer.md`
+(status), the playground's root layout · **Extends:** D-061 §3 (the overlay
+sizing exception), D-067 §2, D-068, D-070 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. Two rulings the spec relies on, then the findings.
+
+### 1. The anchored axis is a token, not the content's
+
+D-061 §3 lets an overlay take a `max-inline-size` from the measure scale
+because nothing in flow constrains a portalled box. A sheet needs the
+exception one step further: an edge-anchored panel has one dimension the
+viewport gives it (a side drawer is the full height) and one that must be
+*chosen* — and a hug panel around a navigation list, a `Stack` of `fill`
+items, would be as wide as its longest label. So `.pp-drawer` declares
+`inline-size: min(var(--pp-drawer-size, var(--pp-measure-xs)), 100%)` for
+`start` / `end`, and `block-size: min(var(--pp-drawer-size, 50%), 100%)`
+for `top` / `bottom`: a length on the anchored axis, logical, from the
+measure scale, capped at the scrim. `.stylelintrc.json` names `Drawer.css`
+in the group allowed `inline-size` and `block-size`, the D-019 shape. The
+tokens are the escape; there is no `size` prop, for Dialog §3's reason.
+
+### 2. No new package: a drawer is Dialog's primitive, placed
+
+Radix has no drawer. 4.1 §2's "one package per component" was written for
+primitives Radix has; for one it does not, the reading is: build on the
+package the nearest component already brought in, when the semantics are
+its semantics. A drawer is a modal dialog with a different placement —
+same role, trap, lock, layer and escape — so it is `@radix-ui/react-dialog`
+with its scrim carrying `pp-dialog__scrim pp-drawer__scrim` (D-070 §1's
+two-class contract), so Dialog.css draws the viewport box, the layer, the
+fill, the fade and the scrim's reduced-motion rule, and `Drawer.css`
+changes only the placement, the gutter and the panel. A third-party
+drawer with drag physics (vaul) was the alternative and is declined: a
+drag-to-dismiss gesture is a surface of its own, and the primitive is
+already the drawer minus placement. The build adds no chunk: the Drawer
+page's payload references the chunk Dialog's does.
+
+### 3. The side resolves at open time, so the thing that resolves it mounts at open time
+
+`start` / `end` resolve against the trigger's direction (4.1 §5). The first
+draft resolved them in `DrawerContent`, which is mounted with the page,
+so a `dir` set after load — the RTL browser test sets one — never reached
+it, and `start` was on the left in a right-to-left page. The surface
+(scrim and panel) is now one component rendered as the portal's child, so
+it mounts when the drawer opens; it resolves the side in a layout effect
+on mount, before paint. The rule for the tier: **resolve a logical side
+in a component that mounts on open, never in one that mounts with the
+page.** `Popover` and `Tooltip` were never exposed — Radix positions them
+on open — but a placement this component owns is its own to time.
+
+### 4. Radix's focus scope skips links when it auto-focuses on mount
+
+A navigation drawer's first tabbable is a link, and Radix's `FocusScope`
+removes links from its mount-autofocus candidates (`removeLinks`), so the
+first focus is the first *button* — here, `Close`. The APG asks for the
+first focusable; Radix's reading is that a link auto-focused and then
+`Enter`-ed navigates away from a dialog the user did not read, which is
+defensible, and it is what every other Radix dialog does. Recorded, not
+fought: the unit and browser tests expect `Close`, and the docs page says
+where focus lands. A consumer who wants the link takes `onOpenAutoFocus`.
+
+### 5. The reduced-motion rule needs the side in its selector
+
+`Drawer.css` sets the entry animation per `[data-side]` at (0,2,0). The
+first draft's reduced-motion rule was a bare `.pp-drawer { animation:
+none }` at (0,1,0), which lost, and two tests said so: the motion test
+read a keyframe name, and the gallery test measured a panel mid-slide.
+The rule is now `.pp-drawer[data-side], .pp-drawer[data-state="closed"][data-side]`.
+Same lesson as D-062 §5 from the other side: an `animation` set on a
+qualified selector must be unset on one at least as qualified.
+
+### 6. Radix's scroll lock rewrites a padded body's gutter to zero
+
+Every Radix modal mounts `react-remove-scroll`, whose scrollbar
+compensation styles `body[data-scroll-locked]`. In its default gap mode
+it reads the body's **margins** and writes them as the body's **top, left
+and right padding** (`padding-left: 0px; padding-top: 0px; padding-right:
+0px` for the usual `margin: 0`), plus `position: relative`. A page that
+carries its gutter on `<body>` — the playground did, `padding:
+var(--pp-space-6)` — loses it while a Dialog, AlertDialog or Drawer is
+open: the content shifts up and left by the gutter, the document shrinks
+by it, and a page scrolled to its end has its `scrollY` clamped. The
+Drawer's tall-panel test caught it as the clamp (the trigger sits at the
+bottom of the page); Dialog's counterpart never scrolled that far and
+never saw it, and neither did the eye, because the scrim covers the shift.
+
+Three things follow. The library cannot undo it: no CSS can restore an
+author's declared value from another rule, and Radix's dialog exposes no
+`RemoveScroll` option. The playground pads a wrapper (`.shell`, the body's
+former padding box, so every baseline's geometry is unchanged) and the
+body has `padding: 0`. And the Dialog docs page — the one AlertDialog's
+and Drawer's defer to — records the gap next to the RTL scrollbar one:
+**put the page gutter on a wrapper inside the body, never on the body.**
+The Drawer's tall test now also asserts the document's height across the
+open, so a future lock that shrinks the page fails by name.
+
+*Amended the same day, from CI run 141:* the Dialog page's baselines,
+authored on run 137, had been captured **under the lock** — the gallery's
+three modal dialogs are open at load, so the page in the PNG had lost its
+top and left gutter — and the moved gutter changed them by exactly that.
+CI classified it as a regression and authored nothing (D-066 §1 doing
+its job). The pair is re-baselined (`npm run dimensions -- --rebaseline
+dialog`) so CI authors them again with the gutter where it belongs; the
+AlertDialog and Drawer pages, whose galleries are modal too, had no
+baseline yet and are authored right the first time.
+
+### 7. The facing edge is an inset shadow
+
+The edge a drawer shows the page carries a hairline; the edge on the
+viewport is flush. That is one physical border side (`border-left` for a
+drawer on the right), and RULES §1 bans the physical border properties
+with no logical spelling of "the edge away from the viewport". So the
+hairline is an inset `box-shadow` of `--pp-border-width-1`, in the same
+declaration as the elevation shadow; the panel's corners are rounded on
+the same side. Physical, like `data-side`, because the side already was.
+
+### 8. Verified
+
+Each side is flush with its edge, the token on the anchored axis and the
+viewport on the other; `start` is on the right under `dir="rtl"`; a side
+drawer at 320px is the full width; a tall panel scrolls itself, the scrim
+does not, and the page keeps its height and offset across open, wheel and
+close; focus lands on `Close` and returns to the trigger; the panel's
+animation is `none` under reduced motion; the theme crosses the portal;
+the gallery holds three, contained. 14 unit and 7 browser tests; four
+browser break checks (`justify-items: right` dropped, `resolveSide`
+pinned to LTR, the side drawers' `inline-size` dropped, the reduced-motion
+rule dropped), each caught by its named test.
+
+## D-072 — `DropdownMenu` rulings: `align` starts, `data-highlighted` joins RULES §4, and one stylesheet's three allowances
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §4
+(the attribute list), `.stylelintrc.json`, `docs/specs/DropdownMenu.md`
+(status) · **Extends:** D-061 §3 and §5, D-062 §2, D-070 §1, D-071 §3 and §6
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. Three rulings the spec relies on, then the
+findings.
+
+### 1. A menu's `align` defaults to `start`
+
+The tier's table (4.1 §5) gives `align` the default `center`, and `Popover`
+took it. A menu is a list read from its start edge: centred under a short
+trigger its labels begin left of the button and its far edge hangs past
+it, and every native menu hangs from the trigger's start edge. So
+`DropdownMenuContent` defaults `align` to `start` — the one component
+default that departs from the table, and the table's own words allow it
+("per component"). `side` stays `bottom`, `sideOffset` is one step (four
+pixels: a list belongs to its button more closely than a panel does).
+
+### 2. `data-highlighted` is the fifth data attribute of RULES §4
+
+Radix writes `data-highlighted` on the row the pointer is over or the
+arrow keys reached, and moves DOM focus there. RULES §4 named eight
+attributes and the `data-state` values; the highlighted row is a state
+none of them carries, and it cannot ride on `data-state`, because a
+checkable row's `data-state` is `checked | unchecked | indeterminate`.
+Added to the list, for a menu now and a listbox (4.11) later: the row's
+highlight is one attribute, wherever a row can be highlighted. Styled as
+the soft Button's hover pair, and the focus ring joins it under
+`:focus-visible` — the browser's heuristic keeps the ring off
+pointer-driven focus, so a mouse user sees the fill alone and a keyboard
+user sees both. No `outline: none` was needed anywhere.
+
+### 3. Three allowances for one stylesheet, and why each
+
+`.stylelintrc.json` gains a `DropdownMenu.css` override: `max-inline-size`
+(the overlay exception, D-061 §3, as for Popover), `inline-size` (the two
+marks — the check, the dot — and the chevron are sized boxes, as Icon's
+and Checkbox's are, D-019's shape), and `margin-inline-start: auto`,
+which no component file had. The shortcut and the chevron sit at the end
+of a row whose *other* children are the consumer's, in any number, so
+neither a grid template nor `justify-content` can place them without
+wrapping what the consumer wrote; `auto` on the trailing child is the one
+declaration that does, and Container's override already admits `auto` for
+the same reason (centring is a margin's job). RULES §2's "no outer
+margins" is about a component's own edges, and this margin is inside one.
+
+### 4. The gutter exists only where a mark can appear
+
+A menu mixing plain and checkable rows must align its labels, and a menu
+of plain commands must not carry an empty column. `:has()` on the panel —
+`.pp-dropdown-menu:has([role="menuitemcheckbox"], [role="menuitemradio"])`
+— sets one custom property that every row and label read as their
+start padding. `:has()` is in every browserslist target and `Select` and
+`Radio` used it first. The browser suite measures both menus: eight pixels
+in the plain one, twenty-eight in the mixed one, on every row and label.
+
+### 5. The direction goes up to the root as Radix's `dir`
+
+For a popover the direction resolves one prop. For a menu it decides which
+arrow key opens a submenu, which closes it, which side the submenu appears
+on and how the roving focus group reads its keys — all of them Radix's,
+all keyed on the root's `dir`, which Radix otherwise assumes `ltr`. So the
+root holds `dir` as state and the content, mounted on open (D-071 §3),
+reads `directionOf(trigger)` in a layout effect and sets it. The RTL row
+of the playground opens its submenu to the left on `ArrowLeft`, its
+chevron flipped by the `dir` Radix writes on the panel, with nothing said
+by the caller. `SubContent`'s `alignOffset` is minus its own top edge
+(border and padding, read from the element), so the first sub-item sits on
+its trigger's row whatever `--pp-dropdown-menu-padding` a consumer set.
+
+### 6. The uncontrolled half is ours
+
+Radix's `CheckboxItem` and `RadioGroup` are controlled-only. RULES §5.5 has
+no exceptions, so both take `defaultChecked` / `defaultValue` through
+`useControllableState`, the Tier 3 hook, and the indicator reads the
+resolved value from a context of ours rather than from Radix's — which is
+also what lets an indicator with no children draw the right mark (check,
+dash, dot) for the row it is in.
+
+### 7. Findings from the build
+
+- **A key pressed before the entry focus lands is lost.** Radix focuses the
+  first item a frame after the list mounts (its roving group's entry
+  focus); the browser tests' opener now waits for that focus before it
+  returns, or the next `ArrowDown` reaches the wrong row. Same shape as
+  D-065's `focusToOpen`.
+- **A modal menu hides the trigger from role queries** while it is open
+  (D-068 §4 again): the opener returns a CSS locator, and the unit test for
+  a controlled menu reads the trigger's text, not its role. The docs page
+  says so under "Testing in jsdom".
+- **axe's `region` rule flags any portalled menu** — the list lands in
+  `<body>` outside every landmark, and unlike a `dialog` a `menu` is not
+  exempt. Disabled for the open-menu check, with the reason in the test and
+  on the docs page; the rules that matter (roles, names, `aria-*`) run.
+
+### 8. Verified
+
+The z-index token reaches Radix's wrapper and the list is named by its
+trigger; `align="start"` puts the list on the trigger's start edge four
+pixels below it; every row is 32px, a plain menu has no gutter and a mixed
+one insets rows and labels alike with the mark in the gutter on the row's
+centre line; the highlighted row is the hover token resolved and typeahead
+moves it; the submenu opens on `ArrowRight` to the right in LTR and on
+`ArrowLeft` to the left in RTL, its first item on its trigger's row, the
+chevron flipped; `Enter` activates, closes and returns focus; an outside
+press on a modal menu closes it and does not land; a long label wraps in
+the ceiling and a long list scrolls itself with the page still; the theme
+crosses; the gallery holds three. 16 unit and 10 browser tests. Break
+checks in §9.
+
+### 9. Break checks
+
+Five, each caught by its named test: the `dir` hand-off dropped (the RTL
+submenu opened on the wrong key, `toHaveCount` on the submenu failed); the
+`:has()` gutter dropped (the alignment test and the gallery's inset); the
+ceiling dropped (the long label ran past the measure); the reduced-motion
+rule dropped (`animationName` was the keyframe); the submenu's
+`alignOffset` zeroed (the first sub-item four pixels below its trigger's
+row). The tone attribute's break is a unit test's (`data-pp-tone`).
+
+## D-073 — `ContextMenu` rulings: a menu's parts are built once, Gate B under the batch, and a region that renders a `<div>`
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.claude/skills/component/SKILL.md`
+(Gate B), `docs/specs/ContextMenu.md` (status) · **Extends:** D-069 §2, D-070 §1,
+D-072
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. The twelve parts of a menu are one implementation, in `src/internal/menu/parts.tsx`
+
+Radix composes `@radix-ui/react-menu` twice — a dropdown menu and a
+context menu — with different scopes, so `DropdownMenuItem` cannot render
+inside a `ContextMenu`. But nothing in an item, a checkable item, a radio
+group, an indicator, a group, a label, a separator, a shortcut or a
+submenu is about how the menu opened. The D-070 §1 contract keeps the CSS
+in one place; a second copy of 4.7's parts would have kept the *behaviour*
+in two — the tone attribute, the uncontrolled halves, the indicator's
+marks, the group's name, the submenu's row alignment — which is D-045's
+drift with a different face. So an internal factory takes either Radix
+namespace and returns the library's parts for it, typed against
+`@radix-ui/react-dropdown-menu`'s shapes (the context menu's are the same
+shapes with another scope), and each component exports them under its own
+names with its own `displayName`s and guard message. Both components'
+unit suites ran unchanged after the move. A `MenuPrimitives` interface is
+the seam: a future menubar composes the same primitive and gets the same
+parts.
+
+### 2. Gate B reads a `review` waiting only on its baseline as `done`, under the batch
+
+4.8 depends on 4.7, which was in `review` with every box checked but the
+CI-authored baseline. D-069 §2 carved that wait out of the WIP limit
+because it is CI's, not the work's; the same reasoning applies to Gate B,
+whose purpose is that a dependent builds on a final API — and 4.7's API
+was final. Holding 4.8 for two CI cycles (an authoring run, then a compare
+run) would have serialised the batch behind exactly the wait D-069 §2
+removed. Recorded in the skill's Gate B text, scoped to the D-069 batch;
+outside it, `done` means `done`.
+
+### 3. The trigger is a region that renders a `<div>`, through Radix's `asChild`
+
+Radix's trigger is a `<span>`. A region wraps the thing the menu is about —
+a card, a row, a canvas — which is block content, and an inline box around
+block content is not a box a layout can reason about. The component
+renders Radix's trigger `asChild` onto its own `<div
+class="pp-context-menu__trigger">`, or onto the consumer's element with
+`asChild` of its own: two slots deep, one element rendered, and Radix's
+handlers, `data-state` and `data-disabled` land on it. It is *not* made
+focusable: `Shift+F10` opens a context menu at the focused element, and
+the thing inside the region is what should be focusable; a tab stop on a
+box that does nothing when focused is a cost every keyboard user pays.
+The docs page says so twice, and once more that every command in a
+context menu needs a visible way in.
+
+### 4. No stylesheet, no `side`, and Radix's two pixels
+
+`AlertDialog` changed two rules and had a two-rule file; this component
+changes none and ships no CSS file — a file that changes nothing is where
+drift starts. Radix places the list to the right of the press point,
+aligned to its top, flipping at collisions, fixed inside its content in
+physical terms, which is how every platform opens a context menu in every
+direction; so `Content` has no `side`, `align` or `sideOffset`. Radix's
+own `sideOffset: 2` is hardcoded in its source and cannot be tokenised
+from here: the list starts two pixels right of the pointer, recorded as
+Radix's number, not ours.
+
+### 5. `defaultOpen` exists because RULES §5.5 has no exceptions
+
+Radix's root has no `defaultOpen` — a context menu has no point to open at
+until a press. The root holds `open` through `useControllableState` and
+hands Radix the controlled pair, so both halves exist; `defaultOpen` opens
+the list at the document's origin, which the docs page calls of little
+use. What the pair is for is closing from outside.
+
+### 6. Findings from the build
+
+- **A list opened at a point is anchored to viewport coordinates**, so in
+  a 900px viewport the gallery's lower lists are shifted up to fit. The
+  full-page screenshot resizes the viewport to the page and floating-ui
+  re-places them at their points — D-062 §2's finding for Popover, from
+  the other side. The gallery test sets a tall viewport so it measures
+  what the screenshot shows; the gallery opens each list with a
+  `contextmenu` event dispatched at a point inside its region after mount,
+  since `defaultOpen` has no point.
+- **Opened from the keyboard, the entry focus lands on the first item**
+  (Radix's `isUsingKeyboardRef`), so `Shift+F10` then `Enter` activates
+  the first command; opened by a press, the list itself holds focus and
+  the first `ArrowDown` reaches the first item. Both tested.
+- **A submenu needs room on its side**: pressed near a region's left edge
+  in the RTL row, the submenu had none on the left and flipped right; the
+  test presses near the right edge. Not a bug — the collision handling
+  doing its job — but a thing a test must know.
+
+### 7. Verified
+
+A secondary press opens the list at the pointer (its top-left two pixels
+right of the point) with 4.7's row height and the z-index token on the
+wrapper, and the region reports `data-state`; `Shift+F10` on the focused
+region opens it with the first item focused, `Enter` acts, closes and
+returns focus; the RTL region's submenu opens on `ArrowLeft`, to the left,
+the chevron flipped; a disabled region opens nothing and a controlled one
+closes from outside; the theme crosses; the gallery holds three, each at a
+point inside its region. 9 unit and 6 browser tests; three break checks
+(DropdownMenu's class dropped from the content — the z-index read `auto`
+and the row lost its height; the `dir` hand-off dropped — the RTL submenu
+opened on the wrong key; the region as Radix's `<span>` — the unit test),
+each caught by its named test.
+
+## D-074 — `Tabs` rulings: `active | inactive` joins RULES §4, the page's direction is the component's, and a kept panel hides itself
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §4
+(the `data-state` values), `docs/specs/Tabs.md` (status) · **Extends:** D-061 §5
+and §6, D-064 §3, D-072 §2
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The first Tier 4 component that is not an overlay.
+
+### 1. `data-state="active | inactive"` is the selected-of-several state
+
+Radix writes it on a tab and its panel. RULES §4 had `open | closed` for
+shown-or-not and `on | off` for pressed; a selected tab is neither — its
+panel is shown *because* it is selected, and it is chosen, not pressed.
+Added to the vocabulary, the way D-064 §3 added the tooltip's two, and
+for the same reason: a real state with no existing word. It is the pair
+for anything that selects one of a set from now on.
+
+### 2. Radix's `dir` attribute is removed, and its value is read at mount
+
+Radix's tabs root writes `dir` on its element, `ltr` unless told, which
+inside a right-to-left page flips the whole strip to left-to-right — on
+the server, before any script could correct it. The root is rendered
+`asChild` onto an element of ours that sets `dir={undefined}` after
+Radix's props: Radix's Slot lets the child's value win, and an undefined
+one is no attribute at all. The tabs inherit the page's direction, on the
+server and on the client, with no flash. The value Radix's arrow keys need
+(`ArrowLeft` is "next" in RTL) is read from the element in a layout
+effect at mount and handed to Radix as `dir`, before paint. A direction
+that changes after mount is not tracked, 4.1 §3's ruling for the theme.
+The rule for the tier's non-overlays: **a component in flow never writes
+a direction; it reads the page's when it needs the value.**
+
+### 3. An inactive panel is an empty, hidden element, and a kept one hides itself
+
+Radix renders every panel's element always — empty and `hidden` while
+inactive, so `aria-controls` always resolves — and the children of the
+selected one only. `keepMounted` (Radix's `forceMount`, named for what it
+is for) keeps a panel's children rendered so a form does not lose what
+was typed; but `forceMount` also drops `hidden`, and leaves two panels
+showing: Radix expects the consumer to hide the inactive one. The
+component does it: the root mirrors the selected value (Radix exposes it
+to nothing outside its parts) and a kept panel sets `hidden` from the
+mirror, so it is hidden exactly when a fresh one would be empty. Found by
+the unit test, which asked for `hidden` and did not get it; the browser
+test had passed by counting the *fresh* panel's `hidden` and was
+corrected to count both.
+
+### 4. The bar sits on the hairline: a pseudo-element hung one hairline past the edge
+
+The list draws a hairline on its far edge; the selected tab draws a
+two-pixel bar on the same edge. Adjacent, the two read as a three-pixel
+bar where the tab is selected and one pixel elsewhere; overlapping, the
+bar *is* the line for that tab's width, which is what every tab strip
+means. A tab cannot extend into its list's border without a negative
+margin (RULES §2), so the bar is `::after`: a zero-size box at
+`inset-block-end: -1px` (the hairline's width, as a token) with a
+two-pixel `border-block-end`, logical, so the column form uses
+`border-inline-end` and `inset-inline-end`. The browser test reads the
+pseudo-element's offset and the tab's and list's edges and asserts the
+bar's outer edge is the list's outer edge.
+
+### 5. The strip scrolls and the list grows
+
+A row of tabs wider than its container must neither wrap nor overflow
+the page. The list sits in a strip of the component's own, a
+flex row with `overflow-x: auto`, and is a flex item in it: `flex-grow: 1`
+makes it at least the strip, and a flex item's automatic minimum size —
+its min-content, which for a row of non-wrapping tabs is all of them —
+means it is never narrower than its tabs. So its hairline runs under
+every tab and not only the visible ones. The first break check dropped
+`flex-shrink` and caught nothing, which is how the minimum-size half was
+found to be the mechanism; the checks now make the strip a block (the
+list becomes the strip's width and its tabs overflow it) and drop
+`flex-grow` (a short list's hairline stops at its last tab).
+`min-inline-size: max-content` would say the same and is banned by the
+value list. Not `Scroller`, which is a
+labelled, focusable region for content and would add a tab stop a strip
+does not need. The strip clips, so the tab's focus ring is inset.
+
+### 6. Verified
+
+A tab is the medium control height; the selected label is the text
+colour and an unselected one muted, resolved; the bar is two pixels of
+the accent's solid step with its outer edge on the list's; the arrows
+select in automatic mode, skip a disabled tab, and `Tab` reaches the
+panel; manual mode selects on `Enter`; at 240px the strip scrolls, the
+page does not, and the hairline ends where the last tab does; the column
+form is beside its panel with the bar on its inline-end edge and
+`ArrowDown` moving; a kept panel keeps what was typed and a fresh one
+does not, both hidden; the RTL strip reads right to left with no `dir` of
+its own and `ArrowLeft` is next; the transition is none under reduced
+motion. 10 unit and 6 browser tests.
+
+### 7. Break checks
+
+Five, each caught by its named test: the pseudo-element's overhang zeroed
+(the bar's outer edge no longer the list's); the strip made a block (the
+hairline stopped short of the last tab at 240px); the list's `flex-grow`
+dropped (a short strip's hairline stopped at its last tab); the direction
+pinned to `ltr` (the RTL strip's `ArrowLeft` went the wrong way); the
+reduced-motion rule dropped (the transition measured). Two lessons on the
+checks themselves: dropping `flex-shrink` caught nothing (§5), and a
+mutation that leaves an import unused fails the library build the browser
+suite's server runs first, which reads as the server not starting.
+
+## D-075 — `Accordion` rulings: `multiple` not `type`, `collapsible` on by default, the heading level asked once, and a button that fills its heading
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Accordion.md`
+(status) · **Extends:** Alert.md §6, D-062 §5, D-074 §2 and §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The second Tier 4 component in flow.
+
+### 1. `multiple` is a boolean, and the value's shape follows it
+
+Radix's root takes `type: 'single' | 'multiple'`; RULES §5 reserves
+`type`. So the prop is `multiple?: boolean`, and `AccordionProps` is a
+discriminated union on it — `string` values and a `collapsible` for one,
+`string[]` for many — so `onValueChange` is typed to match and a
+consumer cannot hand a single accordion an array. The component
+branches on it to give Radix the `type` it wants.
+
+### 2. `collapsible` defaults to `true`
+
+Radix's default is `false`: the strict APG reading, where exactly one
+panel is always open and the open heading is `aria-disabled`. The
+expectation a user brings is that a section they opened, they can close;
+that is the default here, and `collapsible={false}` is the strict form.
+
+### 3. The heading's level is the root's, once, and defaults to `3`
+
+Alert.md §6 ruled that a component cannot know the right heading level,
+and rendered a `div`. An accordion's headings *must* be headings (APG)
+and are all one level, so the level is asked once, on the root
+(`headingLevel`, `2`–`6`), and the trigger renders the heading around
+itself — Radix's `Header` part folded into it, because a trigger outside
+a heading is the one shape the pattern forbids and a part nobody may
+omit is not a part. It defaults to `3`, unlike `Heading`'s required
+`level`: an accordion under a page's `h2` is `h3` far more often than
+not, and a wrong default here is an outline nit, not an inaccessible
+control.
+
+### 4. A button's `width: auto` is shrink-to-fit whatever its `display`; the heading is a grid
+
+The first draft made the trigger `display: flex`, expecting a block-level
+box to fill its heading. It did not: a `<button>`'s `width: auto` is
+shrink-to-fit even as a block-level flex container, and the browser test
+measured a label-wide button in a full-width item. A width is banned, so
+the heading is `display: grid` and the button, its one grid item,
+stretches to the track. The rule, for every full-width button the
+library draws from here: **a button fills its parent as a grid item, not
+by its own display.**
+
+### 5. Findings from the build
+
+- **Radix omits `aria-controls` on a closed trigger** (the region is in
+  the DOM, empty and hidden, labelled by the trigger either way). The
+  unit test asked for it closed and did not get it; it now asks for it
+  open. Recorded on the spec and the docs page.
+- **`forceMount` shows the panel**, as for Tabs (D-074 §3): the root
+  mirrors the open value — a string or an array — and a kept panel sets
+  `hidden` from it. A kept panel does not animate closed, because Radix's
+  exit runs on unmount and a kept panel never unmounts; the docs say so.
+- **Playwright will not press an `aria-disabled` control**: the strict
+  accordion's open heading is one, and the test that proves a press does
+  nothing forces the press.
+- **A `Presence` exit under real motion keeps a closing panel's children
+  mounted** for the duration, which the kept-panel test met when the
+  reduced-motion rule was dropped for its break check: the fresh panel's
+  input still held its value a frame later. Collateral of the check, not
+  a defect (D-035 §3's note on combined runs).
+
+### 6. Verified
+
+The trigger is at least the large control height, fills its item, is an
+`h3` with no margin and the body type size; the hairlines are one pixel
+above the root and below each item; the chevron turns 180° on the open
+item and its transition is none under reduced motion; the content's
+animation is none, its overflow hidden, its padding on the body; single
+opens one and closes the other and the open one closes, strict keeps one
+open and marks it `aria-disabled`; the arrows move between headings and
+skip a disabled one, `Home` / `End` reach the ends, `Enter` toggles;
+multiple keeps two open under level-four headings; a kept panel keeps
+what was typed, hidden while closed, and a fresh one empties. 12 unit and
+4 browser tests; five break checks (the chevron's turn, the
+reduced-motion rule, the heading's grid, the `hidden` mirror, `multiple`
+ignored), each caught by its named test.
+
+## D-076 — `Combobox` rulings: the consumer filters and is told why the text changed, a value from outside is named by `getLabel`, one allowance for the list's floor, and the listbox inside a presentation panel
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`,
+`DropdownMenu.css` (the gutter selector), `docs/specs/Combobox.md` (status) ·
+**Extends:** D-061 §1 and §3, D-070 §1, D-072 §2, D-073 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The one Tier 4 component with no primitive under
+its behaviour.
+
+### 1. The consumer renders the options that match, and `onInputValueChange` says why the text changed
+
+The component does not filter: it owns the text, the selection, the open
+state, the highlight and the keyboard, and reports the text. A built-in
+filter would need every label in JavaScript, a match rule, a debounce,
+and would still be wrong for options from a server; rendering the matches
+is one line over an array and makes the server case ordinary.
+
+The first build reported the text alone, and the first test that selected
+an option and reopened the list found one match: the text was the
+selected label, and the consumer had filtered on it. So the callback is
+`onInputValueChange(text, reason)`, `reason` being `input` (typed),
+`select` (set to a label, or cleared, by a selection) or `value`
+(following a value set from outside), and the documented pattern filters
+on `input` only — after a selection the query is empty and a reopened
+list shows everything. Downshift reports the same thing by the same
+name; a combobox that does not filter has exactly this one thing to say.
+
+### 2. A value from outside is named by `getLabel`
+
+An option's label is read from it when it is chosen, which covers every
+selection the user makes. A `defaultValue` or a controlled `value` set by
+a form has no option to read — the list is closed and its children are
+not mounted — so `getLabel(value)` names it, for the input's text and for
+a token, and the value itself is shown without it. A registration
+context cannot help: an unrendered option cannot register. Object values
+(`{ value, label }`) were the alternative and are declined: strings post
+in forms and compare, and a label is asked for only when the option is
+not there.
+
+### 3. The list's floor is Radix's anchor width, one value `.stylelintrc.json` admits
+
+A list narrower than its field is a list that looks unrelated to it;
+`min-inline-size: var(--radix-popper-anchor-width)` is the floor, and the
+menu's ceiling sits above it — where the field is wider than the measure,
+the floor wins, which CSS resolves in the floor's favour by rule. The
+value list for `min-inline-size` allows `0` alone (RULES §1's intent: no
+component sizes itself); the Combobox override admits this one value
+besides, named, because it is the anchor's width and not the
+component's. `DropdownMenu.css`'s gutter selector gains `[role="option"]`
+so a listbox's options align like checkable rows: they can be chosen.
+
+### 4. The listbox sits inside a presentation panel, and the empty row beside it
+
+axe's `aria-required-children` (a real WCAG 1.3.1 failure) fails a
+`listbox` holding anything but options and groups, and the consumer's
+"nothing matches" row has to sit somewhere. So Radix's content — the
+panel DropdownMenu.css draws, which Radix would make a `dialog` — is a
+`presentation` wrapper with its `tabindex` removed, the options go in a
+`listbox` of the panel's own (the input's `aria-controls`, the naming,
+`aria-multiselectable`, `aria-busy`), and any `ComboboxEmpty` among the
+list's children is rendered after it. Found by the axe test's "open with
+only the empty row" case, which is why that case is in the test.
+
+### 5. The listbox is named as its input is
+
+A listbox needs a name (axe's `aria-input-field-name`, and the user's
+ear). Read when the list mounts: the input's `aria-label`, or its
+`aria-labelledby`, or the `<label>` it has — a `Field`'s — by id; and a
+development warning when there is none. No `label` prop on the list: the
+input is already named, and two names for one control drift.
+
+### 6. Focus never leaves the input
+
+The highlight is `aria-activedescendant` on the input and `data-highlighted`
+on the option (D-072 §2's listbox, as promised), moved over the DOM's
+enabled options when a key is pressed — so a consumer's filtering,
+grouping and disabling are honoured with nothing registered — and a move
+asked for before the list is mounted waits for the mount. The list
+refuses `pointerdown`, so a press in it does not blur the field; Radix's
+`onFocusOutside` is prevented outright (focus is always outside the
+content) and `onInteractOutside` when the press is in the box. The
+control's ring is the box's, through `:has()` on the focused input, so a
+token's remove button rings itself.
+
+### 7. Verified
+
+The control is the medium control height, the list is at least the
+control's width under a narrow field and exactly it under a wide one, and
+the highlighted option scrolls into view down a long list; a press in the
+list does not blur the input, a click takes, the box rings for the input
+and a token's button rings itself and removes on `Enter`; a selected
+option is marked in the gutter with every label aligned; the chevron
+turns and is still under reduced motion; `loading` shows the spinner and
+marks the listbox busy until the options arrive; the theme crosses; the
+gallery holds three open lists, each its control's width. 13 unit and 5
+browser tests. Break checks in §8.
+
+### 8. Break checks
+
+Five, each caught by its named test: the list's `pointerdown` refusal
+dropped (a press in the list blurred the input); the floor dropped (the
+list under the narrow field was narrower than it, and the gallery's
+three too); `[role="option"]` dropped from the menu's gutter selector (a
+selected option's mark sat on its label); the scroll-into-view dropped
+(the seventeenth option was highlighted out of view); `getLabel` ignored
+(a value from outside showed as its code, in the input and as a token —
+the unit tests).
+
+## D-077 — `Toast` rulings: an event, not an element; an `Alert` that floats; `live`, not `type`; and what Radix's announcer is
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`Toast.css` in the `inline-size` group), `src/test/setup.ts` (pointer
+capture), `docs/specs/Toast.md` (status) · **Extends:** Alert.md §2 and §5,
+D-061 §3, D-070 §1, D-071 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. One provider, one hook, no `<Toast>` element
+
+A toast is an event, not a place in the tree. `ToastProvider` owns the
+queue and the region; `useToast()` returns `toast`, `dismiss` and
+`update`. Radix ships the element; this library ships the event, and
+does not also export the element under its own names, because two APIs
+for one thing are two APIs to keep in step. A progress toast is
+`update(id, …)`, not a controlled element.
+
+### 2. A toast is an `Alert` that floats
+
+Every toast carries `pp-alert pp-toast` and its parts carry `Alert`'s
+classes, so `Alert.css` draws the surface, the tone, the layout and the
+dismiss button (D-070 §1, the third component drawn by another's
+stylesheet) and `Toast.css` adds the region, the shadow, the motion and
+the swipe. Alert §2's ruling is the reason this component exists — a
+region that exists first and receives text afterwards is the reliable
+announcement — and Alert §3 and §5 hold: the tone is never the only
+signal, and there are no default icons.
+
+### 3. `live`, not `type`; `limit` at three; the region a token wide at a logical corner
+
+Radix's `type: 'foreground' | 'background'` is RULES §5's reserved word;
+`Alert` already says `live: 'polite' | 'assertive'`, so the toast says
+it too, `assertive` by default (a toast is almost always the result of
+what the user just did). `limit` defaults to three, with the rest
+waiting in order: a failing form must not wallpaper the screen. The
+region is fixed at `placement` — logical, `bottom-end` by default — its
+inline size `--pp-toast-width` (`--pp-measure-xs`) capped at the viewport:
+D-061 §3's exception in D-071 §1's form, the anchored axis of a floating
+box taking a token, with `Toast.css` in the `inline-size` group. The
+region takes no pointer events; its toasts do.
+
+### 4. The motion is from the block edge, and every placement stacks newest nearest its edge
+
+A toast slides in from the edge it is anchored to — the block edge, so
+top placements slide down and bottom placements up — and nothing in the
+motion is physical; the swipe, Radix's, is the one physical thing and is
+resolved from the region's direction at mount. The first draft reversed
+the *bottom* lists to put the newest nearest the edge and had it
+backwards: DOM order is oldest first, a bottom list grows upward from its
+edge, so it already reads down to its newest; it is the *top* list that
+needs `column-reverse`. The browser test measured the second toast above
+the first, and the rule is now stated as the list growing away from its
+edge.
+
+### 5. What Radix's announcer is, and what the toast element is not
+
+Radix renders a visually hidden `role="status"` region, `aria-live` per
+`live`, holding the toast's text prefixed by the provider's `label`, for
+one second on arrival and then not at all; the toast element itself
+carries no live role, so it is not read twice. The spec's first draft
+gave the element `role="status"` as well; the unit test asked for it and
+Radix had not written it. Corrected in the spec, the docs and the test,
+which now reads the announcer inside its second.
+
+### 6. Findings from the build
+
+- **jsdom has no pointer capture**, which Radix's swipe asks of the
+  element under a pointer; `hasPointerCapture` and its two companions are
+  stubbed in the test setup, as `scrollIntoView` and `ResizeObserver` are,
+  and the docs page tells consumers to do the same.
+- **No animation in jsdom means Radix's Presence unmounts a closing toast
+  at once**; the provider still forgets it after the leave duration, read
+  from `--pp-duration-fast` where the region sits.
+- **Every provider on a page listens for the hotkey**, and each focuses
+  its own list; the playground has eight, so `F8` there focuses the last
+  registered. An app has one. The browser test finds whichever list took
+  focus and dismisses a toast in it.
+- **A closed toast's place is taken by a queued one**, so a test that
+  counts open toasts after a dismissal counts wrong; it asserts the
+  dismissed toast is gone instead.
+
+### 7. Verified
+
+The region is at the bottom-end corner, the token wide, its gutter the
+token, taking no pointer events while its toasts do; a toast fills it;
+the newest is nearest the edge; the `z-index` is the token; the motion is
+none under reduced motion; the limit shows three of five and a dismissal
+lets the fourth in; `F8` focuses a list, `Tab` reaches a toast's button
+and `Escape` dismisses it; four placements sit at their logical corners
+and `bottom-end` is the bottom left under `dir="rtl"`; the gallery holds
+a toast per cell fixed inside its stage, the region the cell or the token
+wide. 8 unit and 4 browser tests. Break checks in §8.
+
+### 8. Break checks
+
+Five, each caught by its named test: `pointer-events: none` dropped from
+the region (the dead-zone read); the bottom list reversed (the newest
+above the older); the limit ignored (five open, not three); the swipe
+pinned to `right` (the right-to-left stage's toast said `right`); the
+reduced-motion rule dropped (the enter animation measured, and the
+gallery read no toasts mid-motion — collateral of the un-reduced run,
+D-035 §3).
+
+## D-078 — `CommandPalette` rulings: made of the tier, the first match highlighted, focus back to whatever had it, and `mod` decided when pressed
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`CommandPalette.css` in the `inline-size` group), `src/internal/overlay/focus.ts`
+(`always`), `docs/specs/CommandPalette.md` (status) · **Extends:** D-070 §1,
+D-071 §1, D-073 §1 and §2, D-076 §4 and §6
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last of Tier 4.
+
+### 1. Made of the tier, and the listbox's highlight is one hook
+
+No package is added: the modal and its scrim are Dialog's through the
+two-class contract (`pp-dialog pp-command-palette`), the rows are
+DropdownMenu's through its item class and the panel writing the row's
+private variables (`--_row`, `--_inline`, `--_mark`, Toggle's device for
+Button's), the shortcuts are `Kbd`s, and the highlight is Combobox's —
+factored out of it into `src/internal/listbox.ts` (`useActiveOption`,
+`optionsOf`) so both move the same highlight over the same DOM the same
+way (D-073 §1's argument, for behaviour). Combobox's suite ran unchanged
+after the move.
+
+### 2. The first match is highlighted as the user types — the one place Combobox's rule is reversed
+
+Combobox highlights nothing when its list opens (Combobox §4): its `Enter`
+with nothing highlighted submits a form, and a first match taken by
+surprise is a wrong city. A palette's `Enter` runs a command and its whole
+point is `Enter` on the first result, so the list highlights its first
+enabled item on open and on every change of the text. Same hook, opposite
+default, each recorded.
+
+### 3. Focus returns to whatever had it
+
+`useFocusRestore` restored to the recorded element only when a modal had
+no trigger (Dialog §7); a palette usually has a trigger *and* is usually
+opened by its hotkey from wherever the user was, and Radix would then
+send focus to the trigger button the user never touched. The hook gains
+`always`: the element that had focus when the palette opened is the one
+restored — the trigger when the trigger was used, the field the user was
+in when the hotkey was. Dialog, AlertDialog and Drawer keep the old
+reading; their suites ran unchanged.
+
+### 4. `hotkey` once, `mod` decided when pressed; the palette sits high, a token wide
+
+`hotkey="mod+k"` binds a document `keydown` that toggles the palette;
+`mod` is ⌘ where `navigator.platform` says Apple and Ctrl elsewhere,
+decided in the handler (RULES §7), and every other modifier must match
+exactly, so `Shift+Ctrl+K` is not `Ctrl+K`. Off by default, for an app
+with its own shortcut layer. The panel's inline size is a token
+(`--pp-measure-sm`), the D-071 §1 form, and it sits `--pp-space-9` below
+the scrim's top rather than at its centre: a field one types into sits
+where the eye starts. The field's focus is its hairline — the input's
+outline is transparent and the field's bottom edge takes the focus tone
+— Input's D-039 §4 affordance, in the one place a ring inside a panel
+would read as a box in a box.
+
+### 5. Findings from the build
+
+- **The consumer's `Empty` row sits beside the listbox** (D-076 §4 again),
+  partitioned from the children by type.
+- **`Enter` runs the highlighted item by clicking it**: the item's handler
+  lives in React, the highlight is a DOM id, and `node.click()` is the
+  one path both a pointer and the keyboard take — no registry of
+  handlers by id.
+- **Closing clears the text**, so the next open starts fresh; a controlled
+  `inputValue` sees the clear through its callback and may keep it.
+
+### 6. Verified
+
+The panel sits the offset below the top, the token wide, centred, over
+Dialog's scrim at the overlay layer, with no padding; the field is
+focused on open with its hairline in the focus tone and no outline of its
+own; a row is the medium control height; typing narrows and highlights
+the first match, the arrows move with the menu's fill, `Enter` runs the
+command, closes and returns focus to the trigger; `Control+k` toggles it
+with the text cleared; a long list scrolls and keeps the highlight in
+view; the theme crosses; the gallery holds three contained palettes with
+the matches for "go" and one highlighted. 8 unit and 4 browser tests.
+Break checks in §7.
+
+### 7. Break checks
+
+Five, each caught by its named test: the scrim's start alignment dropped
+(the panel centred); the first-match highlight dropped (nothing
+highlighted on typing, in the long list, and in the gallery); the hotkey
+listener dropped (`Control+k` opened nothing); the row variable dropped
+(the menu's small row); the close after select dropped (the palette
+stayed open after `Enter`).
+
+## D-079 — `Card` rulings: named parts for a server compound, no shadow, the foot sunken, and the wrap is the card's
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md`
+§5.6 (the parts of every compound are named exports),
+`docs/specs/Card.md` (status) · **Extends:** D-062 §1, D-053 §4 and §5,
+D-068 §2
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The first of Tier 5, and the first Server
+Component compound.
+
+### 1. Named parts for a server compound too, and RULES §5.6's example is amended
+
+RULES §5.6 gave `<Card><Card.Header/></Card>` as the example of
+composition, and then said client compounds use named exports because a
+Server Component cannot dot into a client module (D-062 §1). A card is a
+server module: it *could* dot. It does not, because the library would then
+have two spellings for one idea, chosen by an implementation detail the
+consumer should not have to know. The rule now reads "the parts of every
+compound are named exports", and its example is
+`<Card><CardHeader/></Card>`. `Card`, `CardHeader`, `CardBody`,
+`CardFooter`; no context, so a part outside the root is a plain `div` and
+throws nothing.
+
+### 2. A bordered raised surface with no shadow; one hairline per adjacent pair; the foot sunken
+
+The raised surface, a hairline edge, no shadow: a shadow is for what floats
+(Popover, Dialog, Toast), and a card sits on the page. The hairline between
+sections is drawn as the *later* section's block-start border, so a body
+alone has no line, a header and a body have one, and all three have two —
+the count is the assertion. The footer is `--pp-color-bg-sunken`, so a row
+of actions reads as the card's foot rather than as more body. No `tone`, no
+`variant`, no `size`: like Alert (D-053), a card's children are arbitrary,
+and a filled surface would put them on the wrong background.
+
+An interactive card is the consumer's link or button through `asChild`
+(RULES §5.7): the class lands on their element, and `:is(a, button)` gives
+it the hover edge (`--pp-color-border`), `--pp-shadow-1` as the lift, the
+one ring, and its text back — a link's underline and colour reset, because
+a card is not a run of text. The playground's link card is an `<a>`, and
+the test reads its tag.
+
+### 3. The wrap is the card's; `min-inline-size: 0` is stated, not claimed
+
+The spec copied Alert's finding: "`min-inline-size: 0`, so a URL in the
+body cannot push the box past its parent". The break check said otherwise:
+dropping it changed nothing, because the card clips (`overflow: hidden`,
+for its radius), and a clipped flex or grid item's automatic minimum is
+already zero. The URL on the page wrapped because it sat in a `Text`, whose
+own `overflow-wrap: anywhere` did the work — the test was passing on a
+mechanism the component did not own. And a card is worse off than Alert
+here: an unbreakable string in a bare section would not paint past the edge
+(D-053 §4), it would be *cut off* by the clip, silently.
+
+So `overflow-wrap: anywhere` is on the root, inherited, and the page's URL
+is a bare `<p>` so that the card's rule is the one under test: dropping it
+fails "a URL stays inside at 240px". `min-inline-size: 0` stays on the root
+because RULES §1 defines `fill` as including it (D-053 §5's ruling), and its
+comment says the clip makes it unobservable here; it is gone from the
+sections, which are cross-axis children of a column and never had an
+automatic minimum to zero. The spec's break list names the rule that
+actually holds.
+
+### 4. Verified, and the four breaks
+
+Unit: four tests — the parts and their classes, `asChild` on a link, a
+part outside the root, axe in both themes. Browser: the surface and the
+foot resolved to their tokens, the hairline count across three cards, the
+padding tokens, the hover lift and ring, a link card's text not
+underlined, the URL at 240px. Break checks (D-035 §3): the hairline rule
+dropped (the count, `['0px', '1px']` read `['0px', '0px']`); the footer's
+surface dropped (transparent); the hover lift dropped (`box-shadow` stayed
+`none`); `overflow-wrap` dropped (the URL pushed the card past its cell).
+Each failed on exactly the test named for it; the fifth, `min-inline-size:
+0`, is §3.
+
+## D-080 — `Progress` rulings: `value` absent is indeterminate, a name at the type level, a fill that is a flex item, and `accent` by default
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Progress.md`
+(status) · **Extends:** RULES §4 (the `data-state` vocabulary gains
+`determinate`), D-062 §5, D-035 §3; the Spinner spec's decision 6
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The determinate half of what 1.6 `Spinner` began.
+
+### 1. `value` present is determinate; absent is indeterminate; `determinate` joins `data-state`
+
+No `indeterminate` boolean beside a `value`: two props for one state are
+two props to keep in step, and a `value` of `undefined` already says the
+size of the work is unknown. `aria-valuenow` is written only when there
+is a value, which is ARIA 1.2's reading of an indeterminate progressbar
+(NumberInput §5 verified the same for `spinbutton`). `max` defaults to
+100 and falls back to it, with a development warning, when it is not a
+positive finite number; the value is clamped to `[0, max]`.
+
+The root carries `data-state="determinate" | "indeterminate"`.
+`indeterminate` was already in RULES §4's vocabulary as a checkbox's
+third state; `determinate` extends it under §4's extension rule (D-064
+§3's shape): "the value is known" is a real state the stylesheet
+switches on, and `:not([data-state="indeterminate"])` is a worse
+spelling of it.
+
+### 2. A name at the type level, and the fill is a flex item
+
+`ProgressProps` is a union: `label` (written as `aria-label`) or
+`aria-labelledby`, one required and not both. Spinner's union is
+`label | decorative`; a progress bar has no decorative case, because it
+exists to report a number, and a number of nothing is not decoration.
+Nothing is rendered visually hidden: the visible label beside a bar is
+the consumer's `Text`, named once by `aria-labelledby`.
+
+Slider draws its fill as a grid column. A progress bar's fill *moves*,
+and `grid-template-columns` does not interpolate in Safari, so a bar
+built Slider's way would slide in one browser and jump in another. The
+fill is `flex: 0 0 var(--_pp-progress-fill)`, the percentage written
+inline by the component (Slider's device for the value), transitioned on
+`flex-basis` over `--pp-duration-normal`. A flex row follows the writing
+direction the way a grid does, so in RTL the fill grows from the right
+edge with no rule for it; the browser suite reads the fill's end edge
+against the track's under `dir="rtl"`. The indeterminate segment sweeps
+by `inset-inline-start`, from `-40%` to `100%` — a logical property, so
+the sweep starts at the start in both directions, where a `translate`
+would need a second keyframe set for RTL.
+
+### 3. `accent` by default, where Spinner is `neutral`; the track is the decorative step
+
+A spinner sits inside a control and takes the control's colour; a bar
+stands alone on the page, where a grey fill reads as disabled. So `tone`
+defaults to `accent` here and the two defaults are recorded side by
+side rather than made to agree. Track `--pp-tone-border-subtle` and fill
+`--pp-tone-solid`, both in the root's `data-pp-tone` scope, so a
+`success` bar at 100 and a `danger` bar for a failed upload need no rule
+of their own. The fill on the page is the solid step every solid button
+already carries; the track is decoration, no obligation by design
+(D-050).
+
+### 4. Reduced motion is the suite's default, and the moving half runs in its own context
+
+`playwright.config.ts` pins `reducedMotion: 'reduce'` for every test, so
+the first draft's "the segment moves" read the pulse and "the slide is a
+`flex-basis` transition" read `none` — the component was right and the
+test was in the wrong context. The block is now two halves: the default
+context asserts the reduced-motion rules (the segment is the whole bar,
+its animation the pulse, the fill's transition `none` — declared here
+because a duration in `pp.components` outranks the reset's crush, D-062
+§5), and a nested `describe` with `reducedMotion: 'no-preference'`
+asserts the sweep's name and that the segment's position changes
+between two reads, and the transition's property and duration. The
+Popover suite's shape (its own `test.use`), applied to a component whose
+motion is the feature.
+
+### 5. Verified, and the four breaks
+
+Unit: nine tests — the role and the name by `label` and by
+`aria-labelledby`; the values and the state with and without a value;
+clamping and the fill variable; the `max` fallback and its warning;
+`aria-valuetext`, `size` and `tone`; ref, `className` and a consumer's
+`style` merged with the fill variable; a nameless bar and a bar named
+twice rejected at the type level; axe in both themes. Browser: the fill
+at 60% of the track from its start, the thickness per size against the
+tokens, the fill and the track resolved in the accent scope and the
+neutral one; RTL; the bar at three widths; the two motion halves.
+
+Break checks (D-035 §3): the fill's `flex-basis` dropped (the ratio
+read 0, in LTR and RTL); the sweep dropped (`animation-name` read
+`none`); the reduced-motion swap dropped (the pulse read as the sweep);
+the `lg` thickness dropped (the heights). Each failed on exactly the
+test named for it.
+
+## D-081 — `Table` rulings: a named region that scrolls, `caption` as a prop, a table stretched by a grid, `useId` is not a client hook, a ring read in the frame it landed in, and two things only the screenshot said
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §7
+(`useId` is not a reason for `'use client'`), `scripts/lint-rules.mjs`
+(`useId` out of the client-only set) with a fixture in
+`tests/lint-fixtures/src/components/Bad/Ids.tsx`, `docs/specs/Table.md`
+(status) · **Extends:** D-022 §10, D-007, D-050, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The tier's data component, and the one the
+Tier 2 spec said `Scroller` would wait for.
+
+### 1. A semantic table in a named region that scrolls, focusable always
+
+The native `<table>`, `<thead>`, `<th scope="col">`, `<tbody>`, `<tfoot>`:
+a screen reader announces the header with each cell, and nothing here
+needs a data layer — sorting and selection are hooks (`sort` written as
+`aria-sort`, `selected` written as `data-state`), decided by the
+consumer's client component. Five columns do not fit a 240px sidebar,
+and the two ways to make them fit — break every word, or stack the
+columns into pairs — both destroy what a table is for. So the root is a
+`role="region"` that scrolls on the inline axis, inside its own box and
+never the page, with `tabindex="0"` so a keyboard user can scroll it and
+a name so the tab stop says what it is. A table that does not overflow
+carries that one tab stop too, and that is accepted: a Server Component
+cannot know whether it overflows, and a region that is focusable only
+sometimes is the thing a screen reader user cannot predict.
+
+### 2. `caption` is a prop of the root, and one of three names is required
+
+The region takes its name from the caption: `<caption id>` and
+`aria-labelledby`, one `useId`. A Server Component has no context, so a
+`<TableCaption>` part could not hand its id to the root; the caption is
+a prop instead — the one place this library prefers configuration to
+composition, because the alternative is a region whose name the
+consumer wires by hand. `TableProps` is a union: `caption`, or
+`aria-label`, or `aria-labelledby`, one required, never two.
+
+`align` on a head or a cell is ours and logical (`start | center |
+end`); the deprecated HTML attribute of the same name is omitted from
+the props, or TypeScript rejects the extension.
+
+### 3. The table is stretched by a grid, never by a width
+
+A `<table>` is shrink-to-fit, so a short table would sit at the start of
+its region with the frame running on past it; `width: 100%` is RULES
+§1's banned spelling. The region is `display: grid` with the table as
+its one item: an item stretches to its track, and the track is the
+region unless the table's min-content is wider, when the track is that
+and the region scrolls it. The break check measured the mechanism:
+`display: block` in its place left the wide cell's table 299px short of
+its region. No width, no allowance, one rule for both cases. `Grid`
+spans (D-022 §10) were left to be revisited here and still are not
+needed: a column is sized by its content.
+
+### 4. `useId` is not a client hook
+
+The rule lint counted `useId` among the hooks that require `'use
+client'`, and Table needs one on the server to name the region by its
+caption. React's server dispatcher implements `useId` (an id from the
+request's counter); it is the state, effect, ref and context hooks that
+do not exist there. `useId` is out of the set, RULES §7 says so, and a
+fixture that ships, calls `useId()` and carries no directive proves the
+rule still fires exactly once across the fixtures, for the file that
+uses `useState`.
+
+### 5. A ring read in the frame focus landed in is 0px wide
+
+"The ring on the focused region" read `outline-style: solid` and
+`outline-width: 0px` — a solid ring of zero width, D-052 §3's impossible
+combination, reproducibly, while a probe that focused the same element
+read 2px. The reset's reduced-motion rule (which the browser suite pins)
+crushes every transition to 0.01ms and leaves `transition-property:
+all`, so the outline that `:focus-visible` switches on is a transition
+from `0px` and `currentColor`, and a computed-style read before the next
+frame sees the start value. The test polls the width instead of reading
+it once. Earlier ring assertions read the style only, which is discrete
+and flips at the transition's midpoint — the same frame, most of the
+time; a width is the honest read, and it has to wait a frame.
+
+### 6. Two things the screenshot said that the tests had not: a `th` is centred by the UA, and a cell that wraps a date is worse than one that scrolls
+
+The first browser run was green and the page was wrong twice. Every
+column heading was centred: the UA stylesheet's `th { text-align:
+center }` is a rule on the element, and `text-align: start` on the
+table, inherited, does not reach past it. The head declares its own,
+and the test reads it. And the 240px cell wrapped `INV-0091` at its
+hyphen and `2026-09-04` at its second, because a table shrinks its
+columns to their min-content before it overflows, and the region's
+scroll only began once that was exhausted. A cell is `white-space:
+nowrap` now and a prose cell says `wrap` (`data-wrap`): the narrow cell
+scrolls a table of one-line rows, which is what the region is for, and
+the members table's note column wraps. D-051 §6 from the other side
+again: the assertions were reading true things, and the page was still
+wrong, because nothing asserted the two things that were.
+
+### 7. Verified, and the five breaks
+
+Unit: nine tests — the region and its name from the caption (one id,
+both ends), from `aria-label` and from `aria-labelledby`; the native
+parts and `scope="col"`; `size`, `striped` and `tableProps`; `align`,
+`sort` and `selected` without `aria-selected`; `wrap`; a nameless table rejected
+at the type level; refs, `className` and `style` on every part; axe in
+both themes with a sorted head, a selected row and a Badge. Browser: the
+region's box against its cell's content box at three widths, scrolling
+at 240px and not at 960px, the table's width the region's at 960px; the
+hairline count across six rows, the sunken header and foot, the head's
+colour, size and weight, the padding per size, tabular figures; striped
+even rows, the selected row in the accent ramp, `align="end"` and its
+RTL mirror measured by a Range, the polled ring; a head's text starts;
+the narrow cell's first cell is one line box and the note cell more.
+
+Break checks (D-035 §3): the grid dropped (the wide table 299px short);
+the hairline rule dropped (five lines read `0px`); the header's surface
+dropped (transparent); the selected row's surface dropped (transparent);
+the head's `text-align: start` dropped (the UA's `center`). Each failed
+on exactly the test named for it.
+
+## D-082 — `Pagination` rulings: a constant window, the compact form is the container's, the current page is a pressed Toggle, `:dir()` does not ship, and three things only the screenshot said
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §1
+(direction in a selector is `[dir="rtl"]`, never `:dir()`),
+`src/components/Scroller/Scroller.css` (the same fix, ported),
+`src/components/Button/Button.css` (`text-decoration: none`),
+`docs/specs/Pagination.md` (status) · **Extends:** D-021, D-022 §2, D-035 §3,
+D-053 §5, D-078 (the client demo file)
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. `count` pages and a window with a constant number of slots
+
+`page` / `defaultPage` / `onPageChange` (RULES §5.5); the numbers shown
+are the first and last `boundaryCount`, `siblingCount` each side of the
+current page, and an ellipsis where the two do not touch. The window
+keeps the same number of slots as the page moves — near an edge the far
+siblings take the slots an ellipsis would have — so the row does not
+change width from page to page. The arithmetic is MUI's `usePagination`,
+exported as `paginationItems` and unit-tested at both ends and in the
+middle. Buttons by default; with `getHref` every page is an `<a>` drawn
+by `Button asChild`, the current page a `<span>` with `aria-current`,
+because a page is never a link to itself.
+
+### 2. The compact form is a container query, and that is why the contract is `fill`
+
+Below 28rem the page numbers and the ellipses are gone and "6 of 12"
+stands between the arrows — Split's device (`container-type:
+inline-size`, D-022 §2, the threshold a literal because a query cannot
+read a custom property). Nothing is measured in JavaScript and the form
+is the container's, not the viewport's: one component is compact in a
+sidebar and full in the main column of the same page. The sizing
+contract is `fill` **because of this**: a container query needs the
+root's inline size to be the parent's, and a hugging row would be its
+own content's width in every container. The row inside is a grid that
+sizes its items — `grid-auto-columns: minmax(<control height>, auto)`,
+D-021's habit — so "1" and "12" sit in equal boxes with no width on any
+control, centred in the landmark.
+
+The matrix's cells are size containers of their own, so the break check
+that dropped the component's `container-type` caught nothing there: the
+query answered from the cell. The page now has a compact instance in a
+plain 15rem block, where only the component's own container can answer,
+and the break is caught there.
+
+### 3. The current page is Toggle's `on`, in the accent ramp
+
+`aria-current="page"` is the state; the surface is `--pp-tone-bg-active`
+written into Button's private variables the way Toggle.css does, with
+the page in the accent tone so its text and border are the accent's
+too. Not a `solid` accent button: a page number is not the view's one
+primary action (Button §3.1), and a solid page among ghosts reads as a
+call to action.
+
+### 4. `:dir()` does not ship; the Scroller had the same defect
+
+The chevron's mirror was written `.pp-pagination:dir(rtl)`, and the RTL
+test read `scale: none` with the rule "present". The built stylesheet
+showed why: Lightning CSS, under the package's `defaults` targets,
+rewrites `:dir(rtl)` into `:is(:lang(ar), :lang(he), …)` — a polyfill
+that matches Arabic and Hebrew prose and not a `dir` attribute, so an
+RTL page in English never gets the rule. The selector is `[dir="rtl"]`
+on an ancestor now, RULES §1 says so, and `Scroller.css`, which swapped
+its inline shadows by `:dir(rtl)` since Tier 2 and had no RTL assertion,
+is fixed the same way with one added: the start shadow moves to the
+right edge when the element is given `dir="rtl"`.
+
+### 5. Three things only the screenshot said
+
+The browser suite was green and the page was wrong three times.
+
+- **The compact row overflowed its cell.** The first form hid the page
+  *buttons* and left their list items in the grid, and an empty item is
+  still a column at least a control wide: seven invisible 40px columns
+  spilled out of a 240px cell, and the harness's own overflow flag said
+  so before any assertion did. The items hide now
+  (`pp-pagination__item--page`), and the test asserts the landmark does
+  not scroll and the compact row has three items. The test's "visible"
+  read also changed: a button inside a hidden item keeps its own
+  computed `display`, so visibility is `getClientRects().length`.
+- **The linked pages were underlined.** A `Button asChild` on an `<a>`
+  inherited the UA's link underline, and nothing in `Button.css` said
+  otherwise — every `<Button asChild><a>` in the library was an
+  underlined button. `text-decoration: none` on `.pp-button` now, and
+  the Button page's baseline is re-authored.
+- **The page did not build.** `getHref` is a function, and a function
+  cannot cross from a Server Component page into a client component;
+  Next refused the prerender. The linked instance lives in a client
+  `Demos.tsx`, CommandPalette's shape (D-078).
+
+D-051 §6 and D-081 §6 again: a green run measures what it was told to
+measure. The screenshot is part of the definition of done.
+
+### 6. Verified, and the five breaks
+
+Unit: fourteen tests — the window at 1, 2, 6, 11 and 12 of 12, wider,
+and with nothing to elide; the landmark and its name; `aria-current`
+and the tones; the arrows disabled at the ends; reporting and moving
+uncontrolled, reporting and holding controlled, an owner that stores
+what it reports, no call on the current page; `getHref` links, the
+current page as text, a disabled arrow as a button; `size`, `disabled`,
+`count` below one; ref, `className`, `style`, `label`; axe in both
+themes, as buttons and as links. Browser: the full row at 480 and 960
+with the status hidden and the compact form at 240 with it shown; the
+row centred and every slot at least a control wide; the landmark its
+cell's content width and never spilling; the compact form in a plain
+parent; the current page's surface; the ring; LTR and RTL order and the
+mirrored chevron; a linked page unadorned and the current page's height.
+
+Break checks (D-035 §3): `container-type` dropped (the plain parent
+showed five numbers); the current surface dropped (the ghost surface);
+the RTL mirror dropped (`scale: none`); the centring dropped (the row at
+the start). Each failed on exactly the test named for it; the fifth,
+`container-type` in the matrix, is §2.
+
+## D-083 — `Breadcrumb` rulings: the separator is the stylesheet's and follows its crumb, the page is a span, and a `nowrap` the break check found wrong
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Breadcrumb.md`
+(status) · **Extends:** D-035 §3, D-053 §5, D-079 §3, D-082 §4
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Five parts, and the separator is drawn, not rendered
+
+`Breadcrumb` (a `<nav aria-label="Breadcrumb">` around an `<ol>`),
+`BreadcrumbItem`, `BreadcrumbLink` (a neutral `Link`, underlined on
+hover, muted through Link's own `--pp-link-color` hook and the page's
+colour on hover), `BreadcrumbPage` (a `<span aria-current="page">`,
+never a link, because a link to where you are moves nothing) and
+`BreadcrumbEllipsis` (a named "More levels" where the consumer cut the
+trail; the menu of hidden levels is theirs). No separator part: a
+separator between every pair of items is a fact of the list, not
+content, so it is each item's `::after` from
+`--pp-breadcrumb-separator`, `"/"` by default — symmetric, so RTL
+needs nothing — and never in the accessibility tree. The consumer
+decides which item is last; a Server Component with no context could
+not count children, and should not.
+
+### 2. `fill`, and a trail wraps at its separators
+
+A landmark spans its line; the list inside is a flex row that wraps, so
+a trail wider than a 240px sidebar is two lines of whole crumbs, which
+reads, where a scrolling or cut-off trail does not.
+
+### 3. Two things the checks said about the separator and the wrap
+
+**`white-space: nowrap` caught nothing, and was wrong.** The spec said
+a crumb "never breaks mid-label" and put `nowrap` on the item; the break
+check that dropped it changed nothing, because a wrapped flex item takes
+its max-content width on its new line and a crumb breaks inside itself
+only when it alone is wider than the line. Followed through, that is
+the one case where `nowrap` would act, and there it would make the
+crumb spill out of the landmark rather than wrap its words — the worse
+outcome. The declaration is gone, and the spec says what the flex row
+does instead. D-079 §3's shape: a declaration the check cannot observe
+is a claim to re-examine, not a line to keep.
+
+**The separator follows its crumb.** The first draft drew it as each
+item's `::before` except the first's, and the screenshot's 240px cell
+began its second line with a stray slash. It is `::after` on every item
+but the last now, so a wrapped line ends with its separator and the next
+begins with a crumb. The first colour-break check on the separator also
+caught nothing, because the test read the ellipsis item, whose `<li>`
+carries the muted colour itself; it reads a plain item now, and the
+break is caught.
+
+### 4. Verified, and the four breaks
+
+Unit: eight tests — the landmark, the `<ol>`, the items in order and no
+slash in the text; a crumb's href, class, neutral tone and hover
+underline; the page a span with `aria-current` and no link; the
+ellipsis named and renamed; `asChild` on a router link; refs,
+`className`, `style` and `label`; axe in both themes. Browser: a
+separator after every item but the last and none in the text; the trail
+two lines of whole crumbs at 240px and one at 960px, spilling nothing;
+a crumb muted and unadorned at rest, the page's colour and underlined
+on hover; the page's colour and weight; the separator's colour and
+gap; a custom glyph; RTL from the right.
+
+Break checks (D-035 §3): the separator's `content` dropped (`none`,
+both tests); `flex-wrap` dropped (the trail spilled); the page's weight
+dropped (`400`); the separator's colour dropped (the page's colour).
+Each failed on exactly the test named for it; `nowrap` is §3.
+
+## D-084 — `Stepper` rulings: a counter and a check, a row that is a column by its container, and a grid that seated the circle after the label
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`Stepper.css` in the D-019 group), `docs/specs/Stepper.md` (status) ·
+**Extends:** D-019, D-021, D-082 §2, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Two parts; the number is a counter and "done" is a check
+
+`Stepper` (a `<nav aria-label="Progress">` around an `<ol>`) and `Step`
+(`<li>`), `status` as `complete | current | upcoming` written to
+`data-state`, `aria-current="step"` on the current one. The visible
+number is a CSS counter on an `aria-hidden` indicator, because an
+`<ol>` already tells a screen reader "2 of 4" and a number in the
+markup would be said twice; a completed step's indicator holds a check
+(through `Icon`, so no bare svg is sized here) and its label carries a
+visually hidden "Completed". A status display: it holds no state and
+moves nothing; a clickable completed step is the consumer's `Link` in
+its label.
+
+### 2. Vertical is the base; horizontal is a query-gated enhancement
+
+A step is a two-column grid — the indicator, then the body — with the
+connector a zero-wide box with a border in the second row of the first
+column, running down from the circle. Above 28rem a horizontal
+stepper's list is a row and each step a three-column grid, the
+connector a box in the third column with the line drawn as its inset
+bottom shadow at the circle's middle; below it a horizontal stepper *is*
+the vertical one, by its container (Pagination's device, D-082 §2), so
+a checkout's row in the page is a column in a card with nothing
+configured. The `<nav>` is the container and the `<ol>` is what the
+query switches, because a query cannot target its own container. The
+indicator declares `inline-size` under the D-019 exemption — a square,
+intrinsic, hugging box, the same kind as Icon and IconButton — and the
+file joins that stylelint group. The label is a box the indicator's
+height with its text centred, rather than padding arithmetic on the
+line height, which the value rules refuse anyway.
+
+### 3. Every colour is a tone token in the accent scope the root writes
+
+Solid indicator and accent connector after a completed step; accent
+ring and accent number on the current one; hairline and muted on an
+upcoming one. `data-pp-tone="accent"` on the `<nav>`, so a consumer's
+tone on a wrapper recolours all of it (D-007).
+
+### 4. Three things the screenshot and the rectangles said
+
+**The circle was after the label.** The body had `grid-row: 1 / span 2`
+and the indicator nothing, and grid auto-placement seats items with a
+definite row before the rest: the body took column 1 and the circle
+column 2, in both directions. The LTR assertions did not read the
+order; the RTL one did, and failed for the wrong-looking reason. Both
+are placed now (`grid-column` on each), the test asserts the circle
+ends before its label begins, and the break that drops both placements
+fails it.
+
+**The horizontal connector was zero wide.** Its column was `auto` and
+its content empty, so the line — drawn as a box shadow — had no box,
+while the assertion on the shadow's *colour* passed. The connector's
+track is `minmax(space-5, 1fr)` now: the rest of the step's share of the
+line, never less than a floor, so a row that is only just a row (three
+steps at 480px) still draws a line between the labels while the labels
+wrap first. The test reads the box's width, at 960 and at 480.
+
+**`getComputedStyle` reports a counter's declaration, not its digit.**
+`content` on the indicator's `::before` reads `counter(pp-step)`, so
+the test asserts the declaration and `none` on the completed step, and
+the digits are the baseline's to show.
+
+### 5. Verified, and the five breaks
+
+Unit: six tests — the landmark, the `<ol>`, the states in order and the
+accent tone; `aria-current` on the current step only; the check and the
+hidden "Completed" on the completed step and nowhere else, the
+description; `upcoming` by default, the orientation and the label;
+refs, `className`, `style`; axe in both themes and orientations.
+Browser: the counters and the check, the indicators' size, the fills and
+rings per state, the label weights, no connector after the last, the
+circle before its label; a column at 240 and a row at 480 and 960 with
+the vertical connector's colour, width and height and the horizontal
+one's colour, width and height; vertical at every width; the plain
+parent; five steps in one row; RTL from the right with the circle after
+the label.
+
+Break checks (D-035 §3): `container-type` dropped (the plain parent a
+row); the done connector's colour dropped (a hairline); the current ring
+dropped (a hairline); the counter dropped (`none`); the placements
+dropped (the circle after the label, both tests). Each failed on the
+test named for it. The indicator's placement alone caught nothing — the
+body's column is the mechanism — and the comment says so.
+
+## D-085 — `EmptyState` rulings: parts on the primitives, a measure by a grid, and `outline` as Card's frame made dashed
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/EmptyState.md`
+(status) · **Extends:** D-021, D-070 §1, D-081 §3, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Five parts, each the Tier 1–2 primitive with the empty state's class
+
+`EmptyState`, `EmptyStateIcon` (an `Icon`, decorative, `lg`, in a round
+tile on the sunken surface — the tile is the Icon itself, given a box
+through Icon's own `--pp-icon-size` hook and padded so the glyph stays
+the `lg` size), `EmptyStateTitle` (a `Heading`, `size="md"`, `level`
+required because Heading's is), `EmptyStateDescription` (a `Text`,
+muted, centred) and `EmptyStateActions` (a `Cluster`, centred,
+`gap="2"`). The props are the primitives', so a description holds a
+`Link` and a title takes any size; no `title` / `description` props
+(RULES §5.6). No live region by default: an empty page is content; a
+search that returns nothing in place puts `role="status"` on the root
+through props.
+
+### 2. Centred and held to a measure by a grid, never by a width
+
+The root is a grid with one column, `minmax(0, --pp-measure-xs)`,
+centred, so the description is a readable line on a wide page and the
+whole cell in a 240px sidebar with no `max-inline-size` on any child:
+the parent sizing the box it created (D-021), Table's device for its
+table (D-081 §3). Dropping the ceiling put the 960px column 566px past
+the measure. Rhythm is the grid's one `row-gap`; the actions stand
+further off by their own `padding-block-start`, because a margin is
+RULES §2's. `text-align: center` on the root is what centres the
+title — the description centres itself through Text — and the test
+reads the title for it, because the first break check read only the
+description and caught nothing.
+
+### 3. `plain` by default; `outline` is Card's surface with a dashed edge
+
+The root carries `pp-card` before its own class when outlined, so
+Card.css draws the raised surface, the radius and the hairline, and
+this file makes the hairline dashed: the two-class contract (D-070 §1),
+one stylesheet drawing the frame and the other changing one thing. Not
+`solid`, not `ghost`: an empty state has nothing to fill, and a tinted
+one reads as an `Alert`.
+
+### 4. Verified, and the four breaks
+
+Unit: five tests — the parts on their primitives with the right
+attributes, in order; `pp-card` only when outlined; the primitives'
+props through (a title size, a description tone, an actions gap); refs,
+`className` and `style` on every part; axe in both themes and variants.
+Browser: the root its cell's content width, the column the cell less
+the padding at 240 and the measure at 960, centred; the parts stacked;
+the block padding; the title and the description centred, the
+description muted; the tile 48px, round and sunken with a 24px glyph;
+`outline`'s classes, dashed hairline, Card's surface, radius and edge
+colour; `plain` with no frame; the actions' padding; the empty state
+the body's width inside a Card.
+
+Break checks (D-035 §3): the measure dropped (566px over); the dashed
+edge dropped (`solid`); `text-align` dropped (the title at `start`, once
+the test read it); the tile's surface dropped (transparent). Each failed
+on exactly the test named for it.
+
+## D-086 — `Calendar` rulings: an ISO value and no date library, our own grid with the APG keys, names by `Intl`, and a sixth week hidden as a row
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Calendar.md`
+(status) · **Adds:** `src/internal/date.ts` · **Extends:** D-061 (Tier 5's
+first keyboard widget is our own, because Radix has none), D-021, D-081
+§3, D-082 §4, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The component 4.13 `DatePicker` waits for.
+
+### 1. The value is an ISO date; the month shown is `YYYY-MM`; both controllable; no date library
+
+A `Date` is an instant in a time zone and a day is not, so the value is
+`2026-09-28` — what a URL, a form and a database already hold — and the
+month shown is `2026-09`, each with its controlled and uncontrolled
+form (RULES §5.5). `today` is a prop, so a server render, a test and a
+screenshot agree on what today is; `min`, `max`, `isDateDisabled` and
+`disabled` bound the pickable days. The arithmetic a month needs is
+forty lines in `src/internal/date.ts`, UTC-anchored so no daylight
+change moves a day; no package is added. A string that is not a date is
+ignored with a development warning. A value set from outside to another
+month brings that month into view when the month is uncontrolled.
+
+### 2. Our own grid on `div`s, one tab stop, the APG keys, mirrored arrows
+
+Radix has no calendar, and a `<table>` cannot fill its container or
+stretch its cells without a width, so the grid is `div`s with the roles
+(`grid`, `row`, `columnheader`, `gridcell`) laid out by CSS grid
+(`repeat(7, 1fr)`), each day a `<button>` stretched to its cell — the
+parent sizing the box it created (D-021). One day has `tabindex="0"`
+(the focused one, else the value, else today, else the first); arrows
+move a day or a week, Home and End to the week's ends, PageUp and
+PageDown a month (Shift: a year), Enter and Space pick; a move past the
+month's edge shows the next month and focus follows once it has
+rendered, through a pending ref the effect consumes. A disabled day is
+skipped, stepping the way the key went up to a year, and nothing moves
+past a bound. Arrow Left goes to the previous day in LTR and to the
+next in RTL, read from the root's computed direction, because the grid
+runs the other way there; the month arrows are mirrored by
+`[dir="rtl"]` (D-082 §4). Filler days before and after the month are
+`aria-hidden` spans, muted and inert: the previous month is one PageUp
+away.
+
+### 3. Names by `Intl`; the week starts where the locale says, else Monday
+
+Month, weekday and day names come from `Intl.DateTimeFormat(locale)`,
+a weekday header the narrow form with the long one as its label, a day
+button named in full so a screen reader never hears a bare "28". The
+day's *number* is formatted too, so a locale with its own digits shows
+them on the days as well as in the month's name. `locale` is a prop
+with NumberInput's caveat: without it the runtime's is used, and a
+server and a client that disagree about the locale disagree about the
+names, so pass it. The first day of the week is `weekStartsOn`, else
+the locale's week info where the runtime provides it (a cast, since
+TypeScript's lib does not yet know `getWeekInfo`), else Monday.
+
+### 4. Two things axe and the screenshot said
+
+**A sixth week that is all fillers has no gridcell.** September 2026's
+grid ends with a row of October, every cell `aria-hidden`, and axe's
+`aria-required-children` found a `row` with nothing in it. The row is
+hidden with its cells: a screen reader walking the grid meets five
+weeks, which is the month. The unit test counts six rows exposed, not
+seven.
+
+**Latin days under an Arabic month.** The RTL instance showed
+`سبتمبر ٢٠٢٦` over `1 2 3`, because the month came from Intl and the day
+from a number. Both come from Intl now (§3).
+
+### 5. Verified, and the five breaks
+
+Unit: thirteen tests — the group, the grid labelled by the month, the
+weekdays for `en-US` from Sunday and `de-DE` from Monday, the month's
+days and the hidden fillers and the hidden sixth week; the value
+selected and today current, the tab stop's fallbacks; a click picking
+and reporting, uncontrolled moving and controlled holding; the arrows
+changing the month and a value from outside bringing its month in;
+`min`, `max`, `isDateDisabled` and `disabled`; every key, the tab stop
+following, a crossing of the month's edge with focus, a disabled day
+skipped, a bound held; an owner; a bad value warned and ignored;
+`size`, `label`, ref, `className`, `style`; axe in both themes.
+Browser: seven equal columns of the cell's content width and no spill;
+the day's height per size; the picked day solid, today accent and
+medium, hover, the ring; RTL from the right with the arrows mirrored,
+Arrow Left forward, Arrow Down across the month with focus on the day
+and the month's name changed; one tab stop in and out.
+
+Break checks (D-035 §3): `repeat(7, 1fr)` dropped (the columns unequal,
+9px apart); the selected surface dropped (transparent); today's colour
+dropped (the page's text); the day's height dropped (26px short); the
+RTL mirror dropped (`scale: none`). Each failed on exactly the test
+named for it.
+
+## D-087 — `FileUpload` rulings: the hidden input is the mechanism and the Trigger the keyboard path, refusals with reasons, and a file field is a group
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/FileUpload.md`
+(status) · **Extends:** D-030 §3 / D-035 §8 (`type="file"` excluded from
+Input for this), D-007, D-035 §3, D-039 §1
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Five parts; the hidden input is the mechanism and the Trigger is the one tab stop
+
+`FileUpload` holds a native `<input type="file">` — the only thing that
+opens the file dialog and the only thing a form submits — visually
+hidden and `tabindex="-1"`, because a second stop beside the button
+would be the same control twice. `FileUploadTrigger` is a `Button`
+(`outline`) that opens the dialog and is the labelled control;
+`FileUploadDropzone` takes a drop and a click on itself (not on its
+children) and is never focusable, because a drop needs a pointer and
+the keyboard's path is the button inside it; `FileUploadList` and
+`FileUploadItem` show what was chosen. The component selects and
+shows; uploading is the consumer's, so the list is their state and an
+item takes the `progress` they know.
+
+### 2. `onSelect(accepted, rejected)`: refused by type, size and count, with reasons
+
+The dialog honours `accept`; a drop does not, and neither honours a
+size, so every path runs the same check — `accept`'s own grammar (MIME,
+a `*` subtype, an extension), `maxSize`, `maxFiles` with `multiple`,
+one without — and every refused file comes back with `type | size |
+count`, so the consumer can say why. The input's value is cleared after
+a selection, so the same file chosen twice reports twice. The drag
+state is a depth count, because enter and leave fire for every child
+crossed and a single boolean flickers.
+
+### 3. In a `Field`, make it a group
+
+A `<label for>` pointing at a button *replaces* the button's name: in a
+plain Field the Trigger read "Attachments" and not "Choose files", and
+the test that looked for the verb found nothing. So a `group` Field is
+the shape: its `aria-labelledby` and description land on the root,
+which becomes the named group, and the Trigger keeps its own name; a
+plain Field still works, with the Trigger named by the label, and the
+docs say which to prefer. `invalid`, `disabled` and `size` follow the
+field with the tier's precedence; `data-invalid` puts the dropzone in
+the danger scope, and a drag puts it in the accent one — the scope is
+written on the dropzone (`accent`, or `danger` when invalid), so every
+colour is a tone token (D-007). The rule lint caught the first draft's
+`--pp-palette-danger-11` on an erring item; the item carries the danger
+scope now and the error line reads `--pp-tone-text` in it.
+
+### 4. An item is a row that truncates
+
+Name, size (formatted by `Intl` in the locale's unit: "182 kB"), the
+remove button, and under them a `Progress` at `sm` labelled by the name
+while `0 ≤ progress < 100`, or the error line; `data-state` is `idle |
+uploading | complete | error`, derived unless given. The row is a grid
+with `minmax(0, 1fr)` for the name, so a long name truncates with an
+ellipsis in a 240px cell rather than pushing the row; a hairline between
+items and none after the last.
+
+### 5. Verified, and the four breaks
+
+Unit: thirteen tests — the hidden input's attributes and the Trigger
+and the zone opening it (and the text inside not); a selection reported
+and the input cleared; refusal by type, size and count with reasons
+(user-event's own `accept` filter off, since the component's check is
+what is under test); a single input's count; `matchesAccept`; a drop, the
+drag depth, and both ignored when disabled; a group Field and a plain
+one; an item's name, size, bar, error, remove button, statuses;
+`formatBytes`; a part outside the root; refs, `className`, `style`; axe
+in both themes. Browser: the dashed control edge, the zone the root's
+width and its content centred, hairlines between items, the long name
+truncating at 240 and not at 960, the bar present; a dispatched
+`dragenter` with a real `DataTransfer` turning the zone accent and a
+`dragleave` turning it back; the error Field's danger edge; the
+disabled instance's subtle edge and disabled Trigger; the ring on the
+Trigger and Tab from it landing on the first remove button, never on
+the input.
+
+Break checks (D-035 §3): the dashed edge dropped (`solid`); the dragging
+surface dropped (the page's surface); the item hairline dropped (`0px`);
+the name's truncation dropped (`false`). Each failed on exactly the test
+named for it.
+
+## D-088 — `Tree` rulings: nested items with both states controllable, focus on the row that owns its group, and a ring the rule would not let me remove
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Tree.md`
+(status) · **Extends:** RULES §5.5 and §6, D-019, D-082 §4, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Two parts; a node with children is a parent; both states controllable; collapsed children unmounted
+
+`Tree` (`role="tree"`, `label` required) and `TreeItem` (`value`,
+`label`, `icon`, `disabled`, its child items as `children`). A node is a
+parent because it has child elements — counted, not declared. `expanded`
+(an array) and `selected` (one value) each come controlled or
+uncontrolled (RULES §5.5). A collapsed node's children are not rendered,
+so the DOM holds exactly the visible items and the keyboard walks
+`[role="treeitem"]` in document order; the ARIA pattern's optional
+type-ahead is deferred, as is multiple selection.
+
+### 2. Focus on the row, which is the `treeitem` and owns its group
+
+The first draft put `role="treeitem"` and focus on the `<li>`, as the
+APG example does, and drew the ring on the row with `outline: none` on
+the item — which Tier 0.7's lint refused, because RULES §6 says a ring
+is never removed, only replaced. The rule was right and the draft was
+the thing to change: a ring belongs on the element that has focus, and
+an `<li>` is the whole subtree, so a ring around it would circle every
+child. The row is the `treeitem` now — focus, the states, the ring
+(inset, so the row's own box holds it) — and it owns its group through
+`aria-owns`, the `<li>` being `role="none"`. One tab stop: the focused
+row, else the selected, else the first top-level item, which the root
+reads from its own children so no item has to ask the DOM. The APG keys:
+Down and Up through the visible rows, Right expands then enters, Left
+collapses then goes to the parent (the row's `<li>`, its group, that
+group's `<li>`, its row), Home and End, Enter and Space select and
+toggle a parent; the horizontal pair swaps under RTL. A disabled row is
+in the tree, skipped and unpickable. A pointer press on the row selects
+and toggles; on the chevron alone it toggles.
+
+### 3. Rows on the control scale, indented by one custom property
+
+Each row is `--pp-control-height-sm` tall and indented
+`--pp-tree-indent` per level through `--_pp-tree-level`, written on the
+`<li>` and read by the row's `padding-inline-start`, so nesting needs
+no per-level rule and RTL needs nothing. The chevron and the icon are
+`Icon`s at `sm` (D-019's sizing, not a width here); a leaf's toggle is
+an empty Icon of the same size, so every label starts at the same x.
+The chevron turns a quarter when open, Accordion's device, and is
+mirrored under `[dir="rtl"]` (D-082 §4). The selected row is
+`--pp-tone-bg` in the accent scope, medium; hover the ghost step; a
+label truncates with an ellipsis.
+
+### 4. The screenshot's finding: a mirror and a quarter turn point up
+
+Under `[dir="rtl"]` the chevron is mirrored (`scale: -1 1`) and an open
+parent turns it `90deg` — and the two compose into an arrow pointing
+up, which every RTL parent on the page showed while the assertions
+read only the scale. Open turns `-90deg` under the mirror, and the test
+reads both.
+
+### 5. Verified, and the six breaks
+
+Unit: ten tests — the roles, levels, names, `aria-expanded`, the group
+rendered only when open and owned by its row; the tab stop's fallbacks;
+Down, Up, Home, End and a disabled row skipped; Right expanding then
+entering and Left collapsing then rising, reported; Enter and Space
+selecting and toggling; presses on the row and the chevron and a child's
+press; an owner for both states and a holding controlled tree; `label`
+required at the type level and an item outside a tree; refs,
+`className`, `style` and the level variable; axe in both themes.
+Browser: the tree its cell's width and every row the tree's; the row
+height; the indent per level; the selected surface and weight; hover;
+the chevron turned when open and not when closed; a long label
+truncating at 240 and not at 960; Tab into the picked row with the ring
+on it and out of this tree; RTL indenting from the right with the
+chevron mirrored and Arrow Left expanding.
+
+Break checks (D-035 §3): the indent dropped; the selected surface
+dropped; the chevron's turn dropped; the row height dropped; the RTL
+mirror dropped; the RTL turn dropped. Each failed on exactly the test
+named for it.
+
+## D-089 — `CodeBlock` rulings: the frame and not the highlighter, a `<pre>` that is a region, the code stretched by a grid, and a gutter under the D-019 exemption
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
+(`CodeBlock.css` in the D-019 group), `docs/specs/CodeBlock.md` (status) ·
+**Extends:** D-019, D-021, D-081 §1 and §3, D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. The frame, not the highlighter; `code` for text, `CodeBlockLine`s for tokens
+
+Highlighting is a peer, as the roadmap said: a highlighter is large,
+opinionated about grammars and themes, and best run at build time or
+by the consumer's choice, so the component takes plain text (`code`,
+split into lines, a trailing newline not a line) or the consumer's
+lines (`CodeBlockLine`, holding whatever their highlighter produced,
+`highlighted` to point) and draws the frame, the gutter, the pointing
+and the copy button around either. Both given warns, and the children
+win. `title` is a node and replaces the HTML attribute of the same name.
+
+### 2. The `<pre>` is a named region that scrolls; `wrap` wraps
+
+A long line never pushes the page: the `<pre>` scrolls on the inline
+axis, and it is `role="region"` with `tabindex="0"` named by the title
+or `label` — Table's reasoning (D-081 §1) — so a keyboard user can
+scroll it. `wrap` makes long lines wrap instead. The code inside is
+stretched by a grid, Table's device (D-081 §3): the `<pre>` is a grid
+with one item, so the code is the pre's width when the lines are short
+and the longest line's width when they are not, and a pointed line's
+surface runs under every column, including the ones scrolled out of
+view — with no width on anything. Dropping the grid left the code two
+pixels short of the frame, which the test reads.
+
+### 3. The gutter is an intrinsic box, and declares `inline-size` under D-019
+
+Line numbers are a CSS counter in each line's `::before`, `user-select:
+none` so a hand copy never takes them, right-aligned in a box three
+digits wide. That box declares `inline-size`: not a decision about the
+parent's space but the size of a fixed thing, like an icon's, which is
+what the D-019 exemption is for; the file joins that stylelint group.
+The spacing beside it is padding, and the header's copy button sits at
+the end by `justify-content`, not by an auto margin — both of which the
+value rules refused first, rightly. A pointed line is the accent `bg`
+step across the whole width with an inset accent bar at its start
+(mirrored under RTL); the surface, frame, radius and mono face are
+Code's and Card's.
+
+### 4. The copy button and its test
+
+The button writes the block's text (`code`, or the lines' text) with
+the Clipboard API, says "Copied" in its label and a hidden
+`role="status"` for two seconds, and is absent when the API is missing
+or `copy={false}`. user-event's `setup()` installs a clipboard stub of
+its own, so the unit test's mock is installed after it; and the stub
+under fake timers never settled, so the return after two seconds is
+waited for on real timers rather than advanced. The browser test grants
+the clipboard permissions and reads the text back.
+
+### 5. Verified, and the five breaks
+
+Unit: eight tests — the frame, the region named by the title and by
+`label`, the lines of `code`, `lineNumbers`, `highlightLines`, the
+header and its absence; children lines and both forms given; the copy
+button writing, saying "Copied" and returning; the lines' text copied;
+no button without a clipboard or with `copy={false}`; `wrap`, refs,
+`className`, `style`; axe in both themes. Browser: the sunken surface,
+the hairline, the mono face; the counters and their `user-select`,
+the gutter one width; the pointed line's surface and bar as wide as the
+code; the long line scrolling inside the region at 240 and 960 with
+nothing spilling from the block or the page; wrap wrapping in a narrow
+parent; the ring on the region and the button; a copy read back from
+the clipboard and the label returning; the bare block with no header
+and its `label`.
+
+Break checks (D-035 §3): the highlight surface dropped (transparent);
+the counter dropped (`none`); the pre's `overflow` dropped (`visible`,
+both tests); `pre-wrap` dropped (`pre`); the grid dropped (the code
+two pixels short of the frame). Each failed on exactly the test named
+for it.
+
+## D-090 — `AvatarGroup` rulings: a list with a count, overlap by a grid and not a margin, and the group's size written into the faces
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/AvatarGroup.md`
+(status) · **Extends:** D-016 §7 (the item it adds), D-021, D-070 §1,
+D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last of Tier 5's own items.
+
+### 1. A `<ul>` of the children, the first `max` shown, the rest one count drawn as an avatar
+
+One part. Each child sits in a `<li>`, so a screen reader hears "list,
+4 items" and then each `Avatar`'s name; `label` names the list. `max`
+shows the first `max` and then one more item, the count — `+2`, named
+"2 more" (`moreLabel` rewords it) — drawn with `pp-avatar` and the
+group's own class after it, the two-class contract (D-070 §1), on the
+sunken surface in muted text. A `max` at or above the count shows none;
+`max={0}` shows only the count.
+
+### 2. Overlap by a grid whose columns are narrower than a face
+
+A negative margin is the usual overlap and RULES §2 bans it. The group
+is an inline grid, `grid-auto-flow: column`, its columns a face less
+the overlap, so each item starts inside the one before it; the last
+runs past its column by the overlap and the group pads its end by the
+same amount, so its hug box holds it — the parent sizing the boxes it
+created (D-021), with no margin and no width. Each face carries a ring
+the colour of the surface. Later items sit over earlier ones, document
+order, and RTL runs the row from the right with nothing said. Dropping
+the end padding put the last face outside the group's box, which the
+test reads.
+
+### 3. `size` is the group's, and the group's variables have their own names
+
+`size` on the group writes Avatar's private `--_size` and `--_font-size`
+from the group's stylesheet, Toggle's device for Button, at a
+specificity that outranks an avatar's own `data-size` on purpose: one
+`size` sizes every face and the count, and "set it on the group" is the
+rule. The first draft wrote `--_size: var(--_size)` — a custom property
+that references itself is a cycle, invalid at computed-value time, and
+every face would have lost its size. The group's own variables are
+`--_face` and `--_face-font`. The unit test cannot see that; the
+browser test measures the faces at every size.
+
+### 4. Two things the screenshot said
+
+**A fixed overlap clipped the initials.** `--pp-space-2` (8px) is the
+whole margin beside a pair of initials in a 32px face, and at `sm` more
+than that: the second letter of every face but the last went under its
+neighbour. The overlap is a fifth of the face now — 4.8, 6.4 and 8px —
+so the initials clear at every size, and the property still overrides
+it.
+
+**"+2" read "2+" under RTL.** A plus sign and a digit are both bidi-weak,
+so the RTL paragraph reordered them. The count's text is an isolated
+left-to-right run (`dir="ltr"` on the hidden fallback span), and the
+test reads its direction.
+
+### 5. Verified, and the five breaks
+
+Unit: five tests — the list and its items, all shown without `max`;
+`max` and the count's name, text, size and tone, none at or above the
+count, `max={0}`; `size` and `moreLabel`; ref, `className`, `style`;
+axe in both themes. Browser: the group hugging in every cell and the
+same width in all three; each face a size less the overlap after the
+last; the first and the last inside the box; the box's width the sum;
+the ring's colour and width; the count sunken and face-sized; the
+faces 24, 32 and 40px by the group's `size`; RTL from the right; a
+group of five beside text hugging with no count (a flex item is
+blockified, so `inline-grid` computes to `grid`, and the width is the
+claim).
+
+Break checks (D-035 §3): the overlap dropped (faces a full size apart);
+the end padding dropped (the last face outside the box); the ring
+dropped (`none`); the count's surface dropped (the tone's solid); the
+group's size dropped (the faces at Avatar's own sizes). Each failed on
+exactly the test named for it.
+
+
+## D-091 — `DatePicker` rulings: Input's box with a button and Calendar behind it, text parsed on commit in the locale's order, and the text the value's unless mid-edit
+
+**Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/DatePicker.md`
+(status) · **Extends:** D-070 §1 (the two-class contract), D-076 (Input's
+box with a button in it), D-086 (`Calendar`), D-035 §3
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last of Tier 4, which waited on 5.9.
+
+### 1. Input's box with a text field and a calendar button; `Calendar` in a `Popover` behind it
+
+One part. The root carries `pp-input` and `pp-date-picker` (D-070 §1),
+so Input.css sets the size variables and the states; this stylesheet
+draws the box — a two-column grid holding a bare text field and the
+button — from Input's hooks, Combobox's device (D-076). The field's own
+ring is transparent, never removed (RULES §6), and the box carries the
+ring when the field has focus. The button is a Popover trigger
+(`aria-haspopup="dialog"`, `aria-expanded`); the panel is `pp-popover`
+and `pp-date-picker__panel`, a non-modal `role="dialog"` named by the
+button's label, placed below the box and start-aligned, holding a
+`Calendar` at `sm`. Opening puts focus on the calendar's tab stop, a
+pick sets the value and closes, and focus returns to the button;
+Arrow Down in the field opens it too. In RTL the button is at the
+start of the box with nothing said: the grid's columns are logical.
+The browser test reads the box's height, edge and radius against an
+Input beside it, the button inside at the end and the box's height
+less the border tall, the ring on the box, the panel's placement, the
+calendar's size and its padding, and the button at the left under RTL.
+
+### 2. Typed text is parsed on commit, in the locale's order; the text is the value's unless the reader is mid-edit
+
+`formatDate` writes the value with `Intl` in the locale's numeric form
+(`09/28/2026`, `28/09/2026`, `٢٠٢٦/٠٩/٢٨`); `parseTypedDate` reads
+`YYYY-MM-DD` as is, else three numbers in the order
+`formatToParts` gives the locale's year, month and day, a two-digit
+year this century. Both are exported and both are overridable by
+`format` and `parse`. Enter and blur commit; text that does not parse
+marks the field invalid and reports nothing; an emptied field reports
+`undefined`.
+
+**The first draft kept the text it had typed after a controlled owner
+refused the change.** It held the text in state, mirrored the value
+into it in an effect, and wrote the new formatted text on commit before
+calling `onValueChange` — so an owner that did not take the change was
+shown as if it had, and the unit test that renders a fixed `value` read
+the typed date back. The text is derived now: a draft holds what is
+typed until commit, and committing drops the draft, so the field shows
+whatever the value became — the new date when the owner took it, the
+old one when it did not. A draft that did not parse stays, marked
+invalid, until it is edited or emptied. No effect, no ref.
+
+### 3. `value` is the ISO date; a form gets it by `name`; the Field's precedence
+
+`value` / `defaultValue` / `onValueChange` (RULES §5.5), the value an
+ISO date or `undefined`. With `name`, a hidden input carries the ISO
+value, because the visible field carries the locale's text. `min`,
+`max`, `isDateDisabled`, `today`, `weekStartsOn` and `locale` pass to
+the calendar; `size`, `invalid`, `disabled`, `required` and `readOnly`
+follow the Field with the tier's precedence, the field's `id` and
+description landing on the text input its label points at. `readOnly`
+disables the button as well: a panel that could pick into a read-only
+field would be a lie.
+
+### 4. Verified, and the four breaks
+
+Unit: twelve tests — the helpers in three locales; the box and the
+button's name and state; typing, Enter, blur, ISO and an emptied
+field; unparsable text marking invalid; the dialog opening, a pick,
+and focus back; Arrow Down and Escape; `min`/`max` on the calendar;
+Field integration; the hidden input and a refusing controlled owner;
+ref, `className`, `style`, `readOnly`; axe closed and open in both
+themes (the `region` rule off, DropdownMenu's reason). Browser: the
+box against an Input in every cell, the ring, the panel, a pick
+filling the field and closing, RTL, and the five states' heights.
+
+Break checks (D-035 §3): the box's grid columns dropped (the button
+below the field); the box's ring dropped (`0px`); the button's height
+dropped (its content's height, 20px short); the panel's padding
+dropped (`0`). Each failed on exactly the test named for it.
+
+## D-092 — The authoring commit records the geometry of what it authors
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** D-013 (the
+authoring loop), D-042 (an authoring commit as a PR's head), the
+`/component` build step · **Extends:** D-050 §5, D-066 §2
+
+### 1. What failed
+
+Run 174 on PR #33 was a `pull_request` run whose head was CI's own
+authoring commit for 4.13 `DatePicker` — the commit the workflow's
+comment said could not get a run, because a push made with
+`GITHUB_TOKEN` triggers none. Its actor was the bot, and it was re-run
+by hand the next morning. `npm test` was red on it: the geometry guard
+(`tests/unit/screenshot-dimensions.test.ts`) counts baselines without a
+manifest entry and allows fewer than three, and the commit carried four
+— the component's two and the index's two, which are always authored
+together when a page joins the index. Every authoring commit of this
+batch had the same shape; the earlier ones were superseded within
+minutes by the local recording push, and this one was the head when
+the day ended.
+
+The loop of D-066 §2 was: `--rebaseline index`, push, CI authors, pull,
+`npm run dimensions`, push again. The recording step was local, so
+between the authoring commit and the recording push every authoring
+commit was, by construction, a commit the guard fails. D-063 §3 accepted
+exactly that red run "by design" for the one-off re-authoring of every
+baseline, and the workflow's own comment ("an authoring commit should
+never be the final head of a PR, and nothing here can enforce that")
+described the gap without closing it. A red run that is expected is
+still a red run somebody has to read, and this one was read as a test
+failure, which is what it was.
+
+### 2. The commit records what it authors
+
+The `visual` job's authoring step now runs `npm run dimensions` before
+`git add tests/visual/__screenshots__`, so the manifest entries for
+the authored files land in the same commit, at the runner's geometry.
+That is the geometry the manifest exists to hold: the recorder's own
+caveat says to run it against committed baselines because a local PNG
+is a different Chromium build, and CI's authored file is that
+committed baseline before it is committed. The default mode adds
+missing entries only, so nothing an earlier commit recorded is
+overwritten (the D-050 §5 rule stands); the deliberate window that
+`--rebaseline` opens — no file, no entry — still exists, and CI still
+closes it, now completely.
+
+Consequences: an authoring commit passes `npm test` on its own, so it
+may be a PR's head; the local step after a pull is gone from the
+`/component` build box, which now says to pull the authoring commit
+before the next push; the guard's unguarded count should read zero on
+every commit, and its limit is for a baseline that arrived some other
+way. The one recording that this decision does not cover is this
+round's own, made locally against the already-committed files, as the
+loop always was.
+
+### 3. What was not changed
+
+The guard's limit of three stays: lowering it to zero would be right
+after this change but would fail the very push that carries it if any
+baseline were still unrecorded, and the number was never the point.
+The `workflow_dispatch` fallback stays, for the case the comment was
+written for. The `checks` job does not run the recorder: recording on
+a compare run would bless drift, which is what D-050 §5 forbids.

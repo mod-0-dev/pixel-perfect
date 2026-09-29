@@ -41,3 +41,18 @@ globalThis.ResizeObserver ??= ResizeObserverStub;
  * docs page.
  */
 Element.prototype.scrollIntoView ??= function scrollIntoView() {};
+
+/*
+ * jsdom implements no pointer capture either, and Radix's toast calls
+ * `hasPointerCapture` on the element under a pointer to run its swipe.
+ * Every browser the library targets has it. Stubbed here rather than
+ * guarded in the component (4.12, D-077).
+ *
+ * **Consumers testing in jsdom need the same stub.** Documented on the Toast
+ * docs page.
+ */
+Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
+  return false;
+};
+Element.prototype.setPointerCapture ??= function setPointerCapture() {};
+Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};

@@ -1,0 +1,108 @@
+/*
+ * DatePicker — spec docs/specs/DatePicker.md
+ *
+ * INPUT'S BOX WITH A BUTTON IN IT (spec §1, Combobox's device): the root
+ * carries `pp-input`, so Input.css sets the size variables and the states;
+ * the box here takes the edge, the surface and the radius from Input's
+ * hooks, and holds the text field and the toggle in a two-column grid. The
+ * text field is bare — no edge of its own — and the box carries the ring
+ * when the field has focus.
+ *
+ * THE PANEL IS POPOVER'S (`pp-popover`) with the calendar's padding.
+ */
+
+@layer pp.components {
+  .pp-date-picker__box {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-inline-size: 0;
+    block-size: var(--pp-input-height, var(--_height));
+    border: var(--pp-border-width-1) solid var(--pp-input-border-color, var(--_border));
+    border-radius: var(--pp-input-radius, var(--pp-control-radius));
+    background-color: var(--pp-input-bg, var(--_bg));
+    color: var(--pp-input-color, var(--_color));
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-date-picker__box {
+      transition-property: none;
+    }
+  }
+
+  .pp-date-picker__control {
+    min-inline-size: 0;
+    block-size: calc(var(--pp-input-height, var(--_height)) - 2 * var(--pp-border-width-1));
+    padding-inline: var(--pp-input-padding-inline, var(--_padding-inline)) 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: var(--_font-size);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--pp-line-height-normal);
+    appearance: none;
+  }
+
+  .pp-date-picker__control::placeholder {
+    color: var(--pp-input-placeholder-color, var(--pp-color-text-muted));
+    opacity: 1;
+  }
+
+  /* The ring is the box's when the field has focus, so the field's own is
+     drawn transparent — never removed (RULES §6). */
+  .pp-date-picker__control:focus-visible {
+    outline: var(--pp-focus-ring-width) solid transparent;
+  }
+
+  .pp-date-picker:has(.pp-date-picker__control:focus-visible) .pp-date-picker__box {
+    --_border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-date-picker__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    block-size: calc(var(--pp-input-height, var(--_height)) - 2 * var(--pp-border-width-1));
+    padding-inline: var(--pp-space-2);
+    border: 0;
+    border-radius: var(--pp-input-radius, var(--pp-control-radius));
+    background: none;
+    color: var(--pp-color-text-muted);
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .pp-date-picker__toggle > svg {
+    flex: 0 0 var(--pp-size-4);
+    block-size: var(--pp-size-4);
+  }
+
+  .pp-date-picker__toggle:hover:not(:disabled) {
+    color: var(--pp-color-text);
+  }
+
+  .pp-date-picker__toggle:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  .pp-date-picker[data-disabled] .pp-date-picker__toggle,
+  .pp-date-picker[data-readonly] .pp-date-picker__toggle {
+    color: var(--pp-color-text-disabled);
+    cursor: default;
+  }
+
+  .pp-date-picker[data-disabled] .pp-date-picker__control {
+    cursor: not-allowed;
+  }
+
+  .pp-date-picker__panel {
+    padding: var(--pp-date-picker-panel-padding, var(--pp-space-3));
+  }
+}

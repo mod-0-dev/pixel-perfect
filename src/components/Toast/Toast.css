@@ -1,0 +1,147 @@
+/*
+ * Toast — spec docs/specs/Toast.md
+ *
+ * A TOAST IS AN ALERT THAT FLOATS. Alert.css draws the surface, the tone,
+ * the layout and the dismiss button through the two-class contract (D-070
+ * §1); this file adds what floating needs: the REGION at a corner, the
+ * shadow, the motion and the swipe.
+ *
+ * THE REGION IS FIXED AT A LOGICAL CORNER (spec §3): `inset-inline-*` and
+ * `inset-block-*` per `data-placement`, so `end` is the right in a
+ * left-to-right page and the left in a right-to-left one with nothing
+ * said by the caller. Its inline size is a token, capped at the viewport
+ * — D-061 §3's exception in D-071 §1's form, and `.stylelintrc.json` names
+ * this file for `inline-size`. It takes no pointer events itself; its
+ * toasts do, so an empty corner is never a dead zone. Every placement
+ * stacks newest nearest its edge.
+ *
+ * THE MOTION IS DIRECTION-NEUTRAL (spec §7): a toast slides in from the
+ * BLOCK edge it is anchored to — down from the top, up from the bottom —
+ * so nothing here is physical. The swipe is Radix's: its `--radix-toast-
+ * swipe-*` variables move the toast with the pointer and off the edge.
+ * Every animation is `none` under reduced motion (D-062 §5).
+ */
+
+@layer pp.components {
+  .pp-toast__viewport {
+    --_gutter: var(--pp-toast-gutter, var(--pp-space-4));
+
+    position: fixed;
+    z-index: var(--pp-z-toast);
+    display: flex;
+    flex-direction: column;
+    gap: var(--pp-toast-gap, var(--pp-space-2));
+    inline-size: min(var(--pp-toast-width, var(--pp-measure-xs)), 100%);
+    max-block-size: 100%;
+    margin: 0;
+    padding: var(--_gutter);
+    list-style: none;
+    pointer-events: none;
+  }
+
+  /* Newest nearest the edge: the list grows away from its anchored edge,
+     and DOM order is oldest first — so a bottom list reads down to its
+     newest at the bottom already, and a top list is reversed. */
+  .pp-toast__viewport[data-placement="bottom-end"],
+  .pp-toast__viewport[data-placement="bottom-start"] {
+    inset-block-end: 0;
+  }
+
+  .pp-toast__viewport[data-placement="top-end"],
+  .pp-toast__viewport[data-placement="top-start"] {
+    inset-block-start: 0;
+    flex-direction: column-reverse;
+  }
+
+  .pp-toast__viewport[data-placement="bottom-end"],
+  .pp-toast__viewport[data-placement="top-end"] {
+    inset-inline-end: 0;
+  }
+
+  .pp-toast__viewport[data-placement="bottom-start"],
+  .pp-toast__viewport[data-placement="top-start"] {
+    inset-inline-start: 0;
+  }
+
+  .pp-toast__viewport:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--_gutter));
+  }
+
+  .pp-toast {
+    pointer-events: auto;
+    box-shadow: var(--pp-toast-shadow, var(--pp-shadow-3));
+    animation: pp-toast-in-up var(--pp-duration-normal) var(--pp-easing-decelerate);
+  }
+
+  .pp-toast[data-placement="top-end"],
+  .pp-toast[data-placement="top-start"] {
+    animation-name: pp-toast-in-down;
+  }
+
+  .pp-toast[data-state="closed"] {
+    animation: pp-toast-out var(--pp-duration-fast) var(--pp-easing-accelerate);
+  }
+
+  .pp-toast__action {
+    display: flex;
+    padding-block-start: var(--pp-space-2);
+  }
+
+  /* The swipe, Radix's: the toast follows the pointer, returns when the
+     swipe is abandoned, and leaves along it when it passes the threshold. */
+  .pp-toast[data-swipe="move"] {
+    translate: var(--radix-toast-swipe-move-x) 0;
+  }
+
+  .pp-toast[data-swipe="cancel"] {
+    translate: 0 0;
+    transition: translate var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  .pp-toast[data-swipe="end"] {
+    animation: pp-toast-swipe-out var(--pp-duration-fast) var(--pp-easing-accelerate);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-toast,
+    .pp-toast[data-state="closed"],
+    .pp-toast[data-swipe="end"] {
+      animation: none;
+    }
+
+    .pp-toast[data-swipe="cancel"] {
+      transition: none;
+    }
+  }
+
+  @keyframes pp-toast-in-up {
+    from {
+      opacity: 0;
+      translate: 0 var(--pp-space-2);
+    }
+  }
+
+  @keyframes pp-toast-in-down {
+    from {
+      opacity: 0;
+      translate: 0 calc(-1 * var(--pp-space-2));
+    }
+  }
+
+  @keyframes pp-toast-out {
+    to {
+      opacity: 0;
+    }
+  }
+
+  @keyframes pp-toast-swipe-out {
+    from {
+      translate: var(--radix-toast-swipe-end-x) 0;
+    }
+
+    to {
+      translate: calc(100% + var(--_gutter)) 0;
+    }
+  }
+}

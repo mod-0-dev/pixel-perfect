@@ -487,6 +487,20 @@ test.describe('layout primitives', () => {
       parseFloat(getComputedStyle(el).outlineWidth),
     );
     expect(outlineWidth).toBeGreaterThan(0);
+
+    /* The inline shadows swap under `dir="rtl"`: the start shadow moves from
+       the left edge to the right. Asserted on the element itself, because
+       the first version selected by `:dir(rtl)`, which the build rewrote
+       into a `:lang()` list, and no RTL page in English ever got the swap
+       (D-082 §4). */
+    const layers = (value: string) => value.split(',').map((l) => l.trim());
+    const ltr = await scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    await scroller.evaluate((el) => el.setAttribute('dir', 'rtl'));
+    const rtl = await scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    await scroller.evaluate((el) => el.removeAttribute('dir'));
+    expect(layers(ltr)[2]).toMatch(/^(0%|left)/);
+    expect(layers(rtl)[2]).toMatch(/^(100%|right)/);
+    expect(layers(rtl)[3]).toMatch(/^(0%|left)/);
   });
 });
 
@@ -4754,5 +4768,3331 @@ test.describe('Tooltip', () => {
       'dark',
       'dark',
     ]);
+  });
+});
+
+/*
+ * Dialog (4.4) — spec docs/specs/Dialog.md.
+ *
+ * Scrim and panel are PORTALLED to <body>. The Matrix gallery holds three
+ * dialogs open, each portalled into a `contain: layout` box in its cell, and
+ * their side effects are real: the page's scroll is locked, the rest of it is
+ * `aria-hidden` and takes no pointer events. So every interactive test
+ * closes the gallery first — Escape, three times, topmost layer each — and
+ * then reads the one non-gallery scrim and panel on the page.
+ *
+ * What only a browser can answer: that the scrim's box is the viewport and
+ * the panel is centred in it, in both directions; that the panel shrinks to
+ * the viewport less the gutter at 320px; that a tall panel scrolls the scrim
+ * and not the page; the scroll lock and its RTL compensation, measured; the
+ * layers, with a popover and a second dialog opened from inside; the focus
+ * loop and the no-trigger restore; the theme in resolved colour; and the
+ * gallery's three viewports.
+ */
+test.describe('Dialog', () => {
+  type Page = import('@playwright/test').Page;
+  const gallery = (page: Page) => page.locator('.pp-dialog[data-gallery]');
+  const panel = (page: Page) => page.locator('.pp-dialog:not([data-gallery])');
+  const scrim = (page: Page) => page.locator('.pp-dialog__scrim:has(> .pp-dialog:not([data-gallery]))');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="dialog-${id}"]`);
+
+  /* One Escape per dialog, each waited out: Escape reaches the topmost
+     layer, and a dialog still running its exit is still the topmost layer. */
+  const closeGallery = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(gallery(page)).toHaveCount(left);
+    }
+  };
+
+  /* Returns the trigger as a text locator, not a role one: once the dialog
+     is open the trigger is aria-hidden with the rest of the page, and a role
+     locator no longer resolves to it. */
+  const open = async (page: Page, id: string, name: string) => {
+    await closeGallery(page);
+    const trigger = demo(page, id).getByRole('button', { name });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    await expect(panel(page)).toBeVisible();
+    return demo(page, id).locator('button', { hasText: name }).first();
+  };
+
+  const centred = async (page: Page) => {
+    const [viewport, box] = await Promise.all([page.viewportSize(), placedBox(panel(page))]);
+    const dx = Math.abs(box.x + box.width / 2 - viewport!.width / 2);
+    const dy = Math.abs(box.y + box.height / 2 - viewport!.height / 2);
+    return { dx, dy };
+  };
+
+  test('the scrim is the viewport, the panel is centred in it, and each is at its token\'s layer', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const viewport = page.viewportSize()!;
+    const s = await scrim(page).boundingBox();
+    expect(s).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
+    const { dx, dy } = await centred(page);
+    expect(dx, 'the panel is not centred horizontally').toBeLessThanOrEqual(1);
+    expect(dy, 'the panel is not centred vertically').toBeLessThanOrEqual(1);
+
+    const read = await panel(page).evaluate((n) => ({
+      panel: getComputedStyle(n).zIndex,
+      modal: getComputedStyle(n).getPropertyValue('--pp-z-modal').trim(),
+      scrim: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+      overlay: getComputedStyle(n).getPropertyValue('--pp-z-overlay').trim(),
+    }));
+    expect(read.scrim).toBe(read.overlay);
+    expect(read.panel).toBe(read.modal);
+  });
+
+  test('centred in RTL too: the scrim is a grid, not a transform', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
+    await open(page, 'form', 'Rename');
+    const { dx, dy } = await centred(page);
+    expect(dx, 'the panel is off centre in RTL').toBeLessThanOrEqual(1);
+    expect(dy).toBeLessThanOrEqual(1);
+  });
+
+  test('at 320px the panel is the viewport less the gutter, and nothing scrolls sideways', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const box = await placedBox(panel(page));
+    const gutter = await panel(page).evaluate(
+      (n) => parseFloat(getComputedStyle(n.parentElement as HTMLElement).paddingInlineStart),
+    );
+    expect(gutter).toBe(16);
+    expect(Math.abs(box.width - (320 - 2 * gutter)), 'the panel did not shrink to the viewport').toBeLessThanOrEqual(1);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, 'the page scrolls sideways').toBe(0);
+    // The description holds one unbreakable path longer than the panel's
+    // content box: it wraps inside, and nothing runs out of the panel.
+    const inside = await panel(page).evaluate((n) => n.scrollWidth <= n.clientWidth);
+    expect(inside, 'an unbreakable string ran out of the panel').toBe(true);
+  });
+
+  test('a panel taller than the viewport scrolls the scrim, not the page, and leaves the page where it was', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'long', 'Terms');
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before, 'the trigger sits low enough that the page had to scroll').toBeGreaterThan(0);
+
+    const s = scrim(page);
+    const metrics = await s.evaluate((n) => ({ scroll: n.scrollHeight, client: n.clientHeight, top: n.scrollTop }));
+    expect(metrics.scroll, 'the panel did not overflow the scrim').toBeGreaterThan(metrics.client);
+    expect(metrics.top).toBe(0);
+
+    await page.mouse.move(640, 450);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => s.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled under the dialog').toBe(before);
+
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page moved when the dialog closed').toBe(before);
+  });
+
+  /*
+   * THE SCROLLBAR COMPENSATION IN RTL, MEASURED (spec §9). Radix's lock pads
+   * the body by the scrollbar's width so the page does not shift when the
+   * bar disappears — react-remove-scroll-bar writes `padding-right` and
+   * `margin-right`, unconditionally. Chromium puts the bar on the LEFT under
+   * `dir="rtl"`. Headless Chromium hides scrollbars, so the gap here is
+   * expected to be 0 and the side is recorded rather than asserted; the
+   * source is what says which side, and the docs page says so.
+   */
+  test('the scroll lock: body overflow hidden, and the compensation measured under dir="rtl"', async ({ page }, info) => {
+    await page.goto('/components/dialog');
+    await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
+    await open(page, 'form', 'Rename');
+    const read = await page.evaluate(() => {
+      const cs = getComputedStyle(document.body);
+      return {
+        overflow: cs.overflowY,
+        paddingRight: cs.paddingRight,
+        paddingLeft: cs.paddingLeft,
+        marginRight: cs.marginRight,
+        scrollbar: window.innerWidth - document.documentElement.clientWidth,
+      };
+    });
+    expect(read.overflow).toBe('hidden');
+    console.log(`[dialog] rtl scrollbar compensation: ${JSON.stringify(read)}`);
+    info.annotations.push({
+      type: 'rtl-scrollbar-compensation',
+      description: `scrollbar ${read.scrollbar}px; body padding-right ${read.paddingRight}, padding-left ${read.paddingLeft}, margin-right ${read.marginRight}`,
+    });
+    if (read.scrollbar > 0) {
+      // A classic scrollbar: the compensation is on the right, which in RTL is
+      // the wrong side. Recorded, not fixed (spec §9).
+      expect(read.marginRight).toBe(`${read.scrollbar}px`);
+    }
+  });
+
+  test('a press on the scrim closes it, and nothing under the scrim is pressed', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const outside = page.getByTestId('dialog-outside');
+    const box = (await outside.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'The usual' })).toContainText('outside clicked 0×');
+  });
+
+  test('a dialog with unsaved input vetoes Escape and the scrim press', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'veto', 'New note');
+    await page.getByRole('textbox', { name: 'Note' }).fill('draft');
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toBeVisible();
+    await page.mouse.click(20, 20);
+    await expect(panel(page)).toBeVisible();
+    await page.getByRole('button', { name: 'Discard' }).click();
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test('focus moves in, loops, and returns to the trigger', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await closeGallery(page);
+    const trigger = demo(page, 'form').getByRole('button', { name: 'Rename' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Name' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Cancel' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: 'Rename', exact: true }).last()).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('textbox', { name: 'Name' }), 'Tab did not wrap to the first control').toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.getByRole('button', { name: 'Rename', exact: true }).last(), 'Shift+Tab did not wrap to the last').toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+  });
+
+  test('without a trigger, focus returns to the element that opened it', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await closeGallery(page);
+    const actions = demo(page, 'no-trigger').getByRole('button', { name: 'Row actions' });
+    await actions.scrollIntoViewIfNeeded();
+    await actions.click();
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'File name' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(actions, 'focus dropped to the body (spec §7)').toBeFocused();
+  });
+
+  test('the page behind is hidden from assistive tech; a popover opened inside is not, and paints above the scrim; a second dialog paints above and closes first', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog');
+    const trigger = await open(page, 'nested', 'Open the first');
+    expect(await trigger.evaluate((n) => n.closest('[aria-hidden="true"]') !== null), 'the page is not hidden').toBe(true);
+
+    await page.getByRole('button', { name: 'Pick a colour' }).click();
+    const popover = page.getByRole('dialog', { name: 'Colour' });
+    await expect(popover, 'the popover is hidden by the sweep or not rendered').toBeVisible();
+    const layers = await popover.evaluate((n) => ({
+      popover: parseInt(getComputedStyle(n).zIndex, 10),
+      scrim: parseInt(getComputedStyle(document.querySelector('.pp-dialog__scrim:not(:has([data-gallery]))') as HTMLElement).zIndex, 10),
+    }));
+    expect(layers.popover).toBeGreaterThan(layers.scrim);
+    await page.keyboard.press('Escape');
+    await expect(popover).toHaveCount(0);
+    await expect(panel(page), 'Escape on the popover closed the dialog too').toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Open another' }).click();
+    const scrims = page.locator('.pp-dialog__scrim:not(:has([data-gallery]))');
+    await expect(scrims).toHaveCount(2);
+    const order = await scrims.evaluateAll((els) => {
+      const [a, b] = els as HTMLElement[];
+      const later = !!(a!.compareDocumentPosition(b!) & Node.DOCUMENT_POSITION_FOLLOWING);
+      return { later, same: getComputedStyle(a!).zIndex === getComputedStyle(b!).zIndex };
+    });
+    expect(order.later, 'the second scrim is not later in the DOM').toBe(true);
+    expect(order.same, 'the two scrims are not at the same layer').toBe(true);
+    await expect(page.getByRole('dialog', { name: 'The second dialog' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(scrims, 'Escape closed both').toHaveCount(1);
+    await expect(page.getByRole('dialog', { name: 'The first dialog' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(scrims).toHaveCount(0);
+  });
+
+  test('the theme crosses the portal onto the scrim, in resolved colour', async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const onPage = await scrim(page).evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+
+    const region = demo(page, 'theme');
+    const trigger = region.getByRole('button', { name: 'Open here' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const s = scrim(page);
+    await expect(s).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await s.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="dialog-theme"]') !== null,
+      token: getComputedStyle(n).getPropertyValue('--pp-color-bg-scrim').trim(),
+      panelBg: getComputedStyle(n.querySelector('.pp-dialog') as HTMLElement).backgroundColor,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg, 'the dark scrim painted the light theme\'s scrim').not.toBe(onPage);
+    const regionTokens = await region.evaluate((n) => ({
+      scrim: getComputedStyle(n).getPropertyValue('--pp-color-bg-scrim').trim(),
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.token).toBe(regionTokens.scrim);
+    expect(read.raised, 'the panel did not inherit the theme from the scrim').toBe(regionTokens.raised);
+  });
+
+  test("reduced motion removes the scrim's and the panel's animation", async ({ page }) => {
+    await page.goto('/components/dialog');
+    await open(page, 'form', 'Rename');
+    const names = await panel(page).evaluate((n) => ({
+      panel: getComputedStyle(n).animationName,
+      scrim: getComputedStyle(n.parentElement as HTMLElement).animationName,
+    }));
+    expect(names).toEqual({ panel: 'none', scrim: 'none' });
+  });
+
+  test('the gallery: three viewports, the narrow and medium panels below the ceiling and the wide one at it', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog');
+    const panels = gallery(page);
+    await expect(panels).toHaveCount(3);
+    // The page is still a page while three bodies' worth of scroll lock are
+    // applied: the full-page capture has a height to capture (spec §11).
+    const tall = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight);
+    expect(tall).toBe(true);
+
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const stage = scrim.parentElement as HTMLElement;
+        const s = scrim.getBoundingClientRect();
+        const t = stage.getBoundingClientRect();
+        return {
+          scrimIsStage: Math.abs(s.width - t.width) <= 1 && Math.abs(s.height - t.height) <= 1 && Math.abs(s.x - t.x) <= 1,
+          width: el.getBoundingClientRect().width,
+          centred: Math.abs(el.getBoundingClientRect().x + el.getBoundingClientRect().width / 2 - (t.x + t.width / 2)) <= 1,
+          ceiling: parseFloat(getComputedStyle(el).getPropertyValue('--pp-measure-sm')) * 16,
+        };
+      }),
+    );
+    for (const cell of read) {
+      expect(cell.scrimIsStage, 'the scrim is not the size of its stage').toBe(true);
+      expect(cell.centred, 'the panel is not centred in its stage').toBe(true);
+    }
+    expect(read[0]!.width).toBeLessThan(read[0]!.ceiling);
+    expect(read[1]!.width).toBeLessThan(read[1]!.ceiling);
+    expect(Math.abs(read[2]!.width - read[2]!.ceiling), 'the wide panel is not at its ceiling').toBeLessThanOrEqual(1);
+  });
+});
+
+/*
+ * AlertDialog (4.5) — spec docs/specs/AlertDialog.md. Dialog with two rules
+ * changed, drawn by Dialog's stylesheet. Asserted here: only what differs,
+ * and the two-class contract that makes the rest apply — resolved, not by
+ * class name.
+ */
+test.describe('AlertDialog', () => {
+  type Page = import('@playwright/test').Page;
+  const gallery = (page: Page) => page.locator('.pp-alert-dialog[data-gallery]');
+  const panel = (page: Page) => page.locator('.pp-alert-dialog:not([data-gallery])');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="alert-dialog-${id}"]`);
+
+  const closeGallery = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(gallery(page)).toHaveCount(left);
+    }
+  };
+
+  test('is drawn by Dialog: the layers, the scrim as viewport, the ceiling at 20rem, no motion under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    await demo(page, 'delete').getByRole('button', { name: 'Delete report' }).click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const viewport = page.viewportSize()!;
+    const box = await placedBox(el);
+    const read = await el.evaluate((n) => {
+      const scrim = n.parentElement as HTMLElement;
+      const s = scrim.getBoundingClientRect();
+      return {
+        scrim: { x: s.x, y: s.y, width: s.width, height: s.height },
+        scrimZ: getComputedStyle(scrim).zIndex,
+        overlay: getComputedStyle(n).getPropertyValue('--pp-z-overlay').trim(),
+        panelZ: getComputedStyle(n).zIndex,
+        modal: getComputedStyle(n).getPropertyValue('--pp-z-modal').trim(),
+        ceiling: parseFloat(getComputedStyle(n).getPropertyValue('--pp-measure-xs')) * 16,
+        animation: getComputedStyle(n).animationName,
+        scrimAnimation: getComputedStyle(scrim).animationName,
+        role: n.getAttribute('role'),
+      };
+    });
+    expect(read.scrim).toEqual({ x: 0, y: 0, width: viewport.width, height: viewport.height });
+    expect(read.scrimZ).toBe(read.overlay);
+    expect(read.panelZ).toBe(read.modal);
+    expect(read.role).toBe('alertdialog');
+    expect(Math.abs(box.width - read.ceiling), 'the panel is not at the 20rem ceiling').toBeLessThanOrEqual(1);
+    expect(Math.abs(box.x + box.width / 2 - viewport.width / 2)).toBeLessThanOrEqual(1);
+    expect(read.animation).toBe('none');
+    expect(read.scrimAnimation).toBe('none');
+  });
+
+  test('focus lands on Cancel, a scrim press does nothing, and Escape returns focus to the trigger', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    const trigger = demo(page, 'delete').getByRole('button', { name: 'Delete report' });
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    await expect(panel(page)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Keep it' })).toBeFocused();
+
+    const outside = page.getByTestId('alert-dialog-outside');
+    const box = (await outside.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(300);
+    await expect(panel(page), 'a scrim press closed an alert dialog').toBeVisible();
+    await expect(page.locator('section', { hasText: 'Delete, with a way to decline' })).toContainText('outside clicked 0×');
+
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+    await expect(demo(page, 'delete').locator('button', { hasText: 'Delete report' })).toBeFocused();
+  });
+
+  test('Action closes and acts; Cancel closes and does not', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    const trigger = demo(page, 'delete').getByRole('button', { name: 'Delete report' });
+    await trigger.click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(panel(page)).toHaveCount(0);
+    await trigger.click();
+    await page.getByRole('button', { name: 'Keep it' }).click();
+    await expect(panel(page)).toHaveCount(0);
+    await expect(page.locator('section', { hasText: 'Delete, with a way to decline' })).toContainText('deleted 1× · kept 1×');
+  });
+
+  test('with no Cancel, the panel itself takes focus', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    await closeGallery(page);
+    await demo(page, 'no-cancel').getByRole('button', { name: 'Acknowledge' }).click();
+    await expect(panel(page)).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test('the gallery holds three, each scrim the size of its cell', async ({ page }) => {
+    await page.goto('/components/alert-dialog');
+    const panels = gallery(page);
+    await expect(panels).toHaveCount(3);
+    const ok = await panels.evaluateAll((els) =>
+      els.every((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const stage = scrim.parentElement as HTMLElement;
+        const s = scrim.getBoundingClientRect();
+        const t = stage.getBoundingClientRect();
+        return Math.abs(s.width - t.width) <= 1 && Math.abs(s.height - t.height) <= 1;
+      }),
+    );
+    expect(ok).toBe(true);
+  });
+});
+
+/*
+ * Drawer (4.6) — spec docs/specs/Drawer.md. Dialog with a different
+ * placement. Asserted here: where the panel is, per side and per direction;
+ * that its anchored axis is the token and the other axis the viewport; that
+ * the PANEL scrolls, not the page; the motion rule; the gallery.
+ */
+test.describe('Drawer', () => {
+  type Page = import('@playwright/test').Page;
+  type Box = { x: number; y: number; width: number; height: number };
+  const gallery = (page: Page) => page.locator('.pp-drawer[data-gallery]');
+  const panel = (page: Page) => page.locator('.pp-drawer:not([data-gallery])');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="drawer-${id}"]`);
+
+  const closeGallery = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(gallery(page)).toHaveCount(left);
+    }
+  };
+
+  const openSide = async (page: Page, side: string) => {
+    const trigger = demo(page, 'sides').locator(`[data-side-trigger="${side}"]`);
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el).toHaveAttribute('data-side', /left|right|top|bottom/);
+    return el;
+  };
+
+  /* A drawer sits AT an edge, so a box with x = 0 or y = 0 is a placed box
+     here; placedBox's positive-coordinate rule does not apply. Two reads a
+     frame apart that agree are enough — under reduced motion there is no
+     slide to wait out. */
+  const stillBox = async (el: import('@playwright/test').Locator): Promise<Box> => {
+    let last: Box | null = null;
+    await expect
+      .poll(async () => {
+        const box = await el.boundingBox();
+        const settled = !!box && !!last && box.x === last.x && box.y === last.y && box.width === last.width && box.height === last.height;
+        last = box;
+        return settled;
+      })
+      .toBe(true);
+    return last!;
+  };
+
+  test('each side is flush with its edge, the token on the anchored axis and the viewport on the other', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const viewport = page.viewportSize()!;
+    const token = 20 * 16;
+    const checks: Record<string, [string, (b: Box) => void]> = {
+      start: ['left', (b) => { expect(b.x).toBe(0); expect(Math.abs(b.width - token)).toBeLessThanOrEqual(1); expect(b.height).toBe(viewport.height); }],
+      end: ['right', (b) => { expect(Math.abs(b.x + b.width - viewport.width)).toBeLessThanOrEqual(1); expect(Math.abs(b.width - token)).toBeLessThanOrEqual(1); expect(b.height).toBe(viewport.height); }],
+      top: ['top', (b) => { expect(b.y).toBe(0); expect(b.width).toBe(viewport.width); expect(Math.abs(b.height - viewport.height / 2)).toBeLessThanOrEqual(1); }],
+      bottom: ['bottom', (b) => { expect(Math.abs(b.y + b.height - viewport.height)).toBeLessThanOrEqual(1); expect(b.width).toBe(viewport.width); expect(Math.abs(b.height - viewport.height / 2)).toBeLessThanOrEqual(1); }],
+    };
+    for (const [side, [physical, check]] of Object.entries(checks)) {
+      const el = await openSide(page, side);
+      await expect(el).toHaveAttribute('data-side', physical);
+      check(await stillBox(el));
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+  });
+
+  test('side="start" is on the right under dir="rtl"', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
+    const el = await openSide(page, 'start');
+    await expect(el).toHaveAttribute('data-side', 'right');
+    const box = await stillBox(el);
+    const viewport = page.viewportSize()!;
+    expect(Math.abs(box.x + box.width - viewport.width), 'start is not on the right in RTL').toBeLessThanOrEqual(1);
+  });
+
+  test('at 320px a side drawer is the full width', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const trigger = demo(page, 'nav').getByRole('button', { name: 'Menu' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const box = await stillBox(panel(page));
+    expect(box.width).toBe(320);
+    expect(box.x).toBe(0);
+  });
+
+  /*
+   * THE PAGE MUST NOT MOVE, MEASURED AT THE BOTTOM OF THE PAGE. The trigger
+   * sits low, so the page is scrolled to its maximum; any shrink of the
+   * document while the drawer is open clamps `scrollY`, which is how this
+   * test caught Radix's scroll lock zeroing a padded body's gutter (D-071
+   * §6). Dialog's counterpart never scrolled that far and never saw it.
+   */
+  test('a panel taller than its content scrolls itself, and the page stays where it was', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const trigger = demo(page, 'tall').getByRole('button', { name: 'Activity' });
+    await trigger.scrollIntoViewIfNeeded();
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before, 'the trigger sits low enough that the page had to scroll').toBeGreaterThan(0);
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollHeight), 'the page shrank behind the drawer').toBe(height);
+    expect(await page.evaluate(() => window.scrollY), 'opening the drawer scrolled the page').toBe(before);
+
+    const metrics = await el.evaluate((n) => ({
+      scroll: n.scrollHeight,
+      client: n.clientHeight,
+      scrimScroll: (n.parentElement as HTMLElement).scrollHeight,
+      scrimClient: (n.parentElement as HTMLElement).clientHeight,
+    }));
+    expect(metrics.scroll, 'the panel did not overflow').toBeGreaterThan(metrics.client);
+    expect(metrics.scrimScroll, 'the scrim scrolled instead of the panel').toBe(metrics.scrimClient);
+
+    const box = await stillBox(el);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 600);
+    await expect.poll(() => el.evaluate((n) => n.scrollTop), 'the wheel did not scroll the panel').toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled under the drawer').toBe(before);
+
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page moved when the drawer closed').toBe(before);
+  });
+
+  test('focus lands on the first link, Escape returns it to the trigger, and the motion is none under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const trigger = demo(page, 'nav').getByRole('button', { name: 'Menu' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    // Radix's focus scope skips links on mount autofocus (D-071 §4): the
+    // first focus is the first BUTTON, which here is Close.
+    await expect(page.getByRole('button', { name: 'Close' })).toBeFocused();
+    expect(await el.evaluate((n) => getComputedStyle(n).animationName)).toBe('none');
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+    await expect(demo(page, 'nav').locator('button').first()).toBeFocused();
+  });
+
+  test('the theme crosses the portal onto the scrim', async ({ page }) => {
+    await page.goto('/components/drawer');
+    await closeGallery(page);
+    const region = demo(page, 'theme');
+    const trigger = region.getByRole('button', { name: 'Open here' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el.locator('xpath=..')).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+      inside: n.closest('[data-testid="drawer-theme"]') !== null,
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.raised).toBe(await region.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three end drawers, contained: full width at 240, 20rem at the right edge at 480 and 960', async ({
+    page,
+  }) => {
+    await page.goto('/components/drawer');
+    const panels = gallery(page);
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const s = scrim.getBoundingClientRect();
+        const b = el.getBoundingClientRect();
+        const stage = (scrim.parentElement as HTMLElement).getBoundingClientRect();
+        return {
+          stage: s.width,
+          width: b.width,
+          scrimX: s.x,
+          stageX: stage.x,
+          panelX: b.x,
+          panelRight: b.x + b.width,
+          scrimRight: s.x + s.width,
+          flushRight: Math.abs(b.x + b.width - (s.x + s.width)) <= 1,
+          fullHeight: Math.abs(b.height - s.height) <= 1,
+        };
+      }),
+    );
+    expect(read.every((r) => r.flushRight && r.fullHeight), JSON.stringify(read)).toBe(true);
+    expect(read[0]!.width).toBe(read[0]!.stage);
+    expect(Math.abs(read[1]!.width - 320)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read[2]!.width - 320)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('DropdownMenu', () => {
+  type Page = import('@playwright/test').Page;
+  /* The Matrix gallery keeps three non-modal menus open for the screenshot,
+     marked `data-gallery`; a submenu is a second `.pp-dropdown-menu`. */
+  const panel = (page: Page) => page.locator('.pp-dropdown-menu:not([data-gallery]):not(.pp-dropdown-menu__sub)');
+  const sub = (page: Page) => page.locator('.pp-dropdown-menu__sub');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="dropdown-menu-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  /* Opened from the keyboard, and not returned until the entry focus has
+     landed on the first item: a key pressed before that is lost. The trigger
+     comes back as a CSS locator — a modal menu hides the rest of the page
+     from assistive tech, so a role query cannot see it while the menu is
+     open (D-068 §4). */
+  const openActions = async (page: Page, id = 'actions') => {
+    const trigger = demo(page, id).locator('button').first();
+    await expect(trigger).toHaveAccessibleName('More');
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('ArrowDown');
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el.getByRole('menuitem').first()).toBeFocused();
+    return { trigger, el };
+  };
+
+  test('the z-index token reaches the element that stacks, and the list is named by its trigger', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    await expect(page.getByRole('menu', { name: 'More' })).toBeVisible();
+    const read = await el.evaluate((n) => ({
+      panel: getComputedStyle(n).zIndex,
+      token: getComputedStyle(n).getPropertyValue('--pp-z-popover').trim(),
+      wrapper: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+      animation: getComputedStyle(n).animationName,
+    }));
+    expect(read.panel).toBe(read.token);
+    expect(read.wrapper, "Radix's wrapper did not take the panel's z-index").toBe(read.token);
+    expect(read.animation, 'not still under reduced motion').toBe('none');
+  });
+
+  test('align="start" puts the list on the trigger\'s start edge, one space step below it', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { trigger, el } = await openActions(page);
+    await expect(el).toHaveAttribute('data-side', 'bottom');
+    await expect(el).toHaveAttribute('data-align', 'start');
+    const [t, p] = await Promise.all([trigger.boundingBox(), placedBox(el)]);
+    const step = await px(page, '--pp-space-1');
+    expect(step).toBe(4);
+    expect(Math.abs(p!.x - t!.x), 'the start edges differ').toBeLessThanOrEqual(1);
+    expect(Math.abs(p!.y - (t!.y + t!.height) - step), 'the gap is not the token').toBeLessThanOrEqual(1);
+  });
+
+  test('a row is the small control height; a plain menu has no gutter and a checkable one insets every row alike', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    const height = await px(page, '--pp-control-height-sm');
+    const inline = await px(page, '--pp-control-padding-inline-sm');
+    expect(height).toBe(32);
+    const rows = el.locator('.pp-dropdown-menu__item');
+    const plain = await rows.evaluateAll((els) =>
+      els.map((n) => ({ h: n.getBoundingClientRect().height, start: parseFloat(getComputedStyle(n).paddingInlineStart) })),
+    );
+    expect(plain.length).toBeGreaterThan(3);
+    expect(plain.every((r) => Math.abs(r.h - height) <= 1), JSON.stringify(plain)).toBe(true);
+    expect(plain.every((r) => r.start === inline), 'a plain menu carries a gutter').toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+
+    const view = demo(page, 'view').getByRole('button', { name: 'View' });
+    await view.scrollIntoViewIfNeeded();
+    await view.click();
+    await expect(el).toBeVisible();
+    const mixed = await el.locator('.pp-dropdown-menu__item, .pp-dropdown-menu__label').evaluateAll((els) =>
+      els.map((n) => ({ role: n.getAttribute('role'), start: parseFloat(getComputedStyle(n).paddingInlineStart) })),
+    );
+    const starts = new Set(mixed.map((r) => r.start));
+    expect(starts.size, `rows and labels do not share one inset: ${JSON.stringify(mixed)}`).toBe(1);
+    const mark = await px(page, '--pp-size-4');
+    const gap = await px(page, '--pp-control-gap-sm');
+    expect([...starts][0]).toBe(inline + mark + gap);
+    // The plain item at the end of a checkable menu is inset like the rest.
+    expect(mixed.find((r) => r.role === 'menuitem')?.start).toBe(inline + mark + gap);
+    // The mark sits in the gutter, on the row's centre line.
+    const checked = el.locator('[role="menuitemradio"][aria-checked="true"]');
+    const [row, ind] = await Promise.all([checked.boundingBox(), checked.locator('.pp-dropdown-menu__indicator').boundingBox()]);
+    expect(Math.abs(ind!.x - (row!.x + inline))).toBeLessThanOrEqual(1);
+    expect(Math.abs(ind!.y + ind!.height / 2 - (row!.y + row!.height / 2))).toBeLessThanOrEqual(1);
+  });
+
+  test('the highlighted row is the hover token, resolved; typeahead moves it', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    const rename = el.getByRole('menuitem', { name: 'Rename' });
+    await expect(rename).toBeFocused();
+    await expect(rename).toHaveAttribute('data-highlighted', '');
+    const read = await rename.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      token: getComputedStyle(n).getPropertyValue('--pp-tone-bg-hover').trim(),
+    }));
+    const expected = await rename.evaluate((n, token) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = token;
+      n.appendChild(probe);
+      const bg = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return bg;
+    }, read.token);
+    expect(read.bg).toBe(expected);
+    await page.keyboard.type('d');
+    await expect(el.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+    await expect(rename).not.toHaveAttribute('data-highlighted', '');
+  });
+
+  test('the submenu opens on ArrowRight in LTR, to the right, its first item on the trigger\'s row; ArrowLeft in RTL, to the left', async ({
+    page,
+  }) => {
+    await page.goto('/components/dropdown-menu');
+    for (const [id, rtl] of [
+      ['actions', false],
+      ['actions-rtl', true],
+    ] as const) {
+      const { el } = await openActions(page, id);
+      // Radix's roving focus moves focus on a timeout after the key, so each
+      // arrow is waited out before the next (D-072 §7).
+      await page.keyboard.press('ArrowDown');
+      await expect(el.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+      await page.keyboard.press('ArrowDown');
+      const trigger = el.getByRole('menuitem', { name: 'Move to' });
+      await expect(trigger).toBeFocused();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      // The wrong key does nothing.
+      await page.keyboard.press(rtl ? 'ArrowRight' : 'ArrowLeft');
+      await expect(sub(page)).toHaveCount(0);
+      await page.keyboard.press(rtl ? 'ArrowLeft' : 'ArrowRight');
+      const s = sub(page);
+      await expect(s).toBeVisible();
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      const first = s.getByRole('menuitem', { name: 'Archive' });
+      await expect(first).toBeFocused();
+      await expect(s).toHaveAttribute('data-side', rtl ? 'left' : 'right');
+      const [t, sp, f] = await Promise.all([trigger.boundingBox(), placedBox(s), first.boundingBox()]);
+      if (rtl) {
+        expect(sp!.x + sp!.width, `${id}: the submenu is not on the left`).toBeLessThanOrEqual(t!.x + 1);
+      } else {
+        expect(sp!.x, `${id}: the submenu is not on the right`).toBeGreaterThanOrEqual(t!.x + t!.width - 1);
+      }
+      expect(Math.abs(f!.y - t!.y), `${id}: the first sub-item is not on its trigger's row`).toBeLessThanOrEqual(1);
+      // The chevron points into the submenu.
+      const flipped = await trigger.locator('.pp-dropdown-menu__chevron').evaluate((n) => getComputedStyle(n).scale);
+      expect(flipped).toBe(rtl ? '-1 1' : 'none');
+      await page.keyboard.press(rtl ? 'ArrowRight' : 'ArrowLeft');
+      await expect(s).toHaveCount(0);
+      await expect(trigger).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+  });
+
+  test('Enter activates an item, closes the menu and returns focus to the trigger', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { trigger, el } = await openActions(page);
+    await page.keyboard.press('ArrowDown');
+    await expect(el.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(el).toHaveCount(0);
+    await expect(trigger).toBeFocused();
+    await expect(demo(page, 'actions').locator('xpath=..')).toContainText('last: duplicate');
+  });
+
+  test('a press outside a modal menu closes it and does not land', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const trigger = demo(page, 'outside').getByRole('button', { name: 'Open' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const target = page.getByTestId('dropdown-menu-outside-target');
+    const box = (await target.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(el).toHaveCount(0);
+    await expect(target.locator('xpath=../..')).toContainText('outside clicked 0×');
+  });
+
+  test('a long label wraps inside the ceiling and a long list scrolls inside itself', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const trigger = demo(page, 'long').getByRole('button', { name: 'Workspaces' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const before = await page.evaluate(() => window.scrollY);
+    const box = await placedBox(el);
+    const ceiling = await px(page, '--pp-measure-xs');
+    expect(box!.width).toBeLessThanOrEqual(ceiling + 1);
+    const metrics = await el.evaluate((n) => ({ scroll: n.scrollHeight, client: n.clientHeight }));
+    expect(metrics.scroll, 'the list did not overflow').toBeGreaterThan(metrics.client);
+    await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    await page.mouse.wheel(0, 400);
+    await expect.poll(() => el.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY), 'the page scrolled under the menu').toBe(before);
+  });
+
+  test('the theme crosses the portal, in resolved colour', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const { el } = await openActions(page);
+    const lightBg = await el.evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+    const region = demo(page, 'theme');
+    const trigger = region.getByRole('button', { name: 'Open here' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    await expect(el).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="dropdown-menu-theme"]') !== null,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg).not.toBe(lightBg);
+    expect(read.raised).toBe(await region.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three, each beside its trigger, with the gutter its checkable item earns', async ({ page }) => {
+    await page.goto('/components/dropdown-menu');
+    const panels = page.locator('.pp-dropdown-menu[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => ({
+        state: el.getAttribute('data-state'),
+        items: el.querySelectorAll('.pp-dropdown-menu__item').length,
+        inset: parseFloat(getComputedStyle(el.querySelector('.pp-dropdown-menu__item') as HTMLElement).paddingInlineStart),
+        marks: el.querySelectorAll('.pp-dropdown-menu__indicator').length,
+      })),
+    );
+    expect(read.every((r) => r.state === 'open' && r.items === 4 && r.marks === 1 && r.inset > 8), JSON.stringify(read)).toBe(true);
+  });
+});
+
+test.describe('ContextMenu', () => {
+  type Page = import('@playwright/test').Page;
+  const panel = (page: Page) => page.locator('.pp-context-menu:not([data-gallery]):not(.pp-dropdown-menu__sub)');
+  const sub = (page: Page) => page.locator('.pp-context-menu.pp-dropdown-menu__sub');
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="context-menu-${id}"]`);
+  const region = (page: Page, id: string) => demo(page, id).locator('.pp-context-menu__trigger');
+
+  /* A secondary press at a point inside the region; the list is returned
+     once its first item is placed. */
+  const pressAt = async (page: Page, id: string, dx = 24, dy = 24) => {
+    const el = region(page, id);
+    await el.scrollIntoViewIfNeeded();
+    const box = (await el.boundingBox())!;
+    // A negative dx counts from the region's right edge.
+    const point = { x: dx >= 0 ? box.x + dx : box.x + box.width + dx, y: box.y + dy };
+    await page.mouse.click(point.x, point.y, { button: 'right' });
+    const list = panel(page);
+    await expect(list).toBeVisible();
+    return { list, point, box };
+  };
+
+  test('a secondary press opens DropdownMenu\'s list at the pointer: the two-class contract, the row, the token', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const { list, point } = await pressAt(page, 'region');
+    await expect(region(page, 'region')).toHaveAttribute('data-state', 'open');
+    await expect(page.getByRole('menu', { name: 'File' })).toBeVisible();
+    const box = await placedBox(list);
+    // Radix anchors a zero-size rect at the point and places the list to
+    // its right (its own two-pixel offset), aligned to its top (spec §4).
+    expect(Math.abs(box!.x - (point.x + 2)), 'the list did not open at the pointer').toBeLessThanOrEqual(1);
+    expect(Math.abs(box!.y - point.y)).toBeLessThanOrEqual(1);
+    const read = await list.evaluate((n) => ({
+      z: getComputedStyle(n).zIndex,
+      token: getComputedStyle(n).getPropertyValue('--pp-z-popover').trim(),
+      wrapper: getComputedStyle(n.parentElement as HTMLElement).zIndex,
+      row: (n.querySelector('.pp-dropdown-menu__item') as HTMLElement).getBoundingClientRect().height,
+      animation: getComputedStyle(n).animationName,
+    }));
+    expect(read.z).toBe(read.token);
+    expect(read.wrapper).toBe(read.token);
+    expect(Math.abs(read.row - 32)).toBeLessThanOrEqual(1);
+    expect(read.animation).toBe('none');
+    await page.keyboard.press('Escape');
+    await expect(list).toHaveCount(0);
+    await expect(region(page, 'region')).toHaveAttribute('data-state', 'closed');
+  });
+
+  test('Shift+F10 on the focused region opens the list; Enter on an item acts, closes, and focus returns', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const el = region(page, 'region');
+    await el.scrollIntoViewIfNeeded();
+    await el.focus();
+    await page.keyboard.press('Shift+F10');
+    const list = panel(page);
+    await expect(list).toBeVisible();
+    // Opened from the keyboard, so the entry focus lands on the first item.
+    await expect(list.getByRole('menuitem', { name: 'Rename' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(list).toHaveCount(0);
+    await expect(el).toBeFocused();
+    await expect(demo(page, 'region').locator('xpath=..')).toContainText('last: rename');
+  });
+
+  test('under dir="rtl" the submenu opens on ArrowLeft, to the left, the chevron flipped', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    // Pressed near the region's right edge, so a submenu has room on the left.
+    const { list } = await pressAt(page, 'region-rtl', -40);
+    await expect(list).toHaveAttribute('dir', 'rtl');
+    await page.keyboard.press('ArrowDown');
+    await expect(list.getByRole('menuitem', { name: 'Rename' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(list.getByRole('menuitem', { name: 'Duplicate' })).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    const trigger = list.getByRole('menuitem', { name: 'Move to' });
+    await expect(trigger).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(sub(page)).toHaveCount(0);
+    await page.keyboard.press('ArrowLeft');
+    const s = sub(page);
+    await expect(s).toBeVisible();
+    await expect(s.getByRole('menuitem', { name: 'Archive' })).toBeFocused();
+    const [t, sp] = await Promise.all([trigger.boundingBox(), placedBox(s)]);
+    expect(sp!.x + sp!.width, 'the submenu is not on the left').toBeLessThanOrEqual(t!.x + 1);
+    expect(await trigger.locator('.pp-dropdown-menu__chevron').evaluate((n) => getComputedStyle(n).scale)).toBe('-1 1');
+  });
+
+  test('a disabled region opens nothing, and a controlled one closes from outside', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const disabled = region(page, 'disabled');
+    await disabled.scrollIntoViewIfNeeded();
+    await expect(disabled).toHaveAttribute('data-disabled', '');
+    const box = (await disabled.boundingBox())!;
+    await page.mouse.click(box.x + 24, box.y + 24, { button: 'right' });
+    await page.waitForTimeout(250);
+    await expect(panel(page)).toHaveCount(0);
+
+    const { list } = await pressAt(page, 'controlled');
+    await expect(demo(page, 'controlled').locator('xpath=..')).toContainText('open: true');
+    await page.keyboard.press('Escape');
+    await expect(list).toHaveCount(0);
+    await expect(demo(page, 'controlled').locator('xpath=..')).toContainText('open: false');
+  });
+
+  test('the theme crosses the portal, in resolved colour', async ({ page }) => {
+    await page.goto('/components/context-menu');
+    const { list } = await pressAt(page, 'region');
+    const lightBg = await list.evaluate((n) => getComputedStyle(n).backgroundColor);
+    await page.keyboard.press('Escape');
+    await expect(list).toHaveCount(0);
+    const dark = await pressAt(page, 'theme');
+    await expect(dark.list).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await dark.list.evaluate((n) => ({
+      bg: getComputedStyle(n).backgroundColor,
+      inside: n.closest('[data-testid="context-menu-theme"]') !== null,
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.bg).not.toBe(lightBg);
+  });
+
+  /*
+   * A list opened at a point is anchored to VIEWPORT coordinates, and the
+   * three regions run past a 900px viewport, so the lower lists are shifted
+   * up to fit. The full-page screenshot resizes the viewport to the page
+   * and floating-ui re-places them (D-062 §2's finding for Popover); this
+   * test does the same, so it measures what the screenshot shows.
+   */
+  test('the gallery holds three, each opened at a point inside its region', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1800 });
+    await page.goto('/components/context-menu');
+    const panels = page.locator('.pp-context-menu[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const b = el.getBoundingClientRect();
+        const regions = Array.from(document.querySelectorAll('.matrix .pp-context-menu__trigger')).map((r) => r.getBoundingClientRect());
+        const inside = regions.some((r) => b.x >= r.x && b.y >= r.y && b.y <= r.y + r.height);
+        return { state: el.getAttribute('data-state'), inside, items: el.querySelectorAll('.pp-dropdown-menu__item').length };
+      }),
+    );
+    expect(read.every((r) => r.state === 'open' && r.inside && r.items === 4), JSON.stringify(read)).toBe(true);
+  });
+});
+
+test.describe('Tabs', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="tabs-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.color = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, token);
+
+  test('a tab is the medium control; the selected one is the text colour with a two-pixel accent bar on the hairline', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'settings');
+    await region.scrollIntoViewIfNeeded();
+    const active = region.getByRole('tab', { name: 'General' });
+    const inactive = region.getByRole('tab', { name: 'Members' });
+    const list = region.getByRole('tablist');
+    const height = await px(page, '--pp-control-height-md');
+    expect(height).toBe(40);
+    const read = await active.evaluate((n) => {
+      const after = getComputedStyle(n, '::after');
+      const list = n.parentElement as HTMLElement;
+      return {
+        height: n.getBoundingClientRect().height,
+        color: getComputedStyle(n).color,
+        barWidth: after.borderBottomWidth,
+        barColor: after.borderBottomColor,
+        barOffset: after.bottom,
+        lineWidth: getComputedStyle(list).borderBottomWidth,
+        lineColor: getComputedStyle(list).borderBottomColor,
+        tabBottom: n.getBoundingClientRect().bottom,
+        listBottom: list.getBoundingClientRect().bottom,
+        transition: getComputedStyle(n).transitionDuration,
+      };
+    });
+    expect(Math.abs(read.height - height)).toBeLessThanOrEqual(1);
+    expect(read.color).toBe(await resolve(page, '--pp-color-text'));
+    expect(await inactive.evaluate((n) => getComputedStyle(n).color)).toBe(await resolve(page, '--pp-color-text-muted'));
+    // The bar: two pixels, the accent's solid step, its outer edge one
+    // hairline past the tab's edge — which is the list's outer edge.
+    expect(read.barWidth).toBe('2px');
+    expect(read.barOffset).toBe('-1px');
+    expect(read.lineWidth).toBe('1px');
+    expect(Math.abs(read.tabBottom + 1 - read.listBottom), 'the bar does not sit on the line').toBeLessThanOrEqual(0.5);
+    const accent = await active.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-tone-solid').trim());
+    const accentResolved = await active.evaluate((n, token) => {
+      const probe = document.createElement('i');
+      probe.style.color = token;
+      n.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, accent);
+    expect(read.barColor).toBe(accentResolved);
+    expect(read.barColor).not.toBe(read.lineColor);
+    expect(read.transition, 'not still under reduced motion').toBe('0s');
+    await expect(list).toHaveAttribute('aria-orientation', 'horizontal');
+    // Four short tabs: the list is still the strip's full width, so the
+    // hairline runs the whole way.
+    const span = await list.evaluate((n) => ({ list: n.getBoundingClientRect().width, strip: (n.parentElement as HTMLElement).clientWidth }));
+    expect(Math.abs(span.list - span.strip), 'the hairline stops at the last tab').toBeLessThanOrEqual(1);
+  });
+
+  test('the arrows select; Tab leaves the strip for the panel; manual mode selects on Enter', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'settings');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('tab', { name: 'General' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(region.getByRole('tab', { name: 'Members' })).toBeFocused();
+    await expect(region.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true');
+    await expect(region.locator('xpath=..')).toContainText('selected: members');
+    // Billing is disabled: skipped.
+    await page.keyboard.press('ArrowRight');
+    await expect(region.getByRole('tab', { name: 'Advanced' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(region.getByRole('tabpanel')).toBeFocused();
+
+    const manual = demo(page, 'manual');
+    await manual.scrollIntoViewIfNeeded();
+    await manual.getByRole('tab', { name: 'General' }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(manual.getByRole('tab', { name: 'Members' })).toBeFocused();
+    await expect(manual.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'false');
+    await page.keyboard.press('Enter');
+    await expect(manual.getByRole('tab', { name: 'Members' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('at 240px the strip scrolls, the page does not, and the hairline runs under every tab', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const narrow = page.locator('.matrix__cell').first().locator('.pp-tabs');
+    await narrow.scrollIntoViewIfNeeded();
+    const before = await page.evaluate(() => window.scrollY);
+    const read = await narrow.evaluate((n) => {
+      const strip = n.querySelector('.pp-tabs__strip') as HTMLElement;
+      const list = n.querySelector('.pp-tabs__list') as HTMLElement;
+      const tabs = Array.from(n.querySelectorAll('.pp-tabs__tab')) as HTMLElement[];
+      return {
+        rootWidth: n.getBoundingClientRect().width,
+        stripClient: strip.clientWidth,
+        stripScroll: strip.scrollWidth,
+        listWidth: list.getBoundingClientRect().width,
+        lastTabRight: tabs[tabs.length - 1]!.getBoundingClientRect().right,
+        listRight: list.getBoundingClientRect().right,
+        overflowX: getComputedStyle(strip).overflowX,
+        wrap: getComputedStyle(list).flexWrap,
+      };
+    });
+    expect(read.overflowX).toBe('auto');
+    expect(read.wrap).toBe('nowrap');
+    expect(read.stripScroll, 'the strip did not overflow').toBeGreaterThan(read.stripClient);
+    expect(Math.abs(read.stripClient - read.rootWidth)).toBeLessThanOrEqual(1);
+    // The list grew with its tabs: its hairline ends where the last tab does.
+    expect(Math.abs(read.listRight - read.lastTabRight), 'the hairline stops short of the last tab').toBeLessThanOrEqual(1);
+    const strip = narrow.locator('.pp-tabs__strip');
+    const box = (await strip.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(200, 0);
+    await expect.poll(() => strip.evaluate((n) => n.scrollLeft)).toBeGreaterThan(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(before);
+  });
+
+  test('vertical: the strip is a column beside its panel, the bar on the inline-end edge', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'vertical');
+    await region.scrollIntoViewIfNeeded();
+    const [list, panel] = await Promise.all([region.getByRole('tablist').boundingBox(), region.getByRole('tabpanel').boundingBox()]);
+    expect(list!.x + list!.width, 'the panel is not beside the strip').toBeLessThanOrEqual(panel!.x + 1);
+    expect(Math.abs(list!.y - panel!.y)).toBeLessThanOrEqual(1);
+    const read = await region.getByRole('tab', { name: 'Profile' }).evaluate((n) => {
+      const after = getComputedStyle(n, '::after');
+      const list = n.parentElement as HTMLElement;
+      return {
+        barWidth: after.borderRightWidth,
+        barBottom: after.borderBottomWidth,
+        offset: after.right,
+        lineWidth: getComputedStyle(list).borderRightWidth,
+        lineBottom: getComputedStyle(list).borderBottomWidth,
+        tabRight: n.getBoundingClientRect().right,
+        listRight: list.getBoundingClientRect().right,
+      };
+    });
+    expect(read.barWidth).toBe('2px');
+    expect(read.barBottom).toBe('0px');
+    expect(read.offset).toBe('-1px');
+    expect(read.lineWidth).toBe('1px');
+    expect(read.lineBottom).toBe('0px');
+    expect(Math.abs(read.tabRight + 1 - read.listRight)).toBeLessThanOrEqual(0.5);
+    await region.getByRole('tab', { name: 'Profile' }).focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(region.getByRole('tab', { name: 'Security' })).toBeFocused();
+  });
+
+  test('a kept panel keeps what was typed; a fresh one does not', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'kept');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByPlaceholder('still here').fill('Ada');
+    await region.getByRole('tab', { name: 'Fresh' }).click();
+    await region.getByPlaceholder('gone on return').fill('Lin');
+    await region.getByRole('tab', { name: 'Other' }).click();
+    // Both inactive panels are hidden; the kept one still holds its input,
+    // the fresh one is empty (D-074 §3).
+    const hidden = region.locator('.pp-tabs__panel[hidden]');
+    await expect(hidden).toHaveCount(2);
+    await expect(hidden.filter({ has: page.getByPlaceholder('still here') })).toHaveCount(1);
+    await expect(region.getByPlaceholder('still here')).toBeHidden();
+    expect(await hidden.evaluateAll((els) => els.filter((n) => n.childElementCount === 0).length)).toBe(1);
+    await region.getByRole('tab', { name: 'Kept' }).click();
+    await expect(region.getByPlaceholder('still here')).toHaveValue('Ada');
+    await region.getByRole('tab', { name: 'Fresh' }).click();
+    await expect(region.getByPlaceholder('gone on return')).toHaveValue('');
+  });
+
+  test('a right-to-left strip reads right to left with no dir of its own, and ArrowLeft is next', async ({ page }) => {
+    await page.goto('/components/tabs');
+    const region = demo(page, 'rtl');
+    await region.scrollIntoViewIfNeeded();
+    await expect(region.locator('.pp-tabs')).not.toHaveAttribute('dir', /.*/);
+    const tabs = region.getByRole('tab');
+    const [first, second] = await Promise.all([tabs.nth(0).boundingBox(), tabs.nth(1).boundingBox()]);
+    expect(second!.x + second!.width, 'the second tab is not to the left of the first').toBeLessThanOrEqual(first!.x + 1);
+    await tabs.nth(0).focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(tabs.nth(1)).toBeFocused();
+    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+test.describe('Accordion', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="accordion-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  test('headings on hairlines: the trigger is the large control height, the chevron turns on the open item, still under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'single');
+    await region.scrollIntoViewIfNeeded();
+    const first = region.getByRole('button').first();
+    const height = await px(page, '--pp-control-height-lg');
+    const fontSize = await px(page, '--pp-font-size-3');
+    expect(height).toBe(48);
+    const read = await first.evaluate((n) => {
+      const heading = n.parentElement as HTMLElement;
+      const item = heading.parentElement as HTMLElement;
+      const root = item.parentElement as HTMLElement;
+      const chevron = n.querySelector('.pp-accordion__chevron') as SVGElement;
+      return {
+        height: n.getBoundingClientRect().height,
+        width: n.getBoundingClientRect().width,
+        itemWidth: item.getBoundingClientRect().width,
+        heading: heading.tagName,
+        headingMargin: getComputedStyle(heading).marginBlockStart,
+        fontSize: getComputedStyle(n).fontSize,
+        rootLine: getComputedStyle(root).borderTopWidth,
+        itemLine: getComputedStyle(item).borderBottomWidth,
+        rotate: getComputedStyle(chevron).rotate,
+        transition: getComputedStyle(chevron).transitionDuration,
+      };
+    });
+    expect(Math.abs(read.height - height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - read.itemWidth), 'the trigger does not fill the item').toBeLessThanOrEqual(1);
+    expect(read.heading).toBe('H3');
+    expect(read.headingMargin).toBe('0px');
+    expect(parseFloat(read.fontSize)).toBe(fontSize);
+    expect(read.rootLine).toBe('1px');
+    expect(read.itemLine).toBe('1px');
+    expect(read.rotate).toBe('none');
+    expect(read.transition, 'not still under reduced motion').toBe('0s');
+
+    await first.click();
+    await expect(first).toHaveAttribute('aria-expanded', 'true');
+    const open = await first.evaluate((n) => {
+      const content = document.getElementById(n.getAttribute('aria-controls')!) as HTMLElement;
+      return {
+        rotate: getComputedStyle(n.querySelector('.pp-accordion__chevron') as SVGElement).rotate,
+        animation: getComputedStyle(content).animationName,
+        overflow: getComputedStyle(content).overflow,
+        contentPadding: getComputedStyle(content).paddingBlockEnd,
+        bodyPadding: getComputedStyle(content.firstElementChild as HTMLElement).paddingBlockEnd,
+        visible: content.getBoundingClientRect().height > 0,
+      };
+    });
+    expect(open.rotate).toBe('180deg');
+    expect(open.animation, 'not still under reduced motion').toBe('none');
+    expect(open.overflow).toBe('hidden');
+    expect(open.contentPadding).toBe('0px');
+    expect(parseFloat(open.bodyPadding)).toBe(await px(page, '--pp-space-4'));
+    expect(open.visible).toBe(true);
+  });
+
+  test('single: opening one closes the other and the open one closes; strict keeps one open', async ({ page }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'single');
+    await region.scrollIntoViewIfNeeded();
+    const buttons = region.getByRole('button');
+    await buttons.nth(0).click();
+    await expect(region.locator('xpath=..')).toContainText('open: shipping');
+    await buttons.nth(1).click();
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'false');
+    await expect(buttons.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(region.getByRole('region')).toHaveCount(1);
+    await buttons.nth(1).click();
+    await expect(buttons.nth(1)).toHaveAttribute('aria-expanded', 'false');
+    await expect(region.locator('xpath=..')).toContainText('open: none');
+
+    const strict = demo(page, 'strict');
+    await strict.scrollIntoViewIfNeeded();
+    const strictButtons = strict.getByRole('button');
+    await strictButtons.nth(0).click();
+    await expect(strictButtons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await expect(strictButtons.nth(0)).toHaveAttribute('aria-disabled', 'true');
+    // Playwright will not click an aria-disabled control on its own; the
+    // point is that a press does nothing, so the press is forced.
+    await strictButtons.nth(0).click({ force: true });
+    await expect(strictButtons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  test('the arrows move between headings; Tab from an open heading reaches its content', async ({ page }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'multiple');
+    await region.scrollIntoViewIfNeeded();
+    const buttons = region.getByRole('button');
+    await expect(region.getByRole('heading', { level: 4 })).toHaveCount(4);
+    await buttons.nth(0).focus();
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('ArrowDown');
+    await expect(buttons.nth(1)).toBeFocused();
+    await page.keyboard.press('End');
+    // The disabled last section is skipped: End lands on the last enabled.
+    await expect(buttons.nth(2)).toBeFocused();
+    await expect(buttons.nth(3)).toBeDisabled();
+    await page.keyboard.press('Home');
+    await expect(buttons.nth(0)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('Enter');
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    // Multiple: opening the second leaves the first open.
+    await buttons.nth(1).click();
+    await expect(buttons.nth(0)).toHaveAttribute('aria-expanded', 'true');
+    await expect(buttons.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(region.getByRole('region')).toHaveCount(2);
+  });
+
+  test('a kept panel keeps what was typed, hidden while closed; a fresh one empties', async ({ page }) => {
+    await page.goto('/components/accordion');
+    const region = demo(page, 'kept');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByPlaceholder('still here').fill('Ada');
+    await region.getByRole('button', { name: /Fresh/ }).click();
+    await expect(region.getByPlaceholder('still here')).toBeHidden();
+    await expect(region.locator('.pp-accordion__content[hidden]')).toHaveCount(1);
+    await region.getByPlaceholder('gone on return').fill('Lin');
+    await region.getByRole('button', { name: /Kept/ }).click();
+    await expect(region.getByPlaceholder('still here')).toHaveValue('Ada');
+    await region.getByRole('button', { name: /Fresh/ }).click();
+    await expect(region.getByPlaceholder('gone on return')).toHaveValue('');
+  });
+});
+
+test.describe('Combobox', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="combobox-${id}"]`);
+  const list = (page: Page) => page.locator('.pp-combobox__list:not([data-gallery])');
+
+  test("the control is Input's box, the list is never narrower than it, and the highlighted option scrolls into view", async ({ page }) => {
+    // A short viewport, so seventeen options cannot fit below the field.
+    await page.setViewportSize({ width: 1280, height: 480 });
+    await page.goto('/components/combobox');
+    for (const id of ['narrow', 'wide'] as const) {
+      const region = demo(page, id);
+      await region.scrollIntoViewIfNeeded();
+      const input = region.getByRole('combobox');
+      await input.click();
+      await page.keyboard.press('ArrowDown');
+      const el = list(page);
+      await expect(el).toBeVisible();
+      const [box, panel] = await Promise.all([region.locator('.pp-combobox__box').boundingBox(), placedBox(el)]);
+      expect(panel!.width, `${id}: the list is narrower than its control`).toBeGreaterThanOrEqual(box!.width - 1);
+      if (id === 'wide') expect(Math.abs(panel!.width - box!.width), 'a wide control: the list is its width').toBeLessThanOrEqual(1);
+      expect(Math.abs(panel!.x - box!.x)).toBeLessThanOrEqual(1);
+      const height = await region.locator('.pp-combobox__box').evaluate((n) => n.getBoundingClientRect().height);
+      expect(Math.abs(height - 40), 'the box is not the medium control').toBeLessThanOrEqual(1);
+      await page.keyboard.press('Escape');
+      await expect(el).toHaveCount(0);
+    }
+    // Seventeen options scroll; End is the caret's, so arrow down past the fold.
+    const region = demo(page, 'wide');
+    await region.getByRole('combobox').click();
+    for (let i = 0; i < 17; i += 1) await page.keyboard.press('ArrowDown');
+    const el = list(page);
+    const last = el.getByRole('option').last();
+    await expect(last).toHaveAttribute('data-highlighted', '');
+    const visible = await last.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const p = (n.closest('.pp-combobox__list') as HTMLElement).getBoundingClientRect();
+      return r.top >= p.top - 1 && r.bottom <= p.bottom + 1;
+    });
+    expect(visible, 'the highlighted option is out of view').toBe(true);
+    expect(await el.evaluate((n) => n.scrollTop)).toBeGreaterThan(0);
+  });
+
+  test('a press in the list does not blur the input; a click takes; the box rings for the input and a token rings itself', async ({ page }) => {
+    await page.goto('/components/combobox');
+    const region = demo(page, 'single');
+    await region.scrollIntoViewIfNeeded();
+    const input = region.getByRole('combobox');
+    await input.click();
+    await page.keyboard.type('b');
+    const el = list(page);
+    await expect(el).toBeVisible();
+    // Keyboard focus in the input: the box carries the ring, the input none.
+    const ring = await region.locator('.pp-combobox__box').evaluate((n) => getComputedStyle(n).outlineStyle);
+    expect(ring).toBe('solid');
+    await el.getByRole('option', { name: 'Brussels' }).hover();
+    await expect(el.getByRole('option', { name: 'Brussels' })).toHaveAttribute('data-highlighted', '');
+    await page.mouse.down();
+    await expect(input).toBeFocused();
+    await page.mouse.up();
+    await expect(el).toHaveCount(0);
+    await expect(input).toHaveValue('Brussels');
+    await expect(region.locator('xpath=..')).toContainText('value: bru');
+    await expect(input).toBeFocused();
+
+    const many = demo(page, 'multiple');
+    await many.scrollIntoViewIfNeeded();
+    await many.getByRole('combobox').focus();
+    await page.keyboard.press('Shift+Tab');
+    const remove = many.getByRole('button', { name: 'Remove Tokyo' });
+    await expect(remove).toBeFocused();
+    expect(await remove.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+    expect(await many.locator('.pp-combobox__box').evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('none');
+    await page.keyboard.press('Enter');
+    await expect(many.locator('.pp-combobox__token')).toHaveCount(1);
+    await expect(many.getByRole('combobox')).toBeFocused();
+  });
+
+  test('a selected option is marked in the gutter and its label aligns with the others; the chevron turns; still under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/combobox');
+    const region = demo(page, 'multiple');
+    await region.scrollIntoViewIfNeeded();
+    const chevron = region.locator('.pp-combobox__chevron');
+    expect(await chevron.evaluate((n) => getComputedStyle(n).rotate)).toBe('none');
+    await region.getByRole('combobox').click();
+    await page.keyboard.press('ArrowDown');
+    const el = list(page);
+    await expect(el).toBeVisible();
+    expect(await chevron.evaluate((n) => getComputedStyle(n).rotate)).toBe('180deg');
+    expect(await chevron.evaluate((n) => getComputedStyle(n).transitionDuration)).toBe('0s');
+    expect(await el.evaluate((n) => getComputedStyle(n).animationName)).toBe('none');
+    const read = await el.locator('[role="option"]').evaluateAll((els) =>
+      els.map((n) => ({
+        selected: n.getAttribute('aria-selected'),
+        start: parseFloat(getComputedStyle(n).paddingInlineStart),
+        marked: n.querySelector('.pp-combobox__indicator') !== null,
+      })),
+    );
+    expect(new Set(read.map((r) => r.start)).size, 'options do not share one inset').toBe(1);
+    expect(read[0]!.start).toBeGreaterThan(8);
+    expect(read.filter((r) => r.selected === 'true').every((r) => r.marked)).toBe(true);
+    expect(read.filter((r) => r.selected === 'false').every((r) => !r.marked)).toBe(true);
+    expect(read.filter((r) => r.selected === 'true')).toHaveLength(2);
+  });
+
+  test('async: the spinner while loading, then the options; the theme crosses the portal', async ({ page }) => {
+    await page.goto('/components/combobox');
+    const region = demo(page, 'async');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('combobox').click();
+    await page.keyboard.type('to');
+    await expect(region.locator('.pp-combobox__toggle .pp-spinner')).toBeVisible();
+    await expect(list(page).getByRole('listbox')).toHaveAttribute('aria-busy', 'true');
+    await expect(list(page).getByRole('option', { name: 'Tokyo' })).toBeVisible();
+    await expect(region.locator('.pp-combobox__toggle .pp-spinner')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    const dark = demo(page, 'theme');
+    await dark.scrollIntoViewIfNeeded();
+    await dark.getByRole('combobox').click();
+    await page.keyboard.press('ArrowDown');
+    const el = list(page);
+    await expect(el).toHaveAttribute('data-pp-theme', 'dark');
+    const read = await el.evaluate((n) => ({
+      inside: n.closest('[data-testid="combobox-theme"]') !== null,
+      raised: getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim(),
+    }));
+    expect(read.inside).toBe(false);
+    expect(read.raised).toBe(await dark.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three open lists, each the width of its control', async ({ page }) => {
+    await page.goto('/components/combobox');
+    const panels = page.locator('.pp-combobox__list[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const p = el.getBoundingClientRect();
+        const boxes = Array.from(document.querySelectorAll('.matrix .pp-combobox__box')).map((b) => b.getBoundingClientRect());
+        const box = boxes.find((b) => Math.abs(b.x - p.x) <= 1);
+        return { options: el.querySelectorAll('[role="option"]').length, selected: el.querySelectorAll('[aria-selected="true"]').length, fits: !!box && p.width >= box.width - 1 };
+      }),
+    );
+    expect(read.every((r) => r.options === 2 && r.selected === 1 && r.fits), JSON.stringify(read)).toBe(true);
+  });
+});
+
+test.describe('Toast', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="toast-${id}"]`);
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  test('the region is at the bottom-end corner one gutter in, the token wide; a toast fills it, the newest nearest the edge; still under reduced motion', async ({
+    page,
+  }) => {
+    await page.goto('/components/toast');
+    const region = demo(page, 'corner');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('button', { name: 'Success' }).click();
+    await region.getByRole('button', { name: 'Polite' }).click();
+    const viewport = region.locator('.pp-toast__viewport');
+    const items = viewport.locator('.pp-toast');
+    await expect(items).toHaveCount(2);
+    const gutter = await px(page, '--pp-space-4');
+    const width = await px(page, '--pp-measure-xs');
+    const read = await viewport.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const toasts = Array.from(n.querySelectorAll('.pp-toast')).map((t) => t.getBoundingClientRect());
+      return {
+        right: r.right,
+        bottom: r.bottom,
+        width: r.width,
+        vw: window.innerWidth,
+        vh: window.innerHeight,
+        pointer: getComputedStyle(n).pointerEvents,
+        toastPointer: getComputedStyle(n.querySelector('.pp-toast') as HTMLElement).pointerEvents,
+        toastWidth: toasts[0]!.width,
+        innerWidth: n.clientWidth - parseFloat(getComputedStyle(n).paddingLeft) - parseFloat(getComputedStyle(n).paddingRight),
+        firstBottom: toasts[0]!.bottom,
+        secondBottom: toasts[1]!.bottom,
+        animation: getComputedStyle(n.querySelector('.pp-toast') as HTMLElement).animationName,
+        zIndex: getComputedStyle(n).zIndex,
+        token: getComputedStyle(n).getPropertyValue('--pp-z-toast').trim(),
+      };
+    });
+    expect(Math.abs(read.right - read.vw)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.bottom - read.vh)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.toastWidth - read.innerWidth), 'a toast does not fill the region').toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - read.toastWidth - 2 * gutter), 'the gutter is not the token').toBeLessThanOrEqual(1);
+    expect(read.pointer).toBe('none');
+    expect(read.toastPointer).toBe('auto');
+    // Newest nearest the edge: the second toast fired sits lower than the first.
+    expect(read.secondBottom).toBeGreaterThan(read.firstBottom);
+    expect(read.animation, 'not still under reduced motion').toBe('none');
+    expect(read.zIndex).toBe(read.token);
+  });
+
+  test('F8 focuses the region and Escape dismisses; the limit shows three and the rest follow', async ({ page }) => {
+    await page.goto('/components/toast');
+    const region = demo(page, 'corner');
+    await region.scrollIntoViewIfNeeded();
+    await region.getByRole('button', { name: 'Five at once' }).click();
+    const items = region.locator('.pp-toast[data-state="open"]');
+    await expect(items).toHaveCount(3);
+    await expect(items.first().locator('.pp-alert__title')).toHaveText('Notification 1');
+    // The queue: dismissing one of the three lets the fourth in.
+    await items.first().getByRole('button', { name: 'Dismiss' }).click();
+    await expect(region.locator('.pp-toast[data-state="open"] .pp-alert__title').filter({ hasText: 'Notification 4' })).toHaveCount(1);
+    await expect(items).toHaveCount(3);
+    await expect(region.getByRole('region', { name: 'Notifications (F8)' })).toHaveCount(1);
+
+    // F8 focuses A list (this page has a provider per stage, and every one
+    // listens; an app has one), Tab reaches its first toast's button, and
+    // Escape dismisses that toast.
+    await page.keyboard.press('F8');
+    await expect(page.locator('.pp-toast__viewport:focus')).toHaveCount(1);
+    const index = await page.locator('.pp-toast__viewport').evaluateAll((els) => els.findIndex((el) => el === document.activeElement));
+    const list = page.locator('.pp-toast__viewport').nth(index);
+    const before = await list.locator('.pp-toast[data-state="open"]').count();
+    expect(before).toBeGreaterThan(0);
+    await page.keyboard.press('Tab');
+    const title = await page.evaluate(() => document.activeElement?.closest('.pp-toast')?.querySelector('.pp-alert__title')?.textContent ?? null);
+    expect(title).not.toBeNull();
+    await page.keyboard.press('Escape');
+    // That toast is gone; a queued one may have taken its place.
+    await expect(list.locator('.pp-toast[data-state="open"] .pp-alert__title').filter({ hasText: title! })).toHaveCount(0);
+    expect(await list.locator('.pp-toast[data-state="open"]').count()).toBeLessThanOrEqual(before);
+  });
+
+  test('four corners, logically, and bottom-end is the bottom left under dir="rtl"', async ({ page }) => {
+    await page.goto('/components/toast');
+    const stages = demo(page, 'placements');
+    await stages.scrollIntoViewIfNeeded();
+    const read = await stages.locator('.toast-stage').evaluateAll((els) =>
+      els.map((stage) => {
+        const s = stage.getBoundingClientRect();
+        const v = (stage.querySelector('.pp-toast__viewport') as HTMLElement).getBoundingClientRect();
+        return {
+          placement: stage.getAttribute('data-placement'),
+          left: Math.abs(v.left - s.left) <= 1,
+          right: Math.abs(v.right - s.right) <= 1,
+          top: Math.abs(v.top - s.top) <= 1,
+          bottom: Math.abs(v.bottom - s.bottom) <= 1,
+          toasts: stage.querySelectorAll('.pp-toast').length,
+          // The swipe, the one physical thing, toward the inline end.
+          swipe: stage.querySelector('.pp-toast')?.getAttribute('data-swipe-direction'),
+        };
+      }),
+    );
+    expect(read).toEqual([
+      { placement: 'top-start', left: true, right: false, top: true, bottom: false, toasts: 1, swipe: 'left' },
+      { placement: 'top-end', left: false, right: true, top: true, bottom: false, toasts: 1, swipe: 'right' },
+      { placement: 'bottom-start', left: true, right: false, top: false, bottom: true, toasts: 1, swipe: 'left' },
+      { placement: 'bottom-end', left: false, right: true, top: false, bottom: true, toasts: 1, swipe: 'right' },
+    ]);
+    const rtl = demo(page, 'rtl');
+    await rtl.scrollIntoViewIfNeeded();
+    const mirrored = await rtl.evaluate((stage) => {
+      const s = stage.getBoundingClientRect();
+      const v = (stage.querySelector('.pp-toast__viewport') as HTMLElement).getBoundingClientRect();
+      return {
+        left: Math.abs(v.left - s.left) <= 1,
+        bottom: Math.abs(v.bottom - s.bottom) <= 1,
+        // The swipe, the one physical thing, resolved from the direction.
+        swipe: stage.querySelector('.pp-toast')?.getAttribute('data-swipe-direction'),
+      };
+    });
+    expect(mirrored).toEqual({ left: true, bottom: true, swipe: 'left' });
+  });
+
+  test('the gallery holds a toast per cell, fixed inside its stage, the region the cell or the token wide', async ({ page }) => {
+    await page.goto('/components/toast');
+    const read = await page.locator('.matrix .toast-stage').evaluateAll((els) =>
+      els.map((stage) => {
+        const s = stage.getBoundingClientRect();
+        const v = (stage.querySelector('.pp-toast__viewport') as HTMLElement).getBoundingClientRect();
+        return { inside: v.left >= s.left - 1 && v.right <= s.right + 1 && v.bottom <= s.bottom + 1, width: v.width, stage: stage.clientWidth, toasts: stage.querySelectorAll('.pp-toast').length };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    expect(read.every((r) => r.inside && r.toasts === 1), JSON.stringify(read)).toBe(true);
+    expect(Math.abs(read[0]!.width - read[0]!.stage)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read[2]!.width - 320)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('CommandPalette', () => {
+  type Page = import('@playwright/test').Page;
+  const demo = (page: Page, id: string) => page.locator(`[data-testid="command-palette-${id}"]`);
+  const panel = (page: Page) => page.locator('.pp-command-palette:not([data-gallery])');
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+
+  const closeGallery = async (page: Page) => {
+    await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(3);
+    for (let left = 2; left >= 0; left -= 1) {
+      await page.keyboard.press('Escape');
+      await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(left);
+    }
+  };
+
+  test('the panel sits the offset below the top, a token wide, over Dialog\'s scrim; the field is focused with its hairline lit; a row is the medium control', async ({
+    page,
+  }) => {
+    await page.goto('/components/command-palette');
+    await closeGallery(page);
+    const trigger = demo(page, 'launcher').getByRole('button', { name: /Search commands/ });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.focus();
+    await page.keyboard.press('Enter');
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    const offset = await px(page, '--pp-space-9');
+    const width = await px(page, '--pp-measure-sm');
+    const height = await px(page, '--pp-control-height-md');
+    const read = await el.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const scrim = n.parentElement as HTMLElement;
+      const field = n.querySelector('.pp-command-palette__field') as HTMLElement;
+      const input = n.querySelector('.pp-command-palette__input') as HTMLElement;
+      const row = n.querySelector('.pp-command-palette__item') as HTMLElement;
+      return {
+        top: r.top,
+        width: r.width,
+        centred: Math.abs(r.left + r.width / 2 - window.innerWidth / 2) <= 1,
+        scrimZ: getComputedStyle(scrim).zIndex,
+        scrimToken: getComputedStyle(scrim).getPropertyValue('--pp-z-overlay').trim(),
+        padding: getComputedStyle(n).paddingTop,
+        focused: document.activeElement === input,
+        line: getComputedStyle(field).borderBottomColor,
+        lineToken: getComputedStyle(field).getPropertyValue('--pp-tone-focus').trim(),
+        inputOutline: getComputedStyle(input).outlineColor,
+        row: row.getBoundingClientRect().height,
+        animation: getComputedStyle(n).animationName,
+      };
+    });
+    expect(Math.abs(read.top - offset)).toBeLessThanOrEqual(1);
+    expect(Math.abs(read.width - width)).toBeLessThanOrEqual(1);
+    expect(read.centred).toBe(true);
+    expect(read.scrimZ).toBe(read.scrimToken);
+    expect(read.padding).toBe('0px');
+    expect(read.focused).toBe(true);
+    const focusColour = await el.evaluate((n, token) => {
+      const probe = document.createElement('i');
+      probe.style.color = token;
+      n.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, read.lineToken);
+    expect(read.line, 'the field does not light its hairline on focus').toBe(focusColour);
+    expect(read.inputOutline).toMatch(/rgba\(0, 0, 0, 0\)|transparent/);
+    expect(Math.abs(read.row - height)).toBeLessThanOrEqual(1);
+    expect(read.animation, 'not still under reduced motion').toBe('none');
+  });
+
+  test('type, arrow, Enter: the first match is highlighted, the command runs, the palette closes and focus returns; mod+k toggles', async ({ page }) => {
+    await page.goto('/components/command-palette');
+    await closeGallery(page);
+    const region = demo(page, 'launcher');
+    const trigger = region.getByRole('button', { name: /Search commands/ });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    await expect(el.getByRole('option').first()).toHaveAttribute('data-highlighted', '');
+    await page.keyboard.type('new');
+    await expect(el.getByRole('option')).toHaveCount(2);
+    await expect(el.getByRole('option', { name: 'New issue' })).toHaveAttribute('data-highlighted', '');
+    await page.keyboard.press('ArrowDown');
+    await expect(el.getByRole('option', { name: 'New project' })).toHaveAttribute('data-highlighted', '');
+    const fill = await el.getByRole('option', { name: 'New project' }).evaluate((n) => getComputedStyle(n).backgroundColor);
+    expect(fill).not.toBe('rgba(0, 0, 0, 0)');
+    await page.keyboard.press('Enter');
+    await expect(el).toHaveCount(0);
+    await expect(region.locator('xpath=..')).toContainText('last ran: new-project');
+    await expect(trigger).toBeFocused();
+
+    await page.keyboard.press('Control+k');
+    await expect(el).toBeVisible();
+    await expect(el.getByRole('combobox')).toBeFocused();
+    await expect(el.getByRole('combobox')).toHaveValue('');
+    await page.keyboard.press('Control+k');
+    await expect(el).toHaveCount(0);
+  });
+
+  test('a long list scrolls and keeps the highlight in view; the theme crosses the portal', async ({ page }) => {
+    await page.goto('/components/command-palette');
+    await closeGallery(page);
+    const trigger = demo(page, 'long').getByRole('button', { name: 'Thirty commands' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    const el = panel(page);
+    await expect(el).toBeVisible();
+    for (let i = 0; i < 20; i += 1) await page.keyboard.press('ArrowDown');
+    const active = el.locator('[data-highlighted]');
+    await expect(active).toHaveText('Command 21');
+    const read = await active.evaluate((n) => {
+      const list = n.closest('.pp-command-palette__list') as HTMLElement;
+      const r = n.getBoundingClientRect();
+      const p = list.getBoundingClientRect();
+      return { inView: r.top >= p.top - 1 && r.bottom <= p.bottom + 1, scrolled: list.scrollTop > 0, overflow: getComputedStyle(list).overflowY };
+    });
+    expect(read).toEqual({ inView: true, scrolled: true, overflow: 'auto' });
+    await page.keyboard.press('Escape');
+    await expect(el).toHaveCount(0);
+
+    const dark = demo(page, 'theme');
+    await dark.scrollIntoViewIfNeeded();
+    await dark.getByRole('button', { name: 'Open here' }).click();
+    await expect(el).toBeVisible();
+    await expect(el.locator('xpath=..')).toHaveAttribute('data-pp-theme', 'dark');
+    const raised = await el.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim());
+    expect(raised).toBe(await dark.evaluate((n) => getComputedStyle(n).getPropertyValue('--pp-color-bg-raised').trim()));
+  });
+
+  test('the gallery holds three, contained, each with the matches for "go" and the first highlighted', async ({ page }) => {
+    await page.goto('/components/command-palette');
+    const panels = page.locator('.pp-command-palette[data-gallery]');
+    await expect(panels).toHaveCount(3);
+    const read = await panels.evaluateAll((els) =>
+      els.map((el) => {
+        const scrim = el.parentElement as HTMLElement;
+        const stage = scrim.parentElement as HTMLElement;
+        const s = stage.getBoundingClientRect();
+        const r = el.getBoundingClientRect();
+        return {
+          inside: r.left >= s.left - 1 && r.right <= s.right + 1,
+          options: el.querySelectorAll('[role="option"]').length,
+          highlighted: el.querySelectorAll('[data-highlighted]').length,
+          width: r.width,
+          stage: stage.clientWidth,
+        };
+      }),
+    );
+    expect(read.every((r) => r.inside && r.options === 3 && r.highlighted === 1), JSON.stringify(read)).toBe(true);
+    expect(Math.abs(read[0]!.width - (read[0]!.stage - 2 * 16))).toBeLessThanOrEqual(1);
+    expect(Math.abs(read[2]!.width - 640)).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('Card', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return c;
+    }, token);
+
+  test('the raised surface, a hairline edge, no shadow; one hairline per adjacent pair; the foot sunken; the padding tokens', async ({ page }) => {
+    await page.goto('/components/card');
+    const raised = await resolve(page, '--pp-color-bg-raised');
+    const sunken = await resolve(page, '--pp-color-bg-sunken');
+    const inline = await px(page, '--pp-space-5');
+    const block = await px(page, '--pp-space-4');
+    const read = await page.locator('[data-testid="card-sections"] .pp-card').evaluateAll((els) =>
+      els.map((card) => {
+        const sections = Array.from(card.children) as HTMLElement[];
+        return {
+          bg: getComputedStyle(card).backgroundColor,
+          edge: getComputedStyle(card).borderTopWidth,
+          shadow: getComputedStyle(card).boxShadow,
+          lines: sections.map((s) => getComputedStyle(s).borderTopWidth),
+          padding: sections.map((s) => [getComputedStyle(s).paddingInlineStart, getComputedStyle(s).paddingBlockStart]),
+          footer: sections.find((s) => s.classList.contains('pp-card__footer'))
+            ? getComputedStyle(sections.find((s) => s.classList.contains('pp-card__footer'))!).backgroundColor
+            : null,
+        };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    expect(read.every((r) => r.bg === raised && r.edge === '1px' && r.shadow === 'none')).toBe(true);
+    expect(read[0]!.lines).toEqual(['0px']);
+    expect(read[1]!.lines).toEqual(['0px', '1px']);
+    expect(read[2]!.lines).toEqual(['0px', '1px', '1px']);
+    expect(read[2]!.footer).toBe(sunken);
+    expect(read[2]!.padding.every(([i, b]) => parseFloat(i!) === inline && parseFloat(b!) === block)).toBe(true);
+  });
+
+  test('an interactive card lifts on hover, rings on focus, and its text is not underlined; a URL stays inside at 240px', async ({ page }) => {
+    await page.goto('/components/card');
+    const link = page.locator('[data-testid="card-links"] .pp-card').first();
+    await link.scrollIntoViewIfNeeded();
+    const rest = await link.evaluate((n) => ({
+      tag: n.tagName,
+      shadow: getComputedStyle(n).boxShadow,
+      decoration: getComputedStyle(n).textDecorationLine,
+      heading: getComputedStyle(n.querySelector('.pp-heading, h3') as HTMLElement).textDecorationLine,
+    }));
+    expect(rest.tag).toBe('A');
+    expect(rest.shadow).toBe('none');
+    expect(rest.decoration).toBe('none');
+    expect(rest.heading).toBe('none');
+    await link.hover();
+    await expect.poll(() => link.evaluate((n) => getComputedStyle(n).boxShadow)).not.toBe('none');
+    const border = await link.evaluate((n) => getComputedStyle(n).borderTopColor);
+    expect(border).toBe(await resolve(page, '--pp-color-border'));
+    await link.focus();
+    expect(await link.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+
+    const narrow = page.locator('.matrix__cell').first().locator('.pp-card');
+    const fits = await narrow.evaluate((n) => n.scrollWidth <= n.clientWidth && n.getBoundingClientRect().width <= (n.parentElement as HTMLElement).getBoundingClientRect().width + 1);
+    expect(fits, 'the URL pushed the card past its cell').toBe(true);
+  });
+});
+
+test.describe('Progress', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  /* A token resolved INSIDE a tone scope, because the fill and the track are
+     `--pp-tone-*` and read differently under `accent` and `neutral`. */
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+  const geometry = (el: HTMLElement) => {
+    const fill = el.firstElementChild as HTMLElement;
+    const t = el.getBoundingClientRect();
+    const f = fill.getBoundingClientRect();
+    return {
+      height: t.height,
+      ratio: f.width / t.width,
+      startGap: f.left - t.left,
+      endGap: t.right - f.right,
+      fillColor: getComputedStyle(fill).backgroundColor,
+      trackColor: getComputedStyle(el).backgroundColor,
+      transition: getComputedStyle(fill).transitionProperty,
+      animation: getComputedStyle(fill).animationName,
+    };
+  };
+
+  test('the fill is the value of the track and starts at its start; the thickness per size is the token; the colours are the tone\'s', async ({
+    page,
+  }) => {
+    await page.goto('/components/progress');
+    const read = await page.locator('[data-testid="progress-sizes"] .pp-progress').evaluateAll((els) =>
+      els.map((el) => {
+        const fill = el.firstElementChild as HTMLElement;
+        const t = el.getBoundingClientRect();
+        const f = fill.getBoundingClientRect();
+        return {
+          height: t.height,
+          ratio: f.width / t.width,
+          startGap: f.left - t.left,
+          fillColor: getComputedStyle(fill).backgroundColor,
+          trackColor: getComputedStyle(el).backgroundColor,
+        };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    expect(read.map((r) => r.height)).toEqual([await px(page, '--pp-space-1'), await px(page, '--pp-space-2'), await px(page, '--pp-space-3')]);
+    for (const r of read) {
+      expect(Math.abs(r.ratio - 0.6)).toBeLessThanOrEqual(0.005);
+      expect(Math.abs(r.startGap)).toBeLessThanOrEqual(0.5);
+      expect(r.fillColor).toBe(await resolveIn(page, '--pp-tone-solid', 'accent'));
+      expect(r.trackColor).toBe(await resolveIn(page, '--pp-tone-border-subtle', 'accent'));
+    }
+    /* A neutral bar reads the neutral ramp: the tone is the root's scope. */
+    const neutral = page.locator('[data-testid="progress-tones"] .pp-progress').nth(1);
+    expect(await neutral.evaluate((n) => getComputedStyle(n.firstElementChild as HTMLElement).backgroundColor)).toBe(
+      await resolveIn(page, '--pp-tone-solid', 'neutral'),
+    );
+  });
+
+  test('in RTL the fill grows from the right edge with no rule for it; the bar fills its cell at three widths', async ({ page }) => {
+    await page.goto('/components/progress');
+    const rtl = await page.locator('[data-testid="progress-rtl"] .pp-progress').first().evaluate(geometry);
+    expect(Math.abs(rtl.ratio - 0.4)).toBeLessThanOrEqual(0.005);
+    expect(Math.abs(rtl.endGap)).toBeLessThanOrEqual(0.5);
+    expect(rtl.startGap).toBeGreaterThan(1);
+
+    const cells = await page.locator('.matrix__cell .pp-progress').evaluateAll((els) =>
+      els.map((el) => {
+        const parent = el.parentElement as HTMLElement;
+        return { bar: el.getBoundingClientRect().width, parent: parent.getBoundingClientRect().width };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) expect(Math.abs(c.bar - c.parent)).toBeLessThanOrEqual(1);
+    expect(cells[0]!.bar).toBeLessThan(cells[2]!.bar);
+  });
+
+  /* playwright.config.ts pins reducedMotion: 'reduce' for every test, so
+     this is the reduced-motion half by default: the segment is the whole
+     bar and pulses, and the slide is off (spec §4). */
+  test('under reduced motion the indeterminate segment is the whole bar, pulsing, and the slide is off', async ({ page }) => {
+    await page.goto('/components/progress');
+    const still = await page.locator('[data-testid="progress-indeterminate"] .pp-progress').evaluate(geometry);
+    expect(still.animation).toBe('pp-progress-pulse');
+    expect(Math.abs(still.ratio - 1)).toBeLessThanOrEqual(0.005);
+    const slide = await page.locator('[data-testid="progress-sizes"] .pp-progress').first().evaluate(geometry);
+    expect(slide.transition).toBe('none');
+  });
+
+  test.describe('with motion', () => {
+    test.use({ reducedMotion: 'no-preference' });
+
+    test('the indeterminate segment is two fifths of the bar and moves; the slide is a flex-basis transition at the normal duration', async ({
+      page,
+    }) => {
+      await page.goto('/components/progress');
+      const bar = page.locator('[data-testid="progress-indeterminate"] .pp-progress');
+      const first = await bar.evaluate(geometry);
+      expect(first.animation).toBe('pp-progress-sweep');
+      expect(Math.abs(first.ratio - 0.4)).toBeLessThanOrEqual(0.005);
+      const at = () => bar.evaluate((el) => (el.firstElementChild as HTMLElement).getBoundingClientRect().left);
+      const before = await at();
+      await expect.poll(at, { message: 'the segment did not move' }).not.toBe(before);
+
+      const slide = await page.locator('[data-testid="progress-sizes"] .pp-progress').first().evaluate((el) => {
+        const style = getComputedStyle(el.firstElementChild as HTMLElement);
+        return { property: style.transitionProperty, duration: style.transitionDuration };
+      });
+      expect(slide).toEqual({ property: 'flex-basis', duration: '0.22s' });
+    });
+  });
+});
+
+test.describe('Table', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolveIn = (page: Page, token: string, tone?: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        if (tn) scope.setAttribute('data-pp-tone', tn);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone ?? ''] as const,
+    );
+
+  test('at 240px the region scrolls inside its own box; at 960px the table is stretched to the region by the grid', async ({ page }) => {
+    await page.goto('/components/table');
+    const cells = await page.locator('.matrix__cell .pp-table').evaluateAll((els) =>
+      els.map((el) => {
+        const table = el.querySelector('table') as HTMLElement;
+        const parent = el.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        return {
+          region: el.getBoundingClientRect().width,
+          /* The cell's CONTENT box: the matrix pads its cells. */
+          parent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          scrolls: el.scrollWidth > el.clientWidth + 1,
+          table: table.getBoundingClientRect().width,
+          client: el.clientWidth,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) expect(Math.abs(c.region - c.parent)).toBeLessThanOrEqual(1);
+    expect(cells[0]!.scrolls, 'the narrow cell should scroll').toBe(true);
+    /* And it scrolls rather than wraps: an id or a date stays on one line
+       in the narrow cell; a `wrap` cell may break. */
+    const lines = await page.locator('.matrix__cell').first().locator('tbody td').first().evaluate((n) => {
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      return { rects: range.getClientRects().length, ws: getComputedStyle(n).whiteSpace };
+    });
+    expect(lines).toEqual({ rects: 1, ws: 'nowrap' });
+    const prose = await page.locator('[data-testid="table-labelled"] td[data-wrap]').first().evaluate((n) => {
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      return { rects: range.getClientRects().length, ws: getComputedStyle(n).whiteSpace };
+    });
+    expect(prose.ws).toBe('normal');
+    expect(prose.rects).toBeGreaterThan(1);
+    expect(cells[2]!.scrolls, 'the wide cell should not scroll').toBe(false);
+    /* The grid's stretch: a table narrower than its region by content is
+       made the region's width (less the frame). */
+    expect(Math.abs(cells[2]!.table - cells[2]!.client)).toBeLessThanOrEqual(1);
+    expect(cells[2]!.table).toBeGreaterThan(cells[1]!.table);
+  });
+
+  test('hairlines on every row but the last; the header and the foot sunken, the head\'s text small, medium and muted; the padding per size; tabular figures', async ({
+    page,
+  }) => {
+    await page.goto('/components/table');
+    const sunken = await resolveIn(page, '--pp-color-bg-sunken');
+    const muted = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.color = 'var(--pp-color-text-muted)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    const read = await page.locator('[data-testid="table-sizes"] .pp-table').evaluateAll((els) =>
+      els.map((el) => {
+        const rows = Array.from(el.querySelectorAll('tr'));
+        const firstCell = (r: Element) => r.querySelector('th, td') as HTMLElement;
+        const head = el.querySelector('th') as HTMLElement;
+        const headStyle = getComputedStyle(head);
+        return {
+          lines: rows.map((r) => getComputedStyle(firstCell(r)).borderBottomWidth),
+          headerBg: getComputedStyle(el.querySelector('thead')!).backgroundColor,
+          footerBg: getComputedStyle(el.querySelector('tfoot')!).backgroundColor,
+          headColor: headStyle.color,
+          headSize: headStyle.fontSize,
+          headWeight: headStyle.fontWeight,
+          headAlign: headStyle.textAlign,
+          padding: [getComputedStyle(head).paddingTop, getComputedStyle(head).paddingLeft],
+          numeric: getComputedStyle(el.querySelector('td')!).fontVariantNumeric,
+        };
+      }),
+    );
+    expect(read).toHaveLength(3);
+    const px1 = await px(page, '--pp-space-1');
+    const px2 = await px(page, '--pp-space-2');
+    const px3 = await px(page, '--pp-space-3');
+    const px4 = await px(page, '--pp-space-4');
+    expect(read.map((r) => r.padding.map(parseFloat))).toEqual([
+      [px1, px3],
+      [px2, px4],
+      [px3, px4],
+    ]);
+    for (const r of read) {
+      /* header row, four body rows, footer row: a line under each but the last. */
+      expect(r.lines).toEqual(['1px', '1px', '1px', '1px', '1px', '0px']);
+      expect(r.headerBg).toBe(sunken);
+      expect(r.footerBg).toBe(sunken);
+      expect(r.headColor).toBe(muted);
+      expect(parseFloat(r.headSize)).toBe(await px(page, '--pp-font-size-2'));
+      expect(r.headWeight).toBe('500');
+      /* Not the UA's centre: a heading starts where its column does. */
+      expect(r.headAlign).toBe('start');
+      expect(r.numeric).toBe('tabular-nums');
+    }
+  });
+
+  test('striped even rows; a selected row in the accent ramp; align=end; the ring on the focused region', async ({ page }) => {
+    await page.goto('/components/table');
+    const sunken = await resolveIn(page, '--pp-color-bg-sunken');
+    const striped = await page.locator('[data-testid="table-striped"] tbody tr').evaluateAll((rows) =>
+      rows.map((r) => getComputedStyle(r).backgroundColor),
+    );
+    expect(striped).toHaveLength(4);
+    expect(striped[1]).toBe(sunken);
+    expect(striped[3]).toBe(sunken);
+    expect(striped[0]).not.toBe(sunken);
+    expect(striped[2]).not.toBe(sunken);
+
+    const selected = page.locator('[data-testid="table-selected"] tr[data-state="selected"]');
+    expect(await selected.evaluate((r) => getComputedStyle(r).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg', 'accent'));
+    const unselected = await page.locator('[data-testid="table-selected"] tbody tr').first().evaluate((r) => getComputedStyle(r).backgroundColor);
+    expect(unselected).not.toBe(await resolveIn(page, '--pp-tone-bg', 'accent'));
+
+    const amount = page.locator('[data-testid="table-selected"] td[data-align="end"]').first();
+    expect(await amount.evaluate((n) => getComputedStyle(n).textAlign)).toBe('end');
+    /* And in RTL, `end` is the left: the number's box ends at the cell's left padding edge. */
+    const rtl = await page.locator('[data-testid="table-rtl"] td[data-align="end"]').first().evaluate((n) => {
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      const text = range.getBoundingClientRect();
+      const cell = n.getBoundingClientRect();
+      return { textLeft: text.left - cell.left, pad: parseFloat(getComputedStyle(n).paddingLeft) };
+    });
+    expect(Math.abs(rtl.textLeft - rtl.pad)).toBeLessThanOrEqual(1);
+
+    /* The ring is POLLED, not read in the frame focus landed in: the reset
+       crushes every transition to 0.01ms under reduced motion (which this
+       suite pins) and leaves `transition-property: all`, so the outline
+       focus switches on is a transition from 0px, and a read in the same
+       frame sees its start value (D-081 §5). */
+    const region = page.locator('[data-testid="table-labelled"] .pp-table');
+    await region.focus();
+    await expect.poll(() => region.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await region.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+  });
+});
+
+test.describe('Pagination', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+  test('the full row at 480px and 960px with the status hidden; the compact form at 240px with the status shown; the row centred; equal slots', async ({
+    page,
+  }) => {
+    await page.goto('/components/pagination');
+    const cells = await page.locator('.matrix__cell .pp-pagination').evaluateAll((navs) => navs.map((n) => {
+      const nav = n as HTMLElement;
+      /* On the screen or not: a button inside a hidden item keeps its own computed display. */
+      const pages = Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__page')).filter((p) => p.getClientRects().length > 0);
+      const ellipses = Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__ellipsis')).filter((p) => getComputedStyle(p).display !== 'none');
+      const status = nav.querySelector<HTMLElement>('.pp-pagination__status')!;
+      const items = Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__item')).filter(
+        (li) => getComputedStyle(li).display !== 'none' && getComputedStyle(li).position !== 'absolute',
+      );
+      const navBox = nav.getBoundingClientRect();
+      const first = items[0]!.getBoundingClientRect();
+      const last = items[items.length - 1]!.getBoundingClientRect();
+      return {
+        pages: pages.map((p) => p.textContent?.trim()),
+        ellipses: ellipses.length,
+        statusShown: getComputedStyle(status).clipPath === 'none' && status.getBoundingClientRect().width > 10,
+        statusText: status.textContent?.trim(),
+        startGap: first.left - navBox.left,
+        endGap: navBox.right - last.right,
+        navWidth: navBox.width,
+        /* The row must never spill out of the landmark: the first compact
+           form hid the buttons and left their empty items as columns. */
+        spills: nav.scrollWidth > nav.clientWidth + 1,
+        /* The cell's CONTENT box: the matrix pads its cells. */
+        parentWidth: (() => {
+          const parent = nav.parentElement as HTMLElement;
+          const ps = getComputedStyle(parent);
+          return parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight);
+        })(),
+        itemWidths: items.map((li) => li.getBoundingClientRect().width),
+        itemHeight: first.height,
+      };
+    }));
+    expect(cells).toHaveLength(3);
+    const [narrow, medium, wide] = cells as [(typeof cells)[number], (typeof cells)[number], (typeof cells)[number]];
+    expect(narrow.pages).toEqual([]);
+    expect(narrow.ellipses).toBe(0);
+    expect(narrow.statusShown).toBe(true);
+    expect(narrow.statusText).toBe('6 of 12');
+    for (const full of [medium, wide]) {
+      expect(full.pages).toEqual(['1', '5', '6', '7', '12']);
+      expect(full.ellipses).toBe(2);
+      expect(full.statusShown).toBe(false);
+      /* Centred: the same room each side of the row. */
+      expect(Math.abs(full.startGap - full.endGap)).toBeLessThanOrEqual(1);
+      expect(full.startGap).toBeGreaterThan(1);
+      /* Every slot at least a control's height wide, and the single-digit
+         ones exactly that: "1" and "12" sit in equal boxes. */
+      for (const w of full.itemWidths) expect(w).toBeGreaterThanOrEqual(full.itemHeight - 0.5);
+      expect(full.itemWidths.filter((w) => Math.abs(w - full.itemHeight) <= 0.5).length).toBeGreaterThanOrEqual(7);
+    }
+    /* `fill`: the landmark is its parent's width in every cell, and the
+       compact row is centred in it too. */
+    for (const c of cells) expect(Math.abs(c.navWidth - c.parentWidth)).toBeLessThanOrEqual(1);
+    for (const c of cells) expect(c.spills, 'the row spilled out of the landmark').toBe(false);
+    expect(Math.abs(narrow.startGap - narrow.endGap)).toBeLessThanOrEqual(1);
+    /* Three items in the compact row — previous, the status, next — and no
+       empty columns: the row is no wider than those three and their gaps. */
+    expect(narrow.itemWidths).toHaveLength(3);
+
+    /* In a plain narrow parent — not a container — the compact form is the
+       component's own container-type answering (D-082 §2): the matrix's
+       cells are containers, so the break check there caught nothing. */
+    const plain = await page.locator('[data-testid="pagination-compact"] .pp-pagination').evaluate((nav) => ({
+      pages: Array.from(nav.querySelectorAll<HTMLElement>('.pp-pagination__page')).filter((p) => p.getClientRects().length > 0).length,
+      statusShown: getComputedStyle(nav.querySelector('.pp-pagination__status')!).clipPath === 'none',
+      container: getComputedStyle(nav).containerType,
+    }));
+    expect(plain).toEqual({ pages: 0, statusShown: true, container: 'inline-size' });
+  });
+
+  test('the current page is the accent pressed surface; the ring on a page; in RTL the row runs from the right and the chevrons are mirrored', async ({
+    page,
+  }) => {
+    await page.goto('/components/pagination');
+    const current = page.locator('[data-testid="pagination-sizes"] .pp-pagination').nth(1).locator('[aria-current="page"]');
+    expect(await current.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg-active', 'accent'));
+    const other = page.locator('[data-testid="pagination-sizes"] .pp-pagination').nth(1).getByRole('button', { name: '5' });
+    expect(await other.evaluate((n) => getComputedStyle(n).backgroundColor)).not.toBe(await resolveIn(page, '--pp-tone-bg-active', 'accent'));
+    await other.focus();
+    await expect.poll(() => other.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await other.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+
+    const ltr = await page.locator('[data-testid="pagination-sizes"] .pp-pagination').nth(1).evaluate((nav) => ({
+      previous: nav.querySelector('[aria-label="Previous page"]')!.getBoundingClientRect().left,
+      next: nav.querySelector('[aria-label="Next page"]')!.getBoundingClientRect().left,
+      scale: getComputedStyle(nav.querySelector('.pp-pagination__chevron')!).scale,
+    }));
+    expect(ltr.previous).toBeLessThan(ltr.next);
+    expect(ltr.scale).toBe('none');
+    const rtl = await page.locator('[data-testid="pagination-rtl"] .pp-pagination').evaluate((nav) => ({
+      previous: nav.querySelector('[aria-label="Previous page"]')!.getBoundingClientRect().left,
+      next: nav.querySelector('[aria-label="Next page"]')!.getBoundingClientRect().left,
+      scale: getComputedStyle(nav.querySelector('.pp-pagination__chevron')!).scale,
+    }));
+    expect(rtl.previous).toBeGreaterThan(rtl.next);
+    expect(rtl.scale).toBe('-1 1');
+
+    /* A linked page is a Button drawn on an <a>: no underline, the page's
+       text colour, the same box as its button neighbours. */
+    const linked = await page.locator('[data-testid="pagination-links"] .pp-pagination').evaluate((nav) => {
+      const link = nav.querySelector('a.pp-pagination__page') as HTMLElement;
+      const current = nav.querySelector('[aria-current="page"]') as HTMLElement;
+      return {
+        decoration: getComputedStyle(link).textDecorationLine,
+        currentTag: current.tagName,
+        sameHeight: Math.abs(link.getBoundingClientRect().height - current.getBoundingClientRect().height) <= 0.5,
+      };
+    });
+    expect(linked).toEqual({ decoration: 'none', currentTag: 'SPAN', sameHeight: true });
+  });
+});
+
+test.describe('Breadcrumb', () => {
+  type Page = import('@playwright/test').Page;
+  const color = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.color = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }, token);
+  test('a separator after every item but the last, out of the tree; a five-crumb trail wraps into whole crumbs at 240px and is one line at 960px, spilling nothing', async ({
+    page,
+  }) => {
+    await page.goto('/components/breadcrumb');
+    const cells = await page.locator('.matrix__cell .pp-breadcrumb').evaluateAll((navs) =>
+      navs.map((n) => {
+        const nav = n as HTMLElement;
+        const items = Array.from(nav.querySelectorAll<HTMLElement>('.pp-breadcrumb__item'));
+        const tops = items.map((li) => Math.round(li.getBoundingClientRect().top));
+        return {
+          separators: items.map((li) => getComputedStyle(li, '::after').content),
+          lines: new Set(tops).size,
+          whole: items.every((li) => li.getBoundingClientRect().height < parseFloat(getComputedStyle(li).fontSize) * 2),
+          spills: nav.scrollWidth > nav.clientWidth + 1,
+          text: nav.textContent,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(c.separators).toEqual(['"/"', '"/"', '"/"', '"/"', 'none']);
+      expect(c.text).not.toContain('/');
+      expect(c.whole, 'a crumb broke mid-label').toBe(true);
+      expect(c.spills, 'the trail spilled').toBe(false);
+    }
+    expect(cells[0]!.lines).toBeGreaterThanOrEqual(2);
+    expect(cells[2]!.lines).toBe(1);
+  });
+
+  test('a crumb is muted and unadorned at rest, the page\'s colour and underlined on hover; the page is the text colour, medium; a custom separator; RTL runs from the right', async ({
+    page,
+  }) => {
+    await page.goto('/components/breadcrumb');
+    const muted = await color(page, '--pp-color-text-muted');
+    const text = await color(page, '--pp-color-text');
+    const nav = page.locator('[data-testid="breadcrumb-ellipsis"] .pp-breadcrumb');
+    const home = nav.getByRole('link', { name: 'Home' });
+    const rest = await home.evaluate((n) => ({ color: getComputedStyle(n).color, decoration: getComputedStyle(n).textDecorationLine }));
+    expect(rest).toEqual({ color: muted, decoration: 'none' });
+    await home.hover();
+    await expect.poll(() => home.evaluate((n) => getComputedStyle(n).color)).toBe(text);
+    expect(await home.evaluate((n) => getComputedStyle(n).textDecorationLine)).toBe('underline');
+    const current = await nav.locator('[aria-current="page"]').evaluate((n) => ({ color: getComputedStyle(n).color, weight: getComputedStyle(n).fontWeight }));
+    expect(current).toEqual({ color: text, weight: '500' });
+    expect(await nav.locator('.pp-breadcrumb__ellipsis').evaluate((n) => getComputedStyle(n, '::after').content)).toBe('"/"');
+    /* The separator is muted, and takes the gap each side — read on a plain
+       item (the ellipsis item carries the colour itself, so it would read
+       muted with the pseudo-element's own declaration gone). */
+    const sep = await nav.locator('.pp-breadcrumb__item').nth(2).evaluate((n) => ({
+      color: getComputedStyle(n, '::after').color,
+      pad: getComputedStyle(n, '::after').paddingLeft,
+    }));
+    expect(sep.color).toBe(muted);
+    expect(parseFloat(sep.pad)).toBe(await page.evaluate(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--pp-space-2')) * parseFloat(getComputedStyle(document.documentElement).fontSize)));
+
+    const chevron = await page.locator('[data-testid="breadcrumb-chevron"] .pp-breadcrumb__item').nth(1).evaluate((n) => getComputedStyle(n, '::after').content);
+    expect(chevron).toBe('"›"');
+
+    const rtl = await page.locator('[data-testid="breadcrumb-rtl"] .pp-breadcrumb').evaluate((n) => {
+      const items = Array.from(n.querySelectorAll('.pp-breadcrumb__item'));
+      return { first: items[0]!.getBoundingClientRect().left, last: items[items.length - 1]!.getBoundingClientRect().left };
+    });
+    expect(rtl.first).toBeGreaterThan(rtl.last);
+  });
+});
+
+test.describe('Stepper', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  test('counters on the indicators and a check on the completed one; the states\' colours and the connectors; a row at 480px and 960px, a column at 240px', async ({
+    page,
+  }) => {
+    await page.goto('/components/stepper');
+    const solid = await resolveIn(page, '--pp-tone-solid', 'accent');
+    const hairline = await resolveIn(page, '--pp-color-border-subtle', 'accent');
+    const size = await px(page, '--pp-control-height-sm');
+    const cells = await page.locator('.matrix__cell .pp-stepper').evaluateAll((navs) =>
+      navs.map((n) => {
+        const nav = n as HTMLElement;
+        const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+        const tops = new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top)));
+        const ind = (s: HTMLElement) => s.querySelector('.pp-stepper__indicator') as HTMLElement;
+        const connector = (s: HTMLElement) => {
+          const after = getComputedStyle(s, '::after');
+          const vertical = after.borderInlineStartColor;
+          const horizontal = after.boxShadow;
+          return {
+            content: after.content,
+            vertical,
+            horizontal,
+            verticalWidth: after.borderInlineStartWidth,
+            /* The box the line is drawn in: tall in the column, wide in the row. */
+            width: parseFloat(after.width),
+            height: parseFloat(after.height),
+          };
+        };
+        const order = steps.map((s) => {
+          const ind = (s.querySelector('.pp-stepper__indicator') as HTMLElement).getBoundingClientRect();
+          const label = (s.querySelector('.pp-stepper__label') as HTMLElement).getBoundingClientRect();
+          return ind.right <= label.left + 0.5;
+        });
+        return {
+          rows: tops.size,
+          spills: nav.scrollWidth > nav.clientWidth + 1,
+          counters: steps.map((s) => getComputedStyle(ind(s), '::before').content),
+          checks: steps.map((s) => ind(s).querySelector('svg') !== null),
+          sizes: steps.map((s) => [ind(s).getBoundingClientRect().width, ind(s).getBoundingClientRect().height]),
+          fills: steps.map((s) => getComputedStyle(ind(s)).backgroundColor),
+          rings: steps.map((s) => getComputedStyle(ind(s)).borderTopColor),
+          labelWeights: steps.map((s) => getComputedStyle(s.querySelector('.pp-stepper__label')!).fontWeight),
+          connectors: steps.map(connector),
+          /* The circle before its label, in LTR. */
+          order,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const [narrow, medium, wide] = cells as [(typeof cells)[number], (typeof cells)[number], (typeof cells)[number]];
+    for (const c of cells) {
+      expect(c.spills, 'the stepper spilled').toBe(false);
+      /* The computed `content` is the declaration, not the rendered digit;
+         the baseline shows the digits. */
+      expect(c.counters).toEqual(['none', 'counter(pp-step)', 'counter(pp-step)']);
+      expect(c.checks).toEqual([true, false, false]);
+      for (const [w, h] of c.sizes) {
+        expect(Math.abs(w! - size)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(h! - size)).toBeLessThanOrEqual(0.5);
+      }
+      expect(c.fills[0]).toBe(solid);
+      expect(c.fills[1]).toBe('rgba(0, 0, 0, 0)');
+      expect(c.rings[0]).toBe(solid);
+      expect(c.rings[1]).toBe(solid);
+      expect(c.rings[2]).toBe(hairline);
+      expect(c.labelWeights).toEqual(['400', '500', '400']);
+      /* No connector after the last. */
+      expect(c.connectors[2]!.content).toBe('none');
+      expect(c.order).toEqual([true, true, true]);
+    }
+    expect(narrow.rows).toBe(3);
+    expect(medium.rows).toBe(1);
+    expect(wide.rows).toBe(1);
+    /* Vertical connectors in the column: the done one accent, the next a hairline. */
+    expect(narrow.connectors[0]!.vertical).toBe(solid);
+    expect(narrow.connectors[1]!.vertical).toBe(hairline);
+    expect(parseFloat(narrow.connectors[0]!.verticalWidth)).toBe(2);
+    expect(narrow.connectors[0]!.height).toBeGreaterThanOrEqual(await px(page, '--pp-space-5'));
+    /* Horizontal connectors in the row: drawn as the inset shadow's colour,
+       in a box that is the rest of the step's share of the line. */
+    expect(wide.connectors[0]!.horizontal).toContain(solid);
+    expect(wide.connectors[1]!.horizontal).toContain(hairline);
+    expect(wide.connectors[0]!.verticalWidth).toBe('0px');
+    expect(wide.connectors[0]!.width).toBeGreaterThan(40);
+    expect(wide.connectors[1]!.width).toBeGreaterThan(40);
+    /* And a row that is only just a row still draws a line at least the
+       floor long. */
+    const floor = await px(page, '--pp-space-5');
+    expect(medium.connectors[0]!.width).toBeGreaterThanOrEqual(floor - 0.5);
+    expect(medium.connectors[1]!.width).toBeGreaterThanOrEqual(floor - 0.5);
+    expect(Math.abs(wide.connectors[0]!.height - size / 2)).toBeLessThanOrEqual(0.5);
+  });
+
+  test('vertical is a column at every width; a plain narrow parent gets the column from the component\'s own container; RTL runs from the right', async ({
+    page,
+  }) => {
+    await page.goto('/components/stepper');
+    const vertical = await page.locator('[data-testid="stepper-vertical"] .pp-stepper').evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      return { rows: new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top))).size, width: nav.getBoundingClientRect().width };
+    });
+    expect(vertical.rows).toBe(3);
+    expect(vertical.width).toBeGreaterThan(600);
+
+    const plain = await page.locator('[data-testid="stepper-compact"] .pp-stepper').evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      return { rows: new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top))).size, container: getComputedStyle(nav).containerType };
+    });
+    expect(plain).toEqual({ rows: 3, container: 'inline-size' });
+
+    const more = await page.locator('[data-testid="stepper-more"] .pp-stepper').first().evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      return { rows: new Set(steps.map((s) => Math.round(s.getBoundingClientRect().top))).size, steps: steps.length, spills: nav.scrollWidth > nav.clientWidth + 1 };
+    });
+    expect(more).toEqual({ rows: 1, steps: 5, spills: false });
+
+    const rtl = await page.locator('[data-testid="stepper-rtl"] .pp-stepper').evaluate((nav) => {
+      const steps = Array.from(nav.querySelectorAll<HTMLElement>('.pp-stepper__step'));
+      const ind = (s: HTMLElement) => (s.querySelector('.pp-stepper__indicator') as HTMLElement).getBoundingClientRect();
+      return { first: ind(steps[0]!).left, last: ind(steps[2]!).left, indicatorRightOfLabel: ind(steps[0]!).left > steps[0]!.querySelector('.pp-stepper__label')!.getBoundingClientRect().left };
+    });
+    expect(rtl.first).toBeGreaterThan(rtl.last);
+    expect(rtl.indicatorRightOfLabel).toBe(true);
+  });
+});
+
+test.describe('EmptyState', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string, property: 'backgroundColor' | 'color' = 'backgroundColor') =>
+    page.evaluate(
+      ([t, prop]) => {
+        const probe = document.createElement('div');
+        probe.style[prop as 'backgroundColor' | 'color'] = `var(${t})`;
+        document.body.appendChild(probe);
+        const c = getComputedStyle(probe)[prop as 'backgroundColor' | 'color'];
+        probe.remove();
+        return c;
+      },
+      [token, property] as const,
+    );
+
+  test('the column is the cell at 240px and the measure, centred, at 960px; the parts stacked; the description centred and muted; the tile round and sunken', async ({
+    page,
+  }) => {
+    await page.goto('/components/empty-state');
+    const measure = await px(page, '--pp-measure-xs');
+    const padInline = await px(page, '--pp-space-5');
+    const padBlock = await px(page, '--pp-space-7');
+    const tile = await px(page, '--pp-size-12');
+    const cells = await page.locator('.matrix__cell .pp-empty-state').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const parent = root.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const box = root.getBoundingClientRect();
+        const title = root.querySelector('.pp-empty-state__title') as HTMLElement;
+        const t = title.getBoundingClientRect();
+        const parts = ['icon', 'title', 'description', 'actions'].map((p) => (root.querySelector(`.pp-empty-state__${p}`) as HTMLElement).getBoundingClientRect());
+        const icon = root.querySelector('.pp-empty-state__icon') as HTMLElement;
+        const description = root.querySelector('.pp-empty-state__description') as HTMLElement;
+        return {
+          rootWidth: box.width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          column: t.width,
+          startGap: t.left - box.left,
+          endGap: box.right - t.right,
+          stacked: parts.every((r, i) => i === 0 || r.top >= parts[i - 1]!.bottom - 0.5),
+          paddingTop: parseFloat(getComputedStyle(root).paddingTop),
+          descriptionAlign: getComputedStyle(description).textAlign,
+          /* The title has no alignment of its own: the root's `text-align`
+             is what centres it (and any plain child). */
+          titleAlign: getComputedStyle(title).textAlign,
+          descriptionColor: getComputedStyle(description).color,
+          tile: [icon.getBoundingClientRect().width, icon.getBoundingClientRect().height, getComputedStyle(icon).borderTopLeftRadius, getComputedStyle(icon).backgroundColor],
+          glyph: (icon.querySelector('svg') as SVGElement).getBoundingClientRect().width,
+          spills: root.scrollWidth > root.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const [narrow, , wide] = cells as [(typeof cells)[number], (typeof cells)[number], (typeof cells)[number]];
+    for (const c of cells) {
+      expect(Math.abs(c.rootWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(c.spills).toBe(false);
+      expect(c.stacked).toBe(true);
+      expect(Math.abs(c.startGap - c.endGap)).toBeLessThanOrEqual(1);
+      expect(c.paddingTop).toBe(padBlock);
+      expect(c.descriptionAlign).toBe('center');
+      expect(c.titleAlign).toBe('center');
+      expect(c.descriptionColor).toBe(await resolve(page, '--pp-color-text-muted', 'color'));
+      expect(Math.abs(c.tile[0] - tile)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.tile[1] - tile)).toBeLessThanOrEqual(0.5);
+      expect(c.tile[2]).toBe('9999px');
+      expect(c.tile[3]).toBe(await resolve(page, '--pp-color-bg-sunken'));
+      expect(Math.abs(c.glyph - (await px(page, '--pp-size-6')))).toBeLessThanOrEqual(0.5);
+    }
+    /* The whole cell less the padding at 240; the measure, no more, at 960. */
+    expect(Math.abs(narrow.column - (narrow.rootWidth - 2 * padInline))).toBeLessThanOrEqual(1);
+    expect(Math.abs(wide.column - measure)).toBeLessThanOrEqual(1);
+  });
+
+  test('outline is Card\'s surface with a dashed hairline; plain has no frame; the actions stand off by their padding', async ({ page }) => {
+    await page.goto('/components/empty-state');
+    const outline = await page.locator('[data-testid="empty-state-outline"] .pp-empty-state').evaluate((n) => {
+      const s = getComputedStyle(n);
+      return { classes: n.className, style: s.borderTopStyle, width: s.borderTopWidth, bg: s.backgroundColor, radius: s.borderTopLeftRadius, color: s.borderTopColor };
+    });
+    expect(outline.classes).toBe('pp-card pp-empty-state');
+    expect(outline.style).toBe('dashed');
+    expect(outline.width).toBe('1px');
+    expect(outline.bg).toBe(await resolve(page, '--pp-color-bg-raised'));
+    expect(parseFloat(outline.radius)).toBe(await px(page, '--pp-radius-3'));
+    expect(outline.color).toBe(await resolve(page, '--pp-color-border-subtle'));
+    const plain = await page.locator('.matrix__cell .pp-empty-state').first().evaluate((n) => getComputedStyle(n).borderTopStyle);
+    expect(plain).toBe('none');
+    const actions = await page.locator('.matrix__cell .pp-empty-state__actions').first().evaluate((n) => parseFloat(getComputedStyle(n).paddingTop));
+    expect(actions).toBe(await px(page, '--pp-space-2'));
+    /* Inside a Card body the empty state is the body's width, centred. */
+    const inCard = await page.locator('[data-testid="empty-state-card"] .pp-empty-state').evaluate((n) => {
+      const body = n.parentElement as HTMLElement;
+      const bs = getComputedStyle(body);
+      return Math.abs(n.getBoundingClientRect().width - (body.clientWidth - parseFloat(bs.paddingLeft) - parseFloat(bs.paddingRight)));
+    });
+    expect(inCard).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('Calendar', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolveIn = (page: Page, token: string, tone: string, property: 'backgroundColor' | 'color' = 'backgroundColor') =>
+    page.evaluate(
+      ([t, tn, prop]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style[prop as 'backgroundColor' | 'color'] = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe)[prop as 'backgroundColor' | 'color'];
+        scope.remove();
+        return c;
+      },
+      [token, tone, property] as const,
+    );
+
+  test('seven equal columns of the cell; the day\'s height per size; the picked day solid and today accent; hover; the ring', async ({ page }) => {
+    await page.goto('/components/calendar');
+    const cells = await page.locator('.matrix__cell .pp-calendar').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const parent = root.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const week = root.querySelector('.pp-calendar__week') as HTMLElement;
+        const days = Array.from(week.querySelectorAll<HTMLElement>('.pp-calendar__day')).map((d) => d.getBoundingClientRect());
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          widths: days.map((r) => r.width),
+          heights: days.map((r) => r.height),
+          firstLeft: days[0]!.left - root.getBoundingClientRect().left,
+          lastRight: root.getBoundingClientRect().right - days[6]!.right,
+          spills: root.scrollWidth > root.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const md = await px(page, '--pp-control-height-md');
+    for (const c of cells) {
+      expect(Math.abs(c.rootWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(c.spills).toBe(false);
+      expect(c.widths).toHaveLength(7);
+      const w = c.widths[0]!;
+      for (const x of c.widths) expect(Math.abs(x - w)).toBeLessThanOrEqual(1);
+      for (const h of c.heights) expect(Math.abs(h - md)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.firstLeft)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.lastRight)).toBeLessThanOrEqual(0.5);
+    }
+
+    const sizes = await page.locator('[data-testid="calendar-sizes"] .pp-calendar').evaluateAll((els) =>
+      els.map((n) => (n.querySelector('.pp-calendar__day[data-date]') as HTMLElement).getBoundingClientRect().height),
+    );
+    expect(sizes.map(Math.round)).toEqual([await px(page, '--pp-control-height-sm'), md, await px(page, '--pp-control-height-lg')].map(Math.round));
+
+    const cal = page.locator('.matrix__cell .pp-calendar').last();
+    const picked = cal.locator('[data-date="2026-09-28"]');
+    const pickedStyle = await picked.evaluate((n) => ({ bg: getComputedStyle(n).backgroundColor, color: getComputedStyle(n).color, weight: getComputedStyle(n).fontWeight }));
+    expect(pickedStyle.bg).toBe(await resolveIn(page, '--pp-tone-solid', 'accent'));
+    expect(pickedStyle.color).toBe(await resolveIn(page, '--pp-tone-on-solid', 'accent', 'color'));
+    /* Today: the 10th is picked in the sizes section, so the 28th there is today and not selected. */
+    const today = page.locator('[data-testid="calendar-sizes"] .pp-calendar').nth(1).locator('[data-date="2026-09-28"]');
+    const todayStyle = await today.evaluate((n) => ({ color: getComputedStyle(n).color, weight: getComputedStyle(n).fontWeight, bg: getComputedStyle(n).backgroundColor }));
+    expect(todayStyle.color).toBe(await resolveIn(page, '--pp-tone-text', 'accent', 'color'));
+    expect(todayStyle.weight).toBe('500');
+    expect(todayStyle.bg).toBe('rgba(0, 0, 0, 0)');
+    const plain = cal.locator('[data-date="2026-09-15"]');
+    await plain.hover();
+    await expect.poll(() => plain.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg-hover', 'accent'));
+    await plain.focus();
+    await expect.poll(() => plain.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await plain.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+  });
+
+  test('in RTL the grid runs from the right, the arrows are mirrored and Arrow Left moves forward; Arrow Down past the month shows the next with focus on the day', async ({
+    page,
+  }) => {
+    await page.goto('/components/calendar');
+    const rtl = page.locator('[data-testid="calendar-rtl"] .pp-calendar');
+    const order = await rtl.evaluate((n) => {
+      const week = n.querySelectorAll('.pp-calendar__week')[1]!;
+      const days = Array.from(week.querySelectorAll<HTMLElement>('.pp-calendar__day'));
+      return { first: days[0]!.getBoundingClientRect().left, last: days[6]!.getBoundingClientRect().left, scale: getComputedStyle(n.querySelector('.pp-calendar__chevron')!).scale };
+    });
+    expect(order.first).toBeGreaterThan(order.last);
+    expect(order.scale).toBe('-1 1');
+    const before = await rtl.locator('.pp-calendar__month').textContent();
+    await rtl.locator('[data-date="2026-09-28"]').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(rtl.locator('[data-date="2026-09-29"]')).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await expect(rtl.locator('[data-date="2026-10-06"]')).toBeFocused();
+    /* The month's name changed (it is Arabic here, digits included). */
+    await expect.poll(() => rtl.locator('.pp-calendar__month').textContent()).not.toBe(before);
+    expect(await rtl.locator('.pp-calendar__grid').getAttribute('aria-labelledby')).toBe(await rtl.locator('.pp-calendar__month').getAttribute('id'));
+
+    /* One tab stop: Tab from the month's next arrow lands on the picked day, and Tab again leaves the grid. */
+    const cal = page.locator('.matrix__cell .pp-calendar').first();
+    await cal.getByRole('button', { name: 'Next month' }).focus();
+    await page.keyboard.press('Tab');
+    await expect(cal.locator('[data-date="2026-09-28"]')).toBeFocused();
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.closest('.pp-calendar__grid') === null)).toBe(true);
+  });
+});
+
+test.describe('FileUpload', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+
+  test('the dropzone is a dashed control edge, centred, the cell\'s width; the items in rows with a hairline; the long name truncates', async ({ page }) => {
+    await page.goto('/components/file-upload');
+    const edge = await resolveIn(page, '--pp-color-border', 'neutral');
+    const hairline = await resolveIn(page, '--pp-color-border-subtle', 'neutral');
+    const cells = await page.locator('.matrix__cell .pp-file-upload').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const zone = root.querySelector('.pp-file-upload__dropzone') as HTMLElement;
+        const zs = getComputedStyle(zone);
+        const trigger = zone.querySelector('.pp-file-upload__trigger') as HTMLElement;
+        const items = Array.from(root.querySelectorAll<HTMLElement>('.pp-file-upload__item'));
+        const names = items.map((i) => i.querySelector('.pp-file-upload__name') as HTMLElement);
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          zoneWidth: zone.getBoundingClientRect().width,
+          style: zs.borderTopStyle,
+          color: zs.borderTopColor,
+          width: zs.borderTopWidth,
+          state: zone.getAttribute('data-state'),
+          centred: Math.abs(trigger.getBoundingClientRect().left - zone.getBoundingClientRect().left - (zone.getBoundingClientRect().right - trigger.getBoundingClientRect().right)),
+          lines: items.map((i) => getComputedStyle(i).borderBottomWidth),
+          truncated: names.map((nm) => nm.scrollWidth > nm.clientWidth + 1 && getComputedStyle(nm).textOverflow === 'ellipsis'),
+          rowsInside: items.every((i) => i.getBoundingClientRect().right <= root.getBoundingClientRect().right + 0.5),
+          spills: root.scrollWidth > root.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.zoneWidth - c.rootWidth)).toBeLessThanOrEqual(1);
+      expect(c.style).toBe('dashed');
+      expect(c.color).toBe(edge);
+      expect(c.width).toBe('1px');
+      expect(c.state).toBe('idle');
+      expect(c.centred).toBeLessThanOrEqual(1);
+      expect(c.lines).toEqual(['1px', '1px', '0px']);
+      expect(c.rowsInside).toBe(true);
+      expect(c.spills).toBe(false);
+    }
+    /* The long name truncates at 240px, and fits at 960px. */
+    expect(cells[0]!.truncated[1]).toBe(true);
+    expect(cells[2]!.truncated[1]).toBe(false);
+    const ev = await page.locator('.matrix__cell .pp-file-upload__item').first().evaluate((i) => ({
+      hair: getComputedStyle(i).borderBottomColor,
+      progress: i.querySelector('.pp-progress') !== null,
+    }));
+    expect(ev.hair).toBe(hairline);
+    expect(ev.progress).toBe(true);
+  });
+
+  test('dragging over the zone is the accent edge and surface, and leaves with the drag; the error Field is the danger edge; disabled is muted; the ring on the Trigger', async ({
+    page,
+  }) => {
+    await page.goto('/components/file-upload');
+    const zone = page.locator('.matrix__cell .pp-file-upload__dropzone').last();
+    const dataTransfer = await page.evaluateHandle(() => new DataTransfer());
+    await zone.dispatchEvent('dragenter', { dataTransfer });
+    await expect(zone).toHaveAttribute('data-state', 'dragging');
+    await expect.poll(() => zone.evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-tone-solid', 'accent'));
+    expect(await zone.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg', 'accent'));
+    await zone.dispatchEvent('dragleave');
+    await expect(zone).toHaveAttribute('data-state', 'idle');
+    await expect.poll(() => zone.evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-color-border', 'neutral'));
+
+    const errorZone = page.locator('[data-testid="file-upload-error"] .pp-file-upload__dropzone');
+    expect(await errorZone.evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-tone-border', 'danger'));
+    const disabled = page.locator('[data-testid="file-upload-disabled"] .pp-file-upload');
+    expect(await disabled.getAttribute('data-disabled')).not.toBeNull();
+    await expect(disabled.locator('.pp-file-upload__trigger')).toBeDisabled();
+    expect(await disabled.locator('.pp-file-upload__dropzone').evaluate((n) => getComputedStyle(n).borderTopColor)).toBe(await resolveIn(page, '--pp-color-border-subtle', 'neutral'));
+
+    const trigger = page.locator('.matrix__cell .pp-file-upload__trigger').first();
+    await trigger.focus();
+    await expect.poll(() => trigger.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    /* The hidden input is not a stop: Tab from the Trigger lands on the first remove button. */
+    await page.keyboard.press('Tab');
+    expect(await page.evaluate(() => document.activeElement?.getAttribute('aria-label'))).toMatch(/^Remove /);
+  });
+});
+
+test.describe('Tree', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+
+  test('rows on the control scale, indented by level; the picked row on the accent surface; the chevron turned when open; the tree its cell\'s width and a long label truncating', async ({
+    page,
+  }) => {
+    await page.goto('/components/tree');
+    const indent = await px(page, '--pp-space-4');
+    const rowHeight = await px(page, '--pp-control-height-sm');
+    const cells = await page.locator('.matrix__cell .pp-tree').evaluateAll((els) =>
+      els.map((n) => {
+        const tree = n as HTMLElement;
+        const parent = tree.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const row = (value: string) => tree.querySelector(`[data-value="${value}"]`) as HTMLElement;
+        const start = (value: string) => row(value).getBoundingClientRect().left + parseFloat(getComputedStyle(row(value)).paddingLeft);
+        const label = tree.querySelector('[data-value="spec"] .pp-tree__label') as HTMLElement;
+        return {
+          treeWidth: tree.getBoundingClientRect().width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          rowHeight: row('docs').getBoundingClientRect().height,
+          rowWidth: row('docs').getBoundingClientRect().width,
+          level1: start('docs'),
+          level2: start('readme'),
+          level3: start('button'),
+          selectedBg: getComputedStyle(row('button')).backgroundColor,
+          selectedWeight: getComputedStyle(row('button')).fontWeight,
+          plainBg: getComputedStyle(row('readme')).backgroundColor,
+          openRotate: getComputedStyle(row('docs').querySelector('.pp-tree__toggle')!).rotate,
+          closedRotate: getComputedStyle((tree.querySelector('[data-value="index"]') as HTMLElement).querySelector('.pp-tree__toggle')!).rotate,
+          truncated: label.scrollWidth > label.clientWidth + 1 && getComputedStyle(label).textOverflow === 'ellipsis',
+          spills: tree.scrollWidth > tree.clientWidth + 1,
+          disabledColor: getComputedStyle(row('lock')).color,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const accent = await resolveIn(page, '--pp-tone-bg', 'accent');
+    for (const c of cells) {
+      expect(Math.abs(c.treeWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(Math.abs(c.rowWidth - c.treeWidth)).toBeLessThanOrEqual(1);
+      expect(c.spills).toBe(false);
+      expect(Math.abs(c.rowHeight - rowHeight)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.level2 - c.level1 - indent)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.level3 - c.level1 - 2 * indent)).toBeLessThanOrEqual(0.5);
+      expect(c.selectedBg).toBe(accent);
+      expect(c.selectedWeight).toBe('500');
+      expect(c.plainBg).toBe('rgba(0, 0, 0, 0)');
+      expect(c.openRotate).toBe('90deg');
+      expect(c.closedRotate).toBe('none');
+    }
+    expect(cells[0]!.truncated).toBe(true);
+    expect(cells[2]!.truncated).toBe(false);
+  });
+
+  test('hover, the ring on the focused row, one tab stop; in RTL the rows indent from the right and Arrow Left expands', async ({ page }) => {
+    await page.goto('/components/tree');
+    const tree = page.locator('.matrix__cell .pp-tree').last();
+    const row = tree.locator('[data-value="readme"]');
+    await row.hover();
+    await expect.poll(() => row.evaluate((n) => getComputedStyle(n).backgroundColor)).toBe(await resolveIn(page, '--pp-tone-bg-hover', 'accent'));
+    /* Tab from before the tree lands on the picked item, and Tab again leaves. */
+    await page.locator('.matrix__cell').last().locator('.pp-tree').evaluate((n) => {
+      const before = document.createElement('button');
+      before.id = 'before-tree';
+      before.textContent = 'before';
+      n.parentElement!.insertBefore(before, n);
+    });
+    await page.locator('#before-tree').focus();
+    await page.keyboard.press('Tab');
+    await expect(tree.locator('[data-value="button"]')).toBeFocused();
+    await expect.poll(() => tree.locator('[data-value="button"]').evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    await page.keyboard.press('Tab');
+    /* Out of THIS tree: the next stop on the page is another tree's row. */
+    expect(await tree.evaluate((n) => n.contains(document.activeElement))).toBe(false);
+
+    const rtl = page.locator('[data-testid="tree-rtl"] .pp-tree');
+    const geometry = await rtl.evaluate((n) => {
+      const row = (value: string) => n.querySelector(`[data-value="${value}"]`) as HTMLElement;
+      const end = (value: string) => row(value).getBoundingClientRect().right - parseFloat(getComputedStyle(row(value)).paddingRight);
+      const toggle = row('docs').querySelector('.pp-tree__toggle')!;
+      return { level1: end('docs'), level2: end('readme'), scale: getComputedStyle(toggle).scale, rotate: getComputedStyle(toggle).rotate };
+    });
+    expect(geometry.level1 - geometry.level2).toBeGreaterThan(10);
+    expect(geometry.scale).toBe('-1 1');
+    /* Open turns the other way under the mirror, so the arrow points down and not up. */
+    expect(geometry.rotate).toBe('-90deg');
+    const closed = page.locator('[data-testid="tree-closed"] .pp-tree');
+    await closed.locator('[data-value="intro"]').focus();
+    /* Closed tree, LTR: Right opens. RTL: Left opens. */
+    await page.keyboard.press('ArrowRight');
+    await expect(closed.locator('[data-value="intro"]')).toHaveAttribute('aria-expanded', 'true');
+    await rtl.locator('[data-value="license"]').focus();
+    await page.keyboard.press('ArrowUp');
+    await expect(rtl.locator('[data-value="lock"]')).not.toBeFocused();
+    await rtl.locator('[data-value="src"]').focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(rtl.locator('[data-value="src"]')).toHaveAttribute('aria-expanded', 'false');
+    await page.keyboard.press('ArrowLeft');
+    await expect(rtl.locator('[data-value="src"]')).toHaveAttribute('aria-expanded', 'true');
+  });
+});
+
+test.describe('CodeBlock', () => {
+  type Page = import('@playwright/test').Page;
+  const resolveIn = (page: Page, token: string, tone: string) =>
+    page.evaluate(
+      ([t, tn]) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', tn!);
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      },
+      [token, tone],
+    );
+
+  test('the sunken frame in the mono face; a counter gutter that is not selectable; the pointed line\'s surface across the whole width; a long line scrolls inside the region and spills nothing', async ({
+    page,
+  }) => {
+    await page.goto('/components/code-block');
+    const sunken = await resolveIn(page, '--pp-color-bg-sunken', 'neutral');
+    const highlight = await resolveIn(page, '--pp-tone-bg', 'accent');
+    const cells = await page.locator('.matrix__cell .pp-code-block').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const parent = root.parentElement as HTMLElement;
+        const ps = getComputedStyle(parent);
+        const pre = root.querySelector('.pp-code-block__pre') as HTMLElement;
+        const code = root.querySelector('.pp-code-block__code') as HTMLElement;
+        const lines = Array.from(root.querySelectorAll<HTMLElement>('.pp-code-block__line'));
+        const pointed = lines.find((l) => l.hasAttribute('data-highlighted'))!;
+        const gutter = (l: HTMLElement) => getComputedStyle(l, '::before');
+        return {
+          rootWidth: root.getBoundingClientRect().width,
+          parentContent: parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight),
+          bg: getComputedStyle(root).backgroundColor,
+          family: getComputedStyle(code).fontFamily,
+          borderWidth: getComputedStyle(root).borderTopWidth,
+          counters: lines.map((l) => gutter(l).content),
+          gutterSelect: gutter(lines[0]!).userSelect,
+          gutterWidths: lines.map((l) => parseFloat(gutter(l).width)),
+          pointedBg: getComputedStyle(pointed).backgroundColor,
+          pointedShadow: getComputedStyle(pointed).boxShadow,
+          pointedWidth: pointed.getBoundingClientRect().width,
+          codeWidth: code.getBoundingClientRect().width,
+          preScrolls: pre.scrollWidth > pre.clientWidth + 1,
+          preOverflow: getComputedStyle(pre).overflowX,
+          rootSpills: root.scrollWidth > root.clientWidth + 1,
+          pageSpills: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.rootWidth - c.parentContent)).toBeLessThanOrEqual(1);
+      expect(c.bg).toBe(sunken);
+      expect(c.family.toLowerCase()).toMatch(/mono|menlo|consolas|courier/);
+      expect(c.borderWidth).toBe('1px');
+      expect(c.counters).toEqual(['counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)', 'counter(pp-code-line)']);
+      expect(c.gutterSelect).toBe('none');
+      for (const w of c.gutterWidths) expect(Math.abs(w - c.gutterWidths[0]!)).toBeLessThanOrEqual(0.5);
+      expect(c.pointedBg).toBe(highlight);
+      expect(c.pointedShadow).not.toBe('none');
+      /* The pointed line is as wide as the code, which is as wide as its longest line. */
+      expect(Math.abs(c.pointedWidth - c.codeWidth)).toBeLessThanOrEqual(1);
+      expect(c.preOverflow).toBe('auto');
+      expect(c.rootSpills).toBe(false);
+      expect(c.pageSpills).toBe(false);
+    }
+    /* The long fifth line: scrolls at 240 and 480, and the code is wider than the frame there. */
+    expect(cells[0]!.preScrolls).toBe(true);
+    expect(cells[0]!.codeWidth).toBeGreaterThan(cells[0]!.rootWidth);
+    expect(cells[2]!.preScrolls).toBe(true);
+  });
+
+  test('wrap wraps the long line; the ring on the region and on the copy button; the button copies and says Copied', async ({ page, context }) => {
+    await page.goto('/components/code-block');
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const wrapped = await page.locator('[data-testid="code-block-wrap"] .pp-code-block').evaluate((n) => {
+      const pre = n.querySelector('.pp-code-block__pre') as HTMLElement;
+      const line = n.querySelector('.pp-code-block__line') as HTMLElement;
+      return {
+        whiteSpace: getComputedStyle(n.querySelector('.pp-code-block__code')!).whiteSpace,
+        scrolls: pre.scrollWidth > pre.clientWidth + 1,
+        lines: Math.round(line.getBoundingClientRect().height / (parseFloat(getComputedStyle(line).fontSize) * 1.6)),
+      };
+    });
+    expect(wrapped.whiteSpace).toBe('pre-wrap');
+    expect(wrapped.scrolls).toBe(false);
+    expect(wrapped.lines).toBeGreaterThanOrEqual(2);
+
+    const block = page.locator('.matrix__cell .pp-code-block').last();
+    const region = block.locator('.pp-code-block__pre');
+    await region.focus();
+    await expect.poll(() => region.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    const copy = block.getByRole('button', { name: 'Copy code' });
+    await copy.focus();
+    await expect.poll(() => copy.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    await copy.click();
+    await expect(block.getByRole('button', { name: 'Copied' })).toBeVisible();
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain("theme: 'dark'");
+    await expect(block.getByRole('button', { name: 'Copy code' })).toBeVisible({ timeout: 4000 });
+
+    const bare = page.locator('[data-testid="code-block-bare"] .pp-code-block');
+    expect(await bare.locator('.pp-code-block__header').count()).toBe(0);
+    await expect(bare.getByRole('region', { name: 'Two commands' })).toBeVisible();
+  });
+});
+
+test.describe('AvatarGroup', () => {
+  type Page = import('@playwright/test').Page;
+  const px = (page: Page, token: string) =>
+    page.evaluate(
+      (t) =>
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue(t)) *
+        parseFloat(getComputedStyle(document.documentElement).fontSize),
+      token,
+    );
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return c;
+    }, token);
+  const geometry = (root: HTMLElement) => {
+    const faces = Array.from(root.querySelectorAll<HTMLElement>('.pp-avatar')).map((a) => a.getBoundingClientRect());
+    const box = root.getBoundingClientRect();
+    return {
+      groupWidth: box.width,
+      parentWidth: (root.parentElement as HTMLElement).getBoundingClientRect().width,
+      lefts: faces.map((f) => f.left),
+      sizes: faces.map((f) => f.width),
+      lastInside: faces[faces.length - 1]!.right <= box.right + 0.5,
+      firstInside: faces[0]!.left >= box.left - 0.5,
+      ring: getComputedStyle(root.querySelector('.pp-avatar')!).boxShadow,
+      moreBg: getComputedStyle(root.querySelector('.pp-avatar-group__more')!).backgroundColor,
+      moreSize: root.querySelector('.pp-avatar-group__more')!.getBoundingClientRect().width,
+    };
+  };
+
+  test('the group hugs; each face starts a size less the overlap after the last; the last inside the box; the ring; the count sunken and face-sized', async ({
+    page,
+  }) => {
+    await page.goto('/components/avatar-group');
+    const size = await px(page, '--pp-size-8');
+    /* A fifth of the face. */
+    const overlap = size / 5;
+    const cells = await page.locator('.matrix__cell .pp-avatar-group').evaluateAll((els) =>
+      els.map((n) => {
+        const root = n as HTMLElement;
+        const faces = Array.from(root.querySelectorAll<HTMLElement>('.pp-avatar')).map((a) => a.getBoundingClientRect());
+        const box = root.getBoundingClientRect();
+        return {
+          groupWidth: box.width,
+          parentWidth: (root.parentElement as HTMLElement).getBoundingClientRect().width,
+          lefts: faces.map((f) => f.left),
+          sizes: faces.map((f) => f.width),
+          lastInside: faces[faces.length - 1]!.right <= box.right + 0.5,
+          firstInside: faces[0]!.left >= box.left - 0.5,
+          ring: getComputedStyle(root.querySelector('.pp-avatar')!).boxShadow,
+          moreBg: getComputedStyle(root.querySelector('.pp-avatar-group__more')!).backgroundColor,
+          moreSize: root.querySelector('.pp-avatar-group__more')!.getBoundingClientRect().width,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    const surface = await resolve(page, '--pp-color-bg-surface');
+    const sunken = await resolve(page, '--pp-color-bg-sunken');
+    for (const c of cells) {
+      expect(c.lefts).toHaveLength(4);
+      expect(c.groupWidth).toBeLessThan(c.parentWidth - 20);
+      for (let i = 1; i < c.lefts.length; i += 1) expect(Math.abs(c.lefts[i]! - c.lefts[i - 1]! - (size - overlap))).toBeLessThanOrEqual(0.5);
+      for (const s of c.sizes) expect(Math.abs(s - size)).toBeLessThanOrEqual(0.5);
+      expect(c.lastInside).toBe(true);
+      expect(c.firstInside).toBe(true);
+      expect(Math.abs(c.groupWidth - (3 * (size - overlap) + size))).toBeLessThanOrEqual(1);
+      expect(c.ring).toContain(surface);
+      expect(c.ring).toMatch(/0px 0px 0px 2px/);
+      expect(c.moreBg).toBe(sunken);
+      expect(Math.abs(c.moreSize - size)).toBeLessThanOrEqual(0.5);
+    }
+    /* Same group at three widths: identical. */
+    expect(cells.map((c) => Math.round(c.groupWidth))).toEqual([cells[0]!, cells[0]!, cells[0]!].map((c) => Math.round(c.groupWidth)));
+  });
+
+  test('size on the group sizes every face and the count; in RTL the row runs from the right', async ({ page }) => {
+    await page.goto('/components/avatar-group');
+    const sizes = await page.locator('[data-testid="avatar-group-sizes"] .pp-avatar-group').evaluateAll((els) =>
+      els.map((n) => Array.from(n.querySelectorAll<HTMLElement>('.pp-avatar')).map((a) => Math.round(a.getBoundingClientRect().width))),
+    );
+    expect(sizes[0]).toEqual([24, 24, 24, 24]);
+    expect(sizes[1]).toEqual([32, 32, 32, 32]);
+    expect(sizes[2]).toEqual([40, 40, 40, 40]);
+    const rtl = await page.locator('[data-testid="avatar-group-rtl"] .pp-avatar-group').evaluate(geometry);
+    expect(rtl.lefts[0]).toBeGreaterThan(rtl.lefts[3]!);
+    expect(rtl.lastInside).toBe(true);
+    expect(rtl.firstInside).toBe(true);
+    /* The count reads "+2" under RTL too: an isolated LTR run. */
+    const more = page.locator('[data-testid="avatar-group-rtl"] .pp-avatar-group__more .pp-avatar__fallback');
+    expect(await more.getAttribute('dir')).toBe('ltr');
+    expect(await more.evaluate((n) => getComputedStyle(n).direction)).toBe('ltr');
+    /* Beside text in a Cluster: all five, no count, and it hugs (a flex item
+       is blockified, so `inline-grid` computes to `grid`; the width is the
+       claim). */
+    const inline = await page.locator('[data-testid="avatar-group-inline"] .pp-avatar-group').evaluate((n) => ({
+      faces: n.querySelectorAll('.pp-avatar').length,
+      more: n.querySelector('.pp-avatar-group__more') === null,
+      hugs: n.getBoundingClientRect().width < (n.parentElement as HTMLElement).getBoundingClientRect().width / 2,
+    }));
+    expect(inline).toEqual({ faces: 5, more: true, hugs: true });
+  });
+});
+
+test.describe('DatePicker', () => {
+  test('the box is Input\'s — the same height and edge as the Input beside it — with the button inside at its end; the ring on the box when the field has focus', async ({
+    page,
+  }) => {
+    await page.goto('/components/date-picker');
+    const cells = await page.locator('.matrix__cell').evaluateAll((els) =>
+      els.map((cell) => {
+        const box = cell.querySelector('.pp-date-picker__box') as HTMLElement;
+        const control = cell.querySelector('.pp-date-picker__control') as HTMLElement;
+        const toggle = cell.querySelector('.pp-date-picker__toggle') as HTMLElement;
+        const input = cell.querySelector('.pp-input:not(.pp-date-picker) .pp-input__control') as HTMLElement;
+        const b = box.getBoundingClientRect();
+        const t = toggle.getBoundingClientRect();
+        const i = input.getBoundingClientRect();
+        return {
+          boxHeight: b.height,
+          inputHeight: i.height,
+          boxWidth: b.width,
+          inputWidth: i.width,
+          boxEdge: getComputedStyle(box).borderTopColor,
+          inputEdge: getComputedStyle(input).borderTopColor,
+          boxRadius: getComputedStyle(box).borderTopLeftRadius,
+          inputRadius: getComputedStyle(input).borderTopLeftRadius,
+          toggleInside: t.right <= b.right + 0.5 && t.top >= b.top - 0.5 && t.bottom <= b.bottom + 0.5,
+          toggleAtEnd: b.right - t.right < 4,
+          toggleHeight: t.height,
+          controlBare: getComputedStyle(control).borderTopWidth,
+          sameRow: Math.abs(t.top + t.height / 2 - (control.getBoundingClientRect().top + control.getBoundingClientRect().height / 2)) <= 1,
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(Math.abs(c.boxHeight - c.inputHeight)).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(c.boxWidth - c.inputWidth)).toBeLessThanOrEqual(1);
+      expect(c.boxEdge).toBe(c.inputEdge);
+      expect(c.boxRadius).toBe(c.inputRadius);
+      expect(c.toggleInside).toBe(true);
+      expect(c.toggleAtEnd).toBe(true);
+      expect(Math.abs(c.toggleHeight - (c.boxHeight - 2))).toBeLessThanOrEqual(0.5);
+      expect(c.controlBare).toBe('0px');
+      expect(c.sameRow).toBe(true);
+    }
+    const control = page.locator('.matrix__cell .pp-date-picker__control').last();
+    const box = page.locator('.matrix__cell .pp-date-picker__box').last();
+    await control.focus();
+    await expect.poll(() => box.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
+    expect(await box.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+    expect(await control.evaluate((n) => getComputedStyle(n).outlineColor)).toBe('rgba(0, 0, 0, 0)');
+  });
+
+  test('the panel opens below the box, start-aligned, with a small calendar and focus on the day; a pick fills the field and closes; RTL puts the button at the start', async ({
+    page,
+  }) => {
+    await page.goto('/components/date-picker');
+    const picker = page.locator('[data-testid="date-picker-controlled"] .pp-date-picker');
+    await picker.locator('.pp-date-picker__toggle').click();
+    const panel = page.locator('.pp-date-picker__panel');
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-date="2026-09-28"]')).toBeFocused();
+    const placed = await page.evaluate(() => {
+      const box = document.querySelector('[data-testid="date-picker-controlled"] .pp-date-picker__box')!.getBoundingClientRect();
+      const panel = document.querySelector('.pp-date-picker__panel')!.getBoundingClientRect();
+      const calendar = document.querySelector('.pp-date-picker__panel .pp-calendar') as HTMLElement;
+      return {
+        below: panel.top >= box.bottom,
+        gap: panel.top - box.bottom,
+        startAligned: Math.abs(panel.left - box.left),
+        size: calendar.getAttribute('data-size'),
+        day: (calendar.querySelector('[data-date]') as HTMLElement).getBoundingClientRect().height,
+        padding: parseFloat(getComputedStyle(document.querySelector('.pp-date-picker__panel')!).paddingTop),
+      };
+    });
+    expect(placed.below).toBe(true);
+    expect(placed.gap).toBeGreaterThanOrEqual(3);
+    expect(placed.startAligned).toBeLessThanOrEqual(1);
+    expect(placed.size).toBe('sm');
+    expect(Math.round(placed.day)).toBe(32);
+    expect(placed.padding).toBe(12);
+    await panel.locator('[data-date="2026-09-30"]').click();
+    await expect(panel).toHaveCount(0);
+    await expect(picker.locator('.pp-date-picker__control')).toHaveValue('30/09/2026');
+    await expect(page.locator('[data-testid="date-picker-controlled"] output')).toHaveText('2026-09-30');
+    await expect(picker.locator('.pp-date-picker__toggle')).toBeFocused();
+
+    const rtl = await page.locator('[data-testid="date-picker-rtl"] .pp-date-picker__box').evaluate((box) => {
+      const b = box.getBoundingClientRect();
+      const t = box.querySelector('.pp-date-picker__toggle')!.getBoundingClientRect();
+      return { toggleAtLeft: t.left - b.left < 4, direction: getComputedStyle(box).direction };
+    });
+    expect(rtl).toEqual({ toggleAtLeft: true, direction: 'rtl' });
+
+    const states = await page.locator('[data-testid="date-picker-states"] .pp-date-picker').evaluateAll((els) =>
+      els.map((n) => ({
+        h: Math.round(n.querySelector('.pp-date-picker__box')!.getBoundingClientRect().height),
+        invalid: n.hasAttribute('data-invalid'),
+        disabled: n.hasAttribute('data-disabled'),
+      })),
+    );
+    expect(states.map((s) => s.h)).toEqual([32, 40, 48, 40, 40]);
+    expect(states[3]!.invalid).toBe(true);
+    expect(states[4]!.disabled).toBe(true);
   });
 });

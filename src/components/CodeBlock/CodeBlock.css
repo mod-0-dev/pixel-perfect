@@ -1,0 +1,124 @@
+/*
+ * CodeBlock — spec docs/specs/CodeBlock.md
+ *
+ * CODE'S TYPOGRAPHY IN A BLOCK (spec §3): the mono family, the small size,
+ * the normal leading, on the sunken surface in Card's hairline frame. Every
+ * line is a block-level span, so a line box is a line of code, the counter
+ * steps once per line, and a pointed line's surface runs the full width —
+ * including the part scrolled out of view, because the code is as wide as
+ * its longest line and the line is `display: block` inside it.
+ *
+ * THE <pre> SCROLLS AND IS THE TAB STOP (spec §2); `data-wrap` on the root
+ * makes it wrap instead. THE GUTTER IS GENERATED CONTENT with
+ * `user-select: none`, so a hand copy never takes the numbers.
+ */
+
+@layer pp.components {
+  .pp-code-block {
+    --_bg: var(--pp-code-block-bg, var(--pp-color-bg-sunken));
+    --_border: var(--pp-code-block-border-color, var(--pp-color-border-subtle));
+    --_padding: var(--pp-code-block-padding, var(--pp-space-4));
+    --_highlight: var(--pp-code-block-highlight-bg, var(--pp-tone-bg));
+
+    display: grid;
+    min-inline-size: 0;
+    border: var(--pp-border-width-1) solid var(--_border);
+    border-radius: var(--pp-code-block-radius, var(--pp-radius-3));
+    background-color: var(--_bg);
+    color: var(--pp-color-text);
+    font-family: var(--pp-font-family-mono);
+    font-size: var(--pp-code-block-font-size, var(--pp-font-size-2));
+    line-height: var(--pp-line-height-normal);
+    overflow: hidden;
+  }
+
+  /* Items end-aligned: the title, when present, grows and takes the start;
+     without one the badge and the button sit at the end. No auto margin,
+     which RULES §2 bans. */
+  .pp-code-block__header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--pp-space-2);
+    min-inline-size: 0;
+    padding-block: var(--pp-space-1);
+    padding-inline: var(--pp-space-3) var(--pp-space-1);
+    border-block-end: var(--pp-border-width-1) solid var(--_border);
+  }
+
+  .pp-code-block__title {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-1);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* A GRID WITH ONE ITEM, THE CODE (Table's device, D-081 §3): the item is
+     stretched to the pre's width when the lines are short, and the track
+     is the longest line when they are not — so a pointed line's surface
+     runs under every column, with no width on anything. */
+  .pp-code-block__pre {
+    display: grid;
+    margin: 0;
+    padding-block: var(--_padding);
+    /* No inline padding on the pre: each line carries it, so a pointed
+       line's surface reaches the frame's edge. */
+    overflow-x: auto;
+    scrollbar-width: thin;
+    counter-reset: pp-code-line;
+    font: inherit;
+  }
+
+  .pp-code-block__pre:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  .pp-code-block__code {
+    display: block;
+    font: inherit;
+  }
+
+  .pp-code-block[data-wrap] .pp-code-block__code {
+    min-inline-size: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  .pp-code-block__line {
+    display: block;
+    padding-inline: var(--_padding);
+    counter-increment: pp-code-line;
+    /* An empty line still has its height. */
+    min-block-size: calc(1em * var(--pp-line-height-normal));
+  }
+
+  /* THE GUTTER IS AN INTRINSIC BOX — three digits wide, right-aligned — and
+     declares `inline-size` under the D-019 exemption: it is not a decision
+     about the parent's space but the size of a fixed thing, like an icon's
+     (D-089 §3). `.stylelintrc.json` names this file for it. */
+  .pp-code-block[data-line-numbers] .pp-code-block__line::before {
+    content: counter(pp-code-line);
+    display: inline-block;
+    inline-size: var(--pp-space-6);
+    padding-inline-end: var(--pp-space-3);
+    color: var(--pp-color-text-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+    user-select: none;
+  }
+
+  /* A pointed line: the accent surface across the whole width, and an inset
+     bar at its start (a box shadow, so the text does not shift). */
+  .pp-code-block__line[data-highlighted] {
+    background-color: var(--_highlight);
+    box-shadow: inset var(--pp-border-width-2) 0 0 var(--pp-tone-solid);
+  }
+
+  [dir="rtl"] .pp-code-block__line[data-highlighted] {
+    box-shadow: inset calc(-1 * var(--pp-border-width-2)) 0 0 var(--pp-tone-solid);
+  }
+}

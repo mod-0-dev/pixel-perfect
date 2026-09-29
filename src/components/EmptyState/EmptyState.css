@@ -1,0 +1,53 @@
+/*
+ * EmptyState — spec docs/specs/EmptyState.md
+ *
+ * ONE COLUMN, AT MOST A MEASURE, CENTRED (spec §2): the root is a grid whose
+ * single track is `minmax(0, measure-xs)` and whose content is centred, so
+ * the description is a readable line on a wide page and the whole cell in
+ * a sidebar — with no `max-inline-size` on any child. The parent sizing the
+ * box it created is D-021; Table's region stretches its table the same way
+ * (D-081 §3). Rhythm is the grid's row gap; the actions stand further off
+ * by their own padding, because a margin is RULES §2's.
+ *
+ * `outline` IS CARD'S FRAME MADE DASHED (spec §3): Card.css draws the
+ * surface, the radius and the hairline for the `pp-card` class the root
+ * carries; this file changes the one thing — the edge's style.
+ *
+ * THE ICON TILE is the Icon itself, given a box through Icon's own size
+ * hook and padded so the glyph inside stays the `lg` icon size: 48px round,
+ * the sunken surface, the muted glyph.
+ */
+
+@layer pp.components {
+  .pp-empty-state {
+    --_measure: var(--pp-empty-state-measure, var(--pp-measure-xs));
+
+    display: grid;
+    grid-template-columns: minmax(0, var(--_measure));
+    justify-content: center;
+    justify-items: stretch;
+    row-gap: var(--pp-space-3);
+    min-inline-size: 0;
+    padding-block: var(--pp-empty-state-padding-block, var(--pp-space-7));
+    padding-inline: var(--pp-empty-state-padding-inline, var(--pp-space-5));
+    text-align: center;
+  }
+
+  .pp-empty-state[data-variant="outline"] {
+    border-style: dashed;
+  }
+
+  .pp-empty-state__icon {
+    --pp-icon-size: var(--pp-size-12);
+
+    justify-self: center;
+    padding: var(--pp-space-3);
+    border-radius: var(--pp-radius-full);
+    background-color: var(--pp-empty-state-icon-bg, var(--pp-color-bg-sunken));
+    color: var(--pp-empty-state-icon-color, var(--pp-color-text-muted));
+  }
+
+  .pp-empty-state__actions {
+    padding-block-start: var(--pp-space-2);
+  }
+}

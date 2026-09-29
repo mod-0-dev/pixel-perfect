@@ -86,8 +86,14 @@ for (const file of walk(join(SRC, 'components'), ['.css'])) {
 
 // ---- 3 & 4: TypeScript sources -------------------------------------------
 
+/*
+ * NOT `useId`: React's server dispatcher implements it (an id from the
+ * request's counter), and a Server Component that names a region by its
+ * caption needs one (Table, D-081 §4). Everything here is state, an effect,
+ * a ref or a context, none of which exists on the server.
+ */
 const CLIENT_ONLY = new Set([
-  'useState', 'useReducer', 'useEffect', 'useLayoutEffect', 'useRef', 'useId',
+  'useState', 'useReducer', 'useEffect', 'useLayoutEffect', 'useRef',
   'useContext', 'useSyncExternalStore', 'useTransition', 'createContext',
 ]);
 

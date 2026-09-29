@@ -1,0 +1,137 @@
+/*
+ * Accordion — spec docs/specs/Accordion.md
+ *
+ * A LIST OF HEADINGS ON HAIRLINES (spec §3): a line above the first item
+ * and below every item, the trigger a full-width row of the label and a
+ * chevron at its inline end, no fill and no inline padding, so the lines
+ * and the label sit on the container's edge as the content below them
+ * does. The trigger is at least the LARGE control height — a target a
+ * thumb finds — and pads its block so a wrapped label breathes.
+ *
+ * THE HEIGHT ANIMATES, THE PADDING IS ON THE BODY (spec §4). Radix
+ * measures the content into `--radix-collapsible-content-height` and keeps
+ * a closing panel mounted for its exit; the keyframes below run the
+ * block-size between zero and that measure. A padded box animated to zero
+ * is its padding tall, so the animated box carries none and the body
+ * inside it does. Every animation is `none` under reduced motion, here,
+ * because a shorthand in pp.components outranks the reset's crush (D-062
+ * §5).
+ *
+ * The vendor custom property read below is Radix's measured height,
+ * consumed here and named nowhere a consumer would write it (4.1 §5).
+ */
+
+@layer pp.components {
+  .pp-accordion {
+    --_line: var(--pp-accordion-line-color, var(--pp-color-border-subtle));
+
+    border-block-start: var(--pp-border-width-1) solid var(--_line);
+  }
+
+  .pp-accordion__item {
+    border-block-end: var(--pp-border-width-1) solid var(--_line);
+  }
+
+  /* The heading is a box for the button and nothing else: no UA margin,
+     no UA size — the button sets the type. A GRID, because a button's
+     `width: auto` is shrink-to-fit whatever its `display`, and a grid item
+     stretches to its track: that is what fills the heading without a
+     width (D-075 §4). */
+  .pp-accordion__header {
+    display: grid;
+    margin: 0;
+    font-size: var(--pp-font-size-3);
+    font-weight: var(--pp-font-weight-medium);
+    line-height: var(--pp-line-height-tight);
+  }
+
+  .pp-accordion__trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pp-control-gap-md);
+    min-block-size: var(--pp-accordion-trigger-height, var(--pp-control-height-lg));
+    padding-block: var(--pp-accordion-trigger-padding-block, var(--pp-space-3));
+    padding-inline: 0;
+    border: 0;
+    background: none;
+    color: var(--pp-color-text);
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .pp-accordion__trigger:disabled {
+    color: var(--pp-color-text-disabled);
+    cursor: default;
+  }
+
+  /* Inset, so the ring is not cut by a clipping ancestor and does not
+     cross the hairlines. */
+  .pp-accordion__trigger:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  .pp-accordion__chevron {
+    flex: 0 0 var(--pp-size-5);
+    block-size: var(--pp-size-5);
+    color: var(--pp-color-text-muted);
+    transition: rotate var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  .pp-accordion__trigger:hover .pp-accordion__chevron {
+    color: var(--pp-color-text);
+  }
+
+  .pp-accordion__trigger[data-state="open"] .pp-accordion__chevron {
+    rotate: 180deg;
+  }
+
+  .pp-accordion__content {
+    overflow: hidden;
+    animation: pp-accordion-up var(--pp-duration-normal) var(--pp-easing-accelerate);
+  }
+
+  .pp-accordion__content[data-state="open"] {
+    animation: pp-accordion-down var(--pp-duration-normal) var(--pp-easing-decelerate);
+  }
+
+  .pp-accordion__body {
+    padding-block-end: var(--pp-accordion-body-padding, var(--pp-space-4));
+    color: var(--pp-color-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-accordion__content,
+    .pp-accordion__content[data-state="open"] {
+      animation: none;
+    }
+
+    .pp-accordion__chevron {
+      transition: none;
+    }
+  }
+
+  @keyframes pp-accordion-down {
+    from {
+      block-size: 0;
+    }
+
+    to {
+      block-size: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes pp-accordion-up {
+    from {
+      block-size: var(--radix-accordion-content-height);
+    }
+
+    to {
+      block-size: 0;
+    }
+  }
+}

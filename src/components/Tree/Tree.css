@@ -1,0 +1,118 @@
+/*
+ * Tree — spec docs/specs/Tree.md
+ *
+ * INDENTED BY LEVEL THROUGH ONE CUSTOM PROPERTY (spec §3): the item writes
+ * `--_pp-tree-level`, and the row's start padding is the indent times one
+ * less than that, so nesting needs no per-level rule and RTL needs nothing
+ * (it is `padding-inline-start`).
+ *
+ * FOCUS IS ON THE ROW, AND SO IS THE RING (RULES §6): the row is the
+ * `treeitem`; an <li> is the whole subtree, and a ring around it would
+ * circle every child.
+ *
+ * THE VALUE IS THE ACCENT SURFACE (spec §3), hover the ghost Button's hover
+ * step, both tone tokens in the scope the root writes (D-007). The chevron
+ * turns a quarter when open, Accordion's device, and is mirrored by
+ * `[dir="rtl"]` because the hierarchy runs the other way there.
+ */
+
+@layer pp.components {
+  .pp-tree {
+    --_indent: var(--pp-tree-indent, var(--pp-space-4));
+    --_row: var(--pp-tree-row-height, var(--pp-control-height-sm));
+    --_radius: var(--pp-tree-radius, var(--pp-control-radius));
+
+    display: block;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--pp-font-size-2);
+    line-height: 1;
+  }
+
+  .pp-tree__group {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pp-tree__item {
+    display: block;
+    min-inline-size: 0;
+  }
+
+  .pp-tree__row {
+    display: flex;
+    align-items: center;
+    gap: var(--pp-space-2);
+    min-inline-size: 0;
+    block-size: var(--_row);
+    padding-inline-start: calc(var(--_indent) * (var(--_pp-tree-level, 1) - 1) + var(--pp-space-1));
+    padding-inline-end: var(--pp-space-2);
+    border-radius: var(--_radius);
+    color: var(--pp-color-text);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .pp-tree__row[aria-disabled="true"] {
+    color: var(--pp-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  .pp-tree__row:not([aria-disabled="true"]):hover {
+    background-color: var(--pp-tone-bg-hover);
+  }
+
+  .pp-tree__row[data-selected] {
+    background-color: var(--pp-tree-selected-bg, var(--pp-tone-bg));
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  /* The ring on the element that has focus (RULES §6), inset so the row's
+     own box holds it. */
+  .pp-tree__row:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  .pp-tree__toggle {
+    flex-shrink: 0;
+    color: var(--pp-color-text-muted);
+    transition: rotate var(--pp-duration-fast) var(--pp-easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-tree__toggle {
+      transition: none;
+    }
+  }
+
+  .pp-tree__row[data-state="open"] > .pp-tree__toggle {
+    rotate: 90deg;
+  }
+
+  /* Mirrored under RTL, and turned the OTHER way when open: a mirror and a
+     quarter turn compose into an arrow pointing up, which the screenshot
+     showed and no assertion had (D-088 §4). */
+  [dir="rtl"] .pp-tree__toggle {
+    scale: -1 1;
+  }
+
+  [dir="rtl"] .pp-tree__row[data-state="open"] > .pp-tree__toggle {
+    rotate: -90deg;
+  }
+
+  .pp-tree__icon {
+    flex-shrink: 0;
+    color: var(--pp-color-text-muted);
+  }
+
+  .pp-tree__label {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

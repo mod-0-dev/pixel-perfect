@@ -201,7 +201,12 @@
         "src/components/Checkbox/**/*.css",
         "src/components/Radio/Radio.css",
         "src/components/Switch/**/*.css",
-        "src/components/RangeSlider/**/*.css"
+        "src/components/RangeSlider/**/*.css",
+        "src/components/Drawer/**/*.css",
+        "src/components/Toast/**/*.css",
+        "src/components/CommandPalette/**/*.css",
+        "src/components/Stepper/Stepper.css",
+        "src/components/CodeBlock/CodeBlock.css"
       ],
       "rules": {
         "property-disallowed-list": [
@@ -233,7 +238,9 @@
     {
       "files": [
         "src/components/Popover/**/*.css",
-        "src/components/Tooltip/**/*.css"
+        "src/components/Tooltip/**/*.css",
+        "src/components/Dialog/**/*.css",
+        "src/components/AlertDialog/**/*.css"
       ],
       "rules": {
         "property-disallowed-list": [
@@ -298,6 +305,64 @@
           ],
           "/^(padding|padding-inline|padding-block|padding-inline-start|padding-inline-end|padding-block-start|padding-block-end|gap|row-gap|column-gap|border-radius|font-size|letter-spacing|border-width|border-block-width|border-inline-width|outline-width|outline-offset|max-inline-size|flex-basis)$/": [
             "/(^|\\s)-?[0-9]*\\.?[0-9]+(px|rem|em|ch|ex)(\\s|$)/"
+          ]
+        }
+      }
+    },
+    {
+      "files": [
+        "src/components/DropdownMenu/**/*.css"
+      ],
+      "rules": {
+        "property-disallowed-list": [
+          "width",
+          "min-width",
+          "max-width",
+          "float",
+          "clear",
+          "left",
+          "right",
+          "padding-left",
+          "padding-right",
+          "border-left",
+          "border-right",
+          "border-left-width",
+          "border-right-width",
+          "border-left-color",
+          "border-right-color",
+          "border-left-style",
+          "border-right-style",
+          "margin-top",
+          "margin-right",
+          "margin-bottom",
+          "margin-left"
+        ],
+        "declaration-property-value-allowed-list": {
+          "min-inline-size": [
+            "0"
+          ],
+          "/^margin(-(inline|block)(-(start|end))?)?$/": [
+            "0"
+          ],
+          "margin-inline-start": [
+            "0",
+            "auto"
+          ]
+        }
+      }
+    },
+    {
+      "files": [
+        "src/components/Combobox/**/*.css"
+      ],
+      "rules": {
+        "declaration-property-value-allowed-list": {
+          "min-inline-size": [
+            "0",
+            "var(--radix-popper-anchor-width)"
+          ],
+          "/^margin(-(inline|block)(-(start|end))?)?$/": [
+            "0"
           ]
         }
       }

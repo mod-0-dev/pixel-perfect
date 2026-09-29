@@ -43,14 +43,25 @@ Each gate is a hard stop. Do not proceed past a failing gate; report it.
 
 **Gate A — WIP limit.** At most one item may be in `spec`, `build`, or `review`.
 If one already is, refuse to start another and offer to continue the in-flight
-one instead. Breadth is how component libraries die.
+one instead. Breadth is how component libraries die. One carve-out (D-069
+§2): an item in `review` whose only open box is the CI-authored screenshot
+baseline does not hold the limit — that wait is CI's, and the next build may
+start; one PR then closes several components with one authoring run.
 
 **Gate B — Dependencies.** Every item in the target's **Deps** column must be
-`done`. Tier 0 must be fully `done` before any component starts.
+`done`. Tier 0 must be fully `done` before any component starts. Under the
+D-069 batch a dependency in `review` whose only open box is the CI-authored
+baseline counts as `done` here too (D-073 §2): its API is final, and the
+wait is CI's, not the work's.
 
 **Gate C — Spec approval.** After writing the spec, **stop and ask the user to
 approve the API.** Do not write implementation code in the same turn. API
 mistakes are the expensive kind — they are cheap on paper and permanent in code.
+**Under the standing delegation of D-069 §1 the gate is satisfied in advance:**
+the spec is still written in full with a recommendation on every open
+question, every recommendation is adopted as written, the build starts in the
+same session, and the spec's decisions are listed in the PR body for reversal
+before merge. A spec that would bend a RULE still stops and asks.
 
 **Gate D — Definition of Done.** Walk
 `references/definition-of-done.md` item by item before marking anything `done`.
@@ -88,8 +99,9 @@ On approval, set status to `build` and implement:
   run `npm run dimensions -- --rebaseline index` in the same commit: it
   deletes the index baselines and their manifest entries so CI re-authors
   them alongside the component's own, and the unit guard fails the build
-  until it is done (D-066 §2). After CI has authored, `npm run dimensions`
-  records the new set
+  until it is done (D-066 §2). CI authors the new set and records its
+  geometry in the same commit (D-092); pull that commit before the next
+  push
 - Docs page with usage plus at least one explicit "don't"
 - Changeset
 

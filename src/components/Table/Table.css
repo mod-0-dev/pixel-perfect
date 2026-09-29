@@ -1,0 +1,145 @@
+/*
+ * Table — spec docs/specs/Table.md
+ *
+ * THE REGION IS A GRID WITH ONE ITEM, THE TABLE (spec §3). A `<table>` is
+ * shrink-to-fit, so a short one would sit at the start of its frame with the
+ * frame running on past it; `width: 100%` is what RULES §1 bans. A grid item
+ * stretches to its track, and the track is the region — unless the table's
+ * min-content is wider, when the track is that and the region scrolls it
+ * (`overflow-x: auto`). One rule, both cases, no width. The region is what
+ * scrolls, never the page: a table that does not fit a 240px sidebar
+ * scrolls inside its own box.
+ *
+ * HAIRLINES ARE EACH CELL'S BLOCK-END, EXCEPT THE LAST ROW'S (spec §4), on
+ * separated borders with no spacing, because collapsed borders double at the
+ * seams and resolve by rules nobody can read. The header and the footer sit
+ * on the sunken surface; the header's text is small, medium, muted and does
+ * not wrap.
+ *
+ * A SELECTED ROW IS THE ACCENT SCOPE (spec §5): the component writes
+ * `data-pp-tone="accent"` on the row and this file paints `--pp-tone-bg`,
+ * naming no colour (D-007).
+ */
+
+@layer pp.components {
+  .pp-table {
+    --_border: var(--pp-table-border-color, var(--pp-color-border-subtle));
+    --_padding-block: var(--pp-table-padding-block, var(--pp-space-2));
+    --_padding-inline: var(--pp-table-padding-inline, var(--pp-space-4));
+    --_body-size: var(--pp-font-size-3);
+    --_sunken: var(--pp-table-header-bg, var(--pp-color-bg-sunken));
+
+    display: grid;
+    min-inline-size: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    border: var(--pp-border-width-1) solid var(--_border);
+    border-radius: var(--pp-table-radius, var(--pp-radius-3));
+    background-color: var(--pp-color-bg-raised);
+    color: var(--pp-color-text);
+  }
+
+  .pp-table:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  .pp-table[data-size="sm"] {
+    --_padding-block: var(--pp-table-padding-block, var(--pp-space-1));
+    --_padding-inline: var(--pp-table-padding-inline, var(--pp-space-3));
+    --_body-size: var(--pp-font-size-2);
+  }
+
+  .pp-table[data-size="lg"] {
+    --_padding-block: var(--pp-table-padding-block, var(--pp-space-3));
+  }
+
+  .pp-table__table {
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--_body-size);
+    line-height: var(--pp-line-height-snug);
+    /* Digits of one width, so a column of numbers lines up by digit. */
+    font-variant-numeric: tabular-nums;
+    text-align: start;
+  }
+
+  .pp-table__caption {
+    padding-block: var(--_padding-block);
+    padding-inline: var(--_padding-inline);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-2);
+    text-align: start;
+    caption-side: top;
+  }
+
+  .pp-table__head,
+  .pp-table__cell {
+    padding-block: var(--_padding-block);
+    padding-inline: var(--_padding-inline);
+    border-block-end: var(--pp-border-width-1) solid var(--_border);
+    vertical-align: middle;
+  }
+
+  /* The last row of the table carries no line: the frame is the edge. Rows
+     of the header and the body still draw theirs, because a footer follows
+     or the body does. */
+  .pp-table__table > :last-child > .pp-table__row:last-child > .pp-table__head,
+  .pp-table__table > :last-child > .pp-table__row:last-child > .pp-table__cell {
+    border-block-end: 0;
+  }
+
+  /* `text-align: start` HERE, not only on the table: the UA stylesheet
+     centres a `th` on the element itself, and an inherited value does not
+     reach past a rule on the element (D-081 §6). */
+  .pp-table__head {
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-2);
+    font-weight: var(--pp-font-weight-medium);
+    text-align: start;
+    white-space: nowrap;
+  }
+
+  /* A CELL DOES NOT WRAP UNLESS TOLD TO (spec §5, D-081 §6): an id, a date
+     or an amount broken across two lines is worse than a region that
+     scrolls, and a prose cell says `wrap`. */
+  .pp-table__cell {
+    white-space: nowrap;
+  }
+
+  .pp-table__cell[data-wrap] {
+    white-space: normal;
+  }
+
+  .pp-table__header,
+  .pp-table__footer {
+    background-color: var(--_sunken);
+  }
+
+  .pp-table__footer .pp-table__cell {
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-table[data-striped] .pp-table__body > .pp-table__row:nth-child(even) {
+    background-color: var(--pp-table-stripe-bg, var(--pp-color-bg-sunken));
+  }
+
+  .pp-table__row[data-state="selected"] {
+    background-color: var(--pp-table-selected-bg, var(--pp-tone-bg));
+  }
+
+  .pp-table__head[data-align="start"],
+  .pp-table__cell[data-align="start"] {
+    text-align: start;
+  }
+
+  .pp-table__head[data-align="center"],
+  .pp-table__cell[data-align="center"] {
+    text-align: center;
+  }
+
+  .pp-table__head[data-align="end"],
+  .pp-table__cell[data-align="end"] {
+    text-align: end;
+  }
+}

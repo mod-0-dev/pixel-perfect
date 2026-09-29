@@ -1,0 +1,128 @@
+/*
+ * Calendar — spec docs/specs/Calendar.md
+ *
+ * SEVEN EQUAL COLUMNS, EACH DAY STRETCHED TO ITS CELL (spec §2, §Sizing):
+ * the grid is `repeat(7, 1fr)` and a day is a grid item, so it takes its
+ * column with no width on it — the parent sizing the box it created
+ * (D-021). The day's height is the control scale by `size`; the month's
+ * arrows are IconButtons a step below it.
+ *
+ * THE VALUE IS SOLID, TODAY IS ACCENT (spec §4), and every colour is a tone
+ * token in the accent scope the root writes (D-007). Hover is the ghost
+ * Button's hover step. A disabled day is the disabled text colour.
+ */
+
+@layer pp.components {
+  .pp-calendar {
+    --_gap: var(--pp-calendar-gap, var(--pp-space-1));
+    --_day: var(--pp-control-height-md);
+    --_radius: var(--pp-calendar-day-radius, var(--pp-control-radius));
+
+    display: grid;
+    row-gap: var(--pp-space-2);
+    min-inline-size: 0;
+    font-size: var(--pp-font-size-2);
+    line-height: 1;
+  }
+
+  .pp-calendar[data-size="sm"] {
+    --_day: var(--pp-control-height-sm);
+  }
+
+  .pp-calendar[data-size="lg"] {
+    --_day: var(--pp-control-height-lg);
+    font-size: var(--pp-font-size-3);
+  }
+
+  .pp-calendar__header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: var(--_gap);
+  }
+
+  .pp-calendar__month {
+    color: var(--pp-color-text);
+    font-weight: var(--pp-font-weight-medium);
+    text-align: center;
+  }
+
+  .pp-calendar__grid {
+    display: grid;
+    row-gap: var(--_gap);
+    min-inline-size: 0;
+  }
+
+  .pp-calendar__weekdays,
+  .pp-calendar__week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    column-gap: var(--_gap);
+    min-inline-size: 0;
+  }
+
+  .pp-calendar__weekday {
+    display: grid;
+    place-items: center;
+    block-size: var(--pp-size-6);
+    color: var(--pp-color-text-muted);
+    font-size: var(--pp-font-size-1);
+    font-weight: var(--pp-font-weight-medium);
+    text-transform: uppercase;
+  }
+
+  .pp-calendar__cell {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  /* A day: a button stretched to its cell, the control scale tall. */
+  .pp-calendar__day {
+    display: grid;
+    place-items: center;
+    block-size: var(--_day);
+    padding: 0;
+    border: 0;
+    border-radius: var(--_radius);
+    background-color: transparent;
+    color: var(--pp-color-text);
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .pp-calendar__day[data-outside] {
+    color: var(--pp-color-text-muted);
+    cursor: default;
+  }
+
+  .pp-calendar__day:not(:disabled, [data-outside]):hover {
+    background-color: var(--pp-tone-bg-hover);
+  }
+
+  .pp-calendar__day[aria-current="date"] {
+    color: var(--pp-tone-text);
+    font-weight: var(--pp-font-weight-medium);
+  }
+
+  .pp-calendar__day[data-state="selected"],
+  .pp-calendar__day[data-state="selected"]:hover {
+    background-color: var(--pp-calendar-selected-bg, var(--pp-tone-solid));
+    color: var(--pp-calendar-selected-color, var(--pp-tone-on-solid));
+  }
+
+  .pp-calendar__day:disabled {
+    color: var(--pp-color-text-disabled);
+    cursor: not-allowed;
+  }
+
+  .pp-calendar__day:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  /* The arrows point the way the months run: mirrored under RTL (RULES §1). */
+  [dir="rtl"] .pp-calendar__chevron {
+    scale: -1 1;
+  }
+}

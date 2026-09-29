@@ -133,23 +133,33 @@ jobs:
       # upstream green, which is the D-038 shape precisely. The event is
       # therefore checked rather than the push attempted and left to fail.
       #
-      # A push made with GITHUB_TOKEN does not trigger another workflow run, by
-      # design, so this commit lands with no checks of its own. The baselines
-      # are therefore authored but not yet COMPARED; the next real push
-      # verifies them. That is the intended shape — it is what stops an
-      # authoring run from looping forever — but it does mean an
-      # authoring commit should never be the final head of a PR, and nothing
-      # here can enforce that. See D-042.
+      # A push made with GITHUB_TOKEN is documented not to trigger another
+      # workflow run, so this commit was expected to land with no checks of
+      # its own: authored but not yet COMPARED, verified by the next real
+      # push, and never the final head of a PR (D-042). In practice it CAN
+      # get a run — run 174 on PR #33 was a `pull_request` run on an
+      # authoring commit, its actor the bot — and either way it can be
+      # re-run by hand. So the commit has to be green on its own.
+      #
+      # THE COMMIT RECORDS WHAT IT AUTHORS (D-092). `npm run dimensions` adds
+      # a manifest entry for every baseline that has none, at the runner's
+      # geometry — the only geometry the manifest should hold (D-050 §5,
+      # D-066 §2) — so tests/unit/screenshot-dimensions.test.ts sees no
+      # unguarded baseline on this commit. Recording used to be a local step
+      # after pulling this commit, and the commit itself was red on `npm test`
+      # whenever a component and the index were authored together: four
+      # unrecorded files against the guard's limit of three.
       - name: Commit authored baselines
         if: >-
           github.event_name == 'pull_request'
           && steps.classify.outputs.new == 'true'
           && steps.classify.outputs.changed == 'false'
         run: |
+          npm run dimensions
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add tests/visual/__screenshots__
-          git commit -m "test(visual): author screenshot baselines in CI"
+          git commit -m "test(visual): author screenshot baselines in CI and record their geometry"
           git push
 
       # On `main`, a missing baseline is not a request for authoring. It means a
