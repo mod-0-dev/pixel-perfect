@@ -23,6 +23,14 @@
     "width": 1280,
     "height": 9133
   },
+  "app-shell-dark.png": {
+    "width": 1280,
+    "height": 6492
+  },
+  "app-shell-light.png": {
+    "width": 1280,
+    "height": 6492
+  },
   "aspect-ratio-dark.png": {
     "width": 1280,
     "height": 11441
@@ -118,6 +126,14 @@
   "cluster-light.png": {
     "width": 1280,
     "height": 5229
+  },
+  "code-block-dark.png": {
+    "width": 1280,
+    "height": 1698
+  },
+  "code-block-light.png": {
+    "width": 1280,
+    "height": 1698
   },
   "code-dark.png": {
     "width": 1280,
@@ -263,6 +279,16 @@
     "width": 1280,
     "height": 2532
   },
+  "index-dark.png": {
+    "width": 1280,
+    "height": 4170,
+    "components": 69
+  },
+  "index-light.png": {
+    "width": 1280,
+    "height": 4170,
+    "components": 69
+  },
   "input-dark.png": {
     "width": 1280,
     "height": 5030
@@ -278,6 +304,14 @@
   "kbd-light.png": {
     "width": 1280,
     "height": 1607
+  },
+  "key-hints-dark.png": {
+    "width": 1280,
+    "height": 900
+  },
+  "key-hints-light.png": {
+    "width": 1280,
+    "height": 900
   },
   "label-dark.png": {
     "width": 1280,
@@ -295,6 +329,14 @@
     "width": 1280,
     "height": 3264
   },
+  "nav-sidebar-dark.png": {
+    "width": 1280,
+    "height": 3742
+  },
+  "nav-sidebar-light.png": {
+    "width": 1280,
+    "height": 3742
+  },
   "number-input-dark.png": {
     "width": 1280,
     "height": 8123
@@ -302,6 +344,14 @@
   "number-input-light.png": {
     "width": 1280,
     "height": 8123
+  },
+  "page-header-dark.png": {
+    "width": 1280,
+    "height": 3108
+  },
+  "page-header-light.png": {
+    "width": 1280,
+    "height": 3108
   },
   "pagination-dark.png": {
     "width": 1280,
@@ -455,6 +505,22 @@
     "width": 1280,
     "height": 8304
   },
+  "theme-provider-dark.png": {
+    "width": 1280,
+    "height": 1013
+  },
+  "theme-provider-light.png": {
+    "width": 1280,
+    "height": 1036
+  },
+  "theme-toggle-dark.png": {
+    "width": 1280,
+    "height": 2115
+  },
+  "theme-toggle-light.png": {
+    "width": 1280,
+    "height": 2115
+  },
   "toast-dark.png": {
     "width": 1280,
     "height": 2282
@@ -478,6 +544,14 @@
   "tokens-light.png": {
     "width": 1280,
     "height": 3201
+  },
+  "toolbar-dark.png": {
+    "width": 1280,
+    "height": 2891
+  },
+  "toolbar-light.png": {
+    "width": 1280,
+    "height": 2891
   },
   "tooltip-dark.png": {
     "width": 1280,
