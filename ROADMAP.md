@@ -44,11 +44,11 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   one tab stop over the controls found in its subtree, a text field never
   the stop. **6.4 `NavSidebar` is in `review`** (D-099), the last
   component of the roadmap: plain links in a named nav, a closed group's
-  list `hidden` by its own rule. **6.7 `KeyHints` is in `spec`** (D-100
-  §1), the parked idea of D-069 §3 as three gestures that reveal and
-  accelerate rather than a modifier that changes the components; built
-  next. Then the batch's authoring run, the `review` → `done` sweep of
-  Tier 6, and 0.10.
+  list `hidden` by its own rule. **6.7 `KeyHints` is in `review`**
+  (D-100), the parked idea of D-069 §3 as three gestures that reveal and
+  accelerate rather than a modifier that changes the components. Every
+  component of every tier is built; what remains is the batch's authoring
+  run, the `review` → `done` sweep of Tier 6, and 0.10.
   6.2 is the control over 6.1: a square button whose two faces are both
   in the DOM and one of which the stylesheet displays from the document's
   theme, so it is right before React is (D-095). The library
@@ -1027,7 +1027,7 @@ Opinionated patterns. Only build what the consuming app actually needs.
 | 6.4 | `NavSidebar` | `review` | fill | client | 6.3, 5.11 | [`NavSidebar.md`](docs/specs/NavSidebar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-099; awaiting its CI-authored baseline (D-013). The app's primary navigation for AppShell's sidebar slot: a named `<nav>` of sections, items and disclosure groups (§1); the app says which link is current and a group holding it is open and marked (§2); a closed group's list is rendered and `hidden` — which needs its own `display: none`, because an author `display` beats the user agent's (§3, D-099 §1); plain links, no roving tabindex, 5.11's row and not its role (§4, §5); not a drawer, composition instead (§6); `asChild` for `next/link` (§7). The last component of the roadmap |
 | 6.5 | `PageHeader` | `review` | fill | server | 2.2, 5.6 | [`PageHeader.md`](docs/specs/PageHeader.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-097; awaiting its CI-authored baseline (D-013). Four named parts — title, description, actions, the root — and the consumer's `Breadcrumb` first, placed by its class (§1); one flex row that wraps, so an absent part costs no gap and nothing is placed by area (§2); the description reads after the title and paints after the actions by `order`, the library's one visual reorder, of a paragraph nothing focuses (§3); the title a `Heading` at level 1 (§4) |
 | 6.6 | `Toolbar` | `review` | fill | client | 3.4 | [`Toolbar.md`](docs/specs/Toolbar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-098; awaiting its CI-authored baseline (D-013). The roving component `ButtonGroup`'s spec promised (D-030 §7): `role="toolbar"` with a required name, one tab stop over the controls found in its own subtree and re-read by an observer, no wrapper part (§1, D-098 §2); the last-focused control remembered — never a text field, whose arrows are the caret's and which would strand the controls after it (§2, §4, D-098 §1); arrows by orientation mirrored in RTL, wrapping unless `loop={false}` (§3); a wrapping row with a `gap`, not a `Cluster` (§6) |
-| 6.7 | `KeyHints` | `spec` | n/a | client | 1.10, 4.4, 4.14 | [`KeyHints.md`](docs/specs/KeyHints.md), written 2026-09-29 under the standing delegation (D-069 §1). The parked idea of D-069 §3 in the form that passes the accessibility gate: a shortcut declared on the control (`data-pp-hotkey`) or registered as a command (`useKeyHint`), `mod+k` chords and `g i` sequences (§1); hold `revealKey` to see every shortcut on its control, a picture and never a mode (§2); `jumpKey` labels every control on screen and typing the label focuses it (§3); `helpKey` opens the sheet on a Dialog (§4); every key remappable and off-able, WCAG 2.1.4 (§5); a modifier that changes what a component does is ruled out (§6). Added per D-100 §1 |
+| 6.7 | `KeyHints` | `review` | n/a | client | 1.10, 4.4, 4.14 | [`KeyHints.md`](docs/specs/KeyHints.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-100; awaiting its CI-authored baseline (D-013). The parked idea of D-069 §3 in the form that passes the accessibility gate: a shortcut declared on the control (`data-pp-hotkey`) or registered as a command (`useKeyHint`), `mod+k` chords and `g i` sequences (§1); hold `revealKey` to see every shortcut on its control, a picture and never a mode, hints that climb when they would overlap (§2, D-100 §3); `jumpKey` labels every control on screen and typing the label focuses it (§3); `helpKey` opens the sheet on a Dialog (§4); every key remappable and off-able, WCAG 2.1.4 (§5); a modifier that changes what a component does is ruled out (§6). Added per D-100 §1 |
 
 ---
 

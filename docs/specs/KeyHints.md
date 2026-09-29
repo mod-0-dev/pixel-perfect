@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `spec` — written 2026-09-29 under the standing delegation (D-069 §1); every recommendation below is adopted as written and the build starts in the same session. Added to the roadmap by D-100 §1 |
+| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-100; awaiting its CI-authored baseline (D-013). Added to the roadmap by D-100 §1 |
 | **Sizing contract** | n/a — a provider with no box of its own; its hints are a fixed overlay, the viewport's (D-067 §2's shape) |
 | **RSC** | `client` — document listeners, a portal, state |
 | **Depends on** | 1.10 `Kbd` (`done`): the hint is a keycap; 4.4 `Dialog` (`done`): the help sheet; 1.4 `VisuallyHidden`: the live status; 4.14 `CommandPalette` (`done`): the same `mod+k` chord grammar, decided on the platform when pressed (D-078) |
@@ -136,8 +136,9 @@ and each hint hugs its keycap.
 ```
 <KeyHints>                                       renders children, then a portal into <body>:
   <div class="pp-key-hints" aria-hidden="true">     position: fixed; inset: 0; pointer-events: none; only while revealing or jumping
-    └── <kbd class="pp-kbd pp-key-hints__hint" data-size="sm" style="top; left" data-mode="reveal|jump">
-          └── <span class="pp-key-hints__typed">a</span>s     jump: the typed prefix marked
+    └── <span class="pp-key-hints__hint" style="top; left" data-mode="reveal|jump" data-pp-tone="accent"?>
+          ├── <kbd class="pp-kbd" data-size="sm">Ctrl</kbd> <kbd class="pp-kbd">S</kbd>     reveal: one keycap per key
+          └── <kbd class="pp-kbd"><span class="pp-key-hints__typed">a</span>s</kbd>        jump: the typed prefix marked
   <span class="pp-visually-hidden pp-key-hints__status" aria-live="polite">Jump: …</span>
   <Dialog> … <DialogTitle>Keyboard shortcuts</DialogTitle>
     <dl class="pp-key-hints__sheet">
@@ -147,7 +148,7 @@ and each hint hugs its keycap.
 | Part | Class | Element | Notes |
 | --- | --- | --- | --- |
 | overlay | `pp-key-hints` | `<div>` | Portalled; `aria-hidden`; `--pp-z-tooltip`; only while revealing or jumping |
-| hint | `pp-kbd pp-key-hints__hint` | `<kbd>` | Kbd's keycap (the two-class contract, D-070 §1) at the element's top-start corner; `data-mode` |
+| hint | `pp-key-hints__hint` | `<span>` | A row of `Kbd`s, one per key, at the element's top-start corner; `data-mode`; staggered upward when it would overlap another (D-100 §3) |
 | typed | `pp-key-hints__typed` | `<span>` | The typed prefix of a jump label |
 | status | `pp-key-hints__status` | `VisuallyHidden` | `aria-live="polite"` |
 | sheet | `pp-key-hints__sheet` | `<dl>` | In the help `Dialog` |

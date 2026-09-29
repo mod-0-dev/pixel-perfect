@@ -506,6 +506,103 @@ test.describe('PageHeader', () => {
   });
 });
 
+test.describe('KeyHints', () => {
+  test('while Alt is held a keycap sits outside each shortcut control\'s top-start corner, above the page, and release removes them (spec §2)', async ({ page }) => {
+    await page.goto('/components/key-hints');
+    await page.locator('[data-testid="key-hints-editor"] h2').click();
+    await page.keyboard.down('Alt');
+    const overlay = page.locator('.pp-key-hints');
+    await expect(overlay).toBeVisible();
+    const read = await overlay.evaluate((o) => {
+      const targets = Array.from(document.querySelectorAll<HTMLElement>('[data-pp-hotkey]')).map((t) => t.getBoundingClientRect());
+      const hints = Array.from(o.querySelectorAll<HTMLElement>('.pp-key-hints__hint'));
+      return {
+        z: getComputedStyle(o).zIndex,
+        pointer: getComputedStyle(o).pointerEvents,
+        hidden: o.getAttribute('aria-hidden'),
+        count: hints.length,
+        targets: targets.length,
+        texts: hints.map((h) => h.textContent),
+        // At the corner, or staggered from it by whole hint heights (upward, away from the controls).
+        placed: hints.map((h) => {
+          const r = h.getBoundingClientRect();
+          return targets.some((t) => Math.abs(r.left - (t.left - 4)) <= 1 && Math.abs((r.top + r.height / 2 - t.top) % (r.height + 2)) <= 1);
+        }),
+        // A staggered hint climbs: no hint's top is below its control's top edge.
+        climbs: hints.every((h) => {
+          const r = h.getBoundingClientRect();
+          return targets.some((t) => Math.abs(r.left - (t.left - 4)) <= 1 && r.top + r.height / 2 <= t.top + 1);
+        }),
+        kbd: hints.every((h) => Array.from(h.querySelectorAll('.pp-kbd')).every((k) => getComputedStyle(k).fontFamily.toLowerCase().includes('mono'))),
+        caps: hints.map((h) => h.querySelectorAll('.pp-kbd').length),
+        // No two hints overlap: adjacent buttons' hints are staggered (D-100 §3).
+        overlap: hints.some((a, i) =>
+          hints.slice(i + 1).some((b) => {
+            const r = a.getBoundingClientRect();
+            const q = b.getBoundingClientRect();
+            return r.left < q.right && r.right > q.left && r.top < q.bottom && r.bottom > q.top;
+          }),
+        ),
+      };
+    });
+    expect(read.z).toBe('1400'); // --pp-z-tooltip
+    expect(read.pointer).toBe('none');
+    expect(read.hidden).toBe('true');
+    expect(read.count).toBe(read.targets);
+    expect(read.count).toBe(3);
+    expect(read.texts).toEqual(['Ctrl⇧N', 'CtrlE', 'CtrlS'].map((t) => t.replace('⇧', 'Shift')));
+    expect(read.placed.every(Boolean)).toBe(true);
+    expect(read.kbd).toBe(true);
+    expect(read.caps).toEqual([3, 2, 2]);
+    expect(read.overlap).toBe(false);
+    expect(read.climbs).toBe(true);
+    await page.keyboard.up('Alt');
+    await expect(overlay).toHaveCount(0);
+  });
+
+  test('f labels every focusable control in view; typing the Save button\'s label focuses it; ? opens the sheet (spec §3, §4)', async ({ page }) => {
+    await page.goto('/components/key-hints');
+    await page.locator('[data-testid="key-hints-editor"] h2').click();
+    await page.keyboard.press('f');
+    const overlay = page.locator('.pp-key-hints');
+    await expect(overlay).toBeVisible();
+    const read = await overlay.evaluate((o) => {
+      const selector = 'a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+      const focusable = Array.from(document.querySelectorAll<HTMLElement>(selector)).filter((el) => {
+        const r = el.getBoundingClientRect();
+        return el.checkVisibility() && !(el as HTMLButtonElement).disabled && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
+      });
+      const save = document.querySelector<HTMLElement>('[data-pp-hotkey="mod+s"]')!.getBoundingClientRect();
+      const hints = Array.from(o.querySelectorAll<HTMLElement>('.pp-key-hints__hint'));
+      const near = hints.find((h) => {
+        const r = h.getBoundingClientRect();
+        return Math.abs(r.left - (save.left - 4)) <= 1 && Math.abs(r.top + r.height / 2 - save.top) <= 1;
+      });
+      return { count: hints.length, focusable: focusable.length, label: near?.textContent ?? null, mode: hints[0]?.getAttribute('data-mode'), status: document.querySelector('.pp-key-hints__status')?.textContent };
+    });
+    expect(read.count).toBe(read.focusable);
+    expect(read.count).toBeGreaterThan(3);
+    expect(read.mode).toBe('jump');
+    expect(read.status).toContain('Jump');
+    expect(read.label).not.toBeNull();
+    await page.keyboard.type(read.label!);
+    await expect(overlay).toHaveCount(0);
+    await expect(page.locator('[data-pp-hotkey="mod+s"]')).toBeFocused();
+    // The sheet.
+    await page.locator('[data-testid="key-hints-editor"] h2').click();
+    await page.keyboard.press('?');
+    const dialog = page.getByRole('dialog', { name: 'Keyboard shortcuts' });
+    await expect(dialog).toBeVisible();
+    const labels = await dialog.locator('.pp-key-hints__label').allTextContents();
+    expect(labels).toEqual(['This sheet', 'Jump to a control', 'Show shortcuts on their controls (hold)', 'New', 'Export', 'Save', 'Go to inbox']);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    // A chord fires its control: Ctrl+S notes "Saved".
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('[data-role="log"]')).toHaveText('Saved (mod+s)');
+  });
+});
+
 test.describe('NavSidebar', () => {
   test('every row is the control height; a nested item starts one indent in; the current link has the accent surface; a closed group\'s list is not laid out and its chevron is not turned; the ring is on the link (spec §3, §5)', async ({ page }) => {
     await page.goto('/components/nav-sidebar');

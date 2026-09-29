@@ -101,4 +101,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'nav-sidebar', name: 'NavSidebar', tier: '6.4', summary: 'An app\'s navigation for the sidebar: sections of links and groups that open; the app marks the current one.' },
   { slug: 'page-header', name: 'PageHeader', tier: '6.5', summary: 'The top of a page: a breadcrumb, the h1, one line about it, and the page\'s actions at the end of the title row.' },
   { slug: 'toolbar', name: 'Toolbar', tier: '6.6', summary: 'A named row of controls with one tab stop: arrows walk them, Home and End jump, and a text field keeps its keys.' },
+  { slug: 'key-hints', name: 'KeyHints', tier: '6.7', summary: 'Hold a key to see every shortcut on its control, press one to jump to any control by a label, press one for the sheet.' },
 ];

@@ -81,6 +81,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'nav-sidebar', path: '/components/nav-sidebar' },
   { name: 'page-header', path: '/components/page-header' },
   { name: 'toolbar', path: '/components/toolbar' },
+  { name: 'key-hints', path: '/components/key-hints' },
 ];
 
 /**

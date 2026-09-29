@@ -7222,3 +7222,95 @@ dropped; the RTL mirror dropped; the item's grid dropped (rows narrower
 than the nav, in the shell too); the truncation dropped. Each failed on
 exactly the test named for it; §2's track minimum failed none and was
 removed.
+
+## D-100 — `KeyHints` (6.7) added and built: the parked modifier idea as three gestures, hints that stagger, and one `isEditing`
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** ROADMAP.md (a
+row added), `docs/specs/KeyHints.md` (status, anatomy), `docs/specs/Toolbar.md`
+by reference (§4's test moves), `src/components/Toolbar/Toolbar.tsx` ·
+**Extends:** D-016 §7 (the item it adds), D-067 §2, D-069 §3, D-070 §1,
+D-078 §4, D-094
+
+### 1. The idea, and what of it is buildable
+
+D-069 §3 parked "holding a modifier switches the components into
+combinations that expose more of what they can do". Asked whether it is
+doable: a version is, and the literal one is not. A page cannot claim a
+modifier — Ctrl and Alt are the OS's, the browser's, and every screen
+reader's — a held key is a signal the page loses on blur, and WCAG 2.1.4
+forbids a single-character shortcut that cannot be remapped or turned
+off while 2.1.1 requires everything to work without the gesture. What
+survives is what the good keyboard products ship: a held key that
+*reveals* shortcuts on their controls (Slack, Superhuman), a jump mode
+that labels every control (Vimium), a help sheet on `?` (GitHub,
+Gmail), and the command palette the library already has. Approved as
+the next `/component` item, added as 6.7 (the denominator 80 → 81), spec
+written and built in one session under D-069 §1.
+
+### 2. The rulings
+
+A shortcut is declared on the control (`data-pp-hotkey`) or registered
+as a command (`useKeyHint`), one registry, CommandPalette's chord
+grammar (D-078 §4) plus space-separated sequences with a one-second
+window. A chord with a modifier fires anywhere; a bare key never fires
+inside a text field and every key is skipped when a component already
+handled it. The reveal is a picture — the page under it is exactly the
+page — so a lost `keyup` costs a flicker, and release, another key, a
+blur or a hidden document ends it. `revealKey` defaults to `null`: which
+modifier an app can afford is its call. Jump focuses and never
+activates. The sheet is a `Dialog`. `helpKey`, `jumpKey` and
+`revealKey` are props and `null` turns each off (2.1.4). A modifier that
+changes what a component does is ruled out, not deferred: its keyboard
+walkthrough would no longer match its APG pattern (RULES §6).
+
+### 3. Hints that would overlap climb
+
+The first screenshot showed two things the harness had not: a chord
+drawn as one crammed keycap, and the hints of three adjacent buttons
+overlapping into an unreadable pile. A hint is now a row of `Kbd`s, one
+per key; and after the hints render, each is measured against the ones
+placed before it and lifted by its own height until it clears them —
+upward, away from the controls, because the second draft staggered
+downward and the screenshot showed the hints covering the very buttons
+they described; at the viewport's top the stack climbs down instead.
+The browser test asserts no two hints intersect, every hint sits at
+its control's corner or a whole number of hint heights above it, and
+none is below its control's top edge.
+
+### 4. One `isEditing` for the library
+
+`Toolbar` §4's test for "a key pressed in a text-editing control" moves
+to `src/internal/editing.ts`, and both components import it. Not a
+behaviour change; Toolbar's ten tests pass unchanged.
+
+### 5. What the overlay may declare
+
+`position: fixed; inset: 0` is the viewport-sized box a fixed layer is
+given, the one shape RULES §1 names as an exception (D-067 §2), and the
+hints are positioned by inline `top` and `left` from each control's
+rect, which is a JavaScript measurement and not a stylesheet width. The
+overlay is `aria-hidden` and takes no pointer events; the jump status is
+a visually hidden live region.
+
+### 6. Verified, and the four breaks
+
+Unit: ten tests — `formatKeys` on Apple and elsewhere; an element
+firing on its chord (focus, then click) and not another, a mod chord
+inside a field; a sequence within and past the timeout, disabled, and
+never a bare key in a field; `defaultPrevented`; reveal drawn, one
+keycap per key, removed on release, another key and blur; jump labels,
+narrowing, a full label focusing, `Escape`, the live region, the key
+typing inside a field; two-letter labels past nine; the sheet's rows
+with keycaps, `null` turning keys off; the hook outside the provider
+throwing and a command unregistering; axe with the sheet open in both
+themes. Browser: while `Alt` is held, three hints for three controls at
+the tooltip layer with no pointer events, `aria-hidden`, each a row of
+mono keycaps at its control's corner or climbing from it, none
+overlapping; `f` labelling every focusable control in view, typing the
+Save button's label focusing it, `?` opening the sheet with seven rows,
+`Ctrl+S` firing the button.
+
+Break checks (D-035 §3): the overlay's layer dropped (`auto`); its
+`pointer-events` dropped; the hint's offset dropped (no hint at any
+corner); the hint's `position: absolute` dropped. Each failed on exactly
+the test named for it.

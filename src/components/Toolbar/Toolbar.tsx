@@ -14,6 +14,7 @@ import {
 } from 'react';
 
 import { cx } from '../../internal/cx';
+import { isEditing } from '../../internal/editing';
 import { directionOf } from '../../internal/overlay/side';
 import { mergeRefs } from '../../internal/refs';
 import type { Space } from '../../types';
@@ -78,18 +79,6 @@ const isDisabled = (el: HTMLElement): boolean =>
 
 const controlsOf = (root: HTMLElement): HTMLElement[] =>
   Array.from(root.querySelectorAll<HTMLElement>(CONTROL_SELECTOR)).filter((el) => !isDisabled(el));
-
-/* An <input> whose arrows do not move a caret. Everything else that edits
-   text — and `range`, `number`, the date kinds, whose arrows step a value —
-   keeps its keys (spec §4). */
-const NON_EDITING_INPUT_TYPES = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'file', 'image', 'color']);
-
-const isEditing = (el: HTMLElement): boolean => {
-  if (el.isContentEditable) return true;
-  if (el.tagName === 'TEXTAREA') return true;
-  if (el.tagName === 'INPUT') return !NON_EDITING_INPUT_TYPES.has((el as HTMLInputElement).type);
-  return false;
-};
 
 export const Toolbar = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
   { label, orientation = 'horizontal', loop = true, gap = '2', className, onKeyDown, onFocus, onClick, children, ...props },
