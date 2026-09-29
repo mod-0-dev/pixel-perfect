@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — built 2026-09-28; every Definition of Done box but the CI-authored screenshot baseline (D-013). Written the same day under the standing delegation (D-069 §1), every recommendation adopted; build findings in D-070 |
+| **Status** | `done` — 2026-09-29; built 2026-09-28, its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6). Written the same day under the standing delegation (D-069 §1), every recommendation adopted; build findings in D-070 |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale (D-061 §3) and the scrim's `inset: 0` (D-067 §2) — both Dialog's |
 | **RSC** | `client` — Radix state, a portal, a focus trap, a scroll lock |
 | **Depends on** | 4.4 `Dialog` (`done`): this component is `Dialog` with two rules changed, and Dialog's stylesheet draws it. Its buttons are 3.1 `Button` by `asChild` |

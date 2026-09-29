@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-078. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-078. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` inside a panel whose inline size is a token (D-071 §1's form of the overlay exception); the scrim is Dialog's viewport box |
 | **RSC** | `client` — a modal, a listbox's highlight, a hotkey |
 | **Depends on** | 4.4 `Dialog` (`done`): the modal, the scrim, the focus trap, through `@radix-ui/react-dialog` and Dialog's stylesheet; 4.11 `Combobox` (`review`, baseline only — Gate B per D-073 §2): the listbox's highlight, shared; 4.7 `DropdownMenu`: the row; 1.10 `Kbd`: the shortcut hints |

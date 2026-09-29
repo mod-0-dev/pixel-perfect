@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-076. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-076. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` for the control (it is an `Input`'s box); the list is `hug` with the overlay exception (D-061 §3), and never narrower than the control |
 | **RSC** | `client` — the whole keyboard model is state |
 | **Depends on** | 4.2 `Popover` (`done`): the list's portal and positioning, through `@radix-ui/react-popover`'s `Anchor`; 3.13 `Select` (`done`): whose spec deferred typeahead, async options and multi-select here; 3.8 `Input` and 3.7 `Field`: the box and the wiring; 4.7 `DropdownMenu`: the list's stylesheet |

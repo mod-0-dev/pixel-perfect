@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-071. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-071. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `hug`, with the overlay exception in its edge-anchored form: the panel takes its size on the anchored axis from the measure scale (§3, D-071 §1), and the scrim is Dialog's viewport box (D-067 §2) |
 | **RSC** | `client` — Radix state, a portal, a focus trap, a scroll lock |
 | **Depends on** | 4.4 `Dialog` (`done`): built on the same primitive, drawn by Dialog's scrim, sharing its focus restore |

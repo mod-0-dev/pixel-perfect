@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-075. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-075. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` — the root, every item, every trigger and every panel fill their container |
 | **RSC** | `client` — Radix state, roving focus, a measured height for the motion |
 | **Depends on** | Tier 3 (`done`): the control metrics and the focus ring; 1.2 `Heading` for the precedent on levels |
