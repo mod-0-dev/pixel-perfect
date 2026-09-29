@@ -47,7 +47,10 @@ display combinations — a Tier 6 spec of its own, once the components exist.
   list `hidden` by its own rule. **6.7 `KeyHints` is in `review`**
   (D-100), the parked idea of D-069 §3 as three gestures that reveal and
   accelerate rather than a modifier that changes the components. Every
-  component of every tier is built; what remains is the batch's authoring
+  component of every tier is built. The batch's first authoring run was
+  red for none of them (**D-101**): the code-block baseline was stale by
+  D-093 §1's own change on CI's insecure origin and is re-baselined, and
+  two reads inside a window are waited out. What remains is the authoring
   run, the `review` → `done` sweep of Tier 6, and 0.10.
   6.2 is the control over 6.1: a square button whose two faces are both
   in the DOM and one of which the stylesheet displays from the document's

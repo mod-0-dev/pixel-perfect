@@ -287,14 +287,21 @@ export function KeyHints({
     }
   }, [jump, revealing]);
 
+  /* Re-placed on scroll, on resize, and when a font finishes loading: a
+     keycap measured in the fallback face is narrower than in the mono face
+     it ends up in, and the stagger below was computed against the wrong
+     widths once, on a cold CI cache (D-101 §3). */
   useEffect(() => {
     place();
     if (!jump && !revealing) return;
     window.addEventListener('scroll', place, true);
     window.addEventListener('resize', place);
+    const fonts = typeof document !== 'undefined' ? document.fonts : undefined;
+    fonts?.addEventListener('loadingdone', place);
     return () => {
       window.removeEventListener('scroll', place, true);
       window.removeEventListener('resize', place);
+      fonts?.removeEventListener('loadingdone', place);
     };
   }, [place, jump, revealing]);
 

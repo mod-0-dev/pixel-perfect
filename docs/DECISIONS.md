@@ -7314,3 +7314,57 @@ Break checks (D-035 §3): the overlay's layer dropped (`auto`); its
 `pointer-events` dropped; the hint's offset dropped (no hint at any
 corner); the hint's `position: absolute` dropped. Each failed on exactly
 the test named for it.
+
+## D-101 — Run 187 red: a baseline stale by D-093's own change, and two reads inside a window
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `tests/visual/__screenshots__`
+(code-block re-baselined), `tests/visual/harness.spec.ts` (two tests),
+`src/components/KeyHints/KeyHints.tsx` · **Extends:** D-013, D-066 §2,
+D-093 §1, D-093 §2, D-100 §3
+
+The visual job on the head that added 6.7 failed with one `-diff.png`
+and two tests that passed on retry; the seven new pages and the index
+were not authored because nothing is authored on a red run (D-066 §1).
+Each was looked at.
+
+### 1. `code-block-dark` differed because D-093 §1 changed what CI renders
+
+D-093 §1 made the copy button render whenever `copy` is on, where it had
+rendered only when `navigator.clipboard` existed — and it recorded the
+consumer-visible change: "a block on an insecure origin shows a button
+that does nothing where it showed none". CI's playground is served on
+plain `http://127.0.0.1`, an insecure origin, so the baseline authored
+before that fix shows no button and the page now shows one. The dark
+diff crossed the 1% pixel-ratio tolerance; the light one did not, which
+made the light baseline silently stale. Both are re-baselined
+(`npm run dimensions -- --rebaseline code-block`) for CI to author, the
+deliberate move of D-066 §2. The previous PR description's "no baseline
+is touched by this PR" was written without noticing that the runner's
+origin is the one D-093 §1 itself described.
+
+### 2. The CommandPalette input's outline, read inside the one-frame transition
+
+The test read `outline-color` on the focused input and got the
+unfocused colour once. D-093 §2's mechanism exactly: the input declares
+no transition, the reset's reduced-motion rule makes the change to
+`transparent` a one-frame transition, and the read landed inside it.
+The test waits for `settled(page)` after the panel is visible, as the
+theme self-check and the Scroller test do since D-093.
+
+### 3. KeyHints' stagger, computed against the fallback face
+
+The overlap assertion of D-100 §3 failed once and passed on retry. The
+hints are measured after they render to lift the ones that would
+collide, and on a cold cache they were measured before JetBrains Mono
+had loaded — narrower in the fallback face, so no collision was found,
+and when the font arrived the keycaps widened into each other. The
+component now re-places its hints on `document.fonts`' `loadingdone`,
+which recomputes the stagger against the real widths, and the test waits
+for `document.fonts.ready` before holding the key. The screenshot suite
+has waited for fonts since D-026; the harness had no reason to until a
+component measured text.
+
+### 4. What was not done
+
+No test was retried to see if it passes, none was given a tolerance,
+and the reset is unchanged.

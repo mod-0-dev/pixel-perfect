@@ -509,6 +509,9 @@ test.describe('PageHeader', () => {
 test.describe('KeyHints', () => {
   test('while Alt is held a keycap sits outside each shortcut control\'s top-start corner, above the page, and release removes them (spec §2)', async ({ page }) => {
     await page.goto('/components/key-hints');
+    // The keycaps are measured for the stagger; measured in the fallback face
+    // they are narrower than in the mono face (D-101 §3).
+    await page.evaluate(() => document.fonts.ready);
     await page.locator('[data-testid="key-hints-editor"] h2').click();
     await page.keyboard.down('Alt');
     const overlay = page.locator('.pp-key-hints');
@@ -7192,6 +7195,10 @@ test.describe('CommandPalette', () => {
     await page.keyboard.press('Enter');
     const el = panel(page);
     await expect(el).toBeVisible();
+    // The input's outline goes transparent on focus through the reset's
+    // one-frame transition; a read inside that frame returns the unfocused
+    // colour (D-093 §2, seen again on run 187: D-101 §2).
+    await settled(page);
     const offset = await px(page, '--pp-space-9');
     const width = await px(page, '--pp-measure-sm');
     const height = await px(page, '--pp-control-height-md');
