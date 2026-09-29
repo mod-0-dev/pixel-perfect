@@ -196,8 +196,10 @@ Tab to the copy button, then to the region; arrows scroll a long line.
   and `highlightLines` on the root and the lines; children lines and
   `highlighted`; both given warns and children win; the header only
   when something is in it; the copy button writing the text, saying
-  "Copied" and returning after two seconds (fake timers), and absent
-  with `copy={false}` or no clipboard; `wrap`; refs, `className`,
+  "Copied" and returning after two seconds (fake timers), absent with
+  `copy={false}`, present and inert without a clipboard, and hydrating
+  server HTML rendered without one in a client that has one, with no
+  mismatch (D-093 §1); `wrap`; refs, `className`,
   `style`; axe both themes.
 - **Browser:** the surface, frame and mono family; the gutter's
   counters and its `user-select`; the highlighted line's surface and

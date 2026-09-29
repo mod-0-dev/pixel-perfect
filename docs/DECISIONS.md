@@ -6593,3 +6593,147 @@ baseline were still unrecorded, and the number was never the point.
 The `workflow_dispatch` fallback stays, for the case the comment was
 written for. The `checks` job does not run the recorder: recording on
 a compare run would bless drift, which is what D-050 §5 forbids.
+
+## D-093 — Run 176 was red and none of it was a pixel: a copy button that hydrated against different HTML, and four reads taken inside a window; Tiers 4 and 5 swept to `done`
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `src/components/CodeBlock/CodeBlock.tsx`
+(the copy button), `docs/specs/CodeBlock.md` (its tests), the playground's
+root layout (`HydrationMark`), `tests/visual/fixtures.ts` (new — the
+suite's `test`), `tests/visual/harness.spec.ts` (three assertions),
+ROADMAP.md (twenty-two rows, the Current state block) · **Extends:** D-013,
+D-054 §1, D-066 §3, D-069 §2, D-089 §4
+
+PR #33 merged with run 175 green on its final head, every baseline of the
+batch authored on the branch and compared. Run 176, `main`'s push run on
+the merge commit — the same tree — was red: `Visual regression` failed
+with **no `-diff.png`** (the classifier's `changed` was false, so no
+screenshot moved), one harness self-check failed on both attempts, and
+four tests passed on their retry, the first retry any of them had ever
+needed. Each was looked at rather than re-run. Five mechanisms, one of
+them a defect.
+
+### 1. `CodeBlock` rendered its copy button only where `navigator.clipboard` existed
+
+`showCopy = copy && canCopy`, where `canCopy` asked for
+`navigator.clipboard.writeText` at render. Node 22 has a `navigator` and
+no clipboard; a browser on a secure origin has both. So the server
+rendered a header without the button and the client rendered one with it,
+and React, finding different HTML, threw error **#418** and re-rendered
+the root on the client — replacing every node on the page, on every load
+of `/components/code-block`, deterministically. A crawl of all 65
+playground pages with `pageerror` captured found exactly this one page
+(the Avatar page's one failed resource is its deliberately broken image).
+The flaky `wrap` test had read `getComputedStyle` on an element that was
+detached between the locator resolving it and the read, which is what an
+empty `whiteSpace` string means.
+
+The spec had it right (§1: "when the API is missing it stays 'Copy code'
+and does nothing") and its own test list had it wrong ("absent with
+`copy={false}` or no clipboard"). The button now renders whenever `copy`
+is on; the press writes to the clipboard inside a `try` and does nothing
+without one. The DoD box "no hydration mismatch" had been checked by
+reading; a unit test now renders the block to a string with no clipboard,
+hydrates that HTML in a jsdom that has one, and asserts
+`onRecoverableError` and `console.error` were never called. The
+consumer-visible change is a patch: a block on an insecure origin shows a
+button that does nothing where it showed none.
+
+### 2. A colour read inside the frame that started a one-frame transition
+
+The harness self-check reads the Matrix's background, presses Dark, reads
+it again, and after a reload expects the second reading. Run 176 stored
+`oklab(0.993998 -0.0000516772 -0.000172317)` as `dark` — the **light**
+colour, spelled in `oklab` — and read `lab(5.09398 …)` after the reload.
+The reset's reduced-motion rule (`transition-duration: 0.01ms` on
+`:where(*)`) leaves `transition-property` at its initial `all`, so under
+`reducedMotion: 'reduce'` every property change on every element that
+declares no transition of its own is a transition of one frame, and a
+`getComputedStyle` inside the frame that started one returns the
+transition's start value in its interpolation space. The
+`not.toBe(light)` guard passed on the spelling: `oklab(…)` is not the
+string `lab(99.4 …)` even when it is the same colour.
+
+The suite now has one helper, `settled(page)`: two animation frames, not
+one — a callback in the next frame runs before that frame's style update,
+which is where the transition begins, and only the frame after it is past
+the 0.01ms (measured: one frame after `dir` was set the positions were
+still LTR, two frames after they had swapped). The reset is not changed.
+One frame of transition on a reduced-motion page is what the rule is for,
+every component that animates already answers for itself in
+`pp.components` (Input.css's own comment), and the test was the thing
+reading too early.
+
+### 3. Escape between a second dialog mounting and the first learning it was no longer topmost
+
+Radix's `DismissableLayer` decides "am I the topmost layer" from a set it
+joins in an effect and re-renders every layer to re-read one render
+later. The nested-dialog test pressed Escape as soon as the second dialog
+was visible; once, on run 176, that keydown found both layers believing
+they were topmost, and both closed. The same render that tells the first
+layer otherwise gives it `pointer-events: none`, which is the observable
+form of the state the test meant to wait for, so the test waits for it.
+Not a Radix bug worth a report: a user cannot press Escape inside one
+render of a dialog opening.
+
+### 4. The Scroller's RTL positions, read inside the same one-frame transition
+
+`layers(rtl)[2]` read `0% 50%` — the LTR value — once. §2's mechanism
+exactly: `background-position` animates, `Scroller.css` declares no
+transition, so under the reduced-motion reset the swap the `dir`
+attribute causes is a one-frame transition. The first rewrite of the test
+put the set and the read in one synchronous `evaluate`, on the theory
+that the three round trips had left a window, and that version failed
+**every time** with the same LTR value — which is what identified the
+mechanism, and a probe confirmed it: synchronous read LTR, one frame
+later LTR, two frames later RTL, and with `reducedMotion` off the
+synchronous read is RTL. The test sets the attribute, waits for
+`settled`, then reads.
+
+### 5. A DatePicker control read as unfocused, two reads after it was focused
+
+The test focused the control, saw the box's ring, and then read
+`outline-color` on the control as `currentColor` — no `:focus-visible`,
+which on an `<input>` means no focus. This one is **not established**.
+Not §2: the control sets `transition-property: none` under reduced
+motion, and the value read is the unfocused one, not a start value. A
+probe of twelve loads, six of them acting before waiting for hydration,
+found the control focused and transparent on every read. What the test
+does now: polls the colour rather than reading it once, and asserts the
+style beside it (a transparent ring is still a drawn ring, RULES §6).
+
+And one window is closed on principle rather than on evidence. `page.goto`
+resolves on `load`; React hydrates after that on its own scheduler; a
+test that focuses, clicks or sets an attribute in between acts on server
+HTML React is about to take over. Locally hydration is done by `load`
+every time (the probe checked); on a loaded runner nothing says it is.
+The playground's root layout now renders a `HydrationMark` after the
+page, whose effect — run after every effect in the page's tree — writes
+`data-hydrated` on `<html>`; the suite's `test` (`tests/visual/fixtures.ts`,
+imported by both specs) waits for it after every `goto` and `reload`.
+Both specs, because the theme self-check reloads and then presses a
+switcher that is a client component, and a press on a button that has
+not hydrated does nothing. The screenshots do not change: the attribute
+styles nothing, and `toHaveScreenshot` already waited for a still page.
+
+### 6. Tiers 4 and 5 swept to `done`
+
+The twenty-two `review` items — 4.5–4.14, 5.1 and 5.3–5.13 — each had
+every Definition of Done box checked but the CI-authored baseline. Their
+baselines were authored on the PR branch and compared green on run 175,
+the PR's final head, and again on run 176 on `main`, where no baseline
+differed (§0 above: the red was never a screenshot). That is the evidence
+D-013 asks for, so each row and each spec's status line moves to `done`
+in one commit, dated today, citing both runs. Done count 51 → 73 / 80.
+The five findings above are in the same PR because a `done` that lands
+on a red `main` is not one; the local harness suite is green end to end
+with the changes.
+
+### 7. What was not done
+
+Nothing was retried to see if it would pass, no test was skipped or given
+a tolerance, and the reset's reduced-motion rule stands. "Flaky" turned
+out to be three mechanisms and one open question: a component defect a
+crawl found in a minute, a one-frame transition the harness read inside
+of twice, a Radix render the harness pressed a key inside of, and one
+read that is now polled. The label is where a diagnosis stops, not what
+one is.

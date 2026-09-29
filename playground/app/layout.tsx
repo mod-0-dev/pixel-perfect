@@ -23,6 +23,7 @@ import '@fontsource/jetbrains-mono/600.css';
 import 'pixel-perfect/styles.css';
 
 import { Chrome } from '../harness/Chrome';
+import { HydrationMark } from '../harness/HydrationMark';
 import { THEME_SCRIPT } from '../harness/theme-script';
 import '../harness/matrix.css';
 import './globals.css';
@@ -57,6 +58,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="shell">
           <Chrome />
           <div className="page">{children}</div>
+          {/* After the page, so its effect runs after the page's (D-093 §5). */}
+          <HydrationMark />
         </div>
       </body>
     </html>

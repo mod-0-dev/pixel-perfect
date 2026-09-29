@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * These assertions verify the HARNESS, not a component. If overflow detection
@@ -41,6 +41,25 @@ async function setTheme(page: import('@playwright/test').Page, theme: 'system' |
   const html = page.locator('html');
   if (theme === 'system') await expect(html).not.toHaveAttribute('data-pp-theme', /.*/);
   else await expect(html).toHaveAttribute('data-pp-theme', theme);
+}
+
+/**
+ * Two animation frames, so a computed style caused by the last action has
+ * LANDED before it is read.
+ *
+ * Under `reducedMotion: 'reduce'` the reset gives every element
+ * `transition-duration: 0.01ms` and leaves `transition-property` at its
+ * initial `all`, so every property change on every element that declares no
+ * transition of its own is a transition of one frame — and a read inside the
+ * frame that started it returns the transition's START value, serialised in
+ * its interpolation space. Run 176 read the light background as
+ * `oklab(…)` after pressing Dark and the LTR shadow positions after setting
+ * `dir="rtl"` that way (D-093 §2). One frame is not enough: a callback in the
+ * next frame runs before that frame's style update, which is where the
+ * transition begins; the frame after it is past the 0.01ms.
+ */
+async function settled(page: import('@playwright/test').Page) {
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
 /**
@@ -100,7 +119,15 @@ test.describe('harness self-check', () => {
     page,
   }) => {
     await page.goto('/harness');
-    const bg = () => page.locator('.matrix').first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    /* Settled before every read: run 176 stored the light colour spelled in
+       `oklab(...)` as `dark` — the start of the one-frame transition the
+       reduced-motion reset gives a change — unequal to `light` by its
+       spelling alone and unequal to the settled dark after the reload
+       (D-093 §2). */
+    const bg = async () => {
+      await settled(page);
+      return page.locator('.matrix').first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    };
 
     await setTheme(page, 'light');
     const light = await bg();
@@ -494,9 +521,17 @@ test.describe('layout primitives', () => {
        into a `:lang()` list, and no RTL page in English ever got the swap
        (D-082 §4). */
     const layers = (value: string) => value.split(',').map((l) => l.trim());
-    const ltr = await scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    /* Settled after the attribute, before the read. `background-position`
+       animates, the Scroller declares no transition of its own, so under the
+       reduced-motion reset the swap is a one-frame transition and a read
+       inside that frame returns the LTR positions — every time when the
+       read is synchronous, and once on run 176 when it was a round trip
+       later (D-093 §4). */
+    const position = () => scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    const ltr = await position();
     await scroller.evaluate((el) => el.setAttribute('dir', 'rtl'));
-    const rtl = await scroller.evaluate((el) => getComputedStyle(el).backgroundPosition);
+    await settled(page);
+    const rtl = await position();
     await scroller.evaluate((el) => el.removeAttribute('dir'));
     expect(layers(ltr)[2]).toMatch(/^(0%|left)/);
     expect(layers(rtl)[2]).toMatch(/^(100%|right)/);
@@ -5018,6 +5053,13 @@ test.describe('Dialog', () => {
     expect(order.later, 'the second scrim is not later in the DOM').toBe(true);
     expect(order.same, 'the two scrims are not at the same layer').toBe(true);
     await expect(page.getByRole('dialog', { name: 'The second dialog' })).toBeVisible();
+    /* Escape reaches the topmost layer, and which layer is topmost is state
+       Radix syncs one render after the new layer mounts: an Escape inside
+       that window found both dialogs believing they were topmost and closed
+       both, once, on run 176 (D-093 §3). The same render gives the first
+       panel `pointer-events: none`, which is the observable form of "no
+       longer topmost", so that is what is waited for before the key. */
+    await expect(panel(page).first()).toHaveCSS('pointer-events', 'none');
     await page.keyboard.press('Escape');
     await expect(scrims, 'Escape closed both').toHaveCount(1);
     await expect(page.getByRole('dialog', { name: 'The first dialog' })).toBeVisible();
@@ -8040,7 +8082,11 @@ test.describe('DatePicker', () => {
     await control.focus();
     await expect.poll(() => box.evaluate((n) => parseFloat(getComputedStyle(n).outlineWidth))).toBeGreaterThan(0);
     expect(await box.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
-    expect(await control.evaluate((n) => getComputedStyle(n).outlineColor)).toBe('rgba(0, 0, 0, 0)');
+    /* Polled, not read once: run 176 read `currentColor` here after the box's
+       ring was already up (D-093 §5). The control's own ring is drawn
+       transparent, never removed (RULES §6), so the style is asserted too. */
+    await expect.poll(() => control.evaluate((n) => getComputedStyle(n).outlineColor)).toBe('rgba(0, 0, 0, 0)');
+    expect(await control.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
   });
 
   test('the panel opens below the box, start-aligned, with a small calendar and focus on the day; a pick fills the field and closes; RTL puts the button at the start', async ({
