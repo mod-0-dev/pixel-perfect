@@ -29,6 +29,7 @@ export const TIERS: TierEntry[] = [
   { id: '3', name: 'Form & action core', blurb: 'Buttons, links, fields and every native input, on one control scale.' },
   { id: '4', name: 'Overlays & disclosure', blurb: 'Behaviour from Radix Primitives; every node and pixel ours.' },
   { id: '5', name: 'Composition & data', blurb: 'Blocks made of the tiers below.' },
+  { id: '6', name: 'App shell', blurb: 'Opinionated patterns; only what the consuming app needs.' },
 ];
 
 export const COMPONENTS: ComponentEntry[] = [
@@ -94,4 +95,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'tree', name: 'Tree', tier: '5.11', summary: 'A hierarchy to walk and pick from: the ARIA tree view, one tab stop.' },
   { slug: 'code-block', name: 'CodeBlock', tier: '5.12', summary: 'Block code in a frame: numbered, pointed at, copied; the highlighter is yours.' },
   { slug: 'avatar-group', name: 'AvatarGroup', tier: '5.13', summary: 'A few faces overlapping in a row, and a count for the rest.' },
+  { slug: 'theme-provider', name: 'ThemeProvider', tier: '6.1', summary: 'The page\'s theme, set before the first paint: system, light or dark, kept across loads.' },
 ];

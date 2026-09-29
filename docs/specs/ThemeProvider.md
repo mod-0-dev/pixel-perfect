@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `spec` — written 2026-09-29 under the standing delegation (D-069 §1); every recommendation below is adopted as written and the build starts in the same session |
+| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written, one renamed by the rule lint (§3, D-094 §1); rulings and findings in D-094; awaiting its CI-authored baseline (D-013) |
 | **Sizing contract** | `n/a` — renders no element of its own: the children as given and one inline `<script>` |
 | **RSC** | `client` — a context, an effect that follows `prefers-color-scheme`, a storage listener. The script it renders is emitted on the server too, which is the point |
 | **Depends on** | T0 (`done`): the tokens' four theme scopes (D-010, D-011) and the base layer's `color-scheme` |
@@ -77,15 +77,23 @@ colours, and it would make `[data-pp-theme]` — the selector every scoped
 theme and every overlay's copy reads (overlay-foundation §3) — say
 something the user did not.
 
-### 3. Controlled and uncontrolled, with the app's persistence in controlled mode
+### 3. Controlled and uncontrolled, in RULES §5.5's words, with the app's persistence in controlled mode
 
 | Prop | Type | Default |
 | --- | --- | --- |
-| `theme` | `Theme` | — |
-| `defaultTheme` | `Theme` | `'system'` |
-| `onThemeChange` | `(theme: Theme) => void` | — |
+| `value` | `Theme` | — |
+| `defaultValue` | `Theme` | `'system'` |
+| `onValueChange` | `(theme: Theme) => void` | — |
 | `storageKey` | `string \| null` | `'pp-theme'` |
 | `nonce` | `string` | — |
+
+`value` / `defaultValue` / `onValueChange`, and not `theme` /
+`defaultTheme` / `onThemeChange`: RULES §5 bans `theme` as a prop name,
+because on every other component it would be a synonym for `tone`, and the
+rule lint enforces the ban by name. The vocabulary the rule points to is
+RULES §5.5's own, and it reads right here — the provider's value *is* the
+theme. The hook keeps the word: `useTheme()` returns `theme`, which is a
+field, not a prop, and there is nothing else it could be called.
 
 RULES §5.5: both, always. **Uncontrolled** is the common case: the
 provider owns the choice, persists it under `storageKey` in
@@ -96,10 +104,10 @@ which the screenshot suite already relies on), and follows another tab's
 change through the `storage` event. `storageKey={null}` keeps the choice
 for the life of the page only.
 
-**Controlled** (`theme` given) is for an app that persists the choice
+**Controlled** (`value` given) is for an app that persists the choice
 itself — a cookie read in the root layout, an account setting. The
 provider writes the attribute from the prop, reports `setTheme()` through
-`onThemeChange` and touches no storage. The script (§4) then carries the
+`onValueChange` and touches no storage. The script (§4) then carries the
 controlled value, so the first paint is right without the browser having
 stored anything; such an app also renders `<html data-pp-theme={theme}>`
 itself, and the two agree.
@@ -132,7 +140,7 @@ const { theme, resolvedTheme, setTheme } = useTheme();
 ```
 
 - `theme` — the choice: `system`, `light` or `dark`. On the server and on
-  the first client render it is `defaultTheme` (or the controlled value);
+  the first client render it is `defaultValue` (or the controlled `value`);
   the stored choice is read in an effect after mount, because the server
   cannot know it and a first client render that differed from the server's
   would be D-093 §1 again. The **attribute** is right from the first paint
@@ -145,7 +153,8 @@ const { theme, resolvedTheme, setTheme } = useTheme();
   through its `change` event, and **`undefined` until then** — the server
   does not know the system, and a guess would be a mismatch or a flash.
 - `setTheme(next)` — sets it (uncontrolled) or asks (controlled), and
-  reports through `onThemeChange` either way.
+  reports through `onValueChange` either way. So does a change from
+  another tab: the app that mirrors the choice somewhere wants both.
 
 Throws outside a provider, as `useToast()` does: a theme control with no
 provider is a bug, not a default.
@@ -212,9 +221,9 @@ writes, `data-pp-theme`, is the tokens' (D-010).
 
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
-| `theme` | `Theme` | — | Controlled |
-| `defaultTheme` | `Theme` | `'system'` | Uncontrolled starting value; also what the script applies when nothing is stored |
-| `onThemeChange` | `(theme: Theme) => void` | — | Every `setTheme`, both modes |
+| `value` | `Theme` | — | Controlled |
+| `defaultValue` | `Theme` | `'system'` | Uncontrolled starting value; also what the script applies when nothing is stored |
+| `onValueChange` | `(theme: Theme) => void` | — | Every change of the choice — `setTheme`, or another tab's — in both modes |
 | `storageKey` | `string \| null` | `'pp-theme'` | `null`: not persisted. Ignored when controlled |
 | `nonce` | `string` | — | For the inline script under a CSP |
 | `children` | `ReactNode` | — | |
@@ -281,7 +290,7 @@ setTheme('dark');
 // The app persists the choice itself (a cookie read on the server)
 <html lang="en" data-pp-theme={theme === 'system' ? undefined : theme}>
   <body>
-    <ThemeProvider theme={theme} onThemeChange={saveToCookie}>{children}</ThemeProvider>
+    <ThemeProvider value={theme} onValueChange={saveToCookie}>{children}</ThemeProvider>
   </body>
 </html>
 ```
@@ -292,7 +301,7 @@ setTheme('dark');
 // ✗ A provider is not a scope. D-010: a theme binds to any element by its
 //   attribute, and two providers are two authorities over one <html>.
 <aside>
-  <ThemeProvider defaultTheme="dark">…</ThemeProvider>
+  <ThemeProvider defaultValue="dark">…</ThemeProvider>
 </aside>
 // ✓
 <aside data-pp-theme="dark">…</aside>
@@ -311,11 +320,11 @@ setTheme('dark');
 
 - **Unit:** the server string carries the script before the children, and
   no other element; the script, evaluated against a document with `dark`
-  stored, sets the attribute; with nothing stored and `defaultTheme`
+  stored, sets the attribute; with nothing stored and `defaultValue`
   `light`, sets `light`; with nothing stored and the default `system`,
-  sets nothing; with a controlled `theme`, carries it and reads no storage;
+  sets nothing; with a controlled `value`, carries it and reads no storage;
   `storage` throwing is caught. Uncontrolled `setTheme` writes the
-  attribute, the storage and `onThemeChange`; `system` removes both;
+  attribute, the storage and `onValueChange`; `system` removes both;
   `storageKey={null}` writes no storage; a `storage` event for the key
   from another tab updates the theme. Controlled `setTheme` reports and
   does not write; the attribute follows the prop. `resolvedTheme` is

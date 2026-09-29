@@ -6737,3 +6737,88 @@ crawl found in a minute, a one-frame transition the harness read inside
 of twice, a Radix render the harness pressed a key inside of, and one
 read that is now polled. The label is where a diagnosis stops, not what
 one is.
+
+## D-094 — `ThemeProvider` rulings and findings: `value`, not `theme`; the attribute follows state only once state is the stored choice; the script survives minification
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/ThemeProvider.md`
+(§3, §5, status), the playground's root layout and `ThemeSwitcher`
+(`theme-script.ts` deleted), `src/test/setup.ts` (`matchMedia`) ·
+**Extends:** D-010, D-063 §1, D-069 §1, D-093 §1, D-093 §5
+
+Written and built under the standing delegation (D-069 §1). Every
+recommendation adopted; one prop renamed before the first test ran.
+
+### 1. `value` / `defaultValue` / `onValueChange`, because RULES §5 bans `theme`
+
+The spec's first draft named the controlled prop `theme`, and the rule
+lint refused it: RULES §5 lists `theme` beside `color`, `kind` and
+`appearance` as names a component may never give a prop, because on any
+other component it would be a synonym for `tone`, and the lint enforces
+the list by name, not by intent. D-069 §1 says a spec that would bend a
+rule stops and asks; this one did not need to, because the rules already
+name the alternative — §5.5's `value` / `defaultValue` / `onValueChange`
+for every controllable state — and it reads right: the provider's value
+*is* the theme. `useTheme()` keeps the word for its `theme` field, which
+is not a prop. Spec §3 and the props table were rewritten before the
+build; the docs page says why in one line, since the first thing a reader
+will type is `theme=`.
+
+### 2. The attribute follows state only after state is the stored choice
+
+The first client render must match the server's, so `theme` starts at
+`defaultValue` and the stored choice is read into state in an effect. An
+effect that wrote the attribute from `theme` on every change — the
+obvious shape — would run on mount with `theme` still `system` and
+**remove** the attribute the pre-paint script had just set, one render
+before the stored choice arrived: a frame of the wrong theme, on every
+load, in the component whose one job is that frame. The attribute effect
+is gated on a `ready` flag the mount effect sets *after* it has queued the
+stored value, so the first write from state is a write of the right
+value. State, not a ref, so StrictMode's second mount is the same path. A
+client-only mount with no server script takes the same route and ends in
+the same place.
+
+### 3. A change from another tab is reported
+
+The spec's props table said `onValueChange` fired on `setTheme`; the
+build fires it on a `storage` event too, and the spec now says so. An app
+that mirrors the choice to a server wants to hear about the tab that
+changed it as much as the button that did.
+
+### 4. Next minifies the serialised function; the ES5 body is why that is fine
+
+The script is `applyTheme.toString()` with three JSON arguments. In the
+playground's production HTML it arrives as `(function f(a,b,c){try{var
+d=c;…` — SWC renamed and shortened it — and it runs, because nothing in
+it needed a helper or a transform: `var`, no arrows, no template strings,
+no optional chaining. That constraint is written on the function. It sits
+in the served body immediately after Next's own hidden boundary `<div>`
+and before the playground's `.shell`, which the browser suite asserts on
+the served text, not the DOM.
+
+### 5. The playground is a consumer now
+
+`next/script` and `theme-script.ts` are gone from the layout;
+`ThemeProvider` is the first child of `<body>`, and `ThemeSwitcher` is
+three lines of `useTheme()`. Same storage key, same two stored values,
+same attribute, same `ButtonGroup` of three `Toggle`s, so the screenshot
+suite's stored choice, the harness's `setTheme` helper and every baseline
+are untouched. The index page gains a tier heading and a card, so its
+baselines are re-authored (D-066 §2). The `HydrationMark` of D-093 §5
+stays where it was, after the page.
+
+### 6. Verified
+
+The served HTML carries the script inside `<body>` before the shell;
+under an emulated dark system with no attribute the page is dark, `light`
+differs, `dark` equals the system's, `system` clears; a page-level
+consumer sets the provider the chrome reads, all three readouts and the
+switcher agree, the choice is stored and survives a reload applied before
+React. The pre-paint function is unit-tested as a function against
+stored, default, controlled, `null` key and a throwing storage; server
+HTML hydrates in a client with a stored choice with no recoverable error
+(D-093 §1's shape); `resolvedTheme` is `unknown` on the server, the
+system's after mount, and follows a `change`. 15 unit and 3 browser
+assertions; a crawl of every page finds no hydration error. jsdom needs a
+`matchMedia` stub, added to the suite's setup and documented on the docs
+page as the ResizeObserver one is.

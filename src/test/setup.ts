@@ -56,3 +56,24 @@ Element.prototype.hasPointerCapture ??= function hasPointerCapture() {
 };
 Element.prototype.setPointerCapture ??= function setPointerCapture() {};
 Element.prototype.releasePointerCapture ??= function releasePointerCapture() {};
+
+/*
+ * jsdom implements no `matchMedia`, and `ThemeProvider` (6.1) asks it which
+ * theme the system prefers. Every browser the library targets has it. The
+ * stub never matches and never fires; a test that needs an answer mocks it
+ * (ThemeProvider.test.tsx).
+ *
+ * **Consumers testing in jsdom need the same stub.** Documented on the
+ * ThemeProvider docs page.
+ */
+globalThis.matchMedia ??= (query: string): MediaQueryList =>
+  ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  }) as MediaQueryList;

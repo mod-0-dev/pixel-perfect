@@ -31,9 +31,18 @@ display combinations — a Tier 6 spec of its own, once the components exist.
 
 ### Current state
 
-- **In flight: 6.1 `ThemeProvider` (`spec`, 2026-09-29)** — the first of
-  Tier 6, written under the standing delegation (D-069 §1) and built in
-  the same session. **Tiers 4 and 5 are `done`** (2026-09-29,
+- **In flight: 6.1 `ThemeProvider` (`review`, 2026-09-29)** — the first
+  of Tier 6, written and built under the standing delegation (D-069 §1),
+  every box but the CI-authored baseline checked (D-069 §2). The library
+  now owns what the playground's chrome did since D-063: an inline script
+  ahead of the page for the first paint, `system` as no attribute, the
+  choice under `pp-theme`. Findings in **D-094**: RULES §5 bans `theme` as
+  a prop name, so the props are RULES §5.5's `value` / `defaultValue` /
+  `onValueChange` (§1); the attribute is written from state only after the
+  stored choice has been read into it, or the mount would erase the
+  script's work for a frame (§2); Next minifies the serialised script to
+  `function f(a,b,c)`, which the ES5 body survives (§4). Next up is **6.2
+  `ThemeToggle`**. **Tiers 4 and 5 are `done`** (2026-09-29,
   **D-093 §6**): the twenty-two items built under the standing delegation
   — 4.5–4.14, 5.1 and 5.3–5.13 — each had every Definition of Done box
   checked but the CI-authored baseline, and their baselines were authored
@@ -992,7 +1001,7 @@ Opinionated patterns. Only build what the consuming app actually needs.
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 6.1 | `ThemeProvider` | `spec` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written 2026-09-29 under the standing delegation (D-069 §1). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), controlled and uncontrolled with the app's persistence in controlled mode (§3), an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5); the playground dogfoods it (§7). Six open questions, each with a recommendation |
+| 6.1 | `ThemeProvider` | `review` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-094; awaiting its CI-authored baseline (D-013). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), `value` / `defaultValue` / `onValueChange` — RULES §5 bans `theme` as a prop name (§3, D-094 §1) — with the app's persistence in controlled mode, an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5). The playground is themed by it, with the same key, values and switcher DOM, so no baseline moved (§7); the index is re-baselined for the tier and the entry (D-066 §2)
 | 6.2 | `ThemeToggle` | `planned` | hug | client | 6.1, 3.2 | |
 | 6.3 | `AppShell` | `planned` | fill | server | 2.6 | |
 | 6.4 | `NavSidebar` | `planned` | fill | client | 6.3, 5.11 | |

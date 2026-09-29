@@ -390,6 +390,14 @@ export {
 } from './components/Tooltip/Tooltip';
 export { Textarea, type TextareaProps } from './components/Textarea/Textarea';
 export {
+  ThemeProvider,
+  useTheme,
+  type ResolvedTheme,
+  type Theme,
+  type ThemeContextValue,
+  type ThemeProviderProps,
+} from './components/ThemeProvider/ThemeProvider';
+export {
   Text,
   type TextAlign,
   type TextProps,

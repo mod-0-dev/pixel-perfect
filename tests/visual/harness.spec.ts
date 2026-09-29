@@ -149,6 +149,70 @@ test.describe('harness self-check', () => {
 });
 
 /**
+ * 6.1 `ThemeProvider` — the playground is themed by it (spec §7), so the
+ * self-check above already exercises the switch, the reload and `system`.
+ * What is asserted here is the part no state can show: WHERE the script is,
+ * and that `system` writes nothing.
+ */
+test.describe('ThemeProvider', () => {
+  test('the pre-paint script is the first thing in <body>, ahead of the page (spec §4)', async ({ page }) => {
+    const html = await (await page.request.get('/harness')).text();
+    const body = html.indexOf('<body');
+    const script = html.indexOf('data-pp-theme', body);
+    const shell = html.indexOf('class="shell"');
+    expect(body, 'no <body>').toBeGreaterThan(-1);
+    expect(script, 'no theme script in the body').toBeGreaterThan(body);
+    expect(script, 'the script is after the page').toBeLessThan(shell);
+    // It is a script, not a mention: the attribute name sits inside a <script> that closes before the shell opens.
+    const open = html.lastIndexOf('<script', script);
+    const close = html.indexOf('</script>', script);
+    expect(open).toBeGreaterThan(body);
+    expect(close).toBeLessThan(shell);
+  });
+
+  test('system writes no attribute, and the page still follows a dark system (spec §2)', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/harness');
+    const html = page.locator('html');
+    await expect(html).not.toHaveAttribute('data-pp-theme', /.*/);
+    const bg = async () => {
+      await settled(page);
+      return page.locator('.matrix').first().evaluate((el) => getComputedStyle(el).backgroundColor);
+    };
+    const underSystem = await bg();
+    await setTheme(page, 'light');
+    const underLight = await bg();
+    expect(underSystem, 'a dark system with no attribute painted light').not.toBe(underLight);
+    await setTheme(page, 'dark');
+    expect(await bg(), 'system under a dark system is not the dark theme').toBe(underSystem);
+    await setTheme(page, 'system');
+    await expect(html).not.toHaveAttribute('data-pp-theme', /.*/);
+    expect(await bg()).toBe(underSystem);
+  });
+
+  test('a consumer below sets the same provider the chrome reads, and the choice is stored (spec §3, §5)', async ({ page }) => {
+    await page.goto('/components/theme-provider');
+    const readouts = page.getByTestId('theme-choice');
+    await expect(readouts).toHaveCount(3);
+    await expect(readouts.first()).toHaveText('system');
+    await page.getByTestId('theme-readout').first().getByRole('button', { name: 'Dark' }).click();
+    await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'dark');
+    for (const readout of await readouts.all()) await expect(readout).toHaveText('dark');
+    await expect(page.getByTestId('theme-resolved').first()).toHaveText('dark');
+    expect(await page.evaluate(() => localStorage.getItem('pp-theme'))).toBe('dark');
+    // The chrome's switcher shows the same choice.
+    await expect(page.getByTestId('theme-switcher').getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
+    // And it survives a reload, applied before React: read from the served attribute at once.
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'dark');
+    await page.getByTestId('theme-readout').first().getByRole('button', { name: 'System' }).click();
+    await expect(page.locator('html')).not.toHaveAttribute('data-pp-theme', /.*/);
+    expect(await page.evaluate(() => localStorage.getItem('pp-theme'))).toBeNull();
+    await expect(page.getByTestId('theme-resolved').first()).toHaveText('light'); // the suite's colorScheme
+  });
+});
+
+/**
  * Computed-style assertions that jsdom cannot make. D-011 was found this way
  * and nowhere else: reading the CSS proved nothing, and only a real browser
  * resolving a real `var()` chain caught it.
