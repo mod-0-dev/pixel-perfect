@@ -315,6 +315,131 @@ test.describe('ThemeToggle', () => {
 });
 
 /**
+ * 6.3 `AppShell` — geometry Split decides and the shell's own three claims:
+ * the skip link, the sticky header, and a block size that is the parent's.
+ */
+test.describe('AppShell', () => {
+  type Page = import('@playwright/test').Page;
+  const cells = (page: Page, section: string) => page.getByTestId(section).locator('.matrix__cell');
+
+  test('the sidebar is beside the main at 960 and above it at 240 and 480, by the shell\'s width (spec §3)', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    const geometry = await cells(page, 'app-shell-default').evaluateAll((els) =>
+      els.map((cell) => {
+        const shell = cell.querySelector('.pp-app-shell')!.getBoundingClientRect();
+        const side = cell.querySelector('.pp-app-shell__sidebar')!.getBoundingClientRect();
+        const main = cell.querySelector('.pp-app-shell__main')!.getBoundingClientRect();
+        return { shell: shell.width, side: side.width, sideTop: side.top, mainTop: main.top, mainLeft: main.left, sideRight: side.right };
+      }),
+    );
+    expect(geometry).toHaveLength(3);
+    const [narrow, medium, wide] = geometry as [typeof geometry[0], typeof geometry[0], typeof geometry[0]];
+    for (const g of [narrow, medium]) {
+      expect(Math.abs(g.side - g.shell), 'stacked sidebar is not full width').toBeLessThanOrEqual(1);
+      expect(g.mainTop, 'main is not below the stacked sidebar').toBeGreaterThan(g.sideTop);
+    }
+    expect(wide.side).toBe(256); // 16rem
+    expect(Math.abs(wide.sideTop - wide.mainTop)).toBeLessThanOrEqual(1);
+    expect(Math.abs(wide.mainLeft - wide.sideRight)).toBeLessThanOrEqual(1);
+  });
+
+  test('the skip link is first, clipped until focused, shown inside the shell\'s top-start corner, and Enter moves focus to the main (spec §2)', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    /* .first(), deliberately. AppShell is a Server Component, so React renders
+       its `useId` ONCE and the Matrix duplicates that output into three cells:
+       the three shells on this page share one main id (a gallery artefact —
+       a page has one shell), and a fragment navigation finds the first element
+       with the id. Pressing the last cell's link focused the first cell's
+       main, and this test read the last cell's (D-096 §5). */
+    const shell = cells(page, 'app-shell-default').first().locator('.pp-app-shell');
+    const skip = shell.locator('.pp-app-shell__skip');
+    expect(await shell.evaluate((n) => n.firstElementChild!.className)).toBe('pp-app-shell__skip');
+    expect(await skip.evaluate((n) => getComputedStyle(n).clipPath)).not.toBe('none');
+    await skip.focus();
+    await settled(page);
+    expect(await skip.evaluate((n) => getComputedStyle(n).clipPath)).toBe('none');
+    const [link, frame] = await Promise.all([skip.boundingBox(), shell.boundingBox()]);
+    expect(link!.x).toBeGreaterThanOrEqual(frame!.x);
+    expect(link!.y).toBeGreaterThanOrEqual(frame!.y);
+    expect(link!.y - frame!.y).toBeLessThan(40);
+    await expect(skip).toHaveAccessibleName('Skip to content');
+    await page.keyboard.press('Enter');
+    const focused = await page.evaluate(() => ({
+      tag: document.activeElement?.tagName,
+      id: document.activeElement?.id,
+      hash: location.hash,
+    }));
+    expect(focused.tag).toBe('MAIN');
+    expect(await skip.getAttribute('href')).toBe(`#${focused.id}`);
+    const main = shell.locator('.pp-app-shell__main');
+    expect(await main.evaluate((n) => n === document.activeElement)).toBe(true);
+    await expect.poll(() => main.evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('solid');
+  });
+
+  test('in a parent with a height the footer sits at its bottom and the sidebar surface runs the full height (spec §4, §6)', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    const cell = cells(page, 'app-shell-tall').last();
+    const boxes = await cell.evaluate((c) => {
+      const wrapper = c.querySelector('.matrix__viewport > div')!.getBoundingClientRect();
+      const shell = c.querySelector('.pp-app-shell')!.getBoundingClientRect();
+      const footer = c.querySelector('.pp-app-shell__footer')!.getBoundingClientRect();
+      const side = c.querySelector('.pp-app-shell__sidebar') as HTMLElement;
+      const body = c.querySelector('.pp-app-shell__body')!.getBoundingClientRect();
+      const header = c.querySelector('.pp-app-shell__header') as HTMLElement;
+      return {
+        wrapperH: wrapper.height,
+        shellH: shell.height,
+        footerBottom: footer.bottom,
+        wrapperBottom: wrapper.bottom,
+        sideH: side.getBoundingClientRect().height,
+        bodyH: body.height,
+        sideBg: getComputedStyle(side).backgroundColor,
+        pageBg: getComputedStyle(c.closest('.matrix')!).backgroundColor,
+        hairline: getComputedStyle(header).borderBlockEndWidth,
+        hairlineColor: getComputedStyle(header).borderBlockEndColor,
+      };
+    });
+    expect(boxes.wrapperH).toBe(320); // 20rem
+    expect(Math.abs(boxes.shellH - boxes.wrapperH)).toBeLessThanOrEqual(1);
+    expect(Math.abs(boxes.footerBottom - boxes.wrapperBottom)).toBeLessThanOrEqual(1);
+    expect(Math.abs(boxes.sideH - boxes.bodyH)).toBeLessThanOrEqual(1);
+    expect(boxes.sideBg).not.toBe(boxes.pageBg);
+    expect(boxes.hairline).toBe('1px');
+    expect(boxes.hairlineColor).not.toBe(boxes.pageBg);
+  });
+
+  test('sticky keeps the header at the top of the scrolling parent; without it the header scrolls away (spec §5)', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    const sticky = cells(page, 'app-shell-sticky').last();
+    const scrolled = await sticky.evaluate((c) => {
+      const wrapper = c.querySelector('.matrix__viewport > div') as HTMLElement;
+      wrapper.scrollTop = 200;
+      const header = c.querySelector('.pp-app-shell__header')!.getBoundingClientRect();
+      return { scrollTop: wrapper.scrollTop, headerTop: header.top, wrapperTop: wrapper.getBoundingClientRect().top, position: getComputedStyle(c.querySelector('.pp-app-shell__header')!).position };
+    });
+    expect(scrolled.scrollTop).toBe(200);
+    expect(scrolled.position).toBe('sticky');
+    expect(Math.abs(scrolled.headerTop - scrolled.wrapperTop)).toBeLessThanOrEqual(1);
+    // The default shell's header is not sticky.
+    const plain = cells(page, 'app-shell-default').last();
+    expect(await plain.locator('.pp-app-shell__header').evaluate((n) => getComputedStyle(n).position)).toBe('static');
+  });
+
+  test('no sidebar, no Split; under dir="rtl" the sidebar is at the inline start, the right (spec §3)', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    const cell = cells(page, 'app-shell-plain').last();
+    expect(await cell.locator('.pp-app-shell').first().locator('.pp-split').count()).toBe(0);
+    const rtl = cell.getByTestId('app-shell-rtl');
+    const [side, main] = await Promise.all([
+      rtl.locator('.pp-app-shell__sidebar').boundingBox(),
+      rtl.locator('.pp-app-shell__main').boundingBox(),
+    ]);
+    expect(side!.x).toBeGreaterThan(main!.x);
+    expect(Math.abs(side!.x - (main!.x + main!.width))).toBeLessThanOrEqual(1);
+  });
+});
+
+/**
  * Computed-style assertions that jsdom cannot make. D-011 was found this way
  * and nowhere else: reading the CSS proved nothing, and only a real browser
  * resolving a real `var()` chain caught it.

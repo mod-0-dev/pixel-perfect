@@ -31,11 +31,14 @@ display combinations — a Tier 6 spec of its own, once the components exist.
 
 ### Current state
 
-- **In flight: 6.3 `AppShell` (`spec`, 2026-09-29)**, under the standing
-  delegation (D-069 §1), built in the same session; and **6.1
-  `ThemeProvider` and 6.2 `ThemeToggle` (both `review`, 2026-09-29)** —
-  written and built under the same delegation, every box but the
-  CI-authored baseline checked, which does not hold the limit (D-069 §2).
+- **In flight: 6.1 `ThemeProvider`, 6.2 `ThemeToggle` and 6.3 `AppShell`
+  (all `review`, 2026-09-29)** — written and built under the standing
+  delegation (D-069 §1), every box but the CI-authored baseline checked,
+  which does not hold the limit (D-069 §2). 6.3 is the frame: slots for
+  the header, sidebar and footer and `children` as the `<main>`, the skip
+  link built in, `Split` as the middle row, filling the parent's block
+  size and never the viewport's (D-096). Next up is **6.5 `PageHeader`**,
+  then **6.6 `Toolbar`**, then **6.4 `NavSidebar`**, which waits on 6.3.
   6.2 is the control over 6.1: a square button whose two faces are both
   in the DOM and one of which the stylesheet displays from the document's
   theme, so it is right before React is (D-095). The library
@@ -1008,7 +1011,7 @@ Opinionated patterns. Only build what the consuming app actually needs.
 | --- | --- | --- | --- | --- | --- | --- |
 | 6.1 | `ThemeProvider` | `review` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-094; awaiting its CI-authored baseline (D-013). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), `value` / `defaultValue` / `onValueChange` — RULES §5 bans `theme` as a prop name (§3, D-094 §1) — with the app's persistence in controlled mode, an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5). The playground is themed by it, with the same key, values and switcher DOM, so no baseline moved (§7); the index is re-baselined for the tier and the entry (D-066 §2)
 | 6.2 | `ThemeToggle` | `review` | hug | client | 6.1, 3.2 | [`ThemeToggle.md`](docs/specs/ThemeToggle.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-095; awaiting its CI-authored baseline (D-013). Gate B read 6.1's `review` (baseline only) as `done` (D-073 §2). A square button that flips light and dark (§1); both faces rendered and one displayed by CSS from the document's theme — the tokens' four scopes read from the toggle's side — so it is right before hydration and cannot disagree with the page (§2); the icon shows what is on, the name says what a press does (§3); Button with IconButton's class, not IconButton, because the name is content (§4); `:root`, not the nearest scope (§5); no ARIA state (§6); its own page, the chrome unchanged (§7) |
-| 6.3 | `AppShell` | `spec` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written 2026-09-29 under the standing delegation (D-069 §1). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7). Seven open questions, each with a recommendation |
+| 6.3 | `AppShell` | `review` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-096; awaiting its CI-authored baseline (D-013). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1, D-096 §1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7) |
 | 6.4 | `NavSidebar` | `planned` | fill | client | 6.3, 5.11 | |
 | 6.5 | `PageHeader` | `planned` | fill | server | 2.2, 5.6 | |
 | 6.6 | `Toolbar` | `planned` | fill | client | 3.4 | |

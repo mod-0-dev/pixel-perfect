@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `spec` — written 2026-09-29 under the standing delegation (D-069 §1); every recommendation below is adopted as written and the build starts in the same session |
+| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-096; awaiting its CI-authored baseline (D-013) |
 | **Sizing contract** | `fill` — the page frame; takes the inline space it is given and, if its parent has a block size, that too (§6) |
 | **RSC** | `server` — landmarks and a skip link; `useId()` names the main (D-081 §4). No state, no effects |
 | **Depends on** | 2.6 `Split` (`done`): the sidebar beside the main, stacking by the container's width; 1.4 `VisuallyHidden`'s technique for the skip link, by CSS not by the component |

@@ -6899,3 +6899,103 @@ with `preventDefault()` respected, `disabled`, custom labels and icons,
 the empty-label warning, the throw outside a provider, axe in both
 themes. 7 unit and 5 browser assertions. The chrome keeps its three-way
 switcher (spec §7): no existing baseline moves; the index gains a card.
+
+## D-096 — `AppShell` rulings and findings: slots because the root must own `<main>`, a skip link that is clipped rather than sized, and a block size that is the parent's
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** RULES §5.6 (one
+recorded exception, below), `docs/specs/AppShell.md` (status) ·
+**Extends:** D-016 §5, D-021, D-022 §2, D-045, D-069 §1, D-081 §4
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Element slots, and why this is the one component that has them
+
+RULES §5.6 prefers `<Card><CardHeader/></Card>` to `<Card headerTitle=…>`,
+and every compound so far is child parts as named exports (D-079 §1).
+`AppShell` takes `header`, `sidebar` and `footer` as element props and
+renders `children` in `<main>`. Three reasons, and the exception is as
+narrow as all three together:
+
+- The root is a Server Component and must own `<main>`: the skip link's
+  `href` is the main's `id`, the main needs `tabIndex={-1}`, and a server
+  root has `useId` (D-081 §4) but no context to hand an id to a child
+  part. Child parts would move that wiring to the consumer, who would
+  forget it, which is how every app page ends up without a skip link.
+- The frame has one arrangement. Parts a consumer can order are parts a
+  consumer can misorder, and the stylesheet would then place them by
+  grid area against the DOM order — visual order one way, reading and
+  tab order the other, which is the accessibility bug grid areas are
+  famous for.
+- `{children}` in a Next layout is the page. `<AppShell …>{children}</AppShell>`
+  is the line, and it reads as what it is.
+
+§5.6's objection is to *configuration* — scalar props that describe
+content — and an element slot is composition: the consumer's tree, placed.
+The parts keep `pp-app-shell__*` classes and component properties, so the
+styling contract is unchanged. A second component wanting slots has to
+meet all three reasons, not one.
+
+### 2. The skip link is clipped, not sized
+
+`VisuallyHidden`'s technique is a 1px box plus `clip-path: inset(50%)`
+(D-016 §5 exempts that file from the `inline-size` ban for it). Showing
+such a link on focus means undoing the box — `inline-size: auto` — and
+`inline-size` is on stylelint's disallowed list for every other file. The
+skip link therefore uses the clip alone: `position: absolute`, its
+content's own size, `clip-path: inset(50%)` until `:focus-visible` sets
+`clip-path: none`. Invisible and out of flow while unfocused, read by a
+screen reader either way, one declaration to show, no banned property.
+It sits at `--pp-z-overlay` so it is above a `sticky` header, which is at
+`--pp-z-sticky` and later in the DOM.
+
+### 3. Surfaces, not sides
+
+A hairline on the sidebar's inline end is right beside the content and
+wrong along the page's edge once `Split` stacks the sidebar, and moving it
+to the block end when stacked means a container query keyed on Split's
+`data-collapse-below` at Split's three thresholds — the numbers restated
+in a second file, D-045's drift. The sidebar is `--pp-color-bg-sunken`
+instead, which needs no side; the header and footer keep hairlines
+toward the content, which have one side in both layouts.
+
+### 4. `min-block-size: 100%` is the block-axis form of `fill`
+
+RULES §1 forbids a component to declare its inline size because that is
+the parent's decision; `min-block-size: 100%` makes the same deference in
+the other axis — the shell is as tall as its parent says, and in a parent
+that says nothing it is as tall as its content. The playground's tall
+section gives the wrapper `20rem`; the shell measures 320px, the footer's
+bottom is the wrapper's, the sidebar surface runs the body's height. The
+shell never reads the viewport; the app writes `html, body { block-size:
+100% }` once, in its own stylesheet, if it wants a full-height frame.
+
+### 5. Verified
+
+At 240 and 480 the sidebar is the shell's full width and the main is
+below it; at 960 the sidebar is 256px (`16rem`) beside the main. The skip
+link is the root's first child, clipped, and on focus has `clip-path:
+none` inside the shell's top-start corner; `Enter` moves focus to a
+`<main>` whose id is the link's `href`, with a ring inside its edge. The
+sticky header stays at the scrolling wrapper's top after a 200px scroll;
+the default header is `static`. No sidebar, no `.pp-split`; under
+`dir="rtl"` the sidebar is at the right, flush with the main's end. In
+jsdom: `banner`, `main`, `contentinfo`, the `<nav>` inside the sidebar,
+the skip link first with the main's id, `tabIndex={-1}`, frame order,
+Split's knobs on the body, `data-sticky`, absent header and footer, the
+root's `ref` / `className` / `style` / rest, a server string whose skip
+link names the main, axe in both themes. 5 unit and 5 browser assertions.
+`data-sticky` is written as Button writes `data-loading` — present, valued
+`"true"` by React — and the stylesheet keys on presence.
+
+One finding about the gallery, not the component. The skip-link test first
+pressed the *last* cell's link and read the last cell's main: focus had
+gone to the *first* cell's. `AppShell` is a Server Component, so React
+renders its `useId` once, and the playground's Matrix duplicates that
+rendered output into three cells — the three shells share one main id,
+and a fragment navigation finds the first element with it. A page has one
+shell (spec §1's "one per page"), so no consumer sees this; the gallery
+already has three `<main>`s on purpose and now has three equal ids for
+the same reason. The test targets the first cell and says why. D-035 §1's
+rule — nothing in the chrome writes an id — was about this hazard from
+the other side.

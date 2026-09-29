@@ -77,6 +77,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'avatar-group', path: '/components/avatar-group' },
   { name: 'theme-provider', path: '/components/theme-provider' },
   { name: 'theme-toggle', path: '/components/theme-toggle' },
+  { name: 'app-shell', path: '/components/app-shell' },
 ];
 
 /**

@@ -1,5 +1,6 @@
 export type { Align, Justify, Size, Space, Tone, Variant } from './types';
 
+export { AppShell, type AppShellProps } from './components/AppShell/AppShell';
 export {
   AspectRatio,
   type AspectRatioProps,

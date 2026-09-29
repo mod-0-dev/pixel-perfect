@@ -97,4 +97,5 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'avatar-group', name: 'AvatarGroup', tier: '5.13', summary: 'A few faces overlapping in a row, and a count for the rest.' },
   { slug: 'theme-provider', name: 'ThemeProvider', tier: '6.1', summary: 'The page\'s theme, set before the first paint: system, light or dark, kept across loads.' },
   { slug: 'theme-toggle', name: 'ThemeToggle', tier: '6.2', summary: 'A square button that flips light and dark; its face is chosen by the stylesheet, so it is right before React is.' },
+  { slug: 'app-shell', name: 'AppShell', tier: '6.3', summary: 'The page frame: header, sidebar, main and footer, a skip link first; the sidebar stacks by the shell\'s own width.' },
 ];
