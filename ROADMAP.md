@@ -31,14 +31,15 @@ display combinations — a Tier 6 spec of its own, once the components exist.
 
 ### Current state
 
-- **In flight:** nothing. **Tiers 4 and 5 are `done`** (2026-09-29,
+- **In flight: 6.1 `ThemeProvider` (`spec`, 2026-09-29)** — the first of
+  Tier 6, written under the standing delegation (D-069 §1) and built in
+  the same session. **Tiers 4 and 5 are `done`** (2026-09-29,
   **D-093 §6**): the twenty-two items built under the standing delegation
   — 4.5–4.14, 5.1 and 5.3–5.13 — each had every Definition of Done box
   checked but the CI-authored baseline, and their baselines were authored
   on the PR branch and compared green twice, on run 175 (the PR's final
   head) and run 176 (`main` after the merge, where no baseline differed).
-  Done count 51 → **73 / 80**; what remains is Tier 6 and 0.10. Next up is
-  **6.1 `ThemeProvider`**, the first of Tier 6
+  Done count 51 → **73 / 80**; what remains is Tier 6 and 0.10
 - **Run 176 was red anyway, and none of it was a pixel** (**D-093**). One
   harness self-check failed twice and four tests passed on their retry,
   the first time any of them had. Every one was a read taken inside a
@@ -991,7 +992,7 @@ Opinionated patterns. Only build what the consuming app actually needs.
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 6.1 | `ThemeProvider` | `planned` | n/a | client | T0 | No-flash SSR theme, `prefers-color-scheme` + override |
+| 6.1 | `ThemeProvider` | `spec` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written 2026-09-29 under the standing delegation (D-069 §1). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), controlled and uncontrolled with the app's persistence in controlled mode (§3), an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5); the playground dogfoods it (§7). Six open questions, each with a recommendation |
 | 6.2 | `ThemeToggle` | `planned` | hug | client | 6.1, 3.2 | |
 | 6.3 | `AppShell` | `planned` | fill | server | 2.6 | |
 | 6.4 | `NavSidebar` | `planned` | fill | client | 6.3, 5.11 | |
