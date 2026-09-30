@@ -1,5 +1,312 @@
 # pixel-perfect
 
+## 0.9.0
+
+### Minor Changes
+
+- 729f7f4: Add `Accordion` (4.10): a vertical stack of sections, each with a heading
+  that shows or hides its content, on `@radix-ui/react-accordion`.
+  `Accordion`, `AccordionItem`, `AccordionTrigger`, `AccordionContent`.
+  `multiple` is a boolean (not Radix's `type`) with `string` or `string[]`
+  values to match; `collapsible` defaults to `true`; `headingLevel` on the
+  root sets every heading once; `keepMounted` on a panel keeps its children
+  rendered, hidden. One look: headings on hairlines, a chevron that turns,
+  a height that animates and is instant under reduced motion.
+- 729f7f4: Add `AlertDialog` (4.5): `Dialog` with two rules changed. A press on the
+  scrim does not close it, and focus lands on `AlertDialogCancel`, the safe
+  button. Compound — `AlertDialog`, `AlertDialogTrigger`, `AlertDialogContent`,
+  `AlertDialogTitle`, `AlertDialogDescription`, `AlertDialogCancel`,
+  `AlertDialogAction` — as named exports; `role="alertdialog"`. Dialog's
+  stylesheet draws it (every part carries both classes, so every
+  `--pp-dialog-*` override applies) and its ceiling is `--pp-measure-xs`
+  through `--pp-alert-dialog-max-inline-size`. With no `Cancel` the panel
+  takes focus and development warns. Built on `@radix-ui/react-alert-dialog`.
+- f7a97e0: Add `AppShell` (6.3): the frame a layout wraps its pages in. `header`,
+  `sidebar` and `footer` slots around `children` in the page's `<main>`, a
+  skip link to the content rendered first, `Split` as the middle row so the
+  sidebar stacks above the content when the shell is narrow — by its own
+  width, never the viewport's — and `sticky` to keep the header in view. It
+  fills the block size its parent gives it and never sets the viewport's.
+- 729f7f4: Add `AvatarGroup` (5.13): a list of `Avatar`s overlapping in a row by a
+  grid whose columns are narrower than a face, the first `max` shown and
+  the rest a count drawn as an avatar and named "n more"; `size` on the
+  group sizes every face. A Server Component that hugs.
+- 729f7f4: Add `Breadcrumb` (5.6): a navigation landmark and an ordered list of
+  `BreadcrumbItem`s — `BreadcrumbLink`s (a neutral `Link`, underlined on
+  hover), a `BreadcrumbPage` with `aria-current`, and a named
+  `BreadcrumbEllipsis` where a trail is cut. The separator is the
+  stylesheet's, out of the accessibility tree; a long trail wraps at a
+  separator into lines of whole crumbs. A Server Component.
+- 729f7f4: Add `Calendar` (5.9): a month grid with one tab stop and the APG keys,
+  the value an ISO date and the month shown `YYYY-MM`, both controlled or
+  uncontrolled; names from `Intl`; `today`, `min`, `max`,
+  `isDateDisabled`, `weekStartsOn`; seven equal columns of its container,
+  each day a button on the control scale. The date arithmetic lives in
+  `src/internal/date.ts`, UTC-anchored.
+- 729f7f4: Add `Card` (5.1): a bordered raised surface with `CardHeader`, `CardBody`
+  and `CardFooter`, any of which may be absent, and a hairline between the
+  ones present; the foot on the sunken surface; no shadow by default.
+  `asChild` makes the consumer's link or button the card, with a hover lift
+  and the focus ring. A Server Component. The parts of every compound —
+  server ones included — are named exports (RULES §5.6, amended).
+- 729f7f4: Add `CodeBlock` (5.12): block code in Card's frame on the sunken
+  surface, in Code's typography — `code` split into lines, or
+  `CodeBlockLine` children from the consumer's highlighter — with a
+  counter gutter, pointed lines, a title, a language badge, a copy button
+  that says "Copied", and a `<pre>` that is a named region scrolling a
+  long line inside itself; `wrap` wraps instead. No highlighter is
+  bundled.
+- 729f7f4: Add `Combobox` (4.11): a text input that offers a list of options as the
+  user types, and takes one or, with `multiple`, several as tokens.
+  `Combobox`, `ComboboxInput`, `ComboboxList`, `ComboboxOption`,
+  `ComboboxGroup`, `ComboboxLabel`, `ComboboxEmpty`. The component owns the
+  text, the selection, the open state, the highlight (`aria-activedescendant`;
+  focus never leaves the input) and the keyboard; the consumer renders the
+  options that match, which is what makes options from a server nothing
+  special (`loading`). The control is `Input`'s box, the list is
+  `DropdownMenu`'s panel anchored by Popover's primitive and never narrower
+  than the control; `getLabel` names a value set from outside; `name` posts
+  hidden inputs.
+- 729f7f4: Add `CommandPalette` (4.14): every command one keystroke away — a search
+  field over a list of commands, in a modal. Made of the tier with no package
+  added: Dialog's modal and scrim, Combobox's highlight, DropdownMenu's row,
+  Kbd's key caps. `CommandPalette` (with an optional `hotkey` such as
+  `mod+k`), `Trigger`, `Content`, `Input`, `List`, `Item` (`onSelect` with a
+  preventable close), `Group`, `Label`, `Shortcut` (`keys`), `Empty`. The
+  consumer renders the commands that match; the first is highlighted as the
+  user types and `Enter` runs it.
+- 729f7f4: Add `ContextMenu` (4.8): `DropdownMenu`'s list of commands, opened at the
+  pointer by a secondary press, a long press, or `Shift+F10` on a focused
+  element, on `@radix-ui/react-context-menu`. The trigger is a region that
+  renders a `<div>`; the twelve parts a menu is made of are `DropdownMenu`'s,
+  built once, and every node carries `DropdownMenu`'s class first so one
+  stylesheet draws both. The direction is read from the region at open time.
+  `open` / `defaultOpen` / `onOpenChange`; modal by default.
+- 729f7f4: Add `DatePicker` (4.13): Input's box with a text field and a calendar
+  button, `Calendar` in a `Popover` behind it; the value an ISO date,
+  controlled or uncontrolled; typed text parsed on commit in the
+  locale's order and formatted back by `Intl`; unparsable text
+  `aria-invalid`; `name` for a form's hidden ISO value. The last of
+  Tier 4.
+- 729f7f4: Add `Dialog` (4.4), the first modal. Behaviour — the portal, the focus
+  trap, the dismissable layer, the scroll lock, the `aria-hidden` sweep — is
+  Radix's (`@radix-ui/react-dialog`, tree-shaken away by any app that never
+  imports it); every node and pixel is ours.
+  
+  - **`Dialog`** is compound: `Dialog`, `DialogTrigger`, `DialogContent`,
+    `DialogTitle`, `DialogDescription`, `DialogClose`, as named exports.
+    `Trigger` and `Close` take `asChild` to become the `Button` or
+    `IconButton` you pass. Controlled with `open` / `onOpenChange`,
+    uncontrolled with `defaultOpen`.
+  - **Modal, and only modal.** There is no `modal` prop: beside its trigger a
+    panel is a `Popover`; a panel that stays open while the page is used is a
+    `Drawer`.
+  - **The scrim is rendered by `Content` and is the panel's parent.** It dims
+    the page, centres the panel with a grid (so RTL needs nothing), and is
+    the scroll container: a panel taller than the viewport keeps its height
+    and the scrim scrolls, never the page. Styled by `--pp-dialog-scrim`.
+  - **The panel hugs its content up to `--pp-measure-sm`** (40rem) or the
+    viewport less the gutter, whichever is less. No `size`; the ceiling is
+    `--pp-dialog-max-inline-size`.
+  - **Named by `DialogTitle`** (or `aria-label` / `aria-labelledby`);
+    development warns when nothing names it. `aria-modal="true"` on the
+    panel.
+  - **Focus** moves to the first tabbable on open, loops inside, and returns
+    to the trigger on close — or, for a dialog opened with no trigger, to the
+    element that had focus when it opened.
+  - Closes on Escape, on a press on the scrim, and from any `DialogClose`;
+    `onEscapeKeyDown` / `onPointerDownOutside` / `onInteractOutside` can veto.
+    No automatic close button.
+  - The theme crosses the portal: the scrim carries `data-pp-theme` read from
+    the trigger's scope. `prefers-reduced-motion` makes open and close instant.
+  - Styling: `--pp-dialog-scrim`, `-gutter`, `-bg`, `-border-color`,
+    `-radius`, `-padding`, `-shadow`, `-max-inline-size`.
+- 729f7f4: Add `Drawer` (4.6): a modal panel that slides in from an edge of the
+  viewport and stays the full height (or width) of it. `Dialog` with a
+  different placement — same parts, renamed (`Drawer`, `DrawerTrigger`,
+  `DrawerContent`, `DrawerTitle`, `DrawerDescription`, `DrawerClose`), same
+  rules — plus `side: 'start' | 'end' | 'top' | 'bottom'` (logical, default
+  `end`). The anchored axis is `--pp-drawer-size` (20rem for a side drawer,
+  half the viewport for a sheet), capped at the viewport; the panel scrolls,
+  never the page. Built on `@radix-ui/react-dialog`, already a dependency.
+- 729f7f4: Add `DropdownMenu` (4.7): a list of commands anchored to the button that
+  opened it, on `@radix-ui/react-dropdown-menu`. Fifteen named parts —
+  `DropdownMenu`, `Trigger`, `Content`, `Item`, `CheckboxItem`, `RadioGroup`,
+  `RadioItem`, `ItemIndicator`, `Group`, `Label`, `Separator`, `Sub`,
+  `SubTrigger`, `SubContent` and `Shortcut`. `side` is logical and offsets are
+  steps of the space scale, as across Tier 4; the direction is read from the
+  trigger at open time, so submenus open on the arrow key that points into
+  them in either direction. `align` defaults to `start`; rows are the small
+  control height; a menu with a checkable item gains a gutter so its labels
+  align; `tone="danger"` marks a destructive command; `CheckboxItem` and
+  `RadioGroup` are controlled or uncontrolled. Modal by default.
+- 729f7f4: Add `EmptyState` (5.8): a glyph in a tile, a title, a description and
+  the actions that would fill the space — `EmptyStateIcon`,
+  `EmptyStateTitle`, `EmptyStateDescription` and `EmptyStateActions` on
+  the Tier 1–2 primitives — centred and held to a readable measure by a
+  grid; `variant="outline"` is a dashed frame on Card's surface. A Server
+  Component.
+- 729f7f4: Add `FileUpload` (5.10): a hidden native file input behind a
+  `FileUploadTrigger` Button, a `FileUploadDropzone` that takes a drop,
+  and a `FileUploadList` of `FileUploadItem`s with a size, a `Progress`
+  bar, an error line and a remove button; selection refused by type,
+  size and count with reasons through `onSelect`; the Trigger is the
+  labelled control in a `Field`. It selects and shows; uploading is the
+  consumer's.
+- f7a97e0: Add `KeyHints` (6.7): three gestures for the keyboard reader. Hold a key
+  to see every control's shortcut drawn on the control; press a key to
+  label every control on screen and type the label to focus it; press a
+  key for the sheet of every shortcut. Declare a shortcut on its control
+  with `data-pp-hotkey` or register a command with `useKeyHint`; chords
+  are `mod+shift+n`, sequences `g i`; every single key is a prop and
+  `null` turns it off. `formatKeys` for your own keycaps.
+- f7a97e0: Add `NavSidebar` (6.4): an app's primary navigation for `AppShell`'s
+  sidebar slot — a named `<nav>` of sections, links with an icon and
+  trailing content, and disclosure groups that open to show more. Plain
+  links, every one a tab stop; the app marks the current link; a closed
+  group's links stay in the HTML, `hidden`; `asChild` for `next/link`.
+- e03b15a: Add the overlay foundation (4.1) and `Popover` (4.2), the first Tier 4
+  component. Tier 4 is built on **Radix Primitives**: behaviour — the portal,
+  the dismissable layer, the focus scope, the positioning — is Radix's, and
+  every DOM node, class name and pixel is ours. `@radix-ui/react-popover` is the
+  package's first runtime dependency; it is tree-shaken away by any app that
+  never imports `Popover`.
+  
+  - **`Popover`** is compound: `Popover`, `.Trigger`, `.Content`, `.Title`,
+    `.Description`, `.Close`. `Trigger` and `Close` take `asChild` to become the
+    `Button` you pass. Controlled with `open` / `onOpenChange`, uncontrolled
+    with `defaultOpen`. Non-modal by default; `modal` traps focus, locks scroll
+    and hides the page.
+  - **The content is a named `dialog`.** `PopoverTitle` names it, or pass
+    `aria-label` / `aria-labelledby`; development warns when nothing does.
+  - **The theme crosses the portal.** The panel carries `data-pp-theme` read
+    from its trigger's scope, so a popover opened from a dark region of a light
+    page paints dark. The tone does not cross.
+  - **`side` is logical**: `top | bottom | start | end`, with `start` and `end`
+    following the layout's direction. `data-side` on the panel reports the
+    physical side it was placed on.
+  - **Offsets are steps of the space scale.** `sideOffset` and
+    `collisionPadding` are `Space` indexes, resolved to pixels from the token.
+  - **The panel hugs its content up to `--pp-measure-xs`** (a new 20rem step
+    of the measure scale) or the space available, whichever is less — the
+    overlay exception to the no-`max-width` rule, because an overlay has no
+    parent in flow to size it.
+  - Styling: `--pp-popover-bg`, `-border-color`, `-radius`, `-padding`,
+    `-shadow`, `-max-inline-size`.
+- f7a97e0: Add `PageHeader` (6.5): the top of a page as four parts — `PageHeader`,
+  `PageHeaderTitle` (the `<h1>`), `PageHeaderDescription`,
+  `PageHeaderActions` — with your `Breadcrumb` first. One flex row that
+  wraps: the actions sit at the end of the title's row and drop under it
+  when the row is too narrow; the description is written after the title
+  and painted after the actions; a part you leave out costs no space.
+- 729f7f4: Add `Pagination` (5.5): a navigation landmark of previous, next and a
+  window of page numbers around the current one, the first and the last
+  always reachable; controlled and uncontrolled; `getHref` makes every page
+  a link; narrower than its row it becomes "6 of 12" between the arrows by
+  a container query, so the same component is compact in a sidebar and full
+  in a column.
+- 729f7f4: Add `Progress` (5.3): a bar filled as far as `value` says, sweeping
+  while there is no value; `role="progressbar"` with a name required at
+  the type level (`label` or `aria-labelledby`); `size` is the thickness
+  and `tone` the fill, `accent` by default; the fill slides between values
+  and follows the writing direction; reduced motion pulses instead of
+  sweeping. A Server Component.
+- 729f7f4: Add `Stepper` (5.7): a navigation landmark and an ordered list of
+  `Step`s, each `complete`, `current` or `upcoming`; the number a CSS
+  counter, done a check, the current step `aria-current="step"`; a row
+  that becomes a column below 28rem by its container, or
+  `orientation="vertical"`. A Server Component.
+- 729f7f4: Add `Table` (5.4): a semantic table in a named, focusable region that
+  scrolls on the inline axis; `Table` / `TableHeader` / `TableBody` /
+  `TableFooter` / `TableRow` / `TableHead` / `TableCell` as named exports.
+  `caption` names the region; `size` is the row's density; `striped`;
+  `selected` on a row; `align` and `sort` (`aria-sort`) on cells. The table
+  is stretched to its region by a grid, never by a width. A Server
+  Component.
+- 729f7f4: Add `Tabs` (4.9): one panel of several, chosen by its tab, on
+  `@radix-ui/react-tabs`. `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`;
+  `value` / `defaultValue` / `onValueChange`, `orientation`, `activationMode`,
+  `keepMounted` on a panel. One look: a hairline under the list and a
+  two-pixel accent bar on it under the selected tab; the strip scrolls at a
+  narrow width rather than wrapping. The page's direction is the component's:
+  Radix's `dir` attribute is not written, and the value its arrow keys need
+  is read at mount. `data-state="active|inactive"` joins RULES §4.
+- f7a97e0: Add `ThemeProvider` (6.1) and `useTheme()`: the page's theme — `system`,
+  `light` or `dark` — decided before the first paint by an inline script the
+  provider renders ahead of its children, kept in `localStorage` and followed
+  across tabs, or controlled by the app with `value` and `onValueChange`.
+  `system` writes no attribute, so the tokens follow `prefers-color-scheme`
+  as they always have; `resolvedTheme` says what is showing once mounted.
+- f7a97e0: Add `ThemeToggle` (6.2): a square button that flips the page between light
+  and dark through `ThemeProvider`. Both faces — a sun named "Switch to dark
+  theme", a moon named "Switch to light theme" — are rendered and the
+  stylesheet displays one from `<html>`'s theme or the system's preference,
+  so it is right before hydration and never disagrees with the page. Labels
+  and icons are props; Button's variants, tones and sizes apply.
+- 729f7f4: Add `Toast` (4.12): a brief message at a corner of the viewport, announced,
+  gone after a moment, on `@radix-ui/react-toast`. `ToastProvider` once near
+  the root (`placement`, logical; `duration`; `limit`) and `useToast()`
+  anywhere below: `toast(options)` returns an id, `dismiss(id?)`,
+  `update(id, options)`. Every toast is an `Alert` that floats — `tone`,
+  `icon`, `title`, `description`, one `action` with `altText`, a dismiss —
+  drawn by Alert's stylesheet; timers pause on hover, focus and blur; `F8`
+  reaches the region; a swipe toward the inline end dismisses.
+- f7a97e0: Add `Toolbar` (6.6): a named row of controls with one tab stop. It finds
+  the controls in its own subtree — no wrapper part — keeps the last
+  focused one as the stop, walks them with the arrow keys in the writing
+  direction (Up and Down when vertical), jumps with Home and End, wraps
+  at the ends unless `loop={false}`, and leaves the keys alone inside a
+  text field. A wrapping row with a `gap`, or a column.
+- a195946: Add `Tooltip` (4.3), the first component built on the overlay foundation
+  alone. Behaviour — the delays, the grace area between trigger and panel, the
+  dismissable layer, the positioning — is Radix's (`@radix-ui/react-tooltip`,
+  tree-shaken away by any app that never imports it); every node, class name
+  and pixel is ours.
+  
+  - **`Tooltip`** is compound: `Tooltip`, `TooltipTrigger`, `TooltipContent`,
+    as named exports. `Trigger` takes `asChild` to become the `IconButton` or
+    `Button` you pass. Controlled with `open` / `onOpenChange`, uncontrolled
+    with `defaultOpen`.
+  - **`TooltipProvider` is optional.** Wrap a toolbar once and moving between
+    its buttons opens each tooltip at once, with no delay and no entry
+    animation; a lone tooltip needs no provider. `delayDuration` (700ms) and
+    `skipDelayDuration` (300ms) are milliseconds.
+  - **A description, never a name.** The trigger gets `aria-describedby` while
+    the tooltip is open; the trigger must already have a name (an
+    `IconButton`'s `label`), and the tooltip repeats it.
+  - **An inverse surface.** Two new semantic tokens, `--pp-color-bg-inverse`
+    and `--pp-color-text-inverse` (the body-text pair reversed, in both
+    themes), asserted by `lint:contrast`. The panel carries `data-pp-theme`
+    read from its trigger's scope, so a tooltip opened from a dark region of a
+    light page paints light.
+  - **`data-state` is `closed | delayed-open | instant-open`** — Radix's three
+    values. `instant-open` (keyboard focus, a controlled open, a neighbour's
+    skip delay) plays no entry animation. "Is it open" is
+    `:not([data-state="closed"])`.
+  - **`side` is logical** (`top | bottom | start | end`, default `top`), and
+    `sideOffset` (`'1'`) and `collisionPadding` (`'2'`) are steps of the space
+    scale. Hugs its text up to `--pp-measure-xs` or the space available.
+  - WCAG 1.4.13: hoverable, dismissable (Escape), persistent.
+    `disableHoverableContent` is not exposed. Touch opens nothing; a click on
+    the trigger closes it.
+  - Styling: `--pp-tooltip-bg`, `-color`, `-radius`, `-padding-block`,
+    `-padding-inline`, `-shadow`, `-max-inline-size`.
+- 729f7f4: Add `Tree` (5.11): the ARIA tree view as nested `TreeItem`s — one tab
+  stop, the arrows to move, expand and collapse, Home, End, Enter and
+  Space — with `expanded` and `selected` each controlled or uncontrolled;
+  rows on the control scale indented by level through one custom
+  property; a collapsed node's children not rendered.
+
+### Patch Changes
+
+- f7a97e0: `CodeBlock` renders its copy button wherever `copy` is on, and checks for
+  the Clipboard API when the button is pressed rather than when it renders.
+  The button used to exist only where `navigator.clipboard` did, which is a
+  different answer on the server and in the browser, so every server-rendered
+  block hydrated against different HTML and React re-rendered the page on
+  the client. Without a clipboard the press does nothing, as the spec always
+  said.
+
 ## 0.8.0
 
 ### Minor Changes
