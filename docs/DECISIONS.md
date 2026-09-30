@@ -6593,3 +6593,788 @@ baseline were still unrecorded, and the number was never the point.
 The `workflow_dispatch` fallback stays, for the case the comment was
 written for. The `checks` job does not run the recorder: recording on
 a compare run would bless drift, which is what D-050 §5 forbids.
+
+## D-093 — Run 176 was red and none of it was a pixel: a copy button that hydrated against different HTML, and four reads taken inside a window; Tiers 4 and 5 swept to `done`
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `src/components/CodeBlock/CodeBlock.tsx`
+(the copy button), `docs/specs/CodeBlock.md` (its tests), the playground's
+root layout (`HydrationMark`), `tests/visual/fixtures.ts` (new — the
+suite's `test`), `tests/visual/harness.spec.ts` (three assertions),
+ROADMAP.md (twenty-two rows, the Current state block) · **Extends:** D-013,
+D-054 §1, D-066 §3, D-069 §2, D-089 §4
+
+PR #33 merged with run 175 green on its final head, every baseline of the
+batch authored on the branch and compared. Run 176, `main`'s push run on
+the merge commit — the same tree — was red: `Visual regression` failed
+with **no `-diff.png`** (the classifier's `changed` was false, so no
+screenshot moved), one harness self-check failed on both attempts, and
+four tests passed on their retry, the first retry any of them had ever
+needed. Each was looked at rather than re-run. Five mechanisms, one of
+them a defect.
+
+### 1. `CodeBlock` rendered its copy button only where `navigator.clipboard` existed
+
+`showCopy = copy && canCopy`, where `canCopy` asked for
+`navigator.clipboard.writeText` at render. Node 22 has a `navigator` and
+no clipboard; a browser on a secure origin has both. So the server
+rendered a header without the button and the client rendered one with it,
+and React, finding different HTML, threw error **#418** and re-rendered
+the root on the client — replacing every node on the page, on every load
+of `/components/code-block`, deterministically. A crawl of all 65
+playground pages with `pageerror` captured found exactly this one page
+(the Avatar page's one failed resource is its deliberately broken image).
+The flaky `wrap` test had read `getComputedStyle` on an element that was
+detached between the locator resolving it and the read, which is what an
+empty `whiteSpace` string means.
+
+The spec had it right (§1: "when the API is missing it stays 'Copy code'
+and does nothing") and its own test list had it wrong ("absent with
+`copy={false}` or no clipboard"). The button now renders whenever `copy`
+is on; the press writes to the clipboard inside a `try` and does nothing
+without one. The DoD box "no hydration mismatch" had been checked by
+reading; a unit test now renders the block to a string with no clipboard,
+hydrates that HTML in a jsdom that has one, and asserts
+`onRecoverableError` and `console.error` were never called. The
+consumer-visible change is a patch: a block on an insecure origin shows a
+button that does nothing where it showed none.
+
+### 2. A colour read inside the frame that started a one-frame transition
+
+The harness self-check reads the Matrix's background, presses Dark, reads
+it again, and after a reload expects the second reading. Run 176 stored
+`oklab(0.993998 -0.0000516772 -0.000172317)` as `dark` — the **light**
+colour, spelled in `oklab` — and read `lab(5.09398 …)` after the reload.
+The reset's reduced-motion rule (`transition-duration: 0.01ms` on
+`:where(*)`) leaves `transition-property` at its initial `all`, so under
+`reducedMotion: 'reduce'` every property change on every element that
+declares no transition of its own is a transition of one frame, and a
+`getComputedStyle` inside the frame that started one returns the
+transition's start value in its interpolation space. The
+`not.toBe(light)` guard passed on the spelling: `oklab(…)` is not the
+string `lab(99.4 …)` even when it is the same colour.
+
+The suite now has one helper, `settled(page)`: two animation frames, not
+one — a callback in the next frame runs before that frame's style update,
+which is where the transition begins, and only the frame after it is past
+the 0.01ms (measured: one frame after `dir` was set the positions were
+still LTR, two frames after they had swapped). The reset is not changed.
+One frame of transition on a reduced-motion page is what the rule is for,
+every component that animates already answers for itself in
+`pp.components` (Input.css's own comment), and the test was the thing
+reading too early.
+
+### 3. Escape between a second dialog mounting and the first learning it was no longer topmost
+
+Radix's `DismissableLayer` decides "am I the topmost layer" from a set it
+joins in an effect and re-renders every layer to re-read one render
+later. The nested-dialog test pressed Escape as soon as the second dialog
+was visible; once, on run 176, that keydown found both layers believing
+they were topmost, and both closed. The same render that tells the first
+layer otherwise gives it `pointer-events: none`, which is the observable
+form of the state the test meant to wait for, so the test waits for it.
+Not a Radix bug worth a report: a user cannot press Escape inside one
+render of a dialog opening.
+
+### 4. The Scroller's RTL positions, read inside the same one-frame transition
+
+`layers(rtl)[2]` read `0% 50%` — the LTR value — once. §2's mechanism
+exactly: `background-position` animates, `Scroller.css` declares no
+transition, so under the reduced-motion reset the swap the `dir`
+attribute causes is a one-frame transition. The first rewrite of the test
+put the set and the read in one synchronous `evaluate`, on the theory
+that the three round trips had left a window, and that version failed
+**every time** with the same LTR value — which is what identified the
+mechanism, and a probe confirmed it: synchronous read LTR, one frame
+later LTR, two frames later RTL, and with `reducedMotion` off the
+synchronous read is RTL. The test sets the attribute, waits for
+`settled`, then reads.
+
+### 5. A DatePicker control read as unfocused, two reads after it was focused
+
+The test focused the control, saw the box's ring, and then read
+`outline-color` on the control as `currentColor` — no `:focus-visible`,
+which on an `<input>` means no focus. This one is **not established**.
+Not §2: the control sets `transition-property: none` under reduced
+motion, and the value read is the unfocused one, not a start value. A
+probe of twelve loads, six of them acting before waiting for hydration,
+found the control focused and transparent on every read. What the test
+does now: polls the colour rather than reading it once, and asserts the
+style beside it (a transparent ring is still a drawn ring, RULES §6).
+
+And one window is closed on principle rather than on evidence. `page.goto`
+resolves on `load`; React hydrates after that on its own scheduler; a
+test that focuses, clicks or sets an attribute in between acts on server
+HTML React is about to take over. Locally hydration is done by `load`
+every time (the probe checked); on a loaded runner nothing says it is.
+The playground's root layout now renders a `HydrationMark` after the
+page, whose effect — run after every effect in the page's tree — writes
+`data-hydrated` on `<html>`; the suite's `test` (`tests/visual/fixtures.ts`,
+imported by both specs) waits for it after every `goto` and `reload`.
+Both specs, because the theme self-check reloads and then presses a
+switcher that is a client component, and a press on a button that has
+not hydrated does nothing. The screenshots do not change: the attribute
+styles nothing, and `toHaveScreenshot` already waited for a still page.
+
+### 6. Tiers 4 and 5 swept to `done`
+
+The twenty-two `review` items — 4.5–4.14, 5.1 and 5.3–5.13 — each had
+every Definition of Done box checked but the CI-authored baseline. Their
+baselines were authored on the PR branch and compared green on run 175,
+the PR's final head, and again on run 176 on `main`, where no baseline
+differed (§0 above: the red was never a screenshot). That is the evidence
+D-013 asks for, so each row and each spec's status line moves to `done`
+in one commit, dated today, citing both runs. Done count 51 → 73 / 80.
+The five findings above are in the same PR because a `done` that lands
+on a red `main` is not one; the local harness suite is green end to end
+with the changes.
+
+### 7. What was not done
+
+Nothing was retried to see if it would pass, no test was skipped or given
+a tolerance, and the reset's reduced-motion rule stands. "Flaky" turned
+out to be three mechanisms and one open question: a component defect a
+crawl found in a minute, a one-frame transition the harness read inside
+of twice, a Radix render the harness pressed a key inside of, and one
+read that is now polled. The label is where a diagnosis stops, not what
+one is.
+
+## D-094 — `ThemeProvider` rulings and findings: `value`, not `theme`; the attribute follows state only once state is the stored choice; the script survives minification
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/ThemeProvider.md`
+(§3, §5, status), the playground's root layout and `ThemeSwitcher`
+(`theme-script.ts` deleted), `src/test/setup.ts` (`matchMedia`) ·
+**Extends:** D-010, D-063 §1, D-069 §1, D-093 §1, D-093 §5
+
+Written and built under the standing delegation (D-069 §1). Every
+recommendation adopted; one prop renamed before the first test ran.
+
+### 1. `value` / `defaultValue` / `onValueChange`, because RULES §5 bans `theme`
+
+The spec's first draft named the controlled prop `theme`, and the rule
+lint refused it: RULES §5 lists `theme` beside `color`, `kind` and
+`appearance` as names a component may never give a prop, because on any
+other component it would be a synonym for `tone`, and the lint enforces
+the list by name, not by intent. D-069 §1 says a spec that would bend a
+rule stops and asks; this one did not need to, because the rules already
+name the alternative — §5.5's `value` / `defaultValue` / `onValueChange`
+for every controllable state — and it reads right: the provider's value
+*is* the theme. `useTheme()` keeps the word for its `theme` field, which
+is not a prop. Spec §3 and the props table were rewritten before the
+build; the docs page says why in one line, since the first thing a reader
+will type is `theme=`.
+
+### 2. The attribute follows state only after state is the stored choice
+
+The first client render must match the server's, so `theme` starts at
+`defaultValue` and the stored choice is read into state in an effect. An
+effect that wrote the attribute from `theme` on every change — the
+obvious shape — would run on mount with `theme` still `system` and
+**remove** the attribute the pre-paint script had just set, one render
+before the stored choice arrived: a frame of the wrong theme, on every
+load, in the component whose one job is that frame. The attribute effect
+is gated on a `ready` flag the mount effect sets *after* it has queued the
+stored value, so the first write from state is a write of the right
+value. State, not a ref, so StrictMode's second mount is the same path. A
+client-only mount with no server script takes the same route and ends in
+the same place.
+
+### 3. A change from another tab is reported
+
+The spec's props table said `onValueChange` fired on `setTheme`; the
+build fires it on a `storage` event too, and the spec now says so. An app
+that mirrors the choice to a server wants to hear about the tab that
+changed it as much as the button that did.
+
+### 4. Next minifies the serialised function; the ES5 body is why that is fine
+
+The script is `applyTheme.toString()` with three JSON arguments. In the
+playground's production HTML it arrives as `(function f(a,b,c){try{var
+d=c;…` — SWC renamed and shortened it — and it runs, because nothing in
+it needed a helper or a transform: `var`, no arrows, no template strings,
+no optional chaining. That constraint is written on the function. It sits
+in the served body immediately after Next's own hidden boundary `<div>`
+and before the playground's `.shell`, which the browser suite asserts on
+the served text, not the DOM.
+
+### 5. The playground is a consumer now
+
+`next/script` and `theme-script.ts` are gone from the layout;
+`ThemeProvider` is the first child of `<body>`, and `ThemeSwitcher` is
+three lines of `useTheme()`. Same storage key, same two stored values,
+same attribute, same `ButtonGroup` of three `Toggle`s, so the screenshot
+suite's stored choice, the harness's `setTheme` helper and every baseline
+are untouched. The index page gains a tier heading and a card, so its
+baselines are re-authored (D-066 §2). The `HydrationMark` of D-093 §5
+stays where it was, after the page.
+
+### 6. Verified
+
+The served HTML carries the script inside `<body>` before the shell;
+under an emulated dark system with no attribute the page is dark, `light`
+differs, `dark` equals the system's, `system` clears; a page-level
+consumer sets the provider the chrome reads, all three readouts and the
+switcher agree, the choice is stored and survives a reload applied before
+React. The pre-paint function is unit-tested as a function against
+stored, default, controlled, `null` key and a throwing storage; server
+HTML hydrates in a client with a stored choice with no recoverable error
+(D-093 §1's shape); `resolvedTheme` is `unknown` on the server, the
+system's after mount, and follows a `change`. 15 unit and 3 browser
+assertions; a crawl of every page finds no hydration error. jsdom needs a
+`matchMedia` stub, added to the suite's setup and documented on the docs
+page as the ResizeObserver one is.
+
+## D-095 — `ThemeToggle` rulings and findings: the face is the stylesheet's, the name is content, and hiding the other face is the only rule it needs
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/ThemeToggle.md`
+(status, anatomy) · **Extends:** D-010, D-030 §2, D-030 §10, D-070 §1,
+D-073 §2, D-094
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. Gate B read 6.1's `review` — baseline only — as
+`done` (D-073 §2).
+
+### 1. Both faces in the DOM, one displayed by the token layer's own scopes
+
+`resolvedTheme` is `undefined` until mounted (D-094), so a toggle that
+rendered from it would swap its face after hydration on every load. The
+toggle renders a sun, a moon and two visually hidden labels, and four
+rules hide the pair that does not apply: `:root[data-pp-theme="light"]`
+hides the dark pair, `:root[data-pp-theme="dark"]` the light pair, and
+with no attribute `prefers-color-scheme` decides — the four scopes the
+tokens are generated for (D-010), read from the toggle's side. The face
+and the page's colours are therefore the same decision, made by the
+browser before React runs, and `display: none` takes the hidden label out
+of the accessibility tree, so the displayed label is the button's whole
+name. The served HTML carries both strings; the browser suite asserts
+which is displayed and what the button is called under each scope.
+
+`prefers-color-scheme` in a component stylesheet is new and is not the
+media query RULES §1 bans: that ban is viewport features, and the stylelint
+list (`width`, `min-width`, `max-width`, `device-width`) says so. A
+component knowing the user's colour preference knows what its own tokens
+know.
+
+### 2. Hide the other face; restate nothing
+
+The first draft hid every face by default and then displayed the right
+one — which meant writing `display: inline-flex` for the icon (Icon's
+value) and `display: inline` for the label (VisuallyHidden's), two facts
+about other components' stylesheets copied here to drift. The rule set
+now only hides: each face keeps its own component's `display`, and this
+file states nothing about either. Four selectors, one declaration.
+
+### 3. `:root`, so a toggle in a dark panel on a light page offers dark
+
+D-010 scopes nest, and the descendant combinator would match a nearer
+`[data-pp-theme]` — inside `<aside data-pp-theme="dark">` on a light page
+both a "light" and a "dark" rule would apply and both faces would show.
+`:root[data-pp-theme]` reads the document only, which is what the toggle
+controls. Asserted with that markup: the panel's background is the dark
+page colour and the toggle in it shows the sun.
+
+### 4. Button, with IconButton's class
+
+IconButton's `label` is `aria-label`, which wins over content; the name
+here must be content (§1). So the root is `Button` carrying `pp-button
+pp-icon-button pp-theme-toggle` — the two-class contract (D-070 §1),
+which IconButton.css's own comment invites ("the root carries BOTH") —
+with `variant="ghost"` and the icon `size` passed through exactly as
+IconButton does them (D-030 §10). Button wraps children in
+`pp-button__content` (D-030 §2), so the anatomy has that span; the spec's
+anatomy was corrected before the build. The browser suite measures the
+toggle beside an `IconButton` of each size: square, the same height,
+sm < md < lg.
+
+### 5. Verified
+
+Under `light` the sun is `inline-flex`, the moon `none`, the name "Switch
+to dark theme", no `aria-pressed`, no `aria-label`; a press writes `dark`
+on `<html>` and to storage, the faces swap and the name flips; under
+`system` with an emulated dark system the moon shows with no attribute
+and a press chooses `light`; the nested-scope case of §3; the boxes of
+§4; the served HTML has both labels. In jsdom: the classes and Button's
+attributes, both faces with `data-when`, the press setting the opposite
+of `resolvedTheme` from light, dark and a dark system, `onClick` first
+with `preventDefault()` respected, `disabled`, custom labels and icons,
+the empty-label warning, the throw outside a provider, axe in both
+themes. 7 unit and 5 browser assertions. The chrome keeps its three-way
+switcher (spec §7): no existing baseline moves; the index gains a card.
+
+## D-096 — `AppShell` rulings and findings: slots because the root must own `<main>`, a skip link that is clipped rather than sized, and a block size that is the parent's
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** RULES §5.6 (one
+recorded exception, below), `docs/specs/AppShell.md` (status) ·
+**Extends:** D-016 §5, D-021, D-022 §2, D-045, D-069 §1, D-081 §4
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. Element slots, and why this is the one component that has them
+
+RULES §5.6 prefers `<Card><CardHeader/></Card>` to `<Card headerTitle=…>`,
+and every compound so far is child parts as named exports (D-079 §1).
+`AppShell` takes `header`, `sidebar` and `footer` as element props and
+renders `children` in `<main>`. Three reasons, and the exception is as
+narrow as all three together:
+
+- The root is a Server Component and must own `<main>`: the skip link's
+  `href` is the main's `id`, the main needs `tabIndex={-1}`, and a server
+  root has `useId` (D-081 §4) but no context to hand an id to a child
+  part. Child parts would move that wiring to the consumer, who would
+  forget it, which is how every app page ends up without a skip link.
+- The frame has one arrangement. Parts a consumer can order are parts a
+  consumer can misorder, and the stylesheet would then place them by
+  grid area against the DOM order — visual order one way, reading and
+  tab order the other, which is the accessibility bug grid areas are
+  famous for.
+- `{children}` in a Next layout is the page. `<AppShell …>{children}</AppShell>`
+  is the line, and it reads as what it is.
+
+§5.6's objection is to *configuration* — scalar props that describe
+content — and an element slot is composition: the consumer's tree, placed.
+The parts keep `pp-app-shell__*` classes and component properties, so the
+styling contract is unchanged. A second component wanting slots has to
+meet all three reasons, not one.
+
+### 2. The skip link is clipped, not sized
+
+`VisuallyHidden`'s technique is a 1px box plus `clip-path: inset(50%)`
+(D-016 §5 exempts that file from the `inline-size` ban for it). Showing
+such a link on focus means undoing the box — `inline-size: auto` — and
+`inline-size` is on stylelint's disallowed list for every other file. The
+skip link therefore uses the clip alone: `position: absolute`, its
+content's own size, `clip-path: inset(50%)` until `:focus-visible` sets
+`clip-path: none`. Invisible and out of flow while unfocused, read by a
+screen reader either way, one declaration to show, no banned property.
+It sits at `--pp-z-overlay` so it is above a `sticky` header, which is at
+`--pp-z-sticky` and later in the DOM.
+
+### 3. Surfaces, not sides
+
+A hairline on the sidebar's inline end is right beside the content and
+wrong along the page's edge once `Split` stacks the sidebar, and moving it
+to the block end when stacked means a container query keyed on Split's
+`data-collapse-below` at Split's three thresholds — the numbers restated
+in a second file, D-045's drift. The sidebar is `--pp-color-bg-sunken`
+instead, which needs no side; the header and footer keep hairlines
+toward the content, which have one side in both layouts.
+
+### 4. `min-block-size: 100%` is the block-axis form of `fill`
+
+RULES §1 forbids a component to declare its inline size because that is
+the parent's decision; `min-block-size: 100%` makes the same deference in
+the other axis — the shell is as tall as its parent says, and in a parent
+that says nothing it is as tall as its content. The playground's tall
+section gives the wrapper `20rem`; the shell measures 320px, the footer's
+bottom is the wrapper's, the sidebar surface runs the body's height. The
+shell never reads the viewport; the app writes `html, body { block-size:
+100% }` once, in its own stylesheet, if it wants a full-height frame.
+
+### 5. Verified
+
+At 240 and 480 the sidebar is the shell's full width and the main is
+below it; at 960 the sidebar is 256px (`16rem`) beside the main. The skip
+link is the root's first child, clipped, and on focus has `clip-path:
+none` inside the shell's top-start corner; `Enter` moves focus to a
+`<main>` whose id is the link's `href`, with a ring inside its edge. The
+sticky header stays at the scrolling wrapper's top after a 200px scroll;
+the default header is `static`. No sidebar, no `.pp-split`; under
+`dir="rtl"` the sidebar is at the right, flush with the main's end. In
+jsdom: `banner`, `main`, `contentinfo`, the `<nav>` inside the sidebar,
+the skip link first with the main's id, `tabIndex={-1}`, frame order,
+Split's knobs on the body, `data-sticky`, absent header and footer, the
+root's `ref` / `className` / `style` / rest, a server string whose skip
+link names the main, axe in both themes. 5 unit and 5 browser assertions.
+`data-sticky` is written as Button writes `data-loading` — present, valued
+`"true"` by React — and the stylesheet keys on presence.
+
+One finding about the gallery, not the component. The skip-link test first
+pressed the *last* cell's link and read the last cell's main: focus had
+gone to the *first* cell's. `AppShell` is a Server Component, so React
+renders its `useId` once, and the playground's Matrix duplicates that
+rendered output into three cells — the three shells share one main id,
+and a fragment navigation finds the first element with it. A page has one
+shell (spec §1's "one per page"), so no consumer sees this; the gallery
+already has three `<main>`s on purpose and now has three equal ids for
+the same reason. The test targets the first cell and says why. D-035 §1's
+rule — nothing in the chrome writes an id — was about this hazard from
+the other side.
+
+## D-097 — `PageHeader` rulings and findings: a wrapping row instead of areas, and the library's one visual reorder
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/PageHeader.md`
+(status) · **Extends:** D-020, D-070 §1, D-079 §1, D-083
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted.
+
+### 1. A wrapping flex row, because a grid area you did not fill still costs its gap
+
+The natural shape — `grid-template-areas: "crumbs crumbs" "title actions"
+"description actions"` — has two faults the flex row does not. A row that
+exists in the template exists in the layout, so a header with no
+breadcrumb starts with a `row-gap` above its title; and parts placed by
+area can be written in any DOM order, which lets the reading order and
+the painted order disagree by accident. In a flex row that wraps, an
+absent part is an absent row, `gap` sits only between rows that exist,
+and the painted order is the DOM order except where §2 says otherwise on
+purpose. The title's `flex-basis` of `--pp-measure-xs` is the one number:
+a row that cannot hold that much title beside the actions sends the
+actions down, which in the playground happens at 240 and 480 and not at
+960 — no container query, no threshold restated from anywhere.
+
+### 2. `order: 1` on the description
+
+DOM order title, description, actions is what a screen reader should
+hear: the page, its line, then its buttons. Painted order title, actions,
+description is what every page header looks like. The description
+carries `order: 1`, and the divergence is acceptable for a reason that is
+checkable rather than argued: the description takes no focus, so no
+sequence a keyboard user follows is reordered — the tab order is the
+breadcrumb's links then the actions' buttons in both orders. Recorded as
+the library's one visual reorder, so the next one has to say why it is
+also harmless.
+
+### 3. The breadcrumb is placed by its class
+
+`Breadcrumb` (5.6) is a landmark with its own name and needs nothing
+added; the header names `.pp-breadcrumb` once, to give it a row. The
+roadmap's Deps cell says 5.6 for exactly this. A `PageHeaderBreadcrumb`
+wrapper would be a part that only sets `flex-basis`.
+
+### 4. Verified
+
+At 960 the actions share the title's row and end at the header's end,
+with the title ending before them; at 240 and 480 they are under the
+title and above the description, starting at the header's start; the
+breadcrumb is above the title in all three and starts at the header's
+start. Without a breadcrumb the title starts at the header's top in all
+three headers of the second section; a description alone sits `--pp-space-2`
+under the title; `level={2}` renders an `<h2>`. Under `dir="rtl"` the
+actions end at the header's left and the breadcrumb starts at its right.
+In jsdom: the four parts on their base components with both classes, the
+breadcrumb in place, the DOM order, level 1 by default and 2 when told,
+`tone="muted"` and `gap="2"` by default and overridable, refs,
+`className`, `style` and rest on every part, a server render, axe in both
+themes. 4 unit and 3 browser assertions.
+
+## D-098 — `Toolbar` rulings and findings: a text field is never the stop, the controls are re-read by an observer, and a press remembers without focusing
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/Toolbar.md`
+(§2, §4, tests, status) · **Extends:** D-020, D-030 §7, D-035 §3, D-069 §1,
+D-086 §2
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted; one ruling added by the first unit run.
+
+### 1. A text field is never the remembered stop
+
+Spec §4 leaves the arrows to a text field and says "`Tab` out and back is
+the way from the field to the buttons". The first build remembered the
+field like any control, and the unit test for §4 showed the two rules
+contradicting each other: focused, the field became the stop; `Tab` out
+and back landed on the field; its arrows were the caret's; and every
+control after it in the toolbar was unreachable from outside by
+keyboard. The stop now skips a text-editing control — `remember()`
+returns for `textarea`, `contenteditable` and an `input` whose type is
+not one of the eight that do not edit text — so the stop stays on the
+last button focused (else the first), the field is reached by the
+arrows, and `Tab` back in lands on a control the arrows work from. The
+test walks it: from the field, `Tab` leaves, `Shift+Tab` returns to the
+remembered button, `End` reaches the control after the field; a click in
+the field does not make it the stop either. Spec §2 and §4 say so now.
+
+### 2. Found by the DOM, and re-read by a MutationObserver
+
+Spec §1 says the set is "re-read after every render and on every key". A
+render of the *toolbar* is `useLayoutEffect` with no dependencies, but a
+control that a child component disables from its own state re-renders
+that child and not the toolbar, so a MutationObserver on the root watches
+`childList`, `subtree`, and the attributes that change what is a control
+or its tabindex (`disabled`, `aria-disabled`, `hidden`, `href`,
+`tabindex` — the last for a consumer's own write). The toolbar writes
+`tabindex` only where it differs, so its own pass produces no mutation
+the observer would loop on. Asserted with a button enabled by another
+button's state after mount.
+
+### 3. A pointer press remembers its control without focusing it
+
+Chromium focuses a pressed button; Safari does not. The root's click
+handler finds the control under the press and makes it the stop without
+calling `focus()`, so the next `Tab` in lands there on either engine and
+nothing is focused that the user did not focus.
+
+### 4. Verified, and the three breaks
+
+Unit: ten tests — the role, name, `data-orientation`, `aria-orientation`
+only when vertical, the first control at `0` and the rest at `-1`, a
+disabled control and a Separator untouched, a ButtonGroup keeping its
+group; the arrows through the group and past the disabled control,
+wrapping, `Home`/`End`, vertical arrows ignored in a row; `loop={false}`
+and the vertical keys; RTL by `direction: rtl`; the remembered stop
+across `Tab` out and `Shift+Tab` back, a click as the stop; the stop
+handed to the first when it unmounts and a control enabled later picked
+up (§2); the text field (§1); the consumer's `onKeyDown` first and
+`preventDefault` respected, `gap`, ref, `className`, `style`, rest,
+`label` required at the type level; a server render with the role and
+no `tabindex`; axe in both themes. Browser: one tab stop from a button
+before to a button after and back to the remembered control, exactly one
+`tabindex="0"`; the row wrapping at 240, one row at 960, the toolbar as
+wide as the cell in all three, 8px between controls; under `dir="rtl"`
+`ArrowRight` moving to the control on the right; the vertical toolbar
+stacked at one left edge with `aria-orientation`, `ArrowDown` moving,
+`ArrowRight` not, `End` then `ArrowDown` staying with `loop={false}`.
+
+Break checks (D-035 §3): `flex-wrap` dropped (the narrow cell overflows);
+`gap` dropped (0px between controls, in the row and the column);
+`flex-direction: column` dropped (the vertical toolbar a row). Each
+failed on exactly the test named for it. `align-items: center` and
+`min-inline-size: 0` are stated, not claimed: every control in the
+gallery is the same height, and the row wraps by its content (D-079 §3).
+
+## D-099 — `NavSidebar` rulings and findings: plain links over a roving tree, a closed list that is `hidden`, and an author `display` that beat the user agent's `hidden`
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/NavSidebar.md`
+(status) · **Extends:** D-030 §7, D-048 §1, D-069 §1, D-075, D-088 §4,
+D-096 §3, D-096 §8
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation adopted. The last component of the roadmap.
+
+### 1. `hidden` needs its own rule where a component declares `display`
+
+Spec §3 renders a closed group's list and marks it `hidden`, so the map is
+in the HTML and the closed part is out of the accessibility tree and the
+tab order. The first build gave every list `display: grid` in
+`pp.components`, and an author declaration beats the user agent's
+`[hidden] { display: none }` whatever its layer: the closed list was
+laid out, its links painted, its chevron still pointing right. jsdom
+could not see it (no layout); the browser test read the closed list's
+client rects and got one. `.pp-nav-sidebar__list[hidden] { display: none }`
+is the rule, and the same hazard holds for any component that sets
+`display` on an element a consumer or the component may hide with the
+attribute. Asserted by the closed list having no rects and by the break
+check that drops the rule.
+
+### 2. A second "fix" the break check removed
+
+Reading the same failure, a `grid-template-columns: minmax(0, 1fr)` was
+added to the item and group on the theory that an auto track took the
+long label's max-content width. The break check for it passed every
+test: an auto track in a container of definite width does not exceed
+that width, and the row's `min-inline-size: 0` with the label's
+`overflow: hidden` already hold the row. The declaration and its comment
+are gone; a mechanism that no test observes is not stated as one (D-079
+§3, D-035 §3). What the widths had measured was the same defect as §1,
+read before it was understood.
+
+### 3. Plain links, and why the dependency on `Tree` is its row
+
+The APG's navigation treeview would make every link a `treeitem` under
+one tab stop; the disclosure navigation menu keeps them links, each a
+tab stop, a group a button with `aria-expanded`. An app sidebar is
+short, and a roving nav costs "Tab to the next link", the browser's own
+link navigation, and find-in-page matching the keyboard model. The row
+is drawn as `Tree`'s (D-088): the small control height, the indent per
+level through one custom property the `<li>` writes, the accent surface
+for the current link, the chevron turned a quarter when open and
+mirrored under `[dir="rtl"]` the way D-088 §4 found. The `<a>` and the
+`<button>` fill their rows because an item and a group are grids: a
+button is shrink-to-fit under any display of its own (D-075).
+
+### 4. Not a drawer, by composition
+
+`AppShell` §3 sent "a sidebar that becomes a drawer" here. It is not a
+mode: it would render the nav twice with each half hidden by a query
+whose threshold is restated from `Split` (D-045's drift) or move a
+landmark in an effect, and its trigger belongs in the app's header. An
+app composes a `NavSidebar` inside a `Drawer` and shows the trigger
+below its own threshold.
+
+### 5. Verified, and the eight breaks
+
+Unit: eight tests — the landmark and its name, a titled section's list
+named by `aria-labelledby` and an untitled one not, the item's icon
+decorative and its `end` in the row (and in the name: "Inbox 3" is what
+a count means); `aria-current` on the current link only, the group
+holding it open by default and `data-current`, the level per `<li>`; a
+group's button with `aria-expanded` and `aria-controls` over a list that
+is rendered and `hidden`, a click and Enter toggling it, `onOpenChange`,
+controlled holding; Tab reaching every link and toggle in order and
+skipping a closed group's links; `asChild` with the class, `aria-current`
+and the ref on the child and the row built around its children; an item
+outside a section throwing; refs, `className`, `style` and rest on every
+part; a server render with the whole map and the closed list `hidden`;
+axe in both themes, closed and open. Browser: every row 32px and the
+nav's width; a nested row's content one indent (16px) in; the current
+link on a surface the others lack, in the page's text colour at medium
+weight, the holding group's toggle at medium too; the closed list with
+no rects and an unturned chevron, the open one turned; the long label
+truncating at 240 with its row still the nav's width; the ring on the
+link; in `AppShell` the nav beside the main at 960 in a 256px sidebar and
+above it at 240 and 480; under `dir="rtl"` the indent on the right and
+the chevron mirrored, turned the other way when open.
+
+Break checks (D-035 §3): the `[hidden]` rule dropped (the closed list
+laid out); the indent dropped (0 in LTR and RTL); the current surface
+dropped (transparent); the row height dropped; the chevron's turn
+dropped; the RTL mirror dropped; the item's grid dropped (rows narrower
+than the nav, in the shell too); the truncation dropped. Each failed on
+exactly the test named for it; §2's track minimum failed none and was
+removed.
+
+## D-100 — `KeyHints` (6.7) added and built: the parked modifier idea as three gestures, hints that stagger, and one `isEditing`
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** ROADMAP.md (a
+row added), `docs/specs/KeyHints.md` (status, anatomy), `docs/specs/Toolbar.md`
+by reference (§4's test moves), `src/components/Toolbar/Toolbar.tsx` ·
+**Extends:** D-016 §7 (the item it adds), D-067 §2, D-069 §3, D-070 §1,
+D-078 §4, D-094
+
+### 1. The idea, and what of it is buildable
+
+D-069 §3 parked "holding a modifier switches the components into
+combinations that expose more of what they can do". Asked whether it is
+doable: a version is, and the literal one is not. A page cannot claim a
+modifier — Ctrl and Alt are the OS's, the browser's, and every screen
+reader's — a held key is a signal the page loses on blur, and WCAG 2.1.4
+forbids a single-character shortcut that cannot be remapped or turned
+off while 2.1.1 requires everything to work without the gesture. What
+survives is what the good keyboard products ship: a held key that
+*reveals* shortcuts on their controls (Slack, Superhuman), a jump mode
+that labels every control (Vimium), a help sheet on `?` (GitHub,
+Gmail), and the command palette the library already has. Approved as
+the next `/component` item, added as 6.7 (the denominator 80 → 81), spec
+written and built in one session under D-069 §1.
+
+### 2. The rulings
+
+A shortcut is declared on the control (`data-pp-hotkey`) or registered
+as a command (`useKeyHint`), one registry, CommandPalette's chord
+grammar (D-078 §4) plus space-separated sequences with a one-second
+window. A chord with a modifier fires anywhere; a bare key never fires
+inside a text field and every key is skipped when a component already
+handled it. The reveal is a picture — the page under it is exactly the
+page — so a lost `keyup` costs a flicker, and release, another key, a
+blur or a hidden document ends it. `revealKey` defaults to `null`: which
+modifier an app can afford is its call. Jump focuses and never
+activates. The sheet is a `Dialog`. `helpKey`, `jumpKey` and
+`revealKey` are props and `null` turns each off (2.1.4). A modifier that
+changes what a component does is ruled out, not deferred: its keyboard
+walkthrough would no longer match its APG pattern (RULES §6).
+
+### 3. Hints that would overlap climb
+
+The first screenshot showed two things the harness had not: a chord
+drawn as one crammed keycap, and the hints of three adjacent buttons
+overlapping into an unreadable pile. A hint is now a row of `Kbd`s, one
+per key; and after the hints render, each is measured against the ones
+placed before it and lifted by its own height until it clears them —
+upward, away from the controls, because the second draft staggered
+downward and the screenshot showed the hints covering the very buttons
+they described; at the viewport's top the stack climbs down instead.
+The browser test asserts no two hints intersect, every hint sits at
+its control's corner or a whole number of hint heights above it, and
+none is below its control's top edge.
+
+### 4. One `isEditing` for the library
+
+`Toolbar` §4's test for "a key pressed in a text-editing control" moves
+to `src/internal/editing.ts`, and both components import it. Not a
+behaviour change; Toolbar's ten tests pass unchanged.
+
+### 5. What the overlay may declare
+
+`position: fixed; inset: 0` is the viewport-sized box a fixed layer is
+given, the one shape RULES §1 names as an exception (D-067 §2), and the
+hints are positioned by inline `top` and `left` from each control's
+rect, which is a JavaScript measurement and not a stylesheet width. The
+overlay is `aria-hidden` and takes no pointer events; the jump status is
+a visually hidden live region.
+
+### 6. Verified, and the four breaks
+
+Unit: ten tests — `formatKeys` on Apple and elsewhere; an element
+firing on its chord (focus, then click) and not another, a mod chord
+inside a field; a sequence within and past the timeout, disabled, and
+never a bare key in a field; `defaultPrevented`; reveal drawn, one
+keycap per key, removed on release, another key and blur; jump labels,
+narrowing, a full label focusing, `Escape`, the live region, the key
+typing inside a field; two-letter labels past nine; the sheet's rows
+with keycaps, `null` turning keys off; the hook outside the provider
+throwing and a command unregistering; axe with the sheet open in both
+themes. Browser: while `Alt` is held, three hints for three controls at
+the tooltip layer with no pointer events, `aria-hidden`, each a row of
+mono keycaps at its control's corner or climbing from it, none
+overlapping; `f` labelling every focusable control in view, typing the
+Save button's label focusing it, `?` opening the sheet with seven rows,
+`Ctrl+S` firing the button.
+
+Break checks (D-035 §3): the overlay's layer dropped (`auto`); its
+`pointer-events` dropped; the hint's offset dropped (no hint at any
+corner); the hint's `position: absolute` dropped. Each failed on exactly
+the test named for it.
+
+## D-101 — Run 187 red: a baseline stale by D-093's own change, and two reads inside a window
+
+**Date:** 2026-09-29 · **Status:** accepted · **Amends:** `tests/visual/__screenshots__`
+(code-block re-baselined), `tests/visual/harness.spec.ts` (two tests),
+`src/components/KeyHints/KeyHints.tsx` · **Extends:** D-013, D-066 §2,
+D-093 §1, D-093 §2, D-100 §3
+
+The visual job on the head that added 6.7 failed with one `-diff.png`
+and two tests that passed on retry; the seven new pages and the index
+were not authored because nothing is authored on a red run (D-066 §1).
+Each was looked at.
+
+### 1. `code-block-dark` differed because D-093 §1 changed what CI renders
+
+D-093 §1 made the copy button render whenever `copy` is on, where it had
+rendered only when `navigator.clipboard` existed — and it recorded the
+consumer-visible change: "a block on an insecure origin shows a button
+that does nothing where it showed none". CI's playground is served on
+plain `http://127.0.0.1`, an insecure origin, so the baseline authored
+before that fix shows no button and the page now shows one. The dark
+diff crossed the 1% pixel-ratio tolerance; the light one did not, which
+made the light baseline silently stale. Both are re-baselined
+(`npm run dimensions -- --rebaseline code-block`) for CI to author, the
+deliberate move of D-066 §2. The previous PR description's "no baseline
+is touched by this PR" was written without noticing that the runner's
+origin is the one D-093 §1 itself described.
+
+### 2. The CommandPalette input's outline, read inside the one-frame transition
+
+The test read `outline-color` on the focused input and got the
+unfocused colour once. D-093 §2's mechanism exactly: the input declares
+no transition, the reset's reduced-motion rule makes the change to
+`transparent` a one-frame transition, and the read landed inside it.
+The test waits for `settled(page)` after the panel is visible, as the
+theme self-check and the Scroller test do since D-093.
+
+### 3. KeyHints' stagger, computed against the fallback face
+
+The overlap assertion of D-100 §3 failed once and passed on retry. The
+hints are measured after they render to lift the ones that would
+collide, and on a cold cache they were measured before JetBrains Mono
+had loaded — narrower in the fallback face, so no collision was found,
+and when the font arrived the keycaps widened into each other. The
+component now re-places its hints on `document.fonts`' `loadingdone`,
+which recomputes the stagger against the real widths, and the test waits
+for `document.fonts.ready` before holding the key. The screenshot suite
+has waited for fonts since D-026; the harness had no reason to until a
+component measured text.
+
+Repeating the test locally then failed it once in six with fonts cached,
+which the font could not explain. The stagger measured each hint's
+rendered box and computed its offset from there — and a second pass
+(after a scroll, a font, any re-place) measured boxes that already
+carried the first pass's offsets and staggered them again, against
+themselves. Each measurement is now taken back to the hint's base
+position by subtracting the offset it was rendered with, so every pass
+starts from the same place; the test also settles two frames before
+reading. Sixteen of sixteen runs pass.
+
+### 4. What was not done
+
+No test was retried to see if it passes, none was given a tolerance,
+and the reset is unchanged.

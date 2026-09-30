@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlay & Interaction |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-091; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-091; its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — the text, the open state, the Field context |
 | **Depends on** | 4.2 `Popover` (`done`), 5.9 `Calendar` (`review`, `done` under the batch, D-073 §2); Input's box and Field's precedence (3.7, 3.8) |

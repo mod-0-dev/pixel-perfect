@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * Two full-page baselines per playground page, one per theme. Component pages
@@ -75,6 +75,13 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'tree', path: '/components/tree' },
   { name: 'code-block', path: '/components/code-block' },
   { name: 'avatar-group', path: '/components/avatar-group' },
+  { name: 'theme-provider', path: '/components/theme-provider' },
+  { name: 'theme-toggle', path: '/components/theme-toggle' },
+  { name: 'app-shell', path: '/components/app-shell' },
+  { name: 'nav-sidebar', path: '/components/nav-sidebar' },
+  { name: 'page-header', path: '/components/page-header' },
+  { name: 'toolbar', path: '/components/toolbar' },
+  { name: 'key-hints', path: '/components/key-hints' },
 ];
 
 /**

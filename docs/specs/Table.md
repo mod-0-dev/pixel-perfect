@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 5 — Composition & Data |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-081; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-081; its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` |
 | **RSC** | `server` — no state, no effect, no handler |
 | **Depends on** | T2 (`done`): nothing here re-invents a layout; the region is the one scroll container the tier said it would wait for (tier-2-layout §Scroller) |

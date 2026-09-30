@@ -1,5 +1,6 @@
 export type { Align, Justify, Size, Space, Tone, Variant } from './types';
 
+export { AppShell, type AppShellProps } from './components/AppShell/AppShell';
 export {
   AspectRatio,
   type AspectRatioProps,
@@ -203,6 +204,7 @@ export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export { Input, type InputProps, type InputType } from './components/Input/Input';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
+export { KeyHints, formatKeys, useKeyHint, type KeyHintOptions, type KeyHintsProps } from './components/KeyHints/KeyHints';
 export { Label, type LabelProps } from './components/Label/Label';
 export { Link, type LinkProps, type LinkUnderline } from './components/Link/Link';
 export {
@@ -225,6 +227,26 @@ export {
   type PopoverTitleProps,
   type PopoverTriggerProps,
 } from './components/Popover/Popover';
+export {
+  PageHeader,
+  PageHeaderActions,
+  PageHeaderDescription,
+  PageHeaderTitle,
+  type PageHeaderActionsProps,
+  type PageHeaderDescriptionProps,
+  type PageHeaderProps,
+  type PageHeaderTitleProps,
+} from './components/PageHeader/PageHeader';
+export {
+  NavSidebar,
+  NavSidebarGroup,
+  NavSidebarItem,
+  NavSidebarSection,
+  type NavSidebarGroupProps,
+  type NavSidebarItemProps,
+  type NavSidebarProps,
+  type NavSidebarSectionProps,
+} from './components/NavSidebar/NavSidebar';
 export { Pagination, type PaginationProps } from './components/Pagination/Pagination';
 export { Progress, type ProgressProps } from './components/Progress/Progress';
 export { Radio, type RadioProps } from './components/Radio/Radio';
@@ -376,6 +398,7 @@ export {
   type ToastProviderProps,
 } from './components/Toast/Toast';
 export { Toggle, type ToggleProps } from './components/Toggle/Toggle';
+export { Toolbar, type ToolbarOrientation, type ToolbarProps } from './components/Toolbar/Toolbar';
 export {
   Tooltip,
   TooltipContent,
@@ -389,6 +412,15 @@ export {
   type TooltipTriggerProps,
 } from './components/Tooltip/Tooltip';
 export { Textarea, type TextareaProps } from './components/Textarea/Textarea';
+export {
+  ThemeProvider,
+  useTheme,
+  type ResolvedTheme,
+  type Theme,
+  type ThemeContextValue,
+  type ThemeProviderProps,
+} from './components/ThemeProvider/ThemeProvider';
+export { ThemeToggle, type ThemeToggleProps } from './components/ThemeToggle/ThemeToggle';
 export {
   Text,
   type TextAlign,

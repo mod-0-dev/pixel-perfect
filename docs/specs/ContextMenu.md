@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-073. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-073. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `hug`, with the overlay exception, exactly as `DropdownMenu` (4.7 §3): the list is the same list |
 | **RSC** | `client` — Radix state, a portal, roving focus, typeahead, positioning at a point |
 | **Depends on** | 4.7 `DropdownMenu` (`review`, waiting only on its CI-authored baseline — D-073 §2 reads that as Gate B's `done`, by D-069 §2's reasoning): the stylesheet and every part but the root, the trigger and the content are 4.7's |

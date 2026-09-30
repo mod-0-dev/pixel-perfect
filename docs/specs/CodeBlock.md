@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 5 — Composition & Data |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-089; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-089; its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — the copy button's state |
 | **Depends on** | 1.11 `Code` (`done`): the inline atom's typography, in a block |
@@ -196,8 +196,10 @@ Tab to the copy button, then to the region; arrows scroll a long line.
   and `highlightLines` on the root and the lines; children lines and
   `highlighted`; both given warns and children win; the header only
   when something is in it; the copy button writing the text, saying
-  "Copied" and returning after two seconds (fake timers), and absent
-  with `copy={false}` or no clipboard; `wrap`; refs, `className`,
+  "Copied" and returning after two seconds (fake timers), absent with
+  `copy={false}`, present and inert without a clipboard, and hydrating
+  server HTML rendered without one in a client that has one, with no
+  mismatch (D-093 §1); `wrap`; refs, `className`,
   `style`; axe both themes.
 - **Browser:** the surface, frame and mono family; the gutter's
   counters and its `user-select`; the highlighted line's surface and

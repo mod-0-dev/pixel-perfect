@@ -108,7 +108,17 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     [],
   );
 
-  const canCopy = typeof navigator !== 'undefined' && typeof navigator.clipboard?.writeText === 'function';
+  /*
+   * THE BUTTON IS RENDERED WHENEVER `copy` IS, AND THE CLIPBOARD IS CHECKED
+   * WHEN IT IS PRESSED (spec §1; D-093 §1). The first build rendered it only
+   * where `navigator.clipboard` existed, which is a different answer on the
+   * server (Node has a `navigator` and no clipboard) and in the browser — so
+   * every server-rendered CodeBlock hydrated against different HTML, React
+   * threw its way through the whole page (error #418) and re-rendered it on
+   * the client, and three unrelated harness tests read a page that was being
+   * replaced under them. Without a clipboard the press does nothing, as the
+   * spec says; the consumer who needs a fallback owns it.
+   */
   const doCopy = async () => {
     const text = lines ? lines.join('\n') : (codeRef.current?.textContent ?? '');
     try {
@@ -121,8 +131,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     timer.current = setTimeout(() => setCopied(false), COPIED_FOR);
   };
 
-  const showCopy = copy && canCopy;
-  const hasHeader = title !== undefined || language !== undefined || showCopy;
+  const hasHeader = title !== undefined || language !== undefined || copy;
   const setCodeRef = useMemo(() => mergeRefs<HTMLElement>(codeRef), []);
 
   return (
@@ -146,7 +155,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
               {language}
             </Badge>
           ) : null}
-          {showCopy ? (
+          {copy ? (
             <IconButton
               label={copied ? 'Copied' : 'Copy code'}
               variant="plain"
@@ -176,7 +185,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
             : children}
         </code>
       </pre>
-      {showCopy ? (
+      {copy ? (
         <VisuallyHidden role="status" aria-live="polite">
           {copied ? 'Copied' : ''}
         </VisuallyHidden>

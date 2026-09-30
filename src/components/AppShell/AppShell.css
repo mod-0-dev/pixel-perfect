@@ -1,0 +1,95 @@
+/*
+ * AppShell — spec docs/specs/AppShell.md
+ *
+ * Three rows by explicit placement — header 1, body 2, footer 3 — so a row
+ * whose part is not rendered collapses to nothing and the body is always the
+ * one that grows. `min-block-size: 100%` defers the block axis to the parent
+ * (spec §6): in a full-height parent the footer sits at the bottom; in a
+ * parent with no height the declaration is inert. Never the viewport's.
+ *
+ * SURFACES, NOT SIDES (spec §4). The header and footer carry a hairline
+ * toward the content; the sidebar is a sunken surface, because a line on its
+ * inline end is right beside the content and wrong along the page's edge
+ * once Split stacks it — and fixing that would restate Split's thresholds
+ * here. Split's own container query does the stacking; nothing here knows a
+ * width.
+ *
+ * THE SKIP LINK is clipped, not sized: VisuallyHidden's clip-path with none
+ * of its 1px box, so showing it on focus is one declaration and no banned
+ * property. Above the sticky header while shown, at the overlay layer.
+ */
+
+@layer pp.components {
+  .pp-app-shell {
+    position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    container-type: inline-size;
+    min-inline-size: 0;
+    min-block-size: 100%;
+  }
+
+  .pp-app-shell__skip {
+    position: absolute;
+    inset-block-start: var(--pp-space-2);
+    inset-inline-start: var(--pp-space-2);
+    z-index: var(--pp-z-overlay);
+    padding-block: var(--pp-space-2);
+    padding-inline: var(--pp-space-3);
+    border-radius: var(--pp-radius-2);
+    background-color: var(--pp-color-bg-raised);
+    color: var(--pp-color-text);
+    font-size: var(--pp-font-size-sm);
+    line-height: var(--pp-line-height-normal);
+    text-decoration: none;
+    box-shadow: var(--pp-shadow-2);
+    white-space: nowrap;
+    clip-path: inset(50%);
+  }
+
+  .pp-app-shell__skip:focus-visible {
+    clip-path: none;
+  }
+
+  .pp-app-shell__header {
+    grid-row: 1;
+    padding-block: var(--pp-app-shell-header-padding-block, var(--pp-space-3));
+    padding-inline: var(--pp-app-shell-header-padding-inline, var(--pp-space-5));
+    background-color: var(--pp-app-shell-header-bg, var(--pp-color-bg-page));
+    border-block-end: var(--pp-border-width-1) solid var(--pp-app-shell-hairline, var(--pp-color-border-subtle));
+  }
+
+  .pp-app-shell[data-sticky] .pp-app-shell__header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--pp-z-sticky);
+  }
+
+  .pp-app-shell__body,
+  .pp-app-shell > .pp-app-shell__main {
+    grid-row: 2;
+  }
+
+  .pp-app-shell__sidebar {
+    padding: var(--pp-app-shell-sidebar-padding, var(--pp-space-4));
+    background-color: var(--pp-app-shell-sidebar-bg, var(--pp-color-bg-sunken));
+  }
+
+  .pp-app-shell__main {
+    /* Split.Main declares this too; the main without a sidebar needs it as much. */
+    min-inline-size: 0;
+  }
+
+  /* The skip link's target. Inside the edge, so it is not clipped by the frame. */
+  .pp-app-shell__main:focus-visible {
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: calc(-1 * var(--pp-focus-ring-width));
+  }
+
+  .pp-app-shell__footer {
+    grid-row: 3;
+    padding-block: var(--pp-app-shell-footer-padding-block, var(--pp-space-3));
+    padding-inline: var(--pp-app-shell-footer-padding-inline, var(--pp-space-5));
+    border-block-start: var(--pp-border-width-1) solid var(--pp-app-shell-hairline, var(--pp-color-border-subtle));
+  }
+}

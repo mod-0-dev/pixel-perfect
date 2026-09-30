@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-072. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-072. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `hug`, with the overlay exception: `max-inline-size` from the measure scale and `max-block-size` from the available space (D-061 §3), as `Popover` |
 | **RSC** | `client` — Radix state, a portal, roving focus, typeahead, positioning |
 | **Depends on** | 4.2 `Popover` (`done`): the same foundation pieces, the same panel surface, the same offsets; 3.1 `Button` / 3.2 `IconButton` (the usual trigger, by `asChild`); 1.8 `Kbd` is *not* a dependency (§7) |

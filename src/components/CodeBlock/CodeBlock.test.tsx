@@ -1,5 +1,7 @@
 import userEvent from '@testing-library/user-event';
-import { createRef } from 'react';
+import { act, createRef } from 'react';
+import { hydrateRoot, type Root } from 'react-dom/client';
+import { renderToString } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { expectNoA11yViolations, renderWithTheme } from '../../test';
@@ -95,13 +97,42 @@ describe('CodeBlock', () => {
     expect(writeText).toHaveBeenCalledWith('const a = 1;done()');
   });
 
-  it('has no copy button without a clipboard, or with copy={false}', () => {
+  it('renders the copy button without a clipboard, where a press does nothing; no button with copy={false} (spec §1)', async () => {
     Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
-    const { rerender } = renderWithTheme(<CodeBlock code="x" title="t" />);
-    expect(document.querySelector('.pp-code-block__copy')).toBeNull();
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    const { getByRole, rerender } = renderWithTheme(<CodeBlock code="x" title="t" />);
+    await user.click(getByRole('button', { name: 'Copy code' }));
+    expect(getByRole('button', { name: 'Copy code' })).toHaveAttribute('data-state', 'idle');
+    expect(document.querySelector('[role="status"]')).toHaveTextContent('');
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     rerender(<CodeBlock code="x" title="t" copy={false} />);
     expect(document.querySelector('.pp-code-block__copy')).toBeNull();
+  });
+
+  it('hydrates server HTML rendered without a clipboard in a client that has one, without a mismatch (D-093 §1)', async () => {
+    /* The server has a `navigator` and no clipboard; the browser has both. The
+       button must not depend on the difference, or every server-rendered
+       block hydrates against different HTML and React re-renders the page. */
+    Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+    const element = <CodeBlock code="x" title="t" language="ts" />;
+    const html = renderToString(element);
+    expect(html).toContain('pp-code-block__copy');
+
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const host = document.createElement('div');
+    host.innerHTML = html;
+    document.body.appendChild(host);
+    const recoverable = vi.fn();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    let root!: Root;
+    await act(async () => {
+      root = hydrateRoot(host, element, { onRecoverableError: recoverable });
+    });
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+    host.remove();
   });
 
   it('writes wrap on the root; forwards refs and merges className and style on both parts', () => {

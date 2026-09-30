@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 4 — Overlays & Disclosure |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-077. In `review` for the CI-authored baseline only (D-069 §2) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-077. Its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` for a toast inside its region; the region is a fixed box whose inline size is a token (D-061 §3's exception in D-071 §1's form) |
 | **RSC** | `client` — a queue, timers, an imperative API |
 | **Depends on** | 4.1 (`done`): `--pp-z-toast`; 5.2 `Alert` (`done`): the surface, by the two-class contract; 3.1 `Button` and 3.2 `IconButton`: the action and the dismiss |

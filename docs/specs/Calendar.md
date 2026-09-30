@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 5 — Composition & Data |
-| **Status** | `review` — written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-086; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-09-29; written and built 2026-09-28 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-086; its CI-authored baselines compared green on runs 175 and 176 (D-013; the sweep is D-093 §6) |
 | **Sizing contract** | `fill` |
 | **RSC** | `client` — the focused day, the shown month and the value when uncontrolled |
 | **Depends on** | T3 (`done`): the month arrows are `IconButton`s, the days are buttons on the control scale |

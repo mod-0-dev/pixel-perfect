@@ -1,0 +1,78 @@
+/*
+ * KeyHints — spec docs/specs/KeyHints.md
+ *
+ * THE OVERLAY IS THE VIEWPORT'S BOX (spec §2): `position: fixed; inset: 0`,
+ * the one shape RULES §1 names as an exception (D-067 §2), above every
+ * layer at the tooltip's z, and taking no pointer events — a picture of the
+ * keyboard laid over the page, never the page. Each hint is a row of Kbd
+ * keycaps placed by inline `top` and `left` from the control's rect and
+ * pulled outside its top-start corner by the offset.
+ *
+ * THE SHEET (spec §4) is a definition list on two columns: the label grows
+ * and wraps, the keycaps hug at the end.
+ */
+
+@layer pp.components {
+  .pp-key-hints {
+    position: fixed;
+    inset: 0;
+    z-index: var(--pp-z-tooltip);
+    pointer-events: none;
+  }
+
+  /* A hint is a row of keycaps, one per key, at the control's top-start
+     corner and pulled outside it by the offset; staggered down by the
+     component when it would overlap another (D-100 §3). */
+  .pp-key-hints__hint {
+    position: absolute;
+    display: inline-flex;
+    gap: var(--pp-space-1);
+    translate: calc(-1 * var(--pp-key-hints-offset, var(--pp-space-1))) -50%;
+  }
+
+  .pp-key-hints__hint > .pp-kbd {
+    box-shadow: var(--pp-shadow-2);
+  }
+
+  /* A jump label is the accent solid, so it reads as "type this" and not as
+     a shortcut; the hint writes the tone scope, and Kbd's properties take
+     the tone's tokens (D-007). */
+  .pp-key-hints__hint[data-mode="jump"] {
+    --pp-kbd-bg: var(--pp-tone-solid);
+    --pp-kbd-color: var(--pp-tone-on-solid);
+    --pp-kbd-border-color: var(--pp-tone-solid-hover);
+  }
+
+  .pp-key-hints__typed {
+    opacity: 0.5;
+  }
+
+  .pp-key-hints__sheet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--pp-space-2) var(--pp-space-4);
+    align-items: center;
+    margin: 0;
+  }
+
+  .pp-key-hints__row {
+    display: contents;
+  }
+
+  .pp-key-hints__label {
+    min-inline-size: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .pp-key-hints__keys {
+    display: flex;
+    gap: var(--pp-space-2);
+    justify-content: flex-end;
+    margin: 0;
+  }
+
+  .pp-key-hints__chord {
+    display: inline-flex;
+    gap: var(--pp-space-1);
+  }
+}
