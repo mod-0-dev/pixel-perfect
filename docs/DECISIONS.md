@@ -7635,12 +7635,17 @@ from about 1328px. The padding is gone; the rows and `.page` are the same
 
 That moves the header in every page's pixels, and the chrome gains three
 places (D-104 §6), so every baseline is deleted for CI to author (D-013): the
-window D-050 §5 describes, in which nothing is compared. The manifest entries
-of every page whose content did not change are kept, so the geometry guard
-holds their heights through the window — a horizontal shift moves no height;
-a page that came back taller would be something else. The pages whose content
-did change — the index, `/tokens` and the four galleries — are re-baselined
-with `npm run dimensions -- --rebaseline` (D-066 §2).
+window D-050 §5 describes, in which nothing is compared. Which pages may
+change height was measured rather than assumed: every page in both themes,
+settled as the suite settles it, on a production build of `main` and of this
+branch, locally (the absolute heights are this Chromium's; the deltas are
+what CI will see, D-050 §5). Four moved: the index (+575px, the front door),
+AlertDialog (+26) and CommandPalette (+25), whose gallery prose grew a line,
+and Combobox (−4, §7's flag gone). Those are re-baselined with
+`npm run dimensions -- --rebaseline` (D-066 §2); the other 68 keep their
+manifest entries, so the geometry guard holds their heights through the
+window — a page that came back a different height would be something other
+than the chrome. The new pages (D-104 §7) are authored fresh.
 
 Below 40rem the chrome is no longer sticky. Wrapped to four or five rows, it
 held 17–29% of a phone's screen (140–247px of 844) for the whole scroll; the
@@ -7701,10 +7706,9 @@ gestures; and the chrome, once scrolled past, has gone with the page.
 Behaviour only: a second set of baselines would double what CI authors to say
 what these assertions already say.
 
-Its first run failed on two pages. The Spinner was §3. The Combobox page's
-widths demo was a `12rem 1fr` grid whose `1fr` had an automatic minimum — the
-wide field's min-content — and pushed the page 91px sideways; the track is
-`minmax(0, 1fr)` and the field, which is `fill`, shrinks to it.
+Its first run failed on two pages, and neither was the playground's. The
+Spinner was §3. The Combobox page was §7: a first fix to its demo's grid was
+a fix to a symptom, and the next run said so.
 
 ### 6. `next dev` writes into `playground/`
 
@@ -7713,6 +7717,47 @@ directory on every start unless told not to — two untracked files after every
 `npm run dev`. `agentRules: false`. The repository's agent guidance is its
 root `CLAUDE.md`, and what a consuming app's agent reads ships in the package
 (D-105).
+
+### 7. Two shipped defects the new pages found, and a rule for the second's class
+
+**`Combobox` could not be narrower than ~256px.** `.pp-combobox__box` was
+`grid-template-columns: 1fr auto`, and a bare `1fr` has an automatic
+minimum: the field's min-content, which is the native `<input>`'s intrinsic
+width from its `size` — 210px at `md`. The input itself already had
+`min-inline-size: 0`; the track never let it use it. So the control
+overflowed the Matrix's own 240px cell, and **the harness had been flagging
+it** — "overflows its parent", on the page and in its baseline — since 4.11
+was built. A flag that fires on a page nobody reads as failing is a flag
+that stopped being read; the phone project is what turned it into a red
+test. `minmax(0, 1fr)`; a browser test asserts no cell on the page is
+flagged and a 160px parent holds the control. The page's height moves by
+the flag's 4px, so it is re-baselined (§2).
+
+**`AppShell`'s skip link read `--pp-font-size-sm`**, which does not exist —
+the scale is `--pp-font-size-1` to `-9`, and `sm` is a `Text` size, not a
+token. Valid CSS, green stylelint, and an undefined `var()` is invalid at
+computed-value time, so the declaration fell back to the inherited size
+without a word. Found by the agent building the example screens, reading the
+stylesheet. It reads `--pp-font-size-2`, Text's `sm`.
+
+The second is a class, so it gets a rule (D-009): `lint:rules` rule 7 fails a
+component stylesheet that reads a `--pp-*` property no token file or library
+stylesheet declares, unless it is a component's own override hook
+(`--pp-<component>`, `--pp-<component>-*`), undefined by design until a
+consumer sets it. Run over the whole library it found exactly this one. The
+self-test's fixture reads `--pp-font-size-sm` and a hook of its own; it must
+catch the first and pass the second.
+
+**Found and not fixed here**, each recorded for its own item: `AvatarGroup`'s
+overlap of a fifth of a face does not allow for the 2px ring each face draws
+outside itself, so a wide pair of initials ("AT") loses its second letter
+(D-090 §4's gallery uses narrow ones); `Split` still attaches `Split.Sidebar`
+and `Split.Main` and exports neither by name, which RULES §5.6 and D-079 §1
+rule out for every other compound; `ButtonGroup.md` says a group is not for a
+single choice while `ThemeToggle.md` and the playground's switchers use one
+for exactly that; every `CodeBlock`'s default name is "Code", so a page of
+them is a page of identical regions; and a `Code` inside a `Link` keeps its
+neutral ink rather than the link's.
 
 <a id="d-103"></a>
 
@@ -7857,10 +7902,21 @@ column.
 
 ### 4. Three examples
 
-`/examples`: Settings, Sign-up and Dashboard, built from the library and
-nothing else — the layout primitives, `AppShell`, `NavSidebar`,
-`PageHeader`, `Card`, `Form` and `Field`, `Table` — each on a stage, each
-saying what to watch for between narrow and wide.
+`/examples`: Settings, Sign-up and Dashboard for a fictional product,
+Launchpad, built from the library and nothing else, each on a stage and each
+saying what to watch for between narrow and wide. Settings is an `AppShell`
+with a `NavSidebar` whose current item follows the hash, a `PageHeader` whose
+Save submits the profile `Form` by its `form` attribute, and switches that
+apply at once outside it (Switch.md: a switch beside a Save button is a
+checkbox). Sign-up is a `Card` in a `Container` with a `Stepper` that turns
+from a row into a column by its own width, and a `Form` whose error summary
+takes focus and links to each field. Dashboard is stat `Card`s in a `Grid`,
+`Tabs` over a `Toolbar` and a sortable, filterable `Table` of 128 seeded
+deploys with `Pagination` — seeded, so the server and the client render the
+same rows. The pages are Server Components with small client islands; the
+only CSS is four rules for what the library has no part for. Built by a
+delegated agent against the components' docs; what it found in the library
+is D-102 §7.
 
 ### 5. The front door
 
