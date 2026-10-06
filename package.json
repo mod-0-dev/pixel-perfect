@@ -25,9 +25,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run build:js && npm run build:css",
+    "build": "npm run build:js && npm run build:css && npm run build:agents",
     "build:js": "tsc -p tsconfig.build.json",
     "build:css": "lightningcss --bundle --targets 'defaults' src/styles/index.css -o dist/pixel-perfect.css",
+    "build:agents": "node scripts/build-agent-docs.mjs",
     "prepare": "npm run build",
     "tokens": "node scripts/generate-tokens.mjs",
     "dimensions": "node scripts/record-dimensions.mjs",
