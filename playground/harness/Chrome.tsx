@@ -8,14 +8,17 @@ import { COMPONENTS } from '../app/components/registry';
 import { ThemeSwitcher } from './ThemeSwitcher';
 
 /**
- * The page chrome every playground page shares: the wordmark, the three
- * places to go, the theme switcher, and — on a component page — where you
+ * The page chrome every playground page shares: the wordmark, the places
+ * to go, the theme switcher, and — on a component page — where you
  * are and what is next door. Reads the route to know which page it is on,
  * which is why it is a client component; nothing here writes an id.
  */
 
 const PLACES = [
   { href: '/', label: 'Components' },
+  { href: '/examples', label: 'Examples' },
+  { href: '/theme', label: 'Theme' },
+  { href: '/rules', label: 'Rules' },
   { href: '/tokens', label: 'Tokens' },
   { href: '/harness', label: 'Harness' },
 ] as const;
@@ -35,7 +38,12 @@ export function Chrome() {
         </NextLink>
         <nav className="chrome__places" aria-label="Playground">
           {PLACES.map((place) => {
-            const current = place.href === '/' ? pathname === '/' || entry !== undefined : pathname === place.href;
+            // A component's docs page and its harness page are both "Components";
+            // an example is under "Examples".
+            const current =
+              place.href === '/'
+                ? pathname === '/' || entry !== undefined || pathname.startsWith('/docs/')
+                : pathname === place.href || pathname.startsWith(`${place.href}/`);
             return (
               <Link key={place.href} asChild tone="neutral" underline="hover">
                 <NextLink href={place.href} aria-current={current ? 'page' : undefined}>

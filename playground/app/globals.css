@@ -189,6 +189,12 @@ body {
   max-width: 62ch;
 }
 
+/* The composition on the front door's stage: the stage's frame draws the
+   edge, this is the page inside it. */
+.hero__composition {
+  padding: var(--pp-space-5);
+}
+
 .hero__facts {
   display: flex;
   flex-wrap: wrap;
