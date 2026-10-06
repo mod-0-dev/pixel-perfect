@@ -55,8 +55,11 @@ enough to be read first.
   not — measured against `main` — except four, re-baselined with
   `--rebaseline` (the index, AlertDialog, CommandPalette, Combobox); the
   manifest holds the other 68 through the window, and the twelve new
-  captures are authored fresh. After the authoring run, one more run
-  compares what it authored.
+  captures are authored fresh. The guard caught two more on the runner,
+  Dialog and Drawer at +2px: a line of new prose holding a bare `<code>`,
+  which the local measurement could not see. The PR merged with the guard
+  red, and a follow-up re-baselines both (D-102 §2). Its authoring run, then
+  one more run that compares what it authored, turn `main` green again.
 - **The playground works on a phone** (D-102). A `phone` Playwright project
   (390x844, touch) asserts every page fits the screen and scrolls under a
   finger. It found the four modal galleries that locked a phone out for
@@ -70,9 +73,12 @@ enough to be read first.
   overlap ignores each face's ring, so wide initials lose a letter; `Split`
   still has dotted parts and no named exports (RULES §5.6); `ButtonGroup.md`
   and `ThemeToggle.md` disagree on a single-choice group; every `CodeBlock`
-  is named "Code" by default; `Code` inside a `Link` keeps neutral ink. And
-  the visual job passes an authoring run in which a functional test failed
-  (D-106 §5).
+  is named "Code" by default; `Code` inside a `Link` keeps neutral ink;
+  a bare `<code>` in the playground's prose (58 files) is set in the
+  machine's own `monospace` instead of the pinned mono, so its lines measure
+  differently here and on the runner, and AlertDialog's baseline shows
+  `?gallery=open` broken after its `?` (D-102 §2). And the visual job passes an
+  authoring run in which a functional test failed (D-106 §5).
 - **6.1–6.7 are `review`**, each waiting only on its CI-authored baseline,
   which this PR's authoring run re-authors with the rest (D-069 §2). The sweep
   of Tier 6 to `done` follows the run that compares them.
