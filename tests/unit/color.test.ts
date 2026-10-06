@@ -6,7 +6,7 @@ import {
   oklchToSrgb,
   parseOklch,
   solveLightness,
-} from '../../scripts/color.mjs';
+} from '../../src/theme/color.mjs';
 
 describe('contrast', () => {
   it('matches the WCAG reference extremes', () => {
