@@ -11,14 +11,6 @@
     "width": 1280,
     "height": 9133
   },
-  "alert-dialog-dark.png": {
-    "width": 1280,
-    "height": 2154
-  },
-  "alert-dialog-light.png": {
-    "width": 1280,
-    "height": 2154
-  },
   "alert-light.png": {
     "width": 1280,
     "height": 9133
@@ -143,22 +135,6 @@
     "width": 1280,
     "height": 2546
   },
-  "combobox-dark.png": {
-    "width": 1280,
-    "height": 1927
-  },
-  "combobox-light.png": {
-    "width": 1280,
-    "height": 1927
-  },
-  "command-palette-dark.png": {
-    "width": 1280,
-    "height": 2127
-  },
-  "command-palette-light.png": {
-    "width": 1280,
-    "height": 2127
-  },
   "container-dark.png": {
     "width": 1280,
     "height": 12061
@@ -278,16 +254,6 @@
   "icon-light.png": {
     "width": 1280,
     "height": 2532
-  },
-  "index-dark.png": {
-    "width": 1280,
-    "height": 4170,
-    "components": 69
-  },
-  "index-light.png": {
-    "width": 1280,
-    "height": 4170,
-    "components": 69
   },
   "input-dark.png": {
     "width": 1280,
