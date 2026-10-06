@@ -14,5 +14,8 @@ Project guidance for Claude Code sessions in this repository.
 
 `ROADMAP.md` is the single source of truth for component status, and the
 `/component` skill (`.claude/skills/component/SKILL.md`) governs how work moves
-through it. Read `ROADMAP.md`, `docs/RULES.md` and `docs/DECISIONS.md` before
-touching anything.
+through it. Before touching anything, read `ROADMAP.md`, `docs/RULES.md` and
+`docs/DECISIONS-INDEX.md` — every ruling in `docs/DECISIONS.md`, one line each —
+then open in full every entry whose title touches your work (D-106). After
+appending an entry to the log, run `npm run decisions`; a unit test fails
+until the index and the entry's anchor are current.

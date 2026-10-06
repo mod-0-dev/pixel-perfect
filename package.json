@@ -32,6 +32,7 @@
     "prepare": "npm run build",
     "tokens": "node scripts/generate-tokens.mjs",
     "dimensions": "node scripts/record-dimensions.mjs",
+    "decisions": "node scripts/decisions-index.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -16,7 +16,10 @@ Read, every time this skill runs:
 
 1. `ROADMAP.md` — the single source of truth for status.
 2. `docs/RULES.md` — the constitution. Non-negotiable.
-3. `docs/DECISIONS.md` — prior rulings. Do not re-litigate them; extend them.
+3. `docs/DECISIONS-INDEX.md` — every prior ruling, one line each — and then,
+   in full, every entry in `docs/DECISIONS.md` whose title touches the work.
+   Do not re-litigate them; extend them. The log is past 400 KB; the index is
+   how it stays read (D-106).
 
 Never infer status from the filesystem. If `ROADMAP.md` says `planned` but code
 exists, that is a **bug in tracking** — surface it to the user, do not silently
@@ -127,8 +130,9 @@ Set status to `done` in `ROADMAP.md`, update the **Current state** block
 - Refresh the **Current state** block in `ROADMAP.md` on every transition. It is
   what a future session reads first.
 - When a rule is bent, a convention is set, or a component is deferred, append an
-  entry to `docs/DECISIONS.md`. That file is how consistency survives across
-  sessions — an undocumented precedent is not a precedent.
+  entry to `docs/DECISIONS.md`, then run `npm run decisions` to anchor it and
+  index it. That file is how consistency survives across sessions — an
+  undocumented precedent is not a precedent.
 - If the user asks for something that violates RULES, say so plainly, explain the
   consequence, and offer the compliant alternative. If they confirm anyway, do
   it *and* record it in DECISIONS as an explicit exception. Silent violations are
