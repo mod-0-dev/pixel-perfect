@@ -1,5 +1,48 @@
 # pixel-perfect
 
+## 0.10.0
+
+### Minor Changes
+
+- 833f882: Ship `dist/AGENTS.md` for the coding agent in your app: setup, the rules that
+  change what an agent writes (no width or margin on a component, layout through
+  the primitives, `tone`/`variant`/`size`, named parts, `asChild`), the banned
+  list, and an index of every component — with every component's doc and the
+  rules beside it in `dist/docs/`. Point your agent at it; for Claude Code, add
+  `@node_modules/pixel-perfect/dist/AGENTS.md` to your app's `CLAUDE.md`.
+- 833f882: Add `pixel-perfect/theme` and the `pixel-perfect theme` command: your brand
+  colour, solved by the library's own generator and proven by its own contrast
+  checks. `npx pixel-perfect theme --accent "#7c3aed" --out src/brand.css`
+  writes the complete palette — every hue in both themes, every focus ring
+  re-solved against every surface — as a stylesheet to import after
+  `pixel-perfect/styles.css`, reports where each theme's solid fill landed and
+  whether it had to move to carry its text, and refuses to write a palette that
+  fails any check the library's own tokens pass. `createTheme({ accent })` is
+  the same thing as a function, and `--neutral accent` leans the greys toward
+  your hue. The library's own palette is unchanged: its accent reproduces the
+  shipped tokens declaration for declaration.
+
+### Patch Changes
+
+- 833f882: Fix `Combobox` overflowing a parent narrower than about 256px: its box's
+  `1fr` track took the native input's intrinsic width as its minimum, so the
+  control could not shrink — it overflowed a 240px column and pushed a phone's
+  page sideways. The track is `minmax(0, 1fr)`, and the input shrinks with it.
+  Fix `AppShell`'s skip link reading `--pp-font-size-sm`, a token that does not
+  exist, so its size silently fell back to the inherited one; it reads
+  `--pp-font-size-2`. A new rule in `npm run lint` fails any component
+  stylesheet that reads a `--pp-*` property nothing defines.
+- 833f882: Fix `VisuallyHidden` widening the page from inside a horizontally scrolled
+  region. Its box was absolute with no inset, so past the region's edge it was
+  positioned against the nearest positioned ancestor — often the viewport —
+  escaped the region's clip and gave the document a phantom horizontal
+  scrollbar (a `Spinner`'s label made a page 514px wide on a 390px phone). It
+  now takes `inset-inline-start: 0`, which keeps it inside its containing block;
+  the block axis keeps its static position, so screen readers still scroll to
+  the right place. Every component that embeds one — `Spinner`, `Stepper`,
+  `ThemeToggle`, `KeyHints`, `Field` with `labelHidden`, `CodeBlock` — is fixed
+  with it.
+
 ## 0.9.0
 
 ### Minor Changes
