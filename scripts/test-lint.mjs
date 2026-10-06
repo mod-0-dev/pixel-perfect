@@ -76,7 +76,12 @@ const EXPECTED_RULE_LINT = [
   'declares banned prop `as`',
   '`window` is accessed at module scope',
   'mixes `::-webkit-` and `::-moz-` pseudo-elements',
+  'reads `--pp-font-size-sm`, which no token file or stylesheet defines',
 ];
+
+// Rule 7 must not fire for a component's own override hook, which is
+// undefined by design until a consumer sets it.
+const HOOK_ALLOWED = '`--pp-bad-padding`';
 
 const raw = execFileSync(
   process.execPath,
@@ -100,6 +105,11 @@ for (const expected of EXPECTED_RULE_LINT) {
 // the rule must still fire for Bad.tsx beside them, which EXPECTED_RULE_LINT
 // above asserts. Without this count, scoping the rule too widely (or too
 // narrowly) would look exactly like a pass.
+if (found.some((m) => m.includes(HOOK_ALLOWED))) {
+  console.error(`✗ rule 7 flagged ${HOOK_ALLOWED}, a component's own override hook`);
+  failures++;
+}
+
 const clientHits = found.filter((m) => m.includes("missing the 'use client' directive"));
 if (clientHits.length !== 1) {
   console.error(

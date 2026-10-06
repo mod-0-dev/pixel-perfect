@@ -27,9 +27,17 @@
  */
 
 @layer pp.components {
+  /*
+   * `minmax(0, 1fr)`, NOT `1fr` (D-102 §7). A bare `1fr` has an automatic
+   * minimum — the field's min-content, which is the native <input>'s
+   * intrinsic width from its `size` (210px at md) — so a combobox could not
+   * be narrower than ~256px: it overflowed the Matrix's own 240px cell, whose
+   * flag had been reporting it, and pushed a phone's page 91px sideways.
+   * The input already shrinks (`min-inline-size: 0`); the track now lets it.
+   */
   .pp-combobox__box {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     min-block-size: var(--pp-input-height, var(--_height));
     border: var(--pp-border-width-1) solid var(--pp-input-border-color, var(--_border));

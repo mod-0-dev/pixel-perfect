@@ -6929,6 +6929,27 @@ test.describe('Combobox', () => {
   const demo = (page: Page, id: string) => page.locator(`[data-testid="combobox-${id}"]`);
   const list = (page: Page) => page.locator('.pp-combobox__list:not([data-gallery])');
 
+  /* The harness's own flag had been saying so since 4.11 (D-102 §7): the box's
+     `1fr` track had the native input's intrinsic width as its minimum, so a
+     combobox was ~256px at least and overflowed the 240px cell. */
+  test('the box fills a box narrower than its input would like: no Matrix cell flags it, and a 160px parent holds it', async ({
+    page,
+  }) => {
+    await page.goto('/components/combobox');
+    await expect(page.locator('.matrix__viewport[data-overflowing]')).toHaveCount(0);
+    const read = await page.evaluate(() => {
+      const host = document.createElement('div');
+      host.style.cssText = 'inline-size: 160px';
+      document.querySelector('.page')!.append(host);
+      const source = document.querySelector('[data-testid="combobox-narrow"] .pp-combobox') as HTMLElement;
+      const clone = source.cloneNode(true) as HTMLElement;
+      host.append(clone);
+      const box = clone.querySelector('.pp-combobox__box') as HTMLElement;
+      return { host: host.getBoundingClientRect().width, box: box.getBoundingClientRect().width };
+    });
+    expect(read.box, 'the box is wider than the parent that sized it').toBeLessThanOrEqual(read.host);
+  });
+
   test("the control is Input's box, the list is never narrower than it, and the highlighted option scrolls into view", async ({ page }) => {
     // A short viewport, so seventeen options cannot fit below the field.
     await page.setViewportSize({ width: 1280, height: 480 });

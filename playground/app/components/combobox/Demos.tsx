@@ -174,10 +174,7 @@ export function Async() {
 export function Widths() {
   const [query, setQuery] = useState('');
   return (
-    // `minmax(0, 1fr)`, not `1fr`: an auto minimum is the wide field's
-    // min-content, which on a 390px phone pushed the page 91px sideways. The
-    // field is `fill` and shrinks to its track like any other (D-102 §5).
-    <div data-testid="combobox-widths" style={{ display: 'grid', gridTemplateColumns: '12rem minmax(0, 1fr)', gap: 'var(--pp-space-4)' }}>
+    <div data-testid="combobox-widths" style={{ display: 'grid', gridTemplateColumns: '12rem 1fr', gap: 'var(--pp-space-4)' }}>
       {(['narrow', 'wide'] as const).map((id) => (
         <div key={id} data-testid={`combobox-${id}`}>
           <Combobox onInputValueChange={(text, reason) => setQuery(reason === 'input' ? text : '')} getLabel={label}>
