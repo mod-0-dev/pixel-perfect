@@ -25,6 +25,7 @@ import { ThemeProvider } from 'pixel-perfect';
 import { Chrome } from '../harness/Chrome';
 import { HydrationMark } from '../harness/HydrationMark';
 import '../harness/matrix.css';
+import '../harness/stage.css';
 import './globals.css';
 
 export const metadata: Metadata = {
