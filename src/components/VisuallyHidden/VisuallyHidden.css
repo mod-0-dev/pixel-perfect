@@ -7,11 +7,23 @@
  * The 1px box is the one place in the library a raw length is correct: it is
  * part of a fixed technique, not a design value, and this file is exempted from
  * the inline-size ban for exactly that reason (D-016 §5).
+ *
+ * PINNED TO ITS CONTAINING BLOCK'S INLINE START (D-102 §3). With no inset an
+ * absolute box sits at its static position, wherever the text flowed — and
+ * its containing block is the nearest POSITIONED ancestor, often the
+ * viewport. So a Spinner's label in a horizontally scrolled region, past the
+ * region's edge, escaped the region's clip and widened the whole page: 514px
+ * of document on a 390px phone, from a 1px box nobody can see. Pinned, the box
+ * is inside its containing block on the inline axis by construction. The
+ * block axis keeps the static position, so a screen reader that moves to the
+ * text still scrolls the page to the right height. Never visible either way
+ * (spec §1.4: not focus-revealing), so nothing is drawn differently.
  */
 
 @layer pp.components {
   .pp-visually-hidden {
     position: absolute;
+    inset-inline-start: 0;
     inline-size: 1px;
     block-size: 1px;
     padding: 0;
