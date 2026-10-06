@@ -7,10 +7,12 @@
  */
 import { Text } from 'pixel-perfect';
 
+import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';
 import { Gallery, Launcher, Long, ThemeCrossing } from './Demos';
 
-export default function CommandPalettePage() {
+export default async function CommandPalettePage({ searchParams }: { searchParams: Promise<GalleryParams> }) {
+  const open = galleryOpen(await searchParams);
   return (
     <>
       <h1>4.14 CommandPalette</h1>
@@ -25,10 +27,12 @@ export default function CommandPalettePage() {
         <h2>Open, at every width</h2>
         <p>
           A palette per cell, portalled into a contained stage, with &ldquo;go&rdquo; typed. The panel sits
-          high, a token wide or the stage&rsquo;s width, whichever is less.
+          high, a token wide or the stage&rsquo;s width, whichever is less. Open one from its cell;
+          Escape or the scrim closes it. The screenshot suite opens all three at load with{' '}
+          <code>?gallery=open</code>.
         </p>
         <Matrix>
-          <Gallery />
+          <Gallery open={open} />
         </Matrix>
       </section>
 

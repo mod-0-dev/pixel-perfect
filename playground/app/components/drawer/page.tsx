@@ -4,10 +4,12 @@
  */
 import { Text } from 'pixel-perfect';
 
+import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';
 import { Gallery, Navigation, Sheet, Sides, Tall, ThemeCrossing } from './Demos';
 
-export default function DrawerPage() {
+export default async function DrawerPage({ searchParams }: { searchParams: Promise<GalleryParams> }) {
+  const open = galleryOpen(await searchParams);
   return (
     <>
       <h1>4.6 Drawer</h1>
@@ -22,12 +24,13 @@ export default function DrawerPage() {
       <section>
         <h2>A cell is a viewport</h2>
         <p>
-          Three <code>end</code> drawers, open from the start, contained in their cells: at 240 the
-          panel is the full width (the token is 20rem), at 480 and 960 it is 20rem at the right
-          edge. <strong>Press Escape three times</strong> to get the page back.
+          An <code>end</code> drawer per cell, contained in its cell: at 240 the panel is the full
+          width (the token is 20rem), at 480 and 960 it is 20rem at the right edge. Open one from its
+          cell; Escape, the scrim or Close closes it. The screenshot suite opens all three at load
+          with <code>?gallery=open</code>.
         </p>
         <Matrix>
-          <Gallery />
+          <Gallery open={open} />
         </Matrix>
       </section>
 

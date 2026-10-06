@@ -9,7 +9,16 @@ import { expect, test } from './fixtures';
  * cannot share a module — the playground is not a workspace member (D-012) —
  * so a component page without a screenshot here is a Definition of Done miss.
  */
-const PAGES: Array<{ name: string; path: string }> = [
+/*
+ * `query` is for the four modal galleries, which open their three dialogs
+ * at load only when asked to (D-102 §1): a visitor gets a page with a
+ * trigger in each cell, and the suite asks for the gallery it has always
+ * captured. Kept apart from `path` so the registry guard in
+ * tests/unit/playground-registry.test.ts reads the slug unchanged.
+ */
+const GALLERY = '?gallery=open';
+
+const PAGES: Array<{ name: string; path: string; query?: string }> = [
   { name: 'index', path: '/' },
   { name: 'tokens', path: '/tokens' },
   { name: 'harness', path: '/harness' },
@@ -51,9 +60,9 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'range-slider', path: '/components/range-slider' },
   { name: 'popover', path: '/components/popover' },
   { name: 'tooltip', path: '/components/tooltip' },
-  { name: 'dialog', path: '/components/dialog' },
-  { name: 'alert-dialog', path: '/components/alert-dialog' },
-  { name: 'drawer', path: '/components/drawer' },
+  { name: 'dialog', path: '/components/dialog', query: GALLERY },
+  { name: 'alert-dialog', path: '/components/alert-dialog', query: GALLERY },
+  { name: 'drawer', path: '/components/drawer', query: GALLERY },
   { name: 'dropdown-menu', path: '/components/dropdown-menu' },
   { name: 'context-menu', path: '/components/context-menu' },
   { name: 'tabs', path: '/components/tabs' },
@@ -61,7 +70,7 @@ const PAGES: Array<{ name: string; path: string }> = [
   { name: 'combobox', path: '/components/combobox' },
   { name: 'toast', path: '/components/toast' },
   { name: 'date-picker', path: '/components/date-picker' },
-  { name: 'command-palette', path: '/components/command-palette' },
+  { name: 'command-palette', path: '/components/command-palette', query: GALLERY },
   { name: 'card', path: '/components/card' },
   { name: 'alert', path: '/components/alert' },
   { name: 'progress', path: '/components/progress' },
@@ -141,13 +150,13 @@ async function ready(page: import('@playwright/test').Page, path: string) {
 const THEMES = ['light', 'dark'] as const;
 
 test.describe('visual baselines', () => {
-  for (const { name, path } of PAGES) {
+  for (const { name, path, query = '' } of PAGES) {
     for (const theme of THEMES) {
       test(`${name} (${theme})`, async ({ page }) => {
         await page.addInitScript((choice) => {
           window.localStorage.setItem('pp-theme', choice);
         }, theme);
-        await ready(page, path);
+        await ready(page, path + query);
         // Playwright writes the file as `<name>-<theme>.png`: a dot in the name is sanitised.
         await expect(page).toHaveScreenshot(`${name}-${theme}.png`, { fullPage: true });
       });

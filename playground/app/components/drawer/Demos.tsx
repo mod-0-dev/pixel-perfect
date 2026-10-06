@@ -24,14 +24,23 @@ function Menu() {
   );
 }
 
-/** The Matrix gallery: a cell is a viewport (Dialog §10). */
-export function Gallery() {
+/**
+ * The Matrix gallery: a cell is a viewport (Dialog §10). Closed until its
+ * cell's trigger is pressed, or all three open at load under `?gallery=open`
+ * (D-102 §1), the only time open-autofocus is prevented.
+ */
+const keepFocus = { onOpenAutoFocus: (event: Event) => event.preventDefault() };
+
+export function Gallery({ open }: { open: boolean }) {
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   return (
-    <div ref={setStage} className="dialog-stage">
-      {stage && (
-        <Drawer defaultOpen>
-          <DrawerContent container={stage} data-gallery="" onOpenAutoFocus={(event) => event.preventDefault()}>
+    <Drawer defaultOpen={open}>
+      <div ref={setStage} className="dialog-stage">
+        <DrawerTrigger asChild>
+          <Button variant="outline">Open in this cell</Button>
+        </DrawerTrigger>
+        {stage && (
+          <DrawerContent container={stage} data-gallery="" {...(open ? keepFocus : {})}>
             <Stack gap="4">
               <Stack gap="1">
                 <DrawerTitle>Details</DrawerTitle>
@@ -45,9 +54,9 @@ export function Gallery() {
               </Cluster>
             </Stack>
           </DrawerContent>
-        </Drawer>
-      )}
-    </div>
+        )}
+      </div>
+    </Drawer>
   );
 }
 

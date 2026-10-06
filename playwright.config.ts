@@ -94,9 +94,30 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /phone\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 900 },
+        channel: undefined,
+        launchOptions,
+      },
+    },
+    /*
+     * A phone: 390x844 CSS pixels, touch, the mobile viewport meta honoured.
+     * Behaviour only (phone.spec.ts), never a screenshot — a second set of
+     * baselines would double what CI authors to learn what these assertions
+     * already say, and until this project existed nothing had ever opened
+     * the playground narrower than 1280px (D-102 §5).
+     */
+    {
+      name: 'phone',
+      testMatch: /phone\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        isMobile: true,
+        hasTouch: true,
         channel: undefined,
         launchOptions,
       },

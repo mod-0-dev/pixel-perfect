@@ -20,6 +20,14 @@ const config: NextConfig = {
   outputFileTracingRoot: repoRoot,
 
   typescript: { ignoreBuildErrors: false },
+
+  /*
+   * `next dev` writes an AGENTS.md and a CLAUDE.md into this directory on
+   * every start unless told not to — two untracked files after every run.
+   * The repository's agent guidance lives at its root (CLAUDE.md), and what
+   * a consuming app's agent should read ships in the package (dist/AGENTS.md).
+   */
+  agentRules: false,
 };
 
 export default config;

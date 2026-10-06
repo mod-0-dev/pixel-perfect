@@ -836,6 +836,40 @@ test.describe('Toolbar', () => {
  * and nowhere else: reading the CSS proved nothing, and only a real browser
  * resolving a real `var()` chain caught it.
  */
+/*
+ * VisuallyHidden (1.4) — a 1px box nobody sees, asserted for the one thing it
+ * can still do to the page around it (D-102 §3). Absolute with no inset, it
+ * sat at its static position, positioned against the nearest positioned
+ * ancestor — often the viewport — so past the edge of a scrolled region it
+ * escaped the region's clip and widened the document: a Spinner's label made
+ * the Spinner page 514px wide on a 390px phone. The inline-start inset is the
+ * fix, and dropping it fails this.
+ *
+ * Inline content in a no-wrap block, not a flex row: an absolute child of a
+ * flex container takes its static position at the container's start, which
+ * would pass with or without the fix.
+ */
+test.describe('VisuallyHidden', () => {
+  test('past the edge of a scrolled region, it does not widen the page', async ({ page }) => {
+    await page.goto('/components/visually-hidden');
+    const read = await page.evaluate(() => {
+      const region = document.createElement('div');
+      region.style.cssText = 'overflow-x: auto; inline-size: 200px; white-space: nowrap';
+      region.innerHTML =
+        '<span style="display: inline-block; inline-size: 4000px; block-size: 1px"></span>' +
+        '<span class="pp-visually-hidden">far past the edge</span>';
+      document.querySelector('.page')!.append(region);
+      return {
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+        region: region.scrollWidth,
+      };
+    });
+    expect(read.region, 'the setup did not put the label past the region\'s edge').toBeGreaterThan(4000);
+    expect(read.scroll, 'a hidden label widened the document').toBeLessThanOrEqual(read.client);
+  });
+});
+
 test.describe('layout primitives', () => {
   test('a nested Stack does not inherit its parent\'s gap', async ({ page }) => {
     await page.goto('/components/stack');
@@ -5492,12 +5526,14 @@ test.describe('Tooltip', () => {
 /*
  * Dialog (4.4) — spec docs/specs/Dialog.md.
  *
- * Scrim and panel are PORTALLED to <body>. The Matrix gallery holds three
- * dialogs open, each portalled into a `contain: layout` box in its cell, and
- * their side effects are real: the page's scroll is locked, the rest of it is
- * `aria-hidden` and takes no pointer events. So every interactive test
- * closes the gallery first — Escape, three times, topmost layer each — and
- * then reads the one non-gallery scrim and panel on the page.
+ * Scrim and panel are PORTALLED to <body>. The Matrix gallery holds a
+ * dialog per cell, each portalled into a `contain: layout` box in its cell,
+ * and opens all three at load only under `?gallery=open` (D-102 §1). Open,
+ * their side effects are real: the page's scroll is locked, the rest of it
+ * is `aria-hidden` and takes no pointer events. So every interactive test
+ * runs on the page a visitor gets, asserts that nothing is open on it, and
+ * reads the one non-gallery scrim and panel it opened itself; the gallery
+ * tests ask for the gallery.
  *
  * What only a browser can answer: that the scrim's box is the viewport and
  * the panel is centred in it, in both directions; that the panel shrinks to
@@ -5514,21 +5550,18 @@ test.describe('Dialog', () => {
   const scrim = (page: Page) => page.locator('.pp-dialog__scrim:has(> .pp-dialog:not([data-gallery]))');
   const demo = (page: Page, id: string) => page.locator(`[data-testid="dialog-${id}"]`);
 
-  /* One Escape per dialog, each waited out: Escape reaches the topmost
-     layer, and a dialog still running its exit is still the topmost layer. */
-  const closeGallery = async (page: Page) => {
-    await expect(gallery(page)).toHaveCount(3);
-    for (let left = 2; left >= 0; left -= 1) {
-      await page.keyboard.press('Escape');
-      await expect(gallery(page)).toHaveCount(left);
-    }
+  /* The page a visitor gets opens nothing at load (D-102 §1). The tests used
+     to close three gallery dialogs first, an Escape each, and an Escape
+     inside a mount window once closed two at a time (D-093 §3). */
+  const galleryClosed = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(0);
   };
 
   /* Returns the trigger as a text locator, not a role one: once the dialog
      is open the trigger is aria-hidden with the rest of the page, and a role
      locator no longer resolves to it. */
   const open = async (page: Page, id: string, name: string) => {
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, id).getByRole('button', { name });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
@@ -5673,7 +5706,7 @@ test.describe('Dialog', () => {
 
   test('focus moves in, loops, and returns to the trigger', async ({ page }) => {
     await page.goto('/components/dialog');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'form').getByRole('button', { name: 'Rename' });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.focus();
@@ -5695,7 +5728,7 @@ test.describe('Dialog', () => {
 
   test('without a trigger, focus returns to the element that opened it', async ({ page }) => {
     await page.goto('/components/dialog');
-    await closeGallery(page);
+    await galleryClosed(page);
     const actions = demo(page, 'no-trigger').getByRole('button', { name: 'Row actions' });
     await actions.scrollIntoViewIfNeeded();
     await actions.click();
@@ -5790,10 +5823,29 @@ test.describe('Dialog', () => {
     expect(names).toEqual({ panel: 'none', scrim: 'none' });
   });
 
-  test('the gallery: three viewports, the narrow and medium panels below the ceiling and the wide one at it', async ({
+  test('a visitor gets the gallery closed: a trigger per cell opens that cell\'s dialog, with focus, and Escape gives the page back', async ({
     page,
   }) => {
     await page.goto('/components/dialog');
+    await galleryClosed(page);
+    const stages = page.getByTestId('dialog-stage');
+    await expect(stages).toHaveCount(3);
+    const trigger = stages.nth(1).getByRole('button', { name: 'Open in this cell' });
+    await trigger.scrollIntoViewIfNeeded();
+    await trigger.click();
+    await expect(gallery(page)).toHaveCount(1);
+    const own = await gallery(page).evaluate((el) => el.closest('[data-testid="dialog-stage"]') !== null);
+    expect(own, 'the dialog did not open inside the cell that asked for it').toBe(true);
+    await expect(gallery(page).getByRole('textbox', { name: 'Name' }), 'a visitor\'s dialog did not take focus').toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(gallery(page)).toHaveCount(0);
+    await expect(stages.nth(1).locator('button', { hasText: 'Open in this cell' })).toBeFocused();
+  });
+
+  test('the gallery: three viewports, the narrow and medium panels below the ceiling and the wide one at it', async ({
+    page,
+  }) => {
+    await page.goto('/components/dialog?gallery=open');
     const panels = gallery(page);
     await expect(panels).toHaveCount(3);
     // The page is still a page while three bodies' worth of scroll lock are
@@ -5837,19 +5889,18 @@ test.describe('AlertDialog', () => {
   const panel = (page: Page) => page.locator('.pp-alert-dialog:not([data-gallery])');
   const demo = (page: Page, id: string) => page.locator(`[data-testid="alert-dialog-${id}"]`);
 
-  const closeGallery = async (page: Page) => {
-    await expect(gallery(page)).toHaveCount(3);
-    for (let left = 2; left >= 0; left -= 1) {
-      await page.keyboard.press('Escape');
-      await expect(gallery(page)).toHaveCount(left);
-    }
+  /* The page a visitor gets opens nothing at load (D-102 §1). The tests used
+     to close three gallery dialogs first, an Escape each, and an Escape
+     inside a mount window once closed two at a time (D-093 §3). */
+  const galleryClosed = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(0);
   };
 
   test('is drawn by Dialog: the layers, the scrim as viewport, the ceiling at 20rem, no motion under reduced motion', async ({
     page,
   }) => {
     await page.goto('/components/alert-dialog');
-    await closeGallery(page);
+    await galleryClosed(page);
     await demo(page, 'delete').getByRole('button', { name: 'Delete report' }).click();
     const el = panel(page);
     await expect(el).toBeVisible();
@@ -5882,7 +5933,7 @@ test.describe('AlertDialog', () => {
 
   test('focus lands on Cancel, a scrim press does nothing, and Escape returns focus to the trigger', async ({ page }) => {
     await page.goto('/components/alert-dialog');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'delete').getByRole('button', { name: 'Delete report' });
     await trigger.focus();
     await page.keyboard.press('Enter');
@@ -5903,7 +5954,7 @@ test.describe('AlertDialog', () => {
 
   test('Action closes and acts; Cancel closes and does not', async ({ page }) => {
     await page.goto('/components/alert-dialog');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'delete').getByRole('button', { name: 'Delete report' });
     await trigger.click();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
@@ -5916,7 +5967,7 @@ test.describe('AlertDialog', () => {
 
   test('with no Cancel, the panel itself takes focus', async ({ page }) => {
     await page.goto('/components/alert-dialog');
-    await closeGallery(page);
+    await galleryClosed(page);
     await demo(page, 'no-cancel').getByRole('button', { name: 'Acknowledge' }).click();
     await expect(panel(page)).toBeFocused();
     await page.keyboard.press('Escape');
@@ -5924,7 +5975,7 @@ test.describe('AlertDialog', () => {
   });
 
   test('the gallery holds three, each scrim the size of its cell', async ({ page }) => {
-    await page.goto('/components/alert-dialog');
+    await page.goto('/components/alert-dialog?gallery=open');
     const panels = gallery(page);
     await expect(panels).toHaveCount(3);
     const ok = await panels.evaluateAll((els) =>
@@ -5953,12 +6004,11 @@ test.describe('Drawer', () => {
   const panel = (page: Page) => page.locator('.pp-drawer:not([data-gallery])');
   const demo = (page: Page, id: string) => page.locator(`[data-testid="drawer-${id}"]`);
 
-  const closeGallery = async (page: Page) => {
-    await expect(gallery(page)).toHaveCount(3);
-    for (let left = 2; left >= 0; left -= 1) {
-      await page.keyboard.press('Escape');
-      await expect(gallery(page)).toHaveCount(left);
-    }
+  /* The page a visitor gets opens nothing at load (D-102 §1). The tests used
+     to close three gallery dialogs first, an Escape each, and an Escape
+     inside a mount window once closed two at a time (D-093 §3). */
+  const galleryClosed = async (page: Page) => {
+    await expect(gallery(page)).toHaveCount(0);
   };
 
   const openSide = async (page: Page, side: string) => {
@@ -5990,7 +6040,7 @@ test.describe('Drawer', () => {
 
   test('each side is flush with its edge, the token on the anchored axis and the viewport on the other', async ({ page }) => {
     await page.goto('/components/drawer');
-    await closeGallery(page);
+    await galleryClosed(page);
     const viewport = page.viewportSize()!;
     const token = 20 * 16;
     const checks: Record<string, [string, (b: Box) => void]> = {
@@ -6010,7 +6060,7 @@ test.describe('Drawer', () => {
 
   test('side="start" is on the right under dir="rtl"', async ({ page }) => {
     await page.goto('/components/drawer');
-    await closeGallery(page);
+    await galleryClosed(page);
     await page.evaluate(() => document.documentElement.setAttribute('dir', 'rtl'));
     const el = await openSide(page, 'start');
     await expect(el).toHaveAttribute('data-side', 'right');
@@ -6022,7 +6072,7 @@ test.describe('Drawer', () => {
   test('at 320px a side drawer is the full width', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto('/components/drawer');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'nav').getByRole('button', { name: 'Menu' });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
@@ -6040,7 +6090,7 @@ test.describe('Drawer', () => {
    */
   test('a panel taller than its content scrolls itself, and the page stays where it was', async ({ page }) => {
     await page.goto('/components/drawer');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'tall').getByRole('button', { name: 'Activity' });
     await trigger.scrollIntoViewIfNeeded();
     const before = await page.evaluate(() => window.scrollY);
@@ -6077,7 +6127,7 @@ test.describe('Drawer', () => {
     page,
   }) => {
     await page.goto('/components/drawer');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'nav').getByRole('button', { name: 'Menu' });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.focus();
@@ -6095,7 +6145,7 @@ test.describe('Drawer', () => {
 
   test('the theme crosses the portal onto the scrim', async ({ page }) => {
     await page.goto('/components/drawer');
-    await closeGallery(page);
+    await galleryClosed(page);
     const region = demo(page, 'theme');
     const trigger = region.getByRole('button', { name: 'Open here' });
     await trigger.scrollIntoViewIfNeeded();
@@ -6114,7 +6164,7 @@ test.describe('Drawer', () => {
   test('the gallery holds three end drawers, contained: full width at 240, 20rem at the right edge at 480 and 960', async ({
     page,
   }) => {
-    await page.goto('/components/drawer');
+    await page.goto('/components/drawer?gallery=open');
     const panels = gallery(page);
     await expect(panels).toHaveCount(3);
     const read = await panels.evaluateAll((els) =>
@@ -7177,19 +7227,18 @@ test.describe('CommandPalette', () => {
       token,
     );
 
-  const closeGallery = async (page: Page) => {
-    await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(3);
-    for (let left = 2; left >= 0; left -= 1) {
-      await page.keyboard.press('Escape');
-      await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(left);
-    }
+  /* The page a visitor gets opens nothing at load (D-102 §1). The tests used
+     to close three gallery dialogs first, an Escape each, and an Escape
+     inside a mount window once closed two at a time (D-093 §3). */
+  const galleryClosed = async (page: Page) => {
+    await expect(page.locator('.pp-command-palette[data-gallery]')).toHaveCount(0);
   };
 
   test('the panel sits the offset below the top, a token wide, over Dialog\'s scrim; the field is focused with its hairline lit; a row is the medium control', async ({
     page,
   }) => {
     await page.goto('/components/command-palette');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'launcher').getByRole('button', { name: /Search commands/ });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.focus();
@@ -7246,7 +7295,7 @@ test.describe('CommandPalette', () => {
 
   test('type, arrow, Enter: the first match is highlighted, the command runs, the palette closes and focus returns; mod+k toggles', async ({ page }) => {
     await page.goto('/components/command-palette');
-    await closeGallery(page);
+    await galleryClosed(page);
     const region = demo(page, 'launcher');
     const trigger = region.getByRole('button', { name: /Search commands/ });
     await trigger.scrollIntoViewIfNeeded();
@@ -7276,7 +7325,7 @@ test.describe('CommandPalette', () => {
 
   test('a long list scrolls and keeps the highlight in view; the theme crosses the portal', async ({ page }) => {
     await page.goto('/components/command-palette');
-    await closeGallery(page);
+    await galleryClosed(page);
     const trigger = demo(page, 'long').getByRole('button', { name: 'Thirty commands' });
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
@@ -7305,7 +7354,7 @@ test.describe('CommandPalette', () => {
   });
 
   test('the gallery holds three, contained, each with the matches for "go" and the first highlighted', async ({ page }) => {
-    await page.goto('/components/command-palette');
+    await page.goto('/components/command-palette?gallery=open');
     const panels = page.locator('.pp-command-palette[data-gallery]');
     await expect(panels).toHaveCount(3);
     const read = await panels.evaluateAll((els) =>

@@ -52,19 +52,32 @@ function Dots() {
  *
  * `contain: layout` on the stage makes it the containing block for the
  * dialog's `position: fixed` scrim, so a dialog portalled into it fills the
- * box and is centred in it. The dialog is rendered only once the stage
- * exists, so it never lands on the body first. Three modals open at once
- * is a gallery, not a use (D-062 §2): open-autofocus is prevented so three
- * mounts do not fight over focus, and the panels are marked `data-gallery`
- * so the interactive tests can tell them from the one they opened.
+ * box and is centred in it. The content is rendered only once the stage
+ * exists, so it never lands on the body first. The panels are marked
+ * `data-gallery` so the interactive tests can tell them from the one they
+ * opened.
+ *
+ * CLOSED UNTIL ASKED (D-102 §1). Each cell has its own trigger, and a cell's
+ * dialog opens over that cell. `open` — the page's `?gallery=open`, which
+ * the screenshot suite passes — opens all three at load instead, as the page
+ * always did: a gallery, not a use. Three modals at once lock the page's
+ * scroll and pointer three times over, and a phone has no Escape key to
+ * give it back, so that is no longer what a visitor lands on. Only then is
+ * open-autofocus prevented, so three mounts do not fight over focus; a
+ * dialog a visitor opens takes focus as every other dialog does.
  */
-export function Gallery() {
+const keepFocus = { onOpenAutoFocus: (event: Event) => event.preventDefault() };
+
+export function Gallery({ open }: { open: boolean }) {
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   return (
-    <div ref={setStage} className="dialog-stage" data-testid="dialog-stage">
-      {stage && (
-        <Dialog defaultOpen>
-          <DialogContent container={stage} data-gallery="" onOpenAutoFocus={(event) => event.preventDefault()}>
+    <Dialog defaultOpen={open}>
+      <div ref={setStage} className="dialog-stage" data-testid="dialog-stage">
+        <DialogTrigger asChild>
+          <Button variant="outline">Open in this cell</Button>
+        </DialogTrigger>
+        {stage && (
+          <DialogContent container={stage} data-gallery="" {...(open ? keepFocus : {})}>
             <Stack gap="4">
               <Stack gap="1">
                 <DialogTitle>Rename file</DialogTitle>
@@ -89,9 +102,9 @@ export function Gallery() {
               </Cluster>
             </Stack>
           </DialogContent>
-        </Dialog>
-      )}
-    </div>
+        )}
+      </div>
+    </Dialog>
   );
 }
 
