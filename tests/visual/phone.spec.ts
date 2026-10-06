@@ -20,10 +20,21 @@ import { expect, test } from './fixtures';
  * The page list is read from the playground's registry rather than written
  * out a third time, as tests/unit/playground-registry.test.ts reads it: the
  * playground is not a workspace member (D-012), so it cannot be imported.
+ * Every component has two pages — its harness page and its docs page (D-104).
  */
 const registry = readFileSync('playground/app/components/registry.ts', 'utf8');
 const SLUGS = [...registry.matchAll(/slug:\s*'([^']+)'/g)].map((m) => m[1] as string);
-const PAGES = ['/', '/tokens', '/harness', ...SLUGS.map((slug) => `/components/${slug}`)];
+const EXAMPLES = ['/examples', '/examples/settings', '/examples/sign-up', '/examples/dashboard'];
+const PAGES = [
+  '/',
+  '/tokens',
+  '/harness',
+  '/theme',
+  '/rules',
+  ...EXAMPLES,
+  ...SLUGS.map((slug) => `/components/${slug}`),
+  ...SLUGS.map((slug) => `/docs/${slug}`),
+];
 
 /*
  * A real swipe, as touch events through the DevTools protocol: `page.mouse`

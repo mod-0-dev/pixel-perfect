@@ -22,6 +22,14 @@ const PAGES: Array<{ name: string; path: string; query?: string }> = [
   { name: 'index', path: '/' },
   { name: 'tokens', path: '/tokens' },
   { name: 'harness', path: '/harness' },
+  // The front door's places (D-104 §7). The 69 docs pages are not here:
+  // prose, covered by phone.spec.ts's fit-and-scroll assertions instead.
+  { name: 'theme', path: '/theme' },
+  { name: 'rules', path: '/rules' },
+  { name: 'examples', path: '/examples' },
+  { name: 'example-settings', path: '/examples/settings' },
+  { name: 'example-sign-up', path: '/examples/sign-up' },
+  { name: 'example-dashboard', path: '/examples/dashboard' },
   { name: 'text', path: '/components/text' },
   { name: 'heading', path: '/components/heading' },
   { name: 'icon', path: '/components/icon' },
