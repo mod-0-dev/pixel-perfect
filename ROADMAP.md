@@ -51,16 +51,28 @@ enough to be read first.
   CI-authored baselines.
 - **Every baseline is re-authored on this PR** (D-102 §2). The chrome carried a
   second gutter that put it 24px inside the page at the suite's own 1280px,
-  and it gained three places, so every page's pixels move; their heights do
-  not, and the dimensions manifest holds that for every page except those
-  whose content changed, which were re-baselined with `--rebaseline`. After
-  the authoring run, one more run compares what it authored.
+  and it gained three places, so every page's pixels move. Their heights do
+  not — measured against `main` — except four, re-baselined with
+  `--rebaseline` (the index, AlertDialog, CommandPalette, Combobox); the
+  manifest holds the other 68 through the window, and the twelve new
+  captures are authored fresh. After the authoring run, one more run
+  compares what it authored.
 - **The playground works on a phone** (D-102). A `phone` Playwright project
   (390x844, touch) asserts every page fits the screen and scrolls under a
   finger. It found the four modal galleries that locked a phone out for
-  good, `/tokens` and the Combobox page pushing the page sideways, and
-  `VisuallyHidden` widening the document from inside a scrolled region — a
-  library defect, fixed in 1.4 (D-102 §3).
+  good, `/tokens` pushing the page sideways, `VisuallyHidden` widening the
+  document from inside a scrolled region (1.4, fixed, D-102 §3), and
+  `Combobox` unable to be narrower than ~256px (4.11, fixed — the harness's
+  own overflow flag had been reporting it). `AppShell`'s skip link read a
+  token that does not exist (6.3, fixed), and `lint:rules` now fails any
+  stylesheet that does (D-102 §7).
+- **Found and not fixed, each its own next item** (D-102 §7): `AvatarGroup`'s
+  overlap ignores each face's ring, so wide initials lose a letter; `Split`
+  still has dotted parts and no named exports (RULES §5.6); `ButtonGroup.md`
+  and `ThemeToggle.md` disagree on a single-choice group; every `CodeBlock`
+  is named "Code" by default; `Code` inside a `Link` keeps neutral ink. And
+  the visual job passes an authoring run in which a functional test failed
+  (D-106 §5).
 - **6.1–6.7 are `review`**, each waiting only on its CI-authored baseline,
   which this PR's authoring run re-authors with the rest (D-069 §2). The sweep
   of Tier 6 to `done` follows the run that compares them.
