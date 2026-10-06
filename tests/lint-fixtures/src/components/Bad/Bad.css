@@ -2,6 +2,10 @@
 .pp-bad {
   color: var(--pp-palette-accent-9);
   background-color: var(--pp-palette-neutral-3);
+  /* Rule 7: not a token — the scale is --pp-font-size-1 to -9 (D-102 §7).
+     A hook of this component's own is not a violation. */
+  font-size: var(--pp-font-size-sm);
+  padding: var(--pp-bad-padding, 0);
 }
 
 /* Rule 6: an unknown pseudo-element invalidates the whole selector list, so

@@ -1,0 +1,84 @@
+/*
+ * The resizable Stage (D-104 §3). Harness CSS, like matrix.css: it sets a
+ * width on purpose, because sizing what is inside it is exactly the parent's
+ * job — and the point of the stage is that the parent's width is the only
+ * one anything inside answers to.
+ */
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-3);
+  min-inline-size: 0;
+}
+
+.stage__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pp-space-3);
+  align-items: center;
+}
+
+/* The Slider is `fill`; this is the box it fills. */
+.stage__width {
+  flex: 1 1 12rem;
+  min-inline-size: 8rem;
+  max-inline-size: 24rem;
+}
+
+.stage__readout {
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-1);
+  color: var(--pp-color-text-muted);
+  font-variant-numeric: tabular-nums;
+  min-inline-size: 6ch;
+}
+
+/*
+ * The frame is the query container every `@container` rule inside resolves
+ * against. Never wider than the page column: the slider's maximum is the
+ * column's measured width, and `max-inline-size` holds the line before the
+ * first measurement arrives.
+ */
+.stage__frame {
+  position: relative;
+  container-type: inline-size;
+  max-inline-size: 100%;
+  border: 1px solid var(--pp-color-border-subtle);
+  border-radius: var(--pp-radius-3);
+  background-color: var(--pp-color-bg-page);
+  color: var(--pp-color-text);
+}
+
+/* The drag edge: a grip on the inline end, wide enough to catch a finger. */
+.stage__handle {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: calc(-1 * var(--pp-space-2));
+  inline-size: var(--pp-space-4);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.stage__handle::after {
+  content: "";
+  position: absolute;
+  inset-block: 50% auto;
+  inset-inline-start: calc(50% - 2px);
+  inline-size: 4px;
+  block-size: var(--pp-size-10);
+  translate: 0 -50%;
+  border-radius: var(--pp-radius-full);
+  background-color: var(--pp-color-border);
+  transition: background-color var(--pp-duration-fast) var(--pp-easing-standard);
+}
+
+.stage__handle:hover::after,
+.stage__handle:active::after {
+  background-color: var(--pp-color-focus-ring);
+}
+
+/* At full width the edge has nowhere to go but in; it still drags. */
+.stage__frame[data-full] .stage__handle {
+  inset-inline-end: 0;
+}

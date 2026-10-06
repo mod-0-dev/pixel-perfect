@@ -1,0 +1,103 @@
+/*
+ * Prose rhythm for the rendered Markdown — the component docs and the rules
+ * (harness/Markdown.tsx). Unlayered, like globals.css, and scoped by `doc__`
+ * classes on elements the renderer owns: nothing here sets a width or a
+ * margin on a library component. The space between blocks is the Stacks'
+ * `gap`; this file covers what the library has no component for — lists and
+ * quotes — and the measure a paragraph is held to. Every colour, space and
+ * size is a token; the one exception is globals.css's own measure, 68ch.
+ */
+
+/*
+ * The article. Its top padding parts the first line from the chrome's rule.
+ * Ligatures are off for everything inside, which is to say for the mono
+ * face: JetBrains Mono draws `=>` as one arrow and `-<` as another, and a
+ * doc must show the characters you would type.
+ */
+.doc {
+  padding-block-start: var(--pp-space-5);
+  font-variant-ligatures: none;
+}
+
+/*
+ * The reading measure. globals.css gives a page's description paragraphs
+ * 68ch, but only as direct children of `.page`; a doc's paragraphs sit
+ * deeper, so the renderer wraps each in this and the wrapper is what is
+ * held — RULES §1's "if you want to constrain something, you wrap it".
+ */
+.doc__measure {
+  max-inline-size: 68ch;
+}
+
+/*
+ * A heading reached by an anchor lands below the sticky chrome, not under
+ * it. The chrome is one row (57px) on a wide screen and two (99px) from
+ * 40rem to about 1000px, and nothing here can read its height, so the
+ * margin clears the taller: 7rem. Below 40rem the chrome is not sticky —
+ * it scrolls away with the page (D-102 §2) — and a heading needs only air.
+ */
+.doc__heading {
+  scroll-margin-block-start: calc(var(--pp-space-8) + var(--pp-space-7));
+}
+
+@media (max-width: 40rem) {
+  .doc__heading {
+    scroll-margin-block-start: var(--pp-space-4);
+  }
+}
+
+/* The tier number before the harness link, held to it by padding, not a space. */
+.doc__tier {
+  padding-inline-end: var(--pp-space-2);
+  font-family: var(--pp-font-family-mono);
+  color: var(--pp-color-text-muted);
+}
+
+/*
+ * A `Code` inside a link takes the link's colour, so `Dialog.md` reads as a
+ * link and not only as a value with an underline. Through Code's own custom
+ * property, set on the ancestor, which is what the property is for.
+ */
+.doc__link {
+  --pp-code-color: currentColor;
+}
+
+/* A wrapping table column's floor: a box of ours in its header cell (see renderTable). */
+.doc__column {
+  min-inline-size: var(--pp-measure-xs);
+}
+
+/* Lists: a column with the item gap, indented for the marker, at the measure. */
+.doc__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-2);
+  max-inline-size: 68ch;
+  margin: 0;
+  padding-inline-start: var(--pp-space-5);
+}
+
+.doc__list[data-loose] {
+  gap: var(--pp-space-3);
+}
+
+.doc__list > li {
+  min-inline-size: 0;
+  padding-inline-start: var(--pp-space-1);
+}
+
+.doc__list > li::marker {
+  color: var(--pp-color-text-muted);
+}
+
+/* A quote is set off by a bar on its start edge and the sunken surface. */
+.doc__quote {
+  max-inline-size: 68ch;
+  margin: 0;
+  padding-block: var(--pp-space-3);
+  padding-inline: var(--pp-space-4);
+  border-inline-start: var(--pp-border-width-2) solid var(--pp-color-border);
+  border-start-end-radius: var(--pp-radius-2);
+  border-end-end-radius: var(--pp-radius-2);
+  background-color: var(--pp-color-bg-sunken);
+}

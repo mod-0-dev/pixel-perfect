@@ -7,6 +7,7 @@
 //   4. Files using client-only React have the 'use client' directive
 //   5. The built stylesheet establishes cascade layers in the declared order
 //   6. No selector list mixes a -webkit- and a -moz- pseudo-element
+//   7. Every --pp-* a component stylesheet reads is defined somewhere
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -34,6 +35,33 @@ function walk(dir, ext, out = []) {
 
 // ---- 1 & 2: component stylesheets ----------------------------------------
 
+/*
+ * 7. EVERY --pp-* A COMPONENT READS RESOLVES TO SOMETHING.
+ *
+ * `var(--pp-font-size-sm)` is valid CSS, passes stylelint and renders: the
+ * property is undefined, so the declaration is invalid at computed-value
+ * time and the value is inherited instead. AppShell's skip link shipped that
+ * way — the scale is `--pp-font-size-1` to `-9`, and `sm` is a Text size, not
+ * a token — and nothing said so until an example page read the stylesheet
+ * (D-102 §7). A reference counts as defined when a token file or any library
+ * stylesheet declares it, or when it is a component's own override hook
+ * (`--pp-<component>`, `--pp-<component>-*`), which is undefined by design
+ * until a consumer sets it. The tokens are always the repository's own, so
+ * the self-test's fixture is judged against the real scales.
+ */
+const DEFINED = new Set();
+const COMPONENT_HOOKS = new Set();
+for (const file of [
+  ...walk(join(ROOT, 'src/styles'), ['.css']),
+  ...walk(join(ROOT, 'src/components'), ['.css']),
+  ...walk(join(SRC, 'components'), ['.css']),
+]) {
+  for (const m of readFileSync(file, 'utf8').matchAll(/(--pp-[a-z0-9-]+)\s*:/g)) DEFINED.add(m[1]);
+  const name = file.split(/[\\/]/).pop().replace(/\.css$/, '');
+  COMPONENT_HOOKS.add(`--pp-${name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()}`);
+}
+const isHook = (token) => [...COMPONENT_HOOKS].some((hook) => token === hook || token.startsWith(`${hook}-`));
+
 const BANNED_PROP_NAMES = new Set([
   'fullWidth', 'width', 'maxWidth', 'minWidth', 'fullwidth',
   'margin', 'm', 'mt', 'mb', 'ml', 'mr', 'mx', 'my',
@@ -49,6 +77,10 @@ for (const file of walk(join(SRC, 'components'), ['.css'])) {
   }
   for (const m of css.matchAll(/--pp-palette-[a-z0-9-]+/g)) {
     fail(rel, `references the raw palette token \`${m[0]}\` — components consume semantic or --pp-tone-* tokens only (RULES §3)`);
+  }
+  for (const m of css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/var\(\s*(--pp-[a-z0-9-]+)/g)) {
+    if (DEFINED.has(m[1]) || isHook(m[1])) continue;
+    fail(rel, `reads \`${m[1]}\`, which no token file or stylesheet defines — an undefined var() is invalid at computed-value time and falls back silently (D-102 §7)`);
   }
 
   /*

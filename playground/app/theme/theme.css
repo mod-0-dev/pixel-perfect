@@ -1,0 +1,49 @@
+/*
+ * The theme lab. Harness CSS: unlayered, scoped by class, and every colour
+ * read from a token the injected stylesheet re-declares — so the swatches
+ * here change with the sliders like everything else.
+ */
+
+.lab__fill-row {
+  display: flex;
+  gap: var(--pp-space-3);
+  align-items: center;
+  padding: var(--pp-space-3);
+  border-radius: var(--pp-radius-3);
+  background-color: var(--pp-color-bg-page);
+  color: var(--pp-color-text);
+}
+
+/* The fill with its own text on it: what a solid accent Button is. */
+.lab__fill {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--pp-size-12);
+  block-size: var(--pp-size-12);
+  border-radius: var(--pp-radius-3);
+  background-color: var(--pp-palette-accent-9);
+  color: var(--pp-palette-accent-on-solid);
+  font-weight: var(--pp-font-weight-semibold);
+}
+
+.lab__preview {
+  gap: var(--pp-space-4);
+}
+
+.lab__ramp {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.lab__ramp span {
+  block-size: var(--pp-size-6);
+  border-radius: var(--pp-radius-1);
+}
+
+/* 340 lines of CSS is a file, not a page: it scrolls in its own region. */
+.lab__css {
+  --pp-scroller-max-block-size: 28rem;
+  border-radius: var(--pp-radius-3);
+}

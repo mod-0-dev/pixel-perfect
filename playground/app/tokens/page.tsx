@@ -1,3 +1,5 @@
+import { Scroller } from 'pixel-perfect';
+
 const HUES = ['neutral', 'accent', 'danger', 'success', 'warning'] as const;
 
 /* The three steps solved for a contrast target that are NOT ramp positions.
@@ -9,6 +11,21 @@ const SOLVED = [
   { step: 'edge-strong', label: 'edge-strong  >= 4.5:1', kind: 'line' },
 ] as const;
 const STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+
+/*
+ * THE INK FOR A SWATCH'S OWN NUMBER. Every label used to be `text-muted`,
+ * which is step 11 — so on the page that says every ratio is solved, 50 of
+ * the 120 numbers sat under 3:1 and step 11's read 1.00:1 against itself.
+ * Each step now takes the ramp's own answer for "text on this": body text on
+ * the light half, on-solid on the fills, and step 1 on the two text steps.
+ * Every pairing is one `lint:contrast` already asserts or sits on the ramp
+ * between two it does; the worst of the 120 is 4.60:1 (dark success 8).
+ */
+function inkFor(step: (typeof STEPS)[number]) {
+  if (step <= 8) return '12';
+  if (step <= 10) return 'on-solid';
+  return '1';
+}
 
 const SPACE = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 const SIZE = ['3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] as const;
@@ -26,7 +43,10 @@ function Ramps({ theme }: { theme: 'light' | 'dark' }) {
             <div
               className="ramp__step"
               key={step}
-              style={{ backgroundColor: `var(--pp-palette-${hue}-${step})` }}
+              style={{
+                backgroundColor: `var(--pp-palette-${hue}-${step})`,
+                color: `var(--pp-palette-${hue}-${inkFor(step)})`,
+              }}
               title={`--pp-palette-${hue}-${step}`}
             >
               {step}
@@ -103,10 +123,15 @@ export default function TokensPage() {
 
       <section>
         <h2>Palette</h2>
-        <div className="stack">
-          <Ramps theme="light" />
-          <Ramps theme="dark" />
-        </div>
+        {/* On a phone the twelve steps are wider than the screen; the library's
+            own Scroller holds them and shades the edge with more, rather than
+            the page scrolling sideways. It draws nothing when they fit. */}
+        <Scroller orientation="horizontal" label="Palette, light and dark">
+          <div className="stack palette-track">
+            <Ramps theme="light" />
+            <Ramps theme="dark" />
+          </div>
+        </Scroller>
       </section>
 
       <section>

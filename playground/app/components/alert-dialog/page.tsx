@@ -5,10 +5,12 @@
  */
 import { Text } from 'pixel-perfect';
 
+import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';
 import { Delete, Gallery, NoCancel, ThemeCrossing } from './Demos';
 
-export default function AlertDialogPage() {
+export default async function AlertDialogPage({ searchParams }: { searchParams: Promise<GalleryParams> }) {
+  const open = galleryOpen(await searchParams);
   return (
     <>
       <h1>4.5 AlertDialog</h1>
@@ -22,11 +24,12 @@ export default function AlertDialogPage() {
       <section>
         <h2>A cell is a viewport</h2>
         <p>
-          Three open, contained in their cells (Dialog §10). <strong>Press Escape three times</strong>{' '}
-          to get the page back — the scrim will not do it.
+          One per cell, contained in its cell (Dialog §10). Open one from its cell; Escape or either
+          button closes it &mdash; the scrim will not. The screenshot suite opens all three at load
+          with <code>?gallery=open</code>.
         </p>
         <Matrix>
-          <Gallery />
+          <Gallery open={open} />
         </Matrix>
       </section>
 

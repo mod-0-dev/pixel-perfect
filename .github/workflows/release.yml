@@ -27,6 +27,18 @@ jobs:
 
       - run: npm ci
 
+      # `pixel-perfect` is somebody else's name on npm, so a publish under it
+      # is refused — at the very last step, after everything upstream went
+      # green, which is how D-038's five silent failures looked. Say so first.
+      - name: The package name can be published
+        if: ${{ vars.PUBLISH_TO_NPM == 'true' }}
+        run: |
+          name=$(node -p "require('./package.json').name")
+          if [ "$name" = "pixel-perfect" ]; then
+            echo "::error::'pixel-perfect' is taken on npm by an unrelated package; a publish would be refused. Rename to a scope you own (for example @mod-0-dev/pixel-perfect) first. See docs/RELEASING.md."
+            exit 1
+          fi
+
       # Opens or updates a "Version Packages" PR while changesets are pending.
       # When that PR merges there are none left, and this releases.
       #

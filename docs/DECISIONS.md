@@ -9,6 +9,8 @@ established, a component is deferred or rejected, or a dependency is adopted.
 
 ---
 
+<a id="d-001"></a>
+
 ## D-001 — Components never declare their own width
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -34,6 +36,8 @@ within a month and the invariant dies.
 Responsive behavior inside components uses `@container`, never viewport media
 queries. Enforced by lint (Tier 0.7).
 
+<a id="d-002"></a>
+
 ## D-002 — Tier 4 behavior comes from Radix / Base UI
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -46,6 +50,8 @@ primitives. We own 100% of markup, class names, and styling.
 accessibility edge cases already solved upstream. Tiers 1–3 and 5 remain
 zero-dependency.
 
+<a id="d-003"></a>
+
 ## D-003 — No polymorphic `as` prop
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -54,6 +60,8 @@ Polymorphic components destroy TypeScript inference and produce unreadable
 error messages. Where composition genuinely requires changing the rendered
 element, use Radix-style `asChild` render delegation.
 
+<a id="d-004"></a>
+
 ## D-004 — No `Box`, no `Spacer`
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -61,6 +69,8 @@ element, use Radix-style `asChild` render delegation.
 `Box` with style props is the mechanism by which sizing and spacing rules
 erode. `Spacer` is redundant with `gap`. Space between elements is expressed by
 layout primitives; space inside an element is that element's padding.
+
+<a id="d-005"></a>
 
 ## D-005 — Standalone package, `tsc` + lightningcss, no bundler
 
@@ -80,6 +90,8 @@ in Next.js. Not bundling also preserves per-module tree-shaking for consumers,
 who bundle anyway. The cost is two build steps instead of one; the benefit is no
 bundler between us and RSC correctness.
 
+<a id="d-006"></a>
+
 ## D-006 — Gate C is relaxed for Tier 0 foundations
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -95,6 +107,8 @@ expensive mistakes cheap, and at Tier 0 they are already cheap.
 **This expires when Tier 0 does.** Token names reviewed and accepted here are
 treated as a stable API from Tier 1 onward.
 
+<a id="d-007"></a>
+
 ## D-007 — Tone is a CSS custom-property context, not a prop-to-class mapping
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -108,6 +122,8 @@ CSS blocks, one per tone, and every new tone touching every component. Here,
 adding a tone is a single block in `semantic.css` and zero component changes.
 Consumers can also scope a tone to a subtree, or define their own, without us
 knowing about it.
+
+<a id="d-008"></a>
 
 ## D-008 — Token contrast is solved numerically and verified independently
 
@@ -132,6 +148,8 @@ Three findings from building it, kept as standing rules:
 Body text uses a fixed lightness with an asserted floor rather than a solve:
 solving it to exactly 7:1 produced a mid-grey that passes and reads as disabled.
 
+<a id="d-009"></a>
+
 ## D-009 — The linter has its own test suite
 
 **Date:** 2026-09-16 · **Status:** accepted
@@ -147,6 +165,8 @@ stylesheet with no components in it. A linter that has never been observed
 failing provides no evidence about anything. Rules that are not tested decay
 into rules that are not enforced, which is how "no component sets its own
 width" becomes a comment in a README.
+
+<a id="d-010"></a>
 
 ## D-010 — Themes bind to any element, not to `:root`
 
@@ -168,6 +188,8 @@ a dark subtree inside a light page, never the reverse.
 
 **This is why the playground exists.** The flaw was invisible in the token files
 and obvious within minutes of trying to render both themes at once.
+
+<a id="d-011"></a>
 
 ## D-011 — Every theme scope carries the complete semantic set
 
@@ -201,6 +223,8 @@ must be re-declared at every scope where the target changes. Reading the CSS
 would never have caught this; only a computed-style assertion in a real browser
 did.
 
+<a id="d-012"></a>
+
 ## D-012 — The playground is not a workspace member
 
 **Date:** 2026-09-16 · **Status:** accepted · **Amends:** D-005
@@ -227,6 +251,8 @@ neither of which affects anything shipped.
 **Revisit if** the app and library end up in one repo anyway, or a second
 publishable package appears. At that point a workspace is right and the git
 dependency route no longer matters.
+
+<a id="d-013"></a>
 
 ## D-013 — Screenshot baselines are authored by CI, never locally
 
@@ -270,6 +296,8 @@ behaviour (overflow detection, theme distinctness) rather than pixels, which is
 also what caught the D-011 token bug. That is the split worth keeping: assert
 behaviour where you can, and reserve pixels for what only pixels can catch.
 
+<a id="d-014"></a>
+
 ## D-014 — Gate C approves a group of specs, not one component at a time
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** Gate A, Gate C, Definition of Done
@@ -303,6 +331,8 @@ same turn as the spec it implements.
 **This does not extend to Tiers 3 and 4.** `Field` and the overlay foundation
 are where API mistakes get expensive, and they are approved individually.
 Revisit this entry before spec'ing Tier 3.
+
+<a id="d-015"></a>
 
 ## D-015 — "Semantic tokens only" governs colour; dimensional primitives are consumed directly
 
@@ -356,6 +386,8 @@ requires every component to expose component-scoped custom properties
 (`--pp-badge-padding-inline`) as its override API. That covers the case a
 dimensional semantic layer would have served, without a second global vocabulary.
 
+<a id="d-016"></a>
+
 ## D-016 — Tier 1 vocabulary exceptions, approved as a batch
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §1, §5
@@ -388,6 +420,8 @@ than a line in a spec nobody re-reads.
 7. **`AvatarGroup` is added to the roadmap as 5.13.** Wanted by the consuming
    app; a Tier 5 composition, not an atom.
 
+<a id="d-017"></a>
+
 ## D-017 — CI authors baselines for new screenshot tests, not only for an empty directory
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-013
@@ -411,6 +445,8 @@ instead of both being treated as "delete everything and start over".
 The `GITHUB_TOKEN` push still triggers no run, so an authoring commit is still
 authored-but-unverified until the next real push. That next push now happens
 naturally — it is the next component.
+
+<a id="d-018"></a>
 
 ## D-018 — `margin: 0` is permitted; non-zero margin is not
 
@@ -437,6 +473,8 @@ reset must never do. The fix belongs on the class, not the element.
 The lint self-test moves `margin` from the property-ban expectations to the
 value-ban expectations, so the rule is still observed firing.
 
+<a id="d-019"></a>
+
 ## D-019 — An element-size scale, and `inline-size` for intrinsically square components
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens; RULES §1 enforcement
@@ -460,6 +498,8 @@ the letter of the lint while saying the same thing less clearly, and the child
 SVG still needs `inline-size: 100%` to fit its box. So the exemption is
 explicit and narrow: three files, all `hug`, all square. `Badge` is `hug` but
 not square and gets no exemption — it is sized by its content.
+
+<a id="d-020"></a>
 
 ## D-020 — `gap` is the fourth fixed-vocabulary prop, valued as a space-scale index
 
@@ -505,6 +545,8 @@ A zero default is also the honest one: a `Stack` with no rhythm is a legitimate
 thing, and CSS's own default is `0`. Silently inserting space would be the layout
 equivalent of the UA margin D-018 exists to strip.
 
+<a id="d-021"></a>
+
 ## D-021 — A layout primitive sizes the boxes it creates; it still may not size itself
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §1 (clarification)
@@ -529,6 +571,8 @@ component was specified.
 none declares a background, border, colour or shadow. A layout primitive has no
 visual treatment. If you want a bordered box, that is `Card` (5.1), and it will
 compose a `Stack` inside itself rather than becoming one.
+
+<a id="d-022"></a>
 
 ## D-022 — Tier 2 rulings, approved as a batch
 
@@ -630,6 +674,8 @@ accepted as proposed and are recorded here so each is a precedent.
     the call site until something in the library needs it. Revisit at `Table`
     (5.4).
 
+<a id="d-023"></a>
+
 ## D-023 — `--pp-color-shadow-edge`, a semantic token for fading gradients
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** Tier 0.2 tokens
@@ -667,6 +713,8 @@ reached RULES §3, found the compliant vocabulary did not contain the thing it
 needed, and the gap was invisible until something tried to use it. The general
 lesson is already in D-015 — the prose and the enforced rule drift apart, and
 only building against them finds out which is wrong.
+
+<a id="d-024"></a>
 
 ## D-024 — A component never writes its own public override property inline
 
@@ -708,6 +756,8 @@ the same hazard as D-020's gap scale and has the same answer — *always emit* �
 which is now twice, and therefore a pattern rather than a coincidence.
 
 Found by a unit test written to assert the opposite behaviour, not by review.
+
+<a id="d-025"></a>
 
 ## D-025 — `--pp-measure-*`, and token enforcement for length-valued layout properties
 
@@ -753,6 +803,8 @@ rule:
 property level hides the absence of a ban at the value level, and the gap only
 becomes reachable when some component earns an exemption. Worth checking the
 value rules whenever a property exemption is granted.
+
+<a id="d-026"></a>
 
 ## D-026 — Settling is waited for before the screenshot budget, not inside it
 
@@ -820,6 +872,8 @@ was the remainder and moved the authority for baselines to CI. This round says
 the same thing about *time*: a screenshot taken before the page stops moving is
 not a measurement, and waiting for it is not the same as tolerating a difference.
 
+<a id="d-027"></a>
+
 ## D-027 — Tier 3 is approved in four groups; D-014's carve-out narrows to `Field`
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-014
@@ -848,6 +902,8 @@ ring, a disabled semantic and a pressed semantic. Approving `Button` alone and
 `Button` has `pressed`.
 
 Gate A is unaffected. Implementation remains one component at a time.
+
+<a id="d-028"></a>
 
 ## D-028 — `--pp-control-*`, and `--pp-tone-solid-active`
 
@@ -892,6 +948,8 @@ against its on-solid text — asserted in the generator *and* independently in
 button that loses its label is visible for 120ms and is therefore exactly the
 kind of failure nobody catches by looking.
 
+<a id="d-029"></a>
+
 ## D-029 — The focus ring is an outline, in one colour, declared in `pp.components`
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** RULES §6 (implementation)
@@ -927,6 +985,8 @@ them.
 
 Guarded by a browser assertion in `tests/visual/harness.spec.ts`: the outline
 colour of a focused `danger` button equals that of a focused `accent` one.
+
+<a id="d-030"></a>
 
 ## D-030 — Tier 3A rulings, approved as a batch
 
@@ -1025,6 +1085,8 @@ view*, which is enforceable by eye precisely because the default is not accent.
 affordances; those are the batch's two deliberate inconsistencies and they are
 named here so they stay decisions rather than drift.
 
+<a id="d-031"></a>
+
 ## D-031 — `IconButton` build findings: the D-019 exemption, and props that outlive their types
 
 **Date:** 2026-09-17 · **Status:** accepted · **Amends:** D-019
@@ -1060,6 +1122,8 @@ halves: that it does not typecheck, and that the runtime drops it.
 **The standing rule:** when a component narrows an inherited props type, every
 prop it removes must also be removed from what it forwards. A type is a claim
 about callers who typecheck, and a component library has callers who do not.
+
+<a id="d-032"></a>
 
 ## D-032 — One `useControllableState`, and the `'use client'` rule is scoped to what ships
 
@@ -1106,6 +1170,8 @@ beside it. Widening the scope makes it fire twice; over-narrowing makes it fire
 zero times; both were run and both fail. This is D-009's rule applied to a
 change in a rule rather than to a new one.
 
+<a id="d-033"></a>
+
 ## D-033 — An attached group collapses borders by dropping one, not by negative margin
 
 **Date:** 2026-09-17 · **Status:** accepted
@@ -1146,6 +1212,8 @@ a keyboard user an arrow-key discovery step to reach what one Tab would have
 reached. `Toolbar` (6.6) is the roving component; that is why it is a separate
 roadmap entry, and this divergence is recorded per RULES §6.
 
+<a id="d-034"></a>
+
 ## D-034 — A label's type scale is the control scale, not the text scale
 
 **Date:** 2026-09-18 · **Status:** accepted · **Extends:** D-028, D-015
@@ -1172,6 +1240,8 @@ Asserted in the browser by comparing a `Label`'s computed `font-size` with a
 `Button`'s at the same `size`, rather than against a number. A numeric
 assertion still passes after someone hardcodes one of the two; the comparison
 is the only form of the test that fails when they stop sharing a token.
+
+<a id="d-035"></a>
 
 ## D-035 — `Label` build findings: the Matrix duplicates ids, and two tests that could not fail
 
@@ -1219,6 +1289,8 @@ not fail (D-009, and the Tier 3A focus test). It is the check earning its place
 rather than a coincidence: **a test is not verified by passing, only by failing
 on the symptom it names.**
 
+<a id="d-036"></a>
+
 ## D-036 — `Field` is configuration, not a compound API
 
 **Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §5.6
@@ -1247,6 +1319,8 @@ and nothing about `Card.Header` has to know whether `Card.Footer` rendered.
 **Consequence:** every input in 3C and 3D is `<Field label="…"><Input /></Field>`
 and never `<Field.Label>`. If a future component needs the compound form, that
 is a new component, not a second API on this one.
+
+<a id="d-037"></a>
 
 ## D-037 — `Field` build findings
 
@@ -1304,6 +1378,8 @@ they are the first two items in source order, and pinning only the description
 and the error to column 2 makes auto-placement produce the identical grid. The
 explicit rules were deleted. A declaration that can be removed with no observable
 effect is not documentation, it is a claim of a dependency that does not exist.
+
+<a id="d-038"></a>
 
 ## D-038 — The release pipeline has never run; `blocked` is its real status
 
@@ -1447,6 +1523,8 @@ nothing from this that D-009 did not already say about linters; what it gained
 is a second domain where the rule holds. **Infrastructure is `done` when it has
 been observed producing its artifact, not when its config file exists.**
 
+<a id="d-039"></a>
+
 ## D-039 — Tier 3C rulings, approved as a batch
 
 **Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §5.1, §5.3; D-019; ROADMAP 3.11
@@ -1557,6 +1635,8 @@ anything it cannot parse, so `1,5` in a German locale is silently lost.
 `NumberInput` (3.14) is `type="text"` with `inputMode="numeric"`, and `Input`'s
 docs say so now rather than surprising someone a tier later.
 
+<a id="d-040"></a>
+
 ## D-040 — `Input` build findings: a form control does not fill
 
 **Date:** 2026-09-18 · **Status:** accepted · **Amends:** RULES §1 (statement of mechanism); `docs/specs/tier-3c-inputs.md` §3.8, §3.9, §3.11, §3.13
@@ -1641,6 +1721,8 @@ redeclaring it in `pp.components` would take that away. The line was deleted.
 D-037 §5's lesson, reached from the other direction — there the declaration was
 load-bearing-looking and inert, here the linter pointed at it first.
 
+<a id="d-041"></a>
+
 ## D-041 — The screenshot list is asserted against the registry, not kept in step by hand
 
 **Date:** 2026-09-18 · **Status:** accepted · **Amends:** D-012 (consequence), Tier 0.6
@@ -1687,6 +1769,8 @@ cross-component agreement should be structural rather than vigilant. **A comment
 asking a future reader to keep two files in step is neither.** Where
 deduplication is genuinely impossible — and here it genuinely is — the agreement
 gets a test, not a paragraph.
+
+<a id="d-042"></a>
 
 ## D-042 — A baseline authored after its PR merges is lost, and `main` cannot author one
 
@@ -1751,6 +1835,8 @@ that ruling — **a test that two lists agree is not a test that the artifact th
 lists describe exists.** `tests/unit/playground-registry.test.ts` passed at
 every moment described above, correctly, while the baseline it was written to
 protect was absent from `main`.
+
+<a id="d-043"></a>
 
 ## D-043 — `Textarea` build findings: padding derived from the control scale
 
@@ -1828,6 +1914,8 @@ a row where that check has been run, and the first where it found nothing wrong*
 — which is worth recording, because the check earning its place four times and
 then coming up empty once is what a working practice looks like, not a reason to
 stop running it.
+
+<a id="d-044"></a>
 
 ## D-044 — `Checkbox` build findings: a private custom property is not private
 
@@ -1942,6 +2030,8 @@ check that silently reports "absent" for "looked in the wrong place" is the same
 failure shape D-037 §4 was written about, one level up: **verify the verifier by
 seeing it find the thing before you trust it not finding the thing.**
 
+<a id="d-045"></a>
+
 ## D-045 — The pointer over a checkbox row comes from `Field`, not from the control
 
 **Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/Label.md` §5, `docs/specs/tier-3c-inputs.md` §3.10 (Styling API, State)
@@ -2017,6 +2107,8 @@ already replaced with an inline `Icon`. And the playground registry listed
 components in implementation order, so the home page navigation read 1.3, 1.5,
 1.8, 1.10, 1.6 — it is in roadmap order now, with the screenshot list beside it.
 
+<a id="d-046"></a>
+
 ## D-046 — `Scroller` `both` measures and shades both axes; the inline axis is `data-overflow-inline`
 
 **Date:** 2026-09-18 · **Status:** accepted · **Amends:** `docs/specs/tier-2-layout.md` §2.8 (State)
@@ -2059,6 +2151,8 @@ first — the attribute assertions still passed and the edge count failed,
 only assertion that would have caught it.
 
 Minor bump: a new attribute in the rendered DOM.
+
+<a id="d-047"></a>
 
 ## D-047 — `Radio` build findings: the group owns the value, and the stylesheet does not
 
@@ -2224,6 +2318,8 @@ components after this one.
 are still absent and still collide with `GITHUB_TOKEN` authoring; this adds a
 way to run the checks on demand, not a way to require them.
 
+<a id="d-048"></a>
+
 ## D-048 — `Switch` build findings: the off state failed the contrast the on state passed
 
 **Date:** 2026-09-19 · **Status:** accepted · **Amends:**
@@ -2356,6 +2452,8 @@ to rediscover — when an assertion says "A is not B", ask what else is differen
 about A and B.
 
 ---
+
+<a id="d-049"></a>
 
 ## D-049 — `Select` build findings: a disabled placeholder is never the default selection
 
@@ -2535,6 +2633,8 @@ one from its heading, since a heading is the sentence most likely to be echoed
 elsewhere on the page. The section's `hasText` is `'no read-only'` now.
 
 ---
+
+<a id="d-050"></a>
 
 ## D-050 — A control's boundary is a solved token, not a ramp step
 
@@ -2740,6 +2840,8 @@ in the one place where the prose is the specification. The header now says which
 steps carry an obligation and which explicitly do not, and the obligations it
 names are the ones `check-contrast.mjs` asserts.
 
+<a id="d-051"></a>
+
 ## D-051 — `NumberInput` build findings: the structure Select had already solved, and a keypad with no minus key
 
 **Date:** 2026-09-21 · **Status:** accepted · **Amends:** `tier-3d-composite.md`
@@ -2891,6 +2993,8 @@ test fail"; this adds the mirror — **when a test fails, establish which of the
 two is wrong before changing either.** Here the score was one component defect
 to four test defects.
 
+<a id="d-052"></a>
+
 ## D-052 — `Slider` build findings: the gradient that was never written, and a flake the reset had been hiding
 
 **Date:** 2026-09-21 · **Status:** accepted · **Amends:** `tier-3d-composite.md`
@@ -3010,6 +3114,8 @@ what takes a track click away.
 The tracked-item denominator moves from **78 to 79**.
 
 ---
+
+<a id="d-053"></a>
 
 ## D-053 — `Alert` build findings: the first surface that is not the page, and the ring nobody had measured off it
 
@@ -3230,6 +3336,8 @@ fourth opinion about what "danger" looks like.
 
 ---
 
+<a id="d-054"></a>
+
 ## D-054 — `outline-width` is not the property that says a ring is drawn, and a guard with no way to be regenerated stops guarding
 
 **Date:** 2026-09-21 · **Status:** accepted · **Amends:** D-050 §5 (the
@@ -3285,6 +3393,8 @@ stop being regenerated. Ship the command with the guard.
 
 ---
 
+<a id="d-055"></a>
+
 ## D-055 — The ring was already per theme. A grep was read as a fact
 
 **Date:** 2026-09-21 · **Status:** accepted · **Corrects:** D-053 §2;
@@ -3328,6 +3438,8 @@ entry, a roadmap row and a pull request before anyone tried it. **The rule:
 prose that sizes a piece of work is a claim, and it gets checked like one.**
 
 ---
+
+<a id="d-056"></a>
 
 ## D-056 — 0.11: the ring's surfaces are every hue's, and a gallery that did not draw what it called solved
 
@@ -3391,6 +3503,8 @@ the manifest now guards rather than the claim this entry makes.
 
 ---
 
+<a id="d-057"></a>
+
 ## D-057 — Gate C for 3.16 `Form` and 3.17 `RangeSlider`: approved by delegation
 
 **Date:** 2026-09-22 · **Status:** accepted · **Amends:** `docs/specs/Form.md`,
@@ -3423,6 +3537,8 @@ builds that follow:
   what has to be written down, it does not narrow it.
 
 ---
+
+<a id="d-058"></a>
 
 ## D-058 — `Form` build findings: a successful submit that no effect could see
 
@@ -3510,6 +3626,8 @@ Neither is a stop. The build proceeds as specified once `Form` is `done`.
 
 ---
 
+<a id="d-059"></a>
+
 ## D-059 — Nothing interactive inherits an `Alert`'s tone, `live` was recommended for the case it cannot serve, and "set the tone" says where
 
 **Date:** 2026-09-26 · **Status:** accepted · **Corrects:** `docs/specs/Alert.md`
@@ -3596,6 +3714,8 @@ as a visible change: its `role="switch"` stand-in was accent, `Switch` is
 neutral by default, and the app kept neutral to match its radios.
 
 ---
+
+<a id="d-060"></a>
 
 ## D-060 — `RangeSlider` build findings: the safety net that hid the wire, and a stacking rule the spec had only written for the coincident case
 
@@ -3751,6 +3871,8 @@ established. The assertion is already polled (D-052 §3) and reads
 
 ---
 
+<a id="d-061"></a>
+
 ## D-061 — Tier 4 is built on Radix Primitives; Gate C for 4.1 and 4.2 approved by delegation; the overlay exception to RULES §1
 
 **Date:** 2026-09-26 · **Status:** accepted · **Amends:** D-002 (the slash
@@ -3838,6 +3960,8 @@ been — so the guard is the type, and the docs page's "don't" shows the pixel
 form so a reviewer knows what to reject.
 
 ---
+
+<a id="d-062"></a>
 
 ## D-062 — `Popover` build findings: a compound you cannot dot into from the server, a gallery that dismissed itself, and a reset that does not reach the component layer
 
@@ -3962,6 +4086,8 @@ proved nothing about the test. A break that does not compile is not a break.
 
 ---
 
+<a id="d-063"></a>
+
 ## D-063 — The playground shows one theme at a time, chosen by a switcher; the screenshot suite captures both
 
 **Date:** 2026-09-26 · **Status:** accepted · **Amends:** Tier 0.4
@@ -4033,6 +4159,8 @@ library is and four facts about it. The chrome on every page carries the
 wordmark, the three places, the switcher, and on a component page a
 breadcrumb back to the index and links to the previous and next component
 in roadmap order. Nothing in the chrome writes an id (D-035 §1).
+
+<a id="d-064"></a>
 
 ## D-064 — Gate C for 4.3 `Tooltip` approved by delegation; an inverse surface joins the tokens; RULES §4 gains an extension rule
 
@@ -4127,6 +4255,8 @@ workaround:
   dispatches no open event;
 - `instant-open` after a skip actually skips the entry animation, and
   `delayed-open` after a rest plays it.
+
+<a id="d-065"></a>
 
 ## D-065 — `Tooltip` build findings: a test harness that waits on a timer nobody advances, a text token that must not be redefined, and a scroll that closes what focus just opened
 
@@ -4242,6 +4372,8 @@ them. The break the spec recorded in advance as not observable — a bare
 `4` in place of `resolveSpace` — was not run: D-062 §7 ran it for the same
 mechanism and it was not.
 
+<a id="d-066"></a>
+
 ## D-066 — An authoring run masked a regression, because `git status` cannot see a mismatch; the index page's baseline is tied to the registry; a placed box is a still box
 
 **Date:** 2026-09-27 · **Status:** accepted · **Amends:** `.github/workflows/ci.yml`
@@ -4311,6 +4443,8 @@ helper that trusts it only once x and y are positive and unchanged across
 two reads a frame apart. This was a flake in the harness, not in either
 component, and it predated `Tooltip`: the Popover test was unchanged.
 
+<a id="d-067"></a>
+
 ## D-067 — Gate C for 4.4 `Dialog` approved by delegation; a modal's scrim is the other half of the overlay exception
 
 **Date:** 2026-09-27 · **Status:** accepted · **Amends:** RULES §1 (the
@@ -4341,6 +4475,8 @@ and that is the exception's other half. RULES §1's consequence says so;
 else relaxed) names `Dialog.css` as it named `Tooltip.css` (D-064 §4).
 Nothing in flow ever qualifies, and the panel itself declares no position:
 it is a grid item, centred by the scrim.
+
+<a id="d-068"></a>
 
 ## D-068 — `Dialog` build findings: a hug panel is as wide as its content asks, an explicit `undefined` erases what Radix wired, and a page a dialog hides is a page a role locator cannot see
 
@@ -4456,6 +4592,8 @@ was `position: fixed` and no longer overflowed the scrim, the gallery's
 wide panel mid-animation — are what a combined run costs and why the named
 test is what is read.
 
+<a id="d-069"></a>
+
 ## D-069 — A standing delegation for the rest of the roadmap; a component waiting only on its CI-authored baseline does not hold the WIP limit; one parked idea
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.claude/skills/component/SKILL.md`
@@ -4507,6 +4645,8 @@ Parked at the user's request until the components exist; when it is
 picked up it is a Tier 6 item with a spec of its own, because it touches
 every component's state vocabulary (RULES §4) at once.
 
+<a id="d-070"></a>
+
 ## D-070 — `AlertDialog` build findings: one stylesheet draws two components, and a Cancel-less alert dialog leaves focus outside its own trap
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/AlertDialog.md`
@@ -4546,6 +4686,8 @@ passes with no rule disabled on `role="alertdialog"`. The chunk holding
 `@radix-ui/react-alert-dialog` (14,028 bytes) is referenced by the
 AlertDialog page's payload only. 13 unit and 5 browser assertions; one
 browser break and two unit breaks, each caught by its named test.
+
+<a id="d-071"></a>
 
 ## D-071 — `Drawer` rulings and build findings: a token on the anchored axis, no new package, and Radix's scroll lock strips a padded body of its gutter
 
@@ -4679,6 +4821,8 @@ browser break checks (`justify-items: right` dropped, `resolveSide`
 pinned to LTR, the side drawers' `inline-size` dropped, the reduced-motion
 rule dropped), each caught by its named test.
 
+<a id="d-072"></a>
+
 ## D-072 — `DropdownMenu` rulings: `align` starts, `data-highlighted` joins RULES §4, and one stylesheet's three allowances
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §4
@@ -4802,6 +4946,8 @@ rule dropped (`animationName` was the keyframe); the submenu's
 `alignOffset` zeroed (the first sub-item four pixels below its trigger's
 row). The tone attribute's break is a unit test's (`data-pp-tone`).
 
+<a id="d-073"></a>
+
 ## D-073 — `ContextMenu` rulings: a menu's parts are built once, Gate B under the batch, and a region that renders a `<div>`
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.claude/skills/component/SKILL.md`
@@ -4910,6 +5056,8 @@ and the row lost its height; the `dir` hand-off dropped — the RTL submenu
 opened on the wrong key; the region as Radix's `<span>` — the unit test),
 each caught by its named test.
 
+<a id="d-074"></a>
+
 ## D-074 — `Tabs` rulings: `active | inactive` joins RULES §4, the page's direction is the component's, and a kept panel hides itself
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §4
@@ -5016,6 +5164,8 @@ checks themselves: dropping `flex-shrink` caught nothing (§5), and a
 mutation that leaves an import unused fails the library build the browser
 suite's server runs first, which reads as the server not starting.
 
+<a id="d-075"></a>
+
 ## D-075 — `Accordion` rulings: `multiple` not `type`, `collapsible` on by default, the heading level asked once, and a button that fills its heading
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Accordion.md`
@@ -5098,6 +5248,8 @@ what was typed, hidden while closed, and a fresh one empties. 12 unit and
 4 browser tests; five break checks (the chevron's turn, the
 reduced-motion rule, the heading's grid, the `hidden` mirror, `multiple`
 ignored), each caught by its named test.
+
+<a id="d-076"></a>
 
 ## D-076 — `Combobox` rulings: the consumer filters and is told why the text changed, a value from outside is named by `getLabel`, one allowance for the list's floor, and the listbox inside a presentation panel
 
@@ -5208,6 +5360,8 @@ selected option's mark sat on its label); the scroll-into-view dropped
 (a value from outside showed as its code, in the input and as a token —
 the unit tests).
 
+<a id="d-077"></a>
+
 ## D-077 — `Toast` rulings: an event, not an element; an `Alert` that floats; `live`, not `type`; and what Radix's announcer is
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
@@ -5313,6 +5467,8 @@ reduced-motion rule dropped (the enter animation measured, and the
 gallery read no toasts mid-motion — collateral of the un-reduced run,
 D-035 §3).
 
+<a id="d-078"></a>
+
 ## D-078 — `CommandPalette` rulings: made of the tier, the first match highlighted, focus back to whatever had it, and `mod` decided when pressed
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
@@ -5402,6 +5558,8 @@ listener dropped (`Control+k` opened nothing); the row variable dropped
 (the menu's small row); the close after select dropped (the palette
 stayed open after `Enter`).
 
+<a id="d-079"></a>
+
 ## D-079 — `Card` rulings: named parts for a server compound, no shadow, the foot sunken, and the wrap is the card's
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md`
@@ -5477,6 +5635,8 @@ surface dropped (transparent); the hover lift dropped (`box-shadow` stayed
 `none`); `overflow-wrap` dropped (the URL pushed the card past its cell).
 Each failed on exactly the test named for it; the fifth, `min-inline-size:
 0`, is §3.
+
+<a id="d-080"></a>
 
 ## D-080 — `Progress` rulings: `value` absent is indeterminate, a name at the type level, a fill that is a flex item, and `accent` by default
 
@@ -5570,6 +5730,8 @@ read 0, in LTR and RTL); the sweep dropped (`animation-name` read
 `none`); the reduced-motion swap dropped (the pulse read as the sweep);
 the `lg` thickness dropped (the heights). Each failed on exactly the
 test named for it.
+
+<a id="d-081"></a>
 
 ## D-081 — `Table` rulings: a named region that scrolls, `caption` as a prop, a table stretched by a grid, `useId` is not a client hook, a ring read in the frame it landed in, and two things only the screenshot said
 
@@ -5689,6 +5851,8 @@ dropped (transparent); the selected row's surface dropped (transparent);
 the head's `text-align: start` dropped (the UA's `center`). Each failed
 on exactly the test named for it.
 
+<a id="d-082"></a>
+
 ## D-082 — `Pagination` rulings: a constant window, the compact form is the container's, the current page is a pressed Toggle, `:dir()` does not ship, and three things only the screenshot said
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/RULES.md` §1
@@ -5805,6 +5969,8 @@ the RTL mirror dropped (`scale: none`); the centring dropped (the row at
 the start). Each failed on exactly the test named for it; the fifth,
 `container-type` in the matrix, is §2.
 
+<a id="d-083"></a>
+
 ## D-083 — `Breadcrumb` rulings: the separator is the stylesheet's and follows its crumb, the page is a span, and a `nowrap` the break check found wrong
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Breadcrumb.md`
@@ -5874,6 +6040,8 @@ Break checks (D-035 §3): the separator's `content` dropped (`none`,
 both tests); `flex-wrap` dropped (the trail spilled); the page's weight
 dropped (`400`); the separator's colour dropped (the page's colour).
 Each failed on exactly the test named for it; `nowrap` is §3.
+
+<a id="d-084"></a>
 
 ## D-084 — `Stepper` rulings: a counter and a check, a row that is a column by its container, and a grid that seated the circle after the label
 
@@ -5968,6 +6136,8 @@ dropped (the circle after the label, both tests). Each failed on the
 test named for it. The indicator's placement alone caught nothing — the
 body's column is the mechanism — and the comment says so.
 
+<a id="d-085"></a>
+
 ## D-085 — `EmptyState` rulings: parts on the primitives, a measure by a grid, and `outline` as Card's frame made dashed
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/EmptyState.md`
@@ -6031,6 +6201,8 @@ Break checks (D-035 §3): the measure dropped (566px over); the dashed
 edge dropped (`solid`); `text-align` dropped (the title at `start`, once
 the test read it); the tile's surface dropped (transparent). Each failed
 on exactly the test named for it.
+
+<a id="d-086"></a>
 
 ## D-086 — `Calendar` rulings: an ISO value and no date library, our own grid with the APG keys, names by `Intl`, and a sixth week hidden as a row
 
@@ -6125,6 +6297,8 @@ dropped (the page's text); the day's height dropped (26px short); the
 RTL mirror dropped (`scale: none`). Each failed on exactly the test
 named for it.
 
+<a id="d-087"></a>
+
 ## D-087 — `FileUpload` rulings: the hidden input is the mechanism and the Trigger the keyboard path, refusals with reasons, and a file field is a group
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/FileUpload.md`
@@ -6209,6 +6383,8 @@ surface dropped (the page's surface); the item hairline dropped (`0px`);
 the name's truncation dropped (`false`). Each failed on exactly the test
 named for it.
 
+<a id="d-088"></a>
+
 ## D-088 — `Tree` rulings: nested items with both states controllable, focus on the row that owns its group, and a ring the rule would not let me remove
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/Tree.md`
@@ -6291,6 +6467,8 @@ dropped; the chevron's turn dropped; the row height dropped; the RTL
 mirror dropped; the RTL turn dropped. Each failed on exactly the test
 named for it.
 
+<a id="d-089"></a>
+
 ## D-089 — `CodeBlock` rulings: the frame and not the highlighter, a `<pre>` that is a region, the code stretched by a grid, and a gutter under the D-019 exemption
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `.stylelintrc.json`
@@ -6371,6 +6549,8 @@ both tests); `pre-wrap` dropped (`pre`); the grid dropped (the code
 two pixels short of the frame). Each failed on exactly the test named
 for it.
 
+<a id="d-090"></a>
+
 ## D-090 — `AvatarGroup` rulings: a list with a count, overlap by a grid and not a margin, and the group's size written into the faces
 
 **Date:** 2026-09-28 · **Status:** accepted · **Amends:** `docs/specs/AvatarGroup.md`
@@ -6449,6 +6629,8 @@ dropped (`none`); the count's surface dropped (the tone's solid); the
 group's size dropped (the faces at Avatar's own sizes). Each failed on
 exactly the test named for it.
 
+
+<a id="d-091"></a>
 
 ## D-091 — `DatePicker` rulings: Input's box with a button and Calendar behind it, text parsed on commit in the locale's order, and the text the value's unless mid-edit
 
@@ -6530,6 +6712,8 @@ below the field); the box's ring dropped (`0px`); the button's height
 dropped (its content's height, 20px short); the panel's padding
 dropped (`0`). Each failed on exactly the test named for it.
 
+<a id="d-092"></a>
+
 ## D-092 — The authoring commit records the geometry of what it authors
 
 **Date:** 2026-09-29 · **Status:** accepted · **Amends:** D-013 (the
@@ -6593,6 +6777,8 @@ baseline were still unrecorded, and the number was never the point.
 The `workflow_dispatch` fallback stays, for the case the comment was
 written for. The `checks` job does not run the recorder: recording on
 a compare run would bless drift, which is what D-050 §5 forbids.
+
+<a id="d-093"></a>
 
 ## D-093 — Run 176 was red and none of it was a pixel: a copy button that hydrated against different HTML, and four reads taken inside a window; Tiers 4 and 5 swept to `done`
 
@@ -6738,6 +6924,8 @@ of twice, a Radix render the harness pressed a key inside of, and one
 read that is now polled. The label is where a diagnosis stops, not what
 one is.
 
+<a id="d-094"></a>
+
 ## D-094 — `ThemeProvider` rulings and findings: `value`, not `theme`; the attribute follows state only once state is the stored choice; the script survives minification
 
 **Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/ThemeProvider.md`
@@ -6823,6 +7011,8 @@ assertions; a crawl of every page finds no hydration error. jsdom needs a
 `matchMedia` stub, added to the suite's setup and documented on the docs
 page as the ResizeObserver one is.
 
+<a id="d-095"></a>
+
 ## D-095 — `ThemeToggle` rulings and findings: the face is the stylesheet's, the name is content, and hiding the other face is the only rule it needs
 
 **Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/ThemeToggle.md`
@@ -6899,6 +7089,8 @@ with `preventDefault()` respected, `disabled`, custom labels and icons,
 the empty-label warning, the throw outside a provider, axe in both
 themes. 7 unit and 5 browser assertions. The chrome keeps its three-way
 switcher (spec §7): no existing baseline moves; the index gains a card.
+
+<a id="d-096"></a>
 
 ## D-096 — `AppShell` rulings and findings: slots because the root must own `<main>`, a skip link that is clipped rather than sized, and a block size that is the parent's
 
@@ -7000,6 +7192,8 @@ the same reason. The test targets the first cell and says why. D-035 §1's
 rule — nothing in the chrome writes an id — was about this hazard from
 the other side.
 
+<a id="d-097"></a>
+
 ## D-097 — `PageHeader` rulings and findings: a wrapping row instead of areas, and the library's one visual reorder
 
 **Date:** 2026-09-29 · **Status:** accepted · **Amends:** `docs/specs/PageHeader.md`
@@ -7057,6 +7251,8 @@ breadcrumb in place, the DOM order, level 1 by default and 2 when told,
 `tone="muted"` and `gap="2"` by default and overridable, refs,
 `className`, `style` and rest on every part, a server render, axe in both
 themes. 4 unit and 3 browser assertions.
+
+<a id="d-098"></a>
 
 ## D-098 — `Toolbar` rulings and findings: a text field is never the stop, the controls are re-read by an observer, and a press remembers without focusing
 
@@ -7131,6 +7327,8 @@ Break checks (D-035 §3): `flex-wrap` dropped (the narrow cell overflows);
 failed on exactly the test named for it. `align-items: center` and
 `min-inline-size: 0` are stated, not claimed: every control in the
 gallery is the same height, and the row wraps by its content (D-079 §3).
+
+<a id="d-099"></a>
 
 ## D-099 — `NavSidebar` rulings and findings: plain links over a roving tree, a closed list that is `hidden`, and an author `display` that beat the user agent's `hidden`
 
@@ -7222,6 +7420,8 @@ dropped; the RTL mirror dropped; the item's grid dropped (rows narrower
 than the nav, in the shell too); the truncation dropped. Each failed on
 exactly the test named for it; §2's track minimum failed none and was
 removed.
+
+<a id="d-100"></a>
 
 ## D-100 — `KeyHints` (6.7) added and built: the parked modifier idea as three gestures, hints that stagger, and one `isEditing`
 
@@ -7315,6 +7515,8 @@ Break checks (D-035 §3): the overlay's layer dropped (`auto`); its
 corner); the hint's `position: absolute` dropped. Each failed on exactly
 the test named for it.
 
+<a id="d-101"></a>
+
 ## D-101 — Run 187 red: a baseline stale by D-093's own change, and two reads inside a window
 
 **Date:** 2026-09-29 · **Status:** accepted · **Amends:** `tests/visual/__screenshots__`
@@ -7378,3 +7580,460 @@ reading. Sixteen of sixteen runs pass.
 
 No test was retried to see if it passes, none was given a tolerance,
 and the reset is unchanged.
+
+<a id="d-102"></a>
+
+## D-102 — The playground on a phone: four galleries that locked it, a chrome with two gutters, a palette and a demo that pushed it sideways, and a 1px box that widened it
+
+**Date:** 2026-10-06 · **Status:** accepted · **Amends:** `playground/app/globals.css`
+(the chrome, the ramp, the dialog stage), `playground/app/tokens/page.tsx`, the
+Dialog, AlertDialog, Drawer and CommandPalette pages and galleries,
+`playground/harness/gallery.ts` (new), `src/components/VisuallyHidden/VisuallyHidden.css`,
+`docs/specs/tier-1-atoms.md` §1.4, `playwright.config.ts` (the `phone` project),
+`tests/visual/phone.spec.ts` (new), `tests/visual/screenshots.spec.ts`,
+`tests/visual/harness.spec.ts`, every screenshot baseline · **Extends:** D-013,
+D-041, D-050 §5, D-062 §2, D-063, D-066 §2, D-068 §4, D-071 §6, D-093 §3
+
+Asked what would make the library cooler, and then to "try mobile reso also"
+and "fix it all". Nothing in the suite had ever opened the playground
+narrower than 1280px. At 390x844 with touch, five things were wrong, and the
+test written for them found a sixth in the library itself.
+
+### 1. The four modal galleries open only when asked
+
+Dialog, AlertDialog, Drawer and CommandPalette opened three modals at load,
+for the screenshot. Three modals lock the page's scroll and pointer and hide
+the rest of it from assistive tech, and the page told the reader to press
+Escape three times — a key a phone does not have. Measured with raw touch
+events, with Button and Popover as controls: a swipe scrolled those two from
+0 to ~1187px and moved none of the four. AlertDialog's scrim does not dismiss
+by design, so a phone had no way out of that page at all; CommandPalette's
+loaded pre-scrolled and cropped sideways by its three inputs' focus.
+
+Each cell now has its own trigger, "Open in this cell", and its dialog opens
+over that cell and takes focus as any dialog does. `?gallery=open` opens all
+three at load as before; it is read on the server from the page's
+`searchParams` (`harness/gallery.ts`), so the first render knows which page it
+is and nothing changes on hydration. The screenshot suite passes it through a
+`query` field kept apart from `path`, so the registry guard (D-041) reads the
+slugs unchanged. Open-autofocus is prevented only in that mode (D-062 §2).
+
+The interactive browser tests used to close three dialogs first, an Escape
+each, waited out — the dance in which run 176's Escape closed two at once
+(D-093 §3). They now run on the page a visitor gets and assert that nothing is
+open on it; the gallery tests ask for the gallery; one new test walks a
+visitor's path: a cell's trigger, that cell's dialog, focus inside, Escape,
+focus back on the trigger.
+
+### 2. The chrome had two gutters, so every baseline is re-authored
+
+`.chrome` carried `padding-inline` inside `.shell`, which already carries the
+page gutter (D-071 §6). Its rows sat 32px inside the page's left edge up to
+768px and 24px inside it at 1280px — the suite's own width — and met it only
+from about 1328px. The padding is gone; the rows and `.page` are the same
+1200px column in the same box, and share both edges at every width.
+
+That moves the header in every page's pixels, and the chrome gains three
+places (D-104 §6), so every baseline is deleted for CI to author (D-013): the
+window D-050 §5 describes, in which nothing is compared. Which pages may
+change height was measured rather than assumed: every page in both themes,
+settled as the suite settles it, on a production build of `main` and of this
+branch, locally (the absolute heights are this Chromium's; the deltas are
+what CI will see, D-050 §5). Four moved: the index (+575px, the front door),
+AlertDialog (+26) and CommandPalette (+25), whose gallery prose grew a line,
+and Combobox (−4, §7's flag gone). Those are re-baselined with
+`npm run dimensions -- --rebaseline` (D-066 §2); the other 68 keep their
+manifest entries, so the geometry guard holds their heights through the
+window — a page that came back a different height would be something other
+than the chrome. The new pages (D-104 §7) are authored fresh.
+
+Below 40rem the chrome is no longer sticky. Wrapped to four or five rows, it
+held 17–29% of a phone's screen (140–247px of 844) for the whole scroll; the
+shell's gutter halves there too. A viewport query is the page asking about
+the device it is on — a page's business, never a component's (RULES §1) —
+and the suite's 1280px is untouched by it.
+
+### 3. `VisuallyHidden` is pinned to its containing block's inline start
+
+Found by §5's test, not by eye: the Spinner page's document was 514px wide on
+a 390px phone. The Spinner in the Matrix's 960px cell sits past the phone's
+edge inside `.matrix`, which scrolls. Its label is a `VisuallyHidden`,
+`position: absolute` with no inset, so it sat at its static position,
+positioned against the nearest positioned ancestor — the viewport, outside
+the scroller — escaped the scroller's clip, and widened the document. Every
+component that embeds one (Spinner, Stepper, ThemeToggle, KeyHints, Field's
+hidden label, CodeBlock's status) and every consumer's own had the same
+phantom scrollbar waiting past the edge of a horizontally scrolled region.
+
+`inset-inline-start: 0` keeps the box inside its containing block on the
+inline axis by construction. The block axis keeps its static position, so a
+screen reader that moves to the text still scrolls the page to the right
+height. The component is never visible (spec §1.4: not focus-revealing), so
+nothing is drawn differently. A browser test puts one past the edge of a
+200px scroller and asserts the document did not widen; it places the box
+with inline content rather than a flex row, because an absolute child of a
+flex container takes its static position at the container's start and would
+pass with or without the fix.
+
+Considered and rejected: `position: relative` on the six roots that embed
+one. Six containing blocks changed for everything else inside those
+components, and a consumer's own `VisuallyHidden` would still escape.
+
+### 4. `/tokens`: the palette scrolls in a Scroller, and its numbers take their ramp's ink
+
+The twelve steps pushed the page 285px past a phone's edge (a 675px
+document). They scroll inside the library's own `Scroller` now, shaded at the
+edge with more, and each step has a 2rem floor that resolves to the old `1fr`
+wherever `1fr` is wider — every desktop width.
+
+Every swatch's number was `text-muted`, which is step 11. On the page whose
+prose says every ratio is solved, 50 of the 120 numbers were under 3:1, and
+step 11's read 1.00:1 against itself. Each step now takes its ramp's own ink
+for "text on this": 12 on steps 1–8, `on-solid` on 9–10, 1 on 11–12, every
+pairing one `lint:contrast` asserts or sits on the ramp between two that it
+does. The worst of the 120 is 4.60:1 (dark success 8).
+
+### 5. A `phone` project
+
+`playwright.config.ts` gains `phone` — 390x844 CSS pixels, touch, `isMobile` —
+which runs `tests/visual/phone.spec.ts` and nothing else. It visits every
+registry page (read from `registry.ts`, as the unit guard does, so there is no
+third list) plus the index, `/tokens`, `/harness` and every page D-104 adds,
+and asserts three things: the document is no wider than the screen; a swipe
+scrolls the page — raw touch events through the DevTools protocol, because a
+scroll set from script proves nothing about a lock, which only refuses
+gestures; and the chrome, once scrolled past, has gone with the page.
+Behaviour only: a second set of baselines would double what CI authors to say
+what these assertions already say.
+
+Its first run failed on two pages, and neither was the playground's. The
+Spinner was §3. The Combobox page was §7: a first fix to its demo's grid was
+a fix to a symptom, and the next run said so.
+
+### 6. `next dev` writes into `playground/`
+
+Next 16's dev server writes an `AGENTS.md` and a `CLAUDE.md` into the app's
+directory on every start unless told not to — two untracked files after every
+`npm run dev`. `agentRules: false`. The repository's agent guidance is its
+root `CLAUDE.md`, and what a consuming app's agent reads ships in the package
+(D-105).
+
+### 7. Two shipped defects the new pages found, and a rule for the second's class
+
+**`Combobox` could not be narrower than ~256px.** `.pp-combobox__box` was
+`grid-template-columns: 1fr auto`, and a bare `1fr` has an automatic
+minimum: the field's min-content, which is the native `<input>`'s intrinsic
+width from its `size` — 210px at `md`. The input itself already had
+`min-inline-size: 0`; the track never let it use it. So the control
+overflowed the Matrix's own 240px cell, and **the harness had been flagging
+it** — "overflows its parent", on the page and in its baseline — since 4.11
+was built. A flag that fires on a page nobody reads as failing is a flag
+that stopped being read; the phone project is what turned it into a red
+test. `minmax(0, 1fr)`; a browser test asserts no cell on the page is
+flagged and a 160px parent holds the control. The page's height moves by
+the flag's 4px, so it is re-baselined (§2).
+
+**`AppShell`'s skip link read `--pp-font-size-sm`**, which does not exist —
+the scale is `--pp-font-size-1` to `-9`, and `sm` is a `Text` size, not a
+token. Valid CSS, green stylelint, and an undefined `var()` is invalid at
+computed-value time, so the declaration fell back to the inherited size
+without a word. Found by the agent building the example screens, reading the
+stylesheet. It reads `--pp-font-size-2`, Text's `sm`.
+
+The second is a class, so it gets a rule (D-009): `lint:rules` rule 7 fails a
+component stylesheet that reads a `--pp-*` property no token file or library
+stylesheet declares, unless it is a component's own override hook
+(`--pp-<component>`, `--pp-<component>-*`), undefined by design until a
+consumer sets it. Run over the whole library it found exactly this one. The
+self-test's fixture reads `--pp-font-size-sm` and a hook of its own; it must
+catch the first and pass the second.
+
+**Found and not fixed here**, each recorded for its own item: `AvatarGroup`'s
+overlap of a fifth of a face does not allow for the 2px ring each face draws
+outside itself, so a wide pair of initials ("AT") loses its second letter
+(D-090 §4's gallery uses narrow ones); `Split` still attaches `Split.Sidebar`
+and `Split.Main` and exports neither by name, which RULES §5.6 and D-079 §1
+rule out for every other compound; `ButtonGroup.md` says a group is not for a
+single choice while `ThemeToggle.md` and the playground's switchers use one
+for exactly that; every `CodeBlock`'s default name is "Code", so a page of
+them is a page of identical regions; and a `Code` inside a `Link` keeps its
+neutral ink rather than the link's.
+
+<a id="d-103"></a>
+
+## D-103 — 0.12: a consumer's accent goes through the library's own generator and its own checks — `pixel-perfect/theme`, a CLI and a lab
+
+**Date:** 2026-10-06 · **Status:** accepted · **Amends:** ROADMAP.md (0.12
+added), `scripts/generate-tokens.mjs`, `scripts/check-contrast.mjs`,
+`scripts/color.mjs` (moved to `src/theme/color.mjs`), `package.json`
+(`exports["./theme"]`, `bin`) · **Extends:** D-005, D-008, D-010, D-011, D-050,
+D-056 §2, D-059, ThemeProvider spec §9
+
+The library's most distinctive claim — every colour solved for its contrast
+target, and verified independently of the code that solved it — had no form a
+consumer could use. An app whose brand was not hue 258 had one route: hand-
+override seventeen palette tokens in each of four theme scopes, and lose the
+guarantee doing it.
+
+### 1. The solver and the checker are a module, and the library's output did not move
+
+`src/theme/palette.mjs` is `generate-tokens.mjs`'s solving code, moved, with
+the hues as a parameter. `src/theme/check.mjs` is `check-contrast.mjs`'s
+palette assertions — per hue, per ramp, and the shipped ring on every hue's
+surfaces — moved, and run on CSS text. The scripts import them. `npm run
+tokens` writes byte-identical `primitives.css` and `semantic.css` (CI's
+freshness step would fail otherwise), and `lint:contrast` still counts 305:
+the semantic mappings stay in the script, because they are the library's
+alone. D-008's independence holds: the checker never sees the solver's
+numbers, only the text it wrote.
+
+They live in `src/theme/` as `.mjs` because the build's `allowJs` already
+compiles them into `dist/theme/` with types generated from their JSDoc, and
+the scripts import the source directly, so neither needs a step the other
+lacks. No package and no tool was added (D-005).
+
+### 2. The solid fill's walk waits for its pressed state
+
+`solveSolid` stopped at the first lightness where step 9 read 4.5:1 against its
+text, and `buildRamp` then threw if `solid-active`, two hover steps on, did
+not. For the library's hues that never happened. For a consumer's mid-light
+fill carrying dark text it does, so the walk now waits for both. Walking
+toward more contrast with the text helps both, in either theme, with either
+text; and for the library's hues the first lightness at which the fill passes
+is one at which the pressed state already did, so their output is unchanged —
+§1's byte-identical files are the proof.
+
+### 3. What `createTheme` writes, and from what
+
+The complete palette, every hue in both themes, not only the accent: each
+hue's focus ring is solved against every hue's surfaces (D-056 §2), so a new
+accent moves all five rings. In the four theme scopes primitives.css uses
+(D-010), in its order, inside `@layer pp.overrides` after a copy of the
+library's layer order statement — so it wins over `pp.tokens` whichever file
+is imported first, and inside it an element carrying `data-pp-theme="dark"`
+still takes the dark block, which comes later at the same specificity.
+Palette only: the semantic set is declared on the same elements by the
+library and resolves there against the re-declared palette, which is D-011's
+rule satisfied by construction.
+
+Where the fill starts: in light, at the colour's own lightness, so the button
+is the brand's colour whenever that colour can carry text; in dark, lighter
+by +0.15 at L 0.55 and below falling to +0.02 at L 0.80 and above — the
+library accent's own offset and the library warning's — in a straight line
+between. The walk does the rest and the summary says how far it went: green
+`#16a34a` carries white text at 3.3:1, so its light fill takes dark text and
+moves from L 0.627 to 0.692. Inputs clamp to L 0.25–0.92 and chroma 0–0.37; a
+bare hue keeps the library accent's chroma and lightness; `neutral: 'accent'`
+or a hue leans the greys. The file's header names the accent, the command
+that made it and how many assertions pass.
+
+The library accent reproduces all 340 declarations of `primitives.css`, and
+96 accents — 24 hues by four lightness and chroma pairs — pass all 290
+assertions; both are unit tests. Not a third theme: ThemeProvider §9 closes
+`Theme` to two, and this changes neither their names nor their count.
+
+### 4. The lab
+
+`/theme`: Sliders for hue, chroma and lightness, or a colour typed; the solve
+runs on the deferred value, so the thumb never waits for it (about 30ms in
+Node); the stylesheet goes into `<head>` from an effect, so the whole page —
+chrome included — wears it, exactly as an app that imported the CLI's file
+would. The first render is the library accent, which the generator
+reproduces, so the server's HTML is already right and nothing hydrates
+differently. Beside the controls: the checks' verdict and where each theme's
+fill landed; below them both themes side by side, its checkable controls
+toned on their `Field` as their docs say (D-059); then the stylesheet and the
+command to take away.
+
+### 5. The CLI
+
+`pixel-perfect theme --accent <colour> [--neutral accent|<hue>] [--out <file>]`.
+It reports where each theme's fill landed and whether it moved to carry its
+text, writes nothing and exits 1 when an assertion fails or the input is not a
+colour, and exits 2 without the subcommand. `bin` is `dist/theme/cli.mjs`,
+built on install like the rest (a git dependency runs `prepare`).
+
+### 6. The roadmap
+
+0.12, in Tier 0 because it is the token layer's, in `review`. With 0.13
+(D-105) the denominator moves from 81 to 83.
+
+<a id="d-104"></a>
+
+## D-104 — 0.10: the playground is the docs site — docs rendered by the library, a stage you can resize, three examples, and the rules as a page
+
+**Date:** 2026-10-06 · **Status:** accepted · **Amends:** ROADMAP.md (0.10),
+`playground/app/page.tsx`, `playground/harness/Chrome.tsx`,
+`playground/harness/Stage.tsx` and `stage.css` (new), `playground/harness/Markdown.tsx`
+(new), `playground/app/docs`, `playground/app/examples`, `playground/app/rules`
+and `playground/app/theme` (new) · **Extends:** D-012, D-063 §4, D-096
+
+### 1. One app, not two
+
+0.10 was deferred "until there are components worth documenting"; there are
+69. A docs framework would be a second app, with its own theme, its own
+rendering of the components through somebody else's chrome, and a second
+deployment. The playground already consumes the package exactly as an app
+does (D-012), already deploys, and keeps its harness pages exactly as the
+screenshot suite needs them; the docs are new routes beside those.
+
+### 2. Component docs, rendered by the library
+
+`/docs/<slug>` renders `docs/components/<Name>.md` — the files the repository
+already keeps — through `marked`'s lexer into `Heading`, `Text`, `Code`,
+`CodeBlock`, `Table`, `Link` and `Separator`; no HTML from a file is injected.
+A link to a sibling doc goes to its page, `../RULES.md` to `/rules`, anything
+else in the repository to GitHub. Each page leads to its harness page, where
+every variant is at three widths in both themes. `marked` is the playground's
+dependency and never the library's: RULES §8 governs what ships.
+
+### 3. The Stage
+
+A box a person can resize, with a composition in it. The library's one claim
+a screenshot cannot make is that a component answers to the box it was given
+and never to the viewport; the Matrix shows it with three frozen widths,
+which is what a screenshot can compare, and the stage lets a person drag the
+box from a phone to the page and watch every `@container` rule inside answer.
+Three ways to set the width, because a drag is not a way everyone has: the
+edge, the Phone/Tablet/Full presets, and a `Slider`, which carries the name a
+screen reader reads; the drag edge is hidden from assistive tech, which has
+the Slider. The frame is the query container and never wider than the page's
+column.
+
+### 4. Three examples
+
+`/examples`: Settings, Sign-up and Dashboard for a fictional product,
+Launchpad, built from the library and nothing else, each on a stage and each
+saying what to watch for between narrow and wide. Settings is an `AppShell`
+with a `NavSidebar` whose current item follows the hash, a `PageHeader` whose
+Save submits the profile `Form` by its `form` attribute, and switches that
+apply at once outside it (Switch.md: a switch beside a Save button is a
+checkbox). Sign-up is a `Card` in a `Container` with a `Stepper` that turns
+from a row into a column by its own width, and a `Form` whose error summary
+takes focus and links to each field. Dashboard is stat `Card`s in a `Grid`,
+`Tabs` over a `Toolbar` and a sortable, filterable `Table` of 128 seeded
+deploys with `Pagination` — seeded, so the server and the client render the
+same rows. The pages are Server Components with small client islands; the
+only CSS is four rules for what the library has no part for. Built by a
+delegated agent against the components' docs; what it found in the library
+is D-102 §7.
+
+### 5. The front door
+
+The index leads with a composition on a stage and the claim it proves, then
+three places to start (Examples, Theme, Rules), then every component by tier;
+a component's card opens its docs page. `/rules` renders `docs/RULES.md` with
+the same renderer as the component docs.
+
+### 6. The chrome
+
+It lists Examples, Theme and Rules beside Components, Tokens and Harness, and
+marks Components current on a docs page as on a harness page.
+
+### 7. What is screenshotted
+
+The index, `/theme`, `/rules`, `/examples` and the three examples join the
+screenshot suite, two baselines each, authored by CI. The 69 docs pages do
+not: 138 baselines of prose would be compared for what the phone project's
+fit-and-scroll assertions and the docs tests already say.
+
+<a id="d-105"></a>
+
+## D-105 — 0.13: the package ships what a consuming app's coding agent should read
+
+**Date:** 2026-10-06 · **Status:** accepted · **Amends:** ROADMAP.md (0.13
+added), `package.json` (`build`, `build:agents`), README.md · **Extends:**
+D-038, D-054 §2
+
+### 1. Why
+
+Rules this strict are exactly what an AI coding tool gets wrong — a
+`fullWidth` prop, a margin on a component, `Card.Header`, a viewport media
+query around a component — and every one of them renders. Next 16 ships its
+documentation inside its package for the same reason; its dev server wrote
+an `AGENTS.md` pointing into `node_modules` while this was being built
+(D-102 §6).
+
+### 2. What
+
+`npm run build` writes `dist/AGENTS.md` — `docs/for-agents.md` (setup, the
+eleven rules that change what an agent writes, the banned list) with an index
+of every component generated from its doc's opening paragraph — and copies
+`docs/RULES.md` and `docs/components/*.md` beside it. A link to a file that
+ships stays relative; any other repository link becomes a GitHub URL, so
+nothing an agent follows from `node_modules` is a dead end. The title carries
+the package version. The README says how to point an agent at it: one line in
+the app's `CLAUDE.md`, `@node_modules/pixel-perfect/dist/AGENTS.md`.
+
+A unit test builds it into a scratch directory — so it needs no `dist/` and
+cannot pass on a stale one — and asserts every component doc is indexed once
+and no relative link in any shipped file points at a file that did not ship.
+
+### 3. The roadmap
+
+0.13, in Tier 0 because it is packaging, in `review`.
+
+<a id="d-106"></a>
+
+## D-106 — The process docs are read rather than skimmed: an index of the log, anchors its links land on, a Current state that fits on a screen, and a release that fails first
+
+**Date:** 2026-10-06 · **Status:** accepted · **Amends:** CLAUDE.md,
+`.claude/skills/component/SKILL.md` (before anything else, tracking
+discipline), ROADMAP.md (the Current state block), `docs/HISTORY.md` (new),
+`docs/DECISIONS-INDEX.md` (new), every heading in this file, `docs/RELEASING.md`,
+`.github/workflows/release.yml` · **Extends:** D-038, D-041, D-054 §2
+
+### 1. An index, and anchors
+
+Every session was told to read this file, the roadmap and the rules before
+touching anything: about 520 KB, this file alone ~414 KB — on the order of a
+hundred thousand tokens before the first line of work. An instruction that
+costs that much is followed by skimming, which is how a ruling gets
+re-litigated. `docs/DECISIONS-INDEX.md` is one line per entry — number, date,
+title, the title being each entry's summary by this log's own convention — and
+`npm run decisions` writes it.
+
+The same command gives every heading an explicit `<a id="d-nnn"></a>`. The
+repository links to entries as `DECISIONS.md#d-050`, dozens of times, and
+GitHub's anchor for a heading is its whole text, so every one of those links
+landed at the top of the file. `tests/unit/decisions-index.test.ts` fails when
+the index or an anchor is stale, naming the command (D-054 §2), and when two
+entries share a number or one is skipped — the collision two branches
+appending at once would make.
+
+### 2. The Current state block is current
+
+The roadmap's Current state block had grown to 846 lines of findings, newest
+first, and it is "what a future session reads first". It is in
+`docs/HISTORY.md` verbatim; the block now says where things stand in a
+screenful and is refreshed on every transition, as the skill always said.
+ROADMAP.md went from 1,045 lines to 241.
+
+### 3. The reading order
+
+CLAUDE.md and the component skill now ask for the roadmap, the rules and the
+index, then every entry whose title touches the work, in full. This entry
+was written that way: the index and about twenty-five entries, in full.
+
+### 4. The npm name
+
+`docs/RELEASING.md` said that setting `PUBLISH_TO_NPM` and adding a token was
+all publishing took. `pixel-perfect` is somebody else's name on npm — an
+unrelated SCSS package, 2.0.26, last published in 2022 — so that publish is
+refused at the release workflow's last step, after everything upstream has
+gone green: D-038's shape exactly. The doc says so now, and the workflow's
+first step fails under `PUBLISH_TO_NPM` with the reason. Renaming to a scope is
+not made here: every import path and the stylesheet specifier change with it,
+and which scope is the owner's to say.
+
+### 5. Found and not fixed: an authoring run hides a functional failure
+
+The visual job's last step fails the run when Playwright failed and either a
+baseline differed or none was new. A run that authors baselines therefore
+passes even if a harness or phone test failed in it — those failures are
+not screenshots, write no `-diff.png`, and ride along with the missing
+baselines. The next run, which compares, reports them, so nothing is lost
+for good; but on a PR whose head is its authoring commit the tick is green
+over them. Recorded rather than changed here, because the fix — telling
+"failed only for missing baselines" from "failed" in the test results — is a
+change to the job that can only be proven on CI.

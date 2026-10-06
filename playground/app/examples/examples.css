@@ -1,0 +1,42 @@
+/*
+ * The example screens (playground/app/examples). Only what the library has
+ * no part for, and nothing that sizes a library component: no width, no
+ * max-width, no margin — layout is the primitives', colour the semantic
+ * tokens'. Unlayered, like globals.css, and scoped by class.
+ */
+
+/*
+ * A page inside AppShell's <main>. Container owns the measure and the inline
+ * gutter (AppShell.md); the room above and below the page is the app's, and
+ * no part of the library pads a block axis it does not own.
+ */
+.example-page {
+  padding-block: var(--pp-space-6) var(--pp-space-7);
+}
+
+/* A settings section the sidebar jumps to clears the playground's sticky
+   chrome instead of landing underneath it. */
+.example-section {
+  scroll-margin-block-start: var(--pp-space-9);
+}
+
+/*
+ * A name in a table. Table sets tabular figures on every cell so a column of
+ * numbers lines up by digit (Table.md), and the playground's Inter widens
+ * its hyphen in that set too: `payments-api` read as `payments - api`. A
+ * name is not a number.
+ */
+.example-name {
+  font-variant-numeric: normal;
+}
+
+/*
+ * The sign-up screen: the sunken surface behind a raised card, so the card
+ * is the one thing on the screen in both themes. The corners are the stage
+ * frame's, so the backdrop does not paint past them.
+ */
+.example-auth {
+  padding-block: var(--pp-space-7) var(--pp-space-8);
+  border-radius: inherit;
+  background-color: var(--pp-color-bg-sunken);
+}

@@ -58,8 +58,15 @@ git dependency needs.
 > artifact, not when its config file exists.
 
 **To publish to npm as well**, set the repository variable `PUBLISH_TO_NPM=true`
-and add an `NPM_TOKEN` secret. Nothing else changes; the same workflow starts
-publishing.
+and add an `NPM_TOKEN` secret — **after renaming the package.** The name
+`pixel-perfect` is taken on npm by an unrelated package (an SCSS stylesheet,
+`2.0.26`, last published 2022), so a publish under it is refused at the last
+step of the workflow, which is D-038's shape exactly. Choose a scope you own
+(`@mod-0-dev/pixel-perfect`, say) and rename once, before the first consumer
+outside this repository: every import path and the `pixel-perfect/styles.css`
+specifier change with it. Until then the release workflow fails at its first
+step when `PUBLISH_TO_NPM` is set, naming the reason, rather than at its last
+(D-106 §4).
 
 ## Versioning
 

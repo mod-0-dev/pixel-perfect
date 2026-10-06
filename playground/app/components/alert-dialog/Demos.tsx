@@ -15,14 +15,25 @@ import {
 } from 'pixel-perfect';
 import { useState } from 'react';
 
-/** The Matrix gallery: a cell is a viewport (Dialog §10). Open-autofocus prevented so three mounts do not fight. */
-export function Gallery() {
+/**
+ * The Matrix gallery: a cell is a viewport (Dialog §10). Closed until its
+ * cell's trigger is pressed, or all three open at load under `?gallery=open`
+ * (D-102 §1) — the only time open-autofocus is prevented, so three mounts do
+ * not fight. An alert dialog is the case that made this necessary: the scrim
+ * does not close it, so three open on a phone had no way out at all.
+ */
+const keepFocus = { onOpenAutoFocus: (event: Event) => event.preventDefault() };
+
+export function Gallery({ open }: { open: boolean }) {
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   return (
-    <div ref={setStage} className="dialog-stage">
-      {stage && (
-        <AlertDialog defaultOpen>
-          <AlertDialogContent container={stage} data-gallery="" onOpenAutoFocus={(event) => event.preventDefault()}>
+    <AlertDialog defaultOpen={open}>
+      <div ref={setStage} className="dialog-stage">
+        <AlertDialogTrigger asChild>
+          <Button variant="outline">Open in this cell</Button>
+        </AlertDialogTrigger>
+        {stage && (
+          <AlertDialogContent container={stage} data-gallery="" {...(open ? keepFocus : {})}>
             <Stack gap="4">
               <Stack gap="1">
                 <AlertDialogTitle>Delete this report?</AlertDialogTitle>
@@ -40,9 +51,9 @@ export function Gallery() {
               </Cluster>
             </Stack>
           </AlertDialogContent>
-        </AlertDialog>
-      )}
-    </div>
+        )}
+      </div>
+    </AlertDialog>
   );
 }
 

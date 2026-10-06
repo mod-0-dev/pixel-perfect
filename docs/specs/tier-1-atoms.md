@@ -515,6 +515,14 @@ component with different behaviour; conflating them produces a utility that
 sometimes becomes visible and surprises people. Revisit if a `SkipLink` is added
 at Tier 6.
 
+*Amended by D-102 §3:* the box also takes `inset-inline-start: 0`. With no
+inset it sat at its static position against the nearest positioned ancestor
+— often the viewport — so a label past the edge of a scrolled region escaped
+the region's clip and widened the page (a Spinner's, 514px on a 390px phone).
+Pinned, it is inside its containing block on the inline axis; the block axis
+keeps the static position, so a screen reader still scrolls to the right
+height.
+
 The `1px` dimensions here are the one place in the library where a raw length is
 correct: they are not a design value but part of a fixed technique, and RULES §1
 forbids `width`, not `inline-size: 1px` on a component that renders no visual

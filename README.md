@@ -17,6 +17,33 @@ declares a `fill` or `hug` sizing contract at design time — never as a prop.
 Parents own placement and space. `Container` is the only component allowed to
 set `max-width`.
 
+## Your brand colour
+
+```bash
+npx pixel-perfect theme --accent "#7c3aed" --out src/brand.css
+```
+
+Solves the whole palette around your accent with the library's own generator
+and checks the result with its own contrast checks — text, fills, control
+edges and the focus ring, in both themes — then writes a stylesheet to import
+after `pixel-perfect/styles.css`. A palette that fails a check is reported and
+not written. The playground's `/theme` page runs the same code as you drag.
+`import { createTheme } from 'pixel-perfect/theme'` is the same thing as a
+function.
+
+## For your app's coding agent
+
+The package ships `dist/AGENTS.md` — the rules that change what you write,
+the banned list, an index of every component — with every component's doc
+beside it. Point your agent at it. For Claude Code, one line in your app's
+`CLAUDE.md`:
+
+```md
+@node_modules/pixel-perfect/dist/AGENTS.md
+```
+
+Other agents: reference the same path from your `AGENTS.md`.
+
 ## Deploying the playground
 
 The library is not deployable; the playground is. On Vercel, set the project's

@@ -78,23 +78,34 @@ function Commands({ query, onRun, keepOpen }: { query: string; onRun: (value: st
   );
 }
 
-/** The Matrix gallery: an open palette per cell, portalled into a contained stage. */
-export function Gallery() {
+/**
+ * The Matrix gallery: a palette per cell, portalled into a contained stage,
+ * with "go" typed. Closed until its cell's trigger is pressed, or all three
+ * open at load under `?gallery=open` (D-102 §1) — the only time
+ * open-autofocus is prevented. Open at load on a phone, the three inputs'
+ * focus scrolled the page and the Matrix sideways and then locked both.
+ */
+const keepFocus = { onOpenAutoFocus: (event: Event) => event.preventDefault() };
+
+export function Gallery({ open }: { open: boolean }) {
   const [stage, setStage] = useState<HTMLDivElement | null>(null);
   const [query, setQuery] = useState('go');
   return (
-    <div ref={setStage} className="dialog-stage">
-      {stage && (
-        <CommandPalette defaultOpen inputValue={query} onInputValueChange={setQuery} label="Commands">
-          <CommandPaletteContent container={stage} data-gallery="" onOpenAutoFocus={(event) => event.preventDefault()}>
+    <CommandPalette defaultOpen={open} inputValue={query} onInputValueChange={setQuery} label="Commands">
+      <div ref={setStage} className="dialog-stage">
+        <CommandPaletteTrigger asChild>
+          <Button variant="outline">Open in this cell</Button>
+        </CommandPaletteTrigger>
+        {stage && (
+          <CommandPaletteContent container={stage} data-gallery="" {...(open ? keepFocus : {})}>
             <CommandPaletteInput placeholder="Type a command…" />
             <CommandPaletteList>
               <Commands query={query} onRun={() => {}} keepOpen />
             </CommandPaletteList>
           </CommandPaletteContent>
-        </CommandPalette>
-      )}
-    </div>
+        )}
+      </div>
+    </CommandPalette>
   );
 }
 

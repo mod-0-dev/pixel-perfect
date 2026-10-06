@@ -13,11 +13,11 @@
   },
   "alert-dialog-dark.png": {
     "width": 1280,
-    "height": 2154
+    "height": 2184
   },
   "alert-dialog-light.png": {
     "width": 1280,
-    "height": 2154
+    "height": 2184
   },
   "alert-light.png": {
     "width": 1280,
@@ -145,19 +145,19 @@
   },
   "combobox-dark.png": {
     "width": 1280,
-    "height": 1927
+    "height": 1923
   },
   "combobox-light.png": {
     "width": 1280,
-    "height": 1927
+    "height": 1923
   },
   "command-palette-dark.png": {
     "width": 1280,
-    "height": 2127
+    "height": 2154
   },
   "command-palette-light.png": {
     "width": 1280,
-    "height": 2127
+    "height": 2154
   },
   "container-dark.png": {
     "width": 1280,
@@ -214,6 +214,38 @@
   "empty-state-light.png": {
     "width": 1280,
     "height": 2837
+  },
+  "example-dashboard-dark.png": {
+    "width": 1280,
+    "height": 1437
+  },
+  "example-dashboard-light.png": {
+    "width": 1280,
+    "height": 1437
+  },
+  "example-settings-dark.png": {
+    "width": 1280,
+    "height": 3090
+  },
+  "example-settings-light.png": {
+    "width": 1280,
+    "height": 3090
+  },
+  "example-sign-up-dark.png": {
+    "width": 1280,
+    "height": 1266
+  },
+  "example-sign-up-light.png": {
+    "width": 1280,
+    "height": 1266
+  },
+  "examples-dark.png": {
+    "width": 1280,
+    "height": 900
+  },
+  "examples-light.png": {
+    "width": 1280,
+    "height": 900
   },
   "field-dark.png": {
     "width": 1280,
@@ -281,12 +313,12 @@
   },
   "index-dark.png": {
     "width": 1280,
-    "height": 4170,
+    "height": 4745,
     "components": 69
   },
   "index-light.png": {
     "width": 1280,
-    "height": 4170,
+    "height": 4745,
     "components": 69
   },
   "input-dark.png": {
@@ -392,6 +424,14 @@
   "range-slider-light.png": {
     "width": 1280,
     "height": 6105
+  },
+  "rules-dark.png": {
+    "width": 1280,
+    "height": 6418
+  },
+  "rules-light.png": {
+    "width": 1280,
+    "height": 6418
   },
   "scroller-dark.png": {
     "width": 1280,
@@ -504,6 +544,14 @@
   "textarea-light.png": {
     "width": 1280,
     "height": 8304
+  },
+  "theme-dark.png": {
+    "width": 1280,
+    "height": 2234
+  },
+  "theme-light.png": {
+    "width": 1280,
+    "height": 2234
   },
   "theme-provider-dark.png": {
     "width": 1280,

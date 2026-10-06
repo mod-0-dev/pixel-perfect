@@ -77,6 +77,13 @@ body {
  * Unlayered, like the rest of this file, and scoped by class so nothing in a
  * Matrix cell is touched.
  */
+/*
+ * NO INLINE PADDING OF ITS OWN. The chrome sits inside `.shell`, which
+ * already carries the gutter; a second one put every row 32px inside the
+ * page's left edge on a phone and 24px inside it at 1280px, the suite's own
+ * width. The rows and `.page` are the same 1200px column in the same box,
+ * so without it they share both edges at every width.
+ */
 .chrome {
   position: sticky;
   top: 0;
@@ -84,7 +91,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--pp-space-2);
-  padding-inline: var(--pp-space-6);
   padding-block: var(--pp-space-3);
   border-bottom: 1px solid var(--pp-color-border-subtle);
   background-color: var(--pp-color-bg-page);
@@ -108,9 +114,12 @@ body {
   text-decoration: none;
 }
 
+/* Six places since D-104 §6: on a phone they wrap rather than push the
+   page sideways (159px at 320px, found by the Dialog's 320px test). */
 .chrome__places {
   display: flex;
-  gap: var(--pp-space-4);
+  flex-wrap: wrap;
+  gap: var(--pp-space-1) var(--pp-space-4);
   margin-inline-end: auto;
 }
 
@@ -144,6 +153,29 @@ body {
 }
 
 /*
+ * A PHONE. This is the page's chrome asking about the device it is on, which
+ * is a page's business and never a component's (RULES §1): at 390px the
+ * wordmark, the places, the switcher, the breadcrumb and the neighbours wrap
+ * to four or five rows, and pinned to the top they held 17-29% of the screen
+ * for the whole scroll. So below 40rem the chrome scrolls away with the page,
+ * the gutter halves, and the neighbours start where everything else starts.
+ * The suite captures at 1280px, so no baseline is affected by this block.
+ */
+@media (max-width: 40rem) {
+  .shell {
+    padding: var(--pp-space-4);
+  }
+
+  .chrome {
+    position: static;
+  }
+
+  .chrome__siblings {
+    margin-inline-start: 0;
+  }
+}
+
+/*
  * THE INDEX. A hero, then one section per tier, each a grid of cards that are
  * links. The cards use the library's tokens and nothing else: the raised
  * surface and a subtle edge at rest, the control boundary on hover, and the
@@ -158,6 +190,12 @@ body {
 
 .hero__lede {
   max-width: 62ch;
+}
+
+/* The composition on the front door's stage: the stage's frame draws the
+   edge, this is the page inside it. */
+.hero__composition {
+  padding: var(--pp-space-5);
 }
 
 .hero__facts {
@@ -251,11 +289,25 @@ body {
   color: var(--pp-color-text-muted);
 }
 
+/*
+ * A floor under every swatch, so a narrow screen scrolls the palette inside
+ * its Scroller instead of crushing twelve steps into 20px each — or, as it
+ * did before, pushing the whole page 285px past a phone's right edge. At any
+ * width where `1fr` is above the floor the minmax resolves to `1fr`, which is
+ * the layout this replaced.
+ */
 .ramp {
   display: grid;
-  grid-template-columns: 7rem repeat(12, 1fr) 1.5fr;
+  grid-template-columns: 7rem repeat(12, minmax(2rem, 1fr)) minmax(4.5rem, 1.5fr);
   gap: 2px;
   align-items: stretch;
+}
+
+/* The palette's two panels as one track the Scroller can scroll: as wide as
+   the page when the page is wider, as wide as the ramps need when it is not. */
+.palette-track {
+  inline-size: max-content;
+  min-inline-size: 100%;
 }
 
 .ramp__name {
@@ -489,6 +541,10 @@ body {
 .dialog-stage {
   position: relative;
   contain: layout;
+  /* The cell's trigger, in the middle of the box its dialog will fill. The
+     scrim is fixed to the box, out of flow, so the grid never places it. */
+  display: grid;
+  place-items: center;
   block-size: 20rem;
   overflow: hidden;
   border-radius: var(--pp-radius-2);

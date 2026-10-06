@@ -9,10 +9,12 @@
  */
 import { Stack, Text } from 'pixel-perfect';
 
+import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';
 import { CornerClose, Gallery, Long, Nested, NoTrigger, Rename, ThemeCrossing, Veto } from './Demos';
 
-export default function DialogPage() {
+export default async function DialogPage({ searchParams }: { searchParams: Promise<GalleryParams> }) {
+  const open = galleryOpen(await searchParams);
   return (
     <>
       <h1>4.4 Dialog</h1>
@@ -27,16 +29,16 @@ export default function DialogPage() {
       <section>
         <h2>A cell is a viewport</h2>
         <p>
-          Three dialogs, open from the start, each portalled into a <code>contain: layout</code> box
-          in its cell — so the box is the viewport and the three widths show what a real viewport
-          gets: at 240 and 480 the panel is narrower than its ceiling and every control in it
-          fills; at 960 it sits at its 40rem ceiling with scrim on either side. Three modals open
-          together is a gallery, not a use: the page&rsquo;s scroll is locked three times over,
-          and the rest of it is hidden from assistive tech. <strong>Press Escape three times</strong>{' '}
-          to get the page back.
+          One dialog per cell, each portalled into a <code>contain: layout</code> box in its cell
+          — so the box is the viewport and the three widths show what a real viewport gets: at
+          240 and 480 the panel is narrower than its ceiling and every control in it fills; at 960
+          it sits at its 40rem ceiling with scrim on either side. Open one from its cell; Escape,
+          the scrim or either button closes it. The screenshot suite opens all three at load with{' '}
+          <code>?gallery=open</code> — a gallery, not a use, which locks the page&rsquo;s scroll
+          three times over until each is closed.
         </p>
         <Matrix>
-          <Gallery />
+          <Gallery open={open} />
         </Matrix>
       </section>
 
