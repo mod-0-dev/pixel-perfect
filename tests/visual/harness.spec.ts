@@ -865,7 +865,10 @@ test.describe('VisuallyHidden', () => {
         region: region.scrollWidth,
       };
     });
-    expect(read.region, 'the setup did not put the label past the region\'s edge').toBeGreaterThan(4000);
+    // The spacer is what makes the region scroll; the label never counts
+    // toward the region's own width, fixed or not — positioned against an
+    // ancestor outside it, it can only ever count toward the document's.
+    expect(read.region, 'the setup did not make the region scroll').toBeGreaterThanOrEqual(4000);
     expect(read.scroll, 'a hidden label widened the document').toBeLessThanOrEqual(read.client);
   });
 });
@@ -8880,5 +8883,77 @@ test.describe('DatePicker', () => {
     expect(states.map((s) => s.h)).toEqual([32, 40, 48, 40, 40]);
     expect(states[3]!.invalid).toBe(true);
     expect(states[4]!.disabled).toBe(true);
+  });
+});
+
+/*
+ * The front door's Stage (0.10, D-104 §3). What only a browser can say: that
+ * the presets and the Slider set the frame's width, and that the composition
+ * inside answers to the frame — the stat cards stack at a phone's width
+ * while the window stays 1280px wide.
+ */
+test.describe('Stage', () => {
+  test('the presets and the Slider set the frame, and what is inside answers to the frame, not the window', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const frame = page.locator('.stage__frame').first();
+    const width = () => frame.evaluate((el) => Math.round(el.getBoundingClientRect().width));
+    const columns = () =>
+      frame.locator('.pp-card').evaluateAll((els) => new Set(els.map((el) => Math.round(el.getBoundingClientRect().x))).size);
+
+    await page.getByRole('button', { name: 'Phone' }).click();
+    await expect.poll(width).toBe(375);
+    await expect.poll(columns, 'the cards did not stack in a phone-wide frame').toBe(1);
+    expect(page.viewportSize()!.width, 'the window is what it was').toBe(1280);
+
+    await page.getByRole('button', { name: 'Full' }).click();
+    await expect.poll(columns, 'the cards did not sit in a row in a full-width frame').toBe(3);
+
+    // The Slider is the control a screen reader has; it carries the stage's name.
+    const slider = page.getByRole('slider', { name: 'Dashboard preview: width in pixels' });
+    await slider.focus();
+    await page.keyboard.press('Home');
+    await expect.poll(width).toBe(240);
+  });
+});
+
+/*
+ * The theme lab (0.12, D-103 §4): the library's generator and checks, in the
+ * browser. Asserted: a typed accent is solved, proven and worn by the whole
+ * page through the stylesheet the lab puts in <head>, and leaving the page
+ * takes it off again — the lab must not re-skin the next page.
+ */
+test.describe('Theme lab', () => {
+  test('a typed accent is solved, proven and worn by the page, and leaving takes it off', async ({ page }) => {
+    const accent = () =>
+      page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pp-palette-accent-9').trim());
+    // Read where the lab has never been: the built stylesheet spells the
+    // library accent as `lab()` (lightningcss's targets), the lab as `oklch()`,
+    // so a value read on /theme itself is the lab's copy, not the library's.
+    await page.goto('/tokens');
+    const library = await accent();
+    await page.goto('/theme');
+
+    await page.getByRole('textbox', { name: 'Colour' }).fill('#7c3aed');
+    await expect.poll(accent, 'the page did not wear the solved accent').toMatch(/^oklch\(54\.1% [\d.]+ 293\)$/);
+    await expect(page.getByText(/^(\d+) of \1 assertions pass$/)).toBeVisible();
+    await expect(page.locator('style[data-theme-lab]')).toHaveCount(1);
+
+    await page.locator('.chrome').getByRole('link', { name: 'Tokens' }).click();
+    await expect(page).toHaveURL(/\/tokens$/);
+    await expect(page.locator('style[data-theme-lab]')).toHaveCount(0);
+    await expect.poll(accent, 'the lab’s accent outlived the lab').toBe(library);
+  });
+
+  test('a value that is not a colour is named as such, and the page keeps the last one that was', async ({ page }) => {
+    await page.goto('/theme');
+    const field = page.getByRole('textbox', { name: 'Colour' });
+    await field.fill('#16a34a');
+    await expect(page.locator('style[data-theme-lab]')).toHaveCount(1);
+    await field.fill('teal-ish');
+    await expect(field).toHaveAttribute('aria-invalid', 'true');
+    await expect(page.getByText('Not a colour.', { exact: false })).toBeVisible();
+    await expect(page.locator('style[data-theme-lab]')).toHaveCount(1);
   });
 });

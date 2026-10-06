@@ -114,9 +114,12 @@ body {
   text-decoration: none;
 }
 
+/* Six places since D-104 §6: on a phone they wrap rather than push the
+   page sideways (159px at 320px, found by the Dialog's 320px test). */
 .chrome__places {
   display: flex;
-  gap: var(--pp-space-4);
+  flex-wrap: wrap;
+  gap: var(--pp-space-1) var(--pp-space-4);
   margin-inline-end: auto;
 }
 
