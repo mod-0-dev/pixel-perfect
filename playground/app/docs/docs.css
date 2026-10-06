@@ -31,12 +31,19 @@
 
 /*
  * A heading reached by an anchor lands below the sticky chrome, not under
- * it. The chrome is one row on a desktop and three on a phone (140px at
- * 390), and nothing here can read its height, so the margin clears the
- * tallest: 10rem, the two largest space steps.
+ * it. The chrome is one row (57px) on a wide screen and two (99px) from
+ * 40rem to about 1000px, and nothing here can read its height, so the
+ * margin clears the taller: 7rem. Below 40rem the chrome is not sticky —
+ * it scrolls away with the page (D-102 §2) — and a heading needs only air.
  */
 .doc__heading {
-  scroll-margin-block-start: calc(var(--pp-space-9) + var(--pp-space-8));
+  scroll-margin-block-start: calc(var(--pp-space-8) + var(--pp-space-7));
+}
+
+@media (max-width: 40rem) {
+  .doc__heading {
+    scroll-margin-block-start: var(--pp-space-4);
+  }
 }
 
 /* The tier number before the harness link, held to it by padding, not a space. */
