@@ -7647,6 +7647,25 @@ manifest entries, so the geometry guard holds their heights through the
 window — a page that came back a different height would be something other
 than the chrome. The new pages (D-104 §7) are authored fresh.
 
+Two did. On run 192, CI's re-run of its own authoring commit, Dialog and
+Drawer came back 2px taller in both themes, and the guard failed the commit,
+which is its job. The PR merged with it red, so `main` carried the failure
+until the follow-up re-baselined both. Neither layout moved. The local
+measurement missed one kind of text. A bare `<code>` in the playground's
+prose gets the browser's generic `monospace`, resolved on each machine, and
+not the JetBrains Mono that `layout.tsx` pins. On the runner, a line holding
+one is 2px taller than a plain line; locally it is not. The new gallery prose
+put `?gallery=open` on a line that held no code before. In CI's own
+screenshots that line alone is taller, and everything below it is the same
+pixels 2px lower. AlertDialog and CommandPalette gained the same kind of line,
+and their re-baselines took the runner's numbers unseen: +30 and +27 there,
+against +26 and +25 measured. AlertDialog's is 4px because the runner broke
+the snippet after its `?`, so two of its lines hold code. Dialog and Drawer
+are re-baselined with `--rebaseline`, not re-recorded: overwriting an entry
+after authoring is the blessing D-050 §5 forbids, however well the drift is
+explained. Fifty-eight playground files hold a bare `<code>`, the one text
+the pinning misses. That, and AlertDialog's stray `?`, are follow-ups.
+
 Below 40rem the chrome is no longer sticky. Wrapped to four or five rows, it
 held 17–29% of a phone's screen (140–247px of 844) for the whole scroll; the
 shell's gutter halves there too. A viewport query is the page asking about
