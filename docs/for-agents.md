@@ -32,6 +32,13 @@ Everything is a named export of `pixel-perfect`. A brand colour comes from
 `npx pixel-perfect theme --accent "#7c3aed" --out src/brand.css`: import that
 file after `pixel-perfect/styles.css` and never hand-edit it.
 
+A responsive app should also put `text-size-adjust: 100%` on `html` in its
+own stylesheet. Without it iOS Safari enlarges text in anything that runs
+wider than the screen. The library's own scrolling regions (`CodeBlock`,
+`Table`, `Scroller`) already opt out; your content needs the root rule. The
+stylesheet doesn't set it for you because it styles your document as little
+as it can.
+
 ## The rules that change what you write
 
 1. **Never size or space a component from the outside with its own props, and

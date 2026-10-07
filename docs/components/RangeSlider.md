@@ -200,5 +200,5 @@ tests do the former and its browser suite the latter.
 
 // ✗ Narrow containers. Two thumbs need twice the travel to be usable; a
 //   240px sidebar gives each step of a 0–500 range under half a pixel.
-<Split.Sidebar><Field label="Price" group><RangeSlider max={500} /></Field></Split.Sidebar>
+<SplitSidebar><Field label="Price" group><RangeSlider max={500} /></Field></SplitSidebar>
 ```

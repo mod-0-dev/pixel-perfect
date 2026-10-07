@@ -852,7 +852,8 @@ actions.
 It does **not** space buttons out — that is `<Cluster gap="2">` (§8). It does
 **not** manage selection; a segmented *control* where exactly one option is
 chosen is a `RadioGroup` (3.11) styled as buttons, and one where several may be
-is a set of `Toggle`s (3.5).
+is a set of `Toggle`s (3.5). (The library could not style a `RadioGroup` as
+buttons; that control is `SegmentedControl`, 3.18, since D-107 §3.)
 
 ### Sizing contract justification
 

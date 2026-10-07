@@ -191,5 +191,66 @@ export function checkPalette(THEMES) {
     }
   }
 
+  /*
+   * A LINK'S INK ON THE CODE INSIDE IT (D-107 §5).
+   *
+   * `Code` paints its chip on neutral step 3 whatever surrounds it, and inside
+   * a `Link` its text is the link's: step 11 of the link's hue at rest, step
+   * 12 on hover. Each hue's 11 and 12 are solved against that hue's own step
+   * 3, so the pairing a browser draws — accent 11 on NEUTRAL 3 — is one no
+   * per-hue loop above sees. It holds by a hair (4.56 at the worst in the
+   * library's palette), which is exactly when it has to be asserted rather
+   * than reasoned about.
+   */
+  const CODE_CHIP = '3';
+  for (const [theme, hues] of Object.entries(THEMES)) {
+    const chip = hues.neutral?.[CODE_CHIP];
+    if (!chip) {
+      report(`✗ ${theme}: no neutral step ${CODE_CHIP} to check a link's ink on its Code against`);
+      continue;
+    }
+    for (const [hue, steps] of Object.entries(hues)) {
+      for (const step of ['11', '12']) {
+        const ink = steps[step];
+        if (!ink) continue;
+        const ratio = contrastOklch(ink, chip);
+        checked++;
+        if (ratio < 4.5) {
+          report(
+            `✗ ${theme}: a ${hue} link's ink (step ${step}) on a Code inside it (neutral step ${CODE_CHIP}) is ${ratio.toFixed(2)}:1, below 4.5:1`,
+          );
+        }
+      }
+    }
+  }
+
+  /*
+   * THE CHECKED SEGMENT AGAINST WHAT IT SITS ON (D-107 §3).
+   *
+   * A SegmentedControl's checked segment is neutral's solid fill beside
+   * unchecked segments that are the surface itself, and the fill is the only
+   * thing telling one from the other — states side by side, which is where
+   * WCAG 1.4.11 asks 3:1. Neutral only: the control takes no tone, because
+   * warning's solid is 1.87:1 against the page in light.
+   */
+  for (const [theme, hues] of Object.entries(THEMES)) {
+    const steps = hues.neutral;
+    if (!steps?.['9']) {
+      report(`✗ ${theme}: no neutral step 9 to check a checked segment against`);
+      continue;
+    }
+    for (const surface of ['1', '2', '3']) {
+      const against = steps[surface];
+      if (!against) continue;
+      const ratio = contrastOklch(steps['9'], against);
+      checked++;
+      if (ratio < 3.0) {
+        report(
+          `✗ ${theme}: a checked segment (neutral solid) vs neutral step ${surface} is ${ratio.toFixed(2)}:1, below 3:1`,
+        );
+      }
+    }
+  }
+
   return { checked, failures };
 }

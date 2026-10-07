@@ -1,0 +1,71 @@
+/*
+ * SegmentedControl — spec docs/specs/SegmentedControl.md
+ *
+ * THE TWO-CLASS CONTRACT (spec §3, D-070 §1). The root also carries
+ * `pp-button-group` and each item `pp-button` with `data-variant="outline"`,
+ * so the row, the one-border seam (D-033), the end radii, the box, the
+ * heights and the type are drawn by ButtonGroup.css and Button.css. This
+ * file says three things those two do not: the checked fill, where the
+ * radio sits, and the ring.
+ *
+ * THE CHECKED FILL IS SOLID (spec §2): Toggle's pressed fill is 1.26:1
+ * against the page in light, and the fill is the only thing telling a
+ * selected segment from the one beside it. Written into Button's PRIVATE
+ * properties, Toggle's device, so a consumer's --pp-button-* still wins.
+ *
+ * PAINTED FROM `:checked`, NOT `data-state` (spec §5): Radio's deviation
+ * from RULES §4, for Radio's cause (D-047 §2) — a radio deselected by its
+ * sibling is told nothing, and a form reset changes it behind React.
+ */
+
+@layer pp.components {
+  /*
+   * The radio is the control and its <label> the segment: a click anywhere
+   * on a label is a click on the radio inside it, which is the platform's
+   * own label activation. Transparent, at its own size, pinned inside the
+   * segment's box (Button is `position: relative`) — an absolute box with
+   * no inline inset sits at its static position, which escaped a scroller
+   * once already (D-102 §3).
+   */
+  .pp-segmented-control__input {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    margin: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pp-segmented-control__item:has(.pp-segmented-control__input:checked) {
+    --_bg: var(--pp-segmented-control-checked-bg, var(--pp-tone-solid));
+    --_color: var(--pp-segmented-control-checked-color, var(--pp-tone-on-solid));
+    --_border: var(--pp-segmented-control-checked-bg, var(--pp-tone-solid));
+
+    /* Pressing a checked radio does nothing; a hover that changed the fill
+       would promise otherwise. */
+    --_bg-hover: var(--pp-segmented-control-checked-bg, var(--pp-tone-solid));
+    --_bg-active: var(--pp-segmented-control-checked-bg, var(--pp-tone-solid));
+  }
+
+  /* Disabled still says which one is chosen, quietly: Button's disabled
+     surface, where the unchecked ones are transparent. */
+  .pp-segmented-control__item[data-disabled]:has(.pp-segmented-control__input:checked) {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+    --_border: var(--pp-color-border-subtle);
+    --_bg-hover: var(--pp-color-bg-sunken);
+    --_bg-active: var(--pp-color-bg-sunken);
+  }
+
+  /*
+   * The ring. The label is not focusable, so Button's :focus-visible never
+   * matches it; the radio inside is, and the segment draws the ring for it.
+   * Raised, as ButtonGroup raises a focused button, so the next segment does
+   * not paint over it (D-033).
+   */
+  .pp-segmented-control__item:has(.pp-segmented-control__input:focus-visible) {
+    z-index: var(--pp-z-raised);
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+}

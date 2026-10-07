@@ -33,7 +33,10 @@ opposite of what is showing. A user on `system` who presses it has chosen,
 and the choice is kept (6.1 §3); the way back to `system` is a preference
 somewhere with room for three words, which is `ButtonGroup` + `Toggle` +
 `useTheme()` — twenty lines the playground's own chrome is made of, given
-on the docs page as the recipe. A `cycle` mode (system → light → dark →
+on the docs page as the recipe. (Amended by D-107 §3: the recipe and the
+chrome are a `SegmentedControl` + `useTheme()`. A theme is one of three,
+and `ButtonGroup.md` had always ruled a single choice out of a group of
+`Toggle`s.) A `cycle` mode (system → light → dark →
 system) was considered and rejected: a three-state cycle behind one icon
 is a control the user has to press to discover, and the third state's icon
 ("auto") is a symbol nobody agrees on.
@@ -228,13 +231,12 @@ The three-way, when the app wants `system` reachable:
 
 ```tsx
 const { theme, setTheme } = useTheme();
-<ButtonGroup label="Theme">
-  {(['system', 'light', 'dark'] as const).map((value) => (
-    <Toggle key={value} size="sm" variant="outline" pressed={theme === value} onPressedChange={() => setTheme(value)}>
-      {value[0].toUpperCase() + value.slice(1)}
-    </Toggle>
-  ))}
-</ButtonGroup>
+
+<SegmentedControl label="Theme" size="sm" value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+  <SegmentedControlItem value="system">System</SegmentedControlItem>
+  <SegmentedControlItem value="light">Light</SegmentedControlItem>
+  <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
+</SegmentedControl>
 ```
 
 ## Don't

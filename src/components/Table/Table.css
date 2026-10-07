@@ -33,6 +33,10 @@
     min-inline-size: 0;
     overflow-x: auto;
     scrollbar-width: thin;
+    /* Content laid out wider than the screen on purpose, which iOS Safari's
+       text autosizing reads as a desktop page and enlarges: a block with long
+       lines came out bigger than one beside it with short lines (D-107 §6). */
+    text-size-adjust: 100%;
     border: var(--pp-border-width-1) solid var(--_border);
     border-radius: var(--pp-table-radius, var(--pp-radius-3));
     background-color: var(--pp-color-bg-raised);

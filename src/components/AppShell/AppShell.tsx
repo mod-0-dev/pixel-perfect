@@ -1,7 +1,7 @@
 import { forwardRef, useId, type ComponentPropsWithoutRef, type ReactNode } from 'react';
 
 import { cx } from '../../internal/cx';
-import { Split, type SplitCollapse } from '../Split/Split';
+import { Split, SplitMain, SplitSidebar, type SplitCollapse } from '../Split/Split';
 
 /**
  * The frame of an app page: a header across the top, a sidebar beside the
@@ -70,8 +70,8 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
       {header !== undefined && header !== null ? <header className="pp-app-shell__header">{header}</header> : null}
       {sidebar !== undefined && sidebar !== null ? (
         <Split className="pp-app-shell__body" sidebarInlineSize={sidebarInlineSize} collapseBelow={collapseBelow} gap="0">
-          <Split.Sidebar className="pp-app-shell__sidebar">{sidebar}</Split.Sidebar>
-          <Split.Main asChild>{main}</Split.Main>
+          <SplitSidebar className="pp-app-shell__sidebar">{sidebar}</SplitSidebar>
+          <SplitMain asChild>{main}</SplitMain>
         </Split>
       ) : (
         main

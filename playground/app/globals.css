@@ -7,6 +7,12 @@
 :root {
   --pp-font-family-sans: "Inter", sans-serif;
   --pp-font-family-mono: "JetBrains Mono", monospace;
+  /* The page is laid out for the device (the viewport meta), so iOS Safari's
+     text autosizing has nothing to rescue and only enlarges what overflows on
+     purpose — a Matrix's 960px cell, a long code line. The app's call, so the
+     app makes it; the library sets it only on its own scrolling regions
+     (D-107 §6). */
+  text-size-adjust: 100%;
 }
 
 body {

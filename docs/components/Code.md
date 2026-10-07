@@ -42,6 +42,18 @@ Plus every `<code>` attribute. `ref` goes to the root. Mirrored as `data-size`
 Wraps with `overflow-wrap: anywhere`, so a long path never forces a horizontal
 scrollbar, and keeps its padding and radius on every fragment.
 
+## Inside a link
+
+A `Code` inside a [`Link`](Link.md) takes the link's ink, at rest and on
+hover, and keeps its own chip, so the code reads as part of what you click.
+`tone` does not change that: inside a link, the link's colour is what says
+"link". `--pp-code-color` still wins if you set it. Every link tone's ink on
+the chip is asserted at 4.5:1 or better in both themes (D-107 §5).
+
+```tsx
+<Link href="/config">the <Code>pixel.config.ts</Code> file</Link>
+```
+
 ## Don't
 
 ```tsx
@@ -50,4 +62,7 @@ scrollbar, and keeps its padding and radius on every fragment.
 
 // ✗ A keyboard key is Kbd.
 <Code>⌘K</Code>
+
+// ✗ Recolouring a Code inside a link to match it. It already does.
+<Link href="/api"><Code style={{ color: 'inherit' }}>useTheme()</Code></Link>
 ```

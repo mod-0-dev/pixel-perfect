@@ -33,9 +33,11 @@ describe('the contrast checks, run on CSS text', () => {
     const { checked, failures } = checkPalette(parsePalette(primitives));
     expect(failures).toEqual([]);
     // 2 themes x 5 hues x (19 pairings + 7 ramp steps), plus the shipped ring
-    // on 3 surfaces of 5 hues in 2 themes. The semantic mappings are the
-    // script's, not the module's.
-    expect(checked).toBe(2 * 5 * (19 + 7) + 2 * 5 * 3);
+    // on 3 surfaces of 5 hues in 2 themes, plus each hue's link ink (11, 12)
+    // on the neutral chip of a Code inside it (D-107 §5), plus neutral's
+    // solid on 3 surfaces — a checked segment (D-107 §3). The semantic
+    // mappings are the script's, not the module's.
+    expect(checked).toBe(2 * 5 * (19 + 7) + 2 * 5 * 3 + 2 * 5 * 2 + 2 * 3);
   });
 
   it('fail by name when muted text is re-pointed at a pale value', () => {

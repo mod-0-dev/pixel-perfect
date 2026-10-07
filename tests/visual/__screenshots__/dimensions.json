@@ -43,14 +43,6 @@
     "width": 1280,
     "height": 1903
   },
-  "avatar-group-dark.png": {
-    "width": 1280,
-    "height": 1085
-  },
-  "avatar-group-light.png": {
-    "width": 1280,
-    "height": 1085
-  },
   "avatar-light.png": {
     "width": 1280,
     "height": 1903
@@ -74,14 +66,6 @@
   "button-dark.png": {
     "width": 1280,
     "height": 5767
-  },
-  "button-group-dark.png": {
-    "width": 1280,
-    "height": 3448
-  },
-  "button-group-light.png": {
-    "width": 1280,
-    "height": 3448
   },
   "button-light.png": {
     "width": 1280,
@@ -311,16 +295,6 @@
     "width": 1280,
     "height": 2532
   },
-  "index-dark.png": {
-    "width": 1280,
-    "height": 4745,
-    "components": 69
-  },
-  "index-light.png": {
-    "width": 1280,
-    "height": 4745,
-    "components": 69
-  },
   "input-dark.png": {
     "width": 1280,
     "height": 5030
@@ -352,14 +326,6 @@
   "label-light.png": {
     "width": 1280,
     "height": 5180
-  },
-  "link-dark.png": {
-    "width": 1280,
-    "height": 3264
-  },
-  "link-light.png": {
-    "width": 1280,
-    "height": 3264
   },
   "nav-sidebar-dark.png": {
     "width": 1280,

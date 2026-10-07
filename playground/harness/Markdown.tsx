@@ -218,7 +218,7 @@ function renderBlock(token: MarkedToken, key: string, ctx: Context, top: boolean
           key={key}
           code={token.text}
           language={token.lang?.trim().split(/\s+/)[0] || undefined}
-          label={ctx.labels.get(token)}
+          label={ctx.labels.get(token) ?? 'Document, code'}
         />
       );
     case 'table':

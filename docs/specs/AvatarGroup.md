@@ -70,7 +70,12 @@ private variable, so the consumer does not repeat `size` on each child
 and the count matches. The overlap is `--pp-avatar-group-overlap`, a
 fifth of the face by default — 8px on a 32px face is the whole margin
 beside a pair of initials, and a fixed 8px put the second letter under
-the next face at `sm` (D-090 §4).
+the next face at `sm` (D-090 §4). **Amended by D-107 §1:** the overlap
+is how much of a face is hidden *ring included* — the columns are a
+ring wider than face less overlap — and the initials of every covered
+face are centred in what stays visible. The first build hid a fifth
+plus the 2px ring, and every pair in its own gallery lost an edge of
+its second letter.
 
 ---
 
@@ -114,7 +119,7 @@ None.
 
 | Custom property | Default token | Affects |
 | --- | --- | --- |
-| `--pp-avatar-group-overlap` | a fifth of the face | How far each item sits inside the last |
+| `--pp-avatar-group-overlap` | a fifth of the face | How much of each face the next one hides, its ring included (D-107 §1) |
 | `--pp-avatar-group-ring-color` | `--pp-color-bg-surface` | The ring between faces |
 | `--pp-avatar-group-more-bg` | `--pp-color-bg-sunken` | The count |
 | `--pp-avatar-group-more-color` | `--pp-color-text-muted` | The count's text |

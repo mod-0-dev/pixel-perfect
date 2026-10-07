@@ -69,6 +69,7 @@ export const COMPONENTS: ComponentEntry[] = [
   { slug: 'slider', name: 'Slider', tier: '3.15', summary: 'A native range input; our track, the platform’s thumb.' },
   { slug: 'form', name: 'Form', tier: '3.16', summary: 'An error summary that moves focus, and one submission at a time.' },
   { slug: 'range-slider', name: 'RangeSlider', tier: '3.17', summary: 'Two thumbs that cannot cross, with the ring on the one that has focus.' },
+  { slug: 'segmented-control', name: 'SegmentedControl', tier: '3.18', summary: 'One of a few options as attached buttons; native radios underneath.' },
   { slug: 'popover', name: 'Popover', tier: '4.2', summary: 'A named panel anchored to its trigger; the theme crosses the portal.' },
   { slug: 'tooltip', name: 'Tooltip', tier: '4.3', summary: 'A label on hover or focus that describes its trigger and never names it.' },
   { slug: 'dialog', name: 'Dialog', tier: '4.4', summary: 'A modal window over an inert page; the scrim centres it and scrolls.' },
