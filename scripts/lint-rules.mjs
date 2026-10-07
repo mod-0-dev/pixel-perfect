@@ -11,7 +11,9 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import ts from 'typescript';
+// TypeScript 7 is a native compiler with no JS compiler API, so the parser
+// comes from Microsoft's 6.x compatibility package. `tsc` itself is 7.
+import ts from '@typescript/typescript6';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
