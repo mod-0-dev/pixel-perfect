@@ -8300,3 +8300,143 @@ test's: the first sub-item's box was read in the same `Promise.all` as
 `placedBox(s)`, so under load it was taken before the panel moved (750px and
 836px off its trigger's row). The panel settles first now, then its item is
 read — D-066 §3's still box, kept for the item as for the panel.
+
+<a id="d-108"></a>
+
+## D-108 — The roadmap closed: a pressed Toggle is solid, a SegmentedControl in a Toolbar, a visual job that cannot pass over a failed test, the playground's bare code pinned, and 84 / 84
+
+**Date:** 2026-10-07 · **Status:** accepted · **Amends:** RULES — none;
+`docs/specs/tier-3a-action.md` §3.5, `docs/specs/Toolbar.md` §5,
+`docs/specs/SegmentedControl.md` (out of scope), ROADMAP.md (eleven items to
+`done`, the launchpad line closed), `.github/workflows/ci.yml`, 120 screenshot
+baselines deleted for CI to author · **Extends:** D-013, D-032, D-047 §3, D-050 §5, D-066 §2, D-069 §1
+and §2, D-098, D-102 §2, D-103, D-106 §5, D-107 §3 and §8
+
+Asked to do everything left after D-107: its "found and not fixed", D-106
+§5's, D-102 §2's two follow-ups, the sweep of the `review` items, and the
+launchpad line. Each part extends a ruling already made; the one API change
+(§1) is listed in the PR for reversal before merge, under D-069 §1.
+
+### 1. A pressed `Toggle` is its tone's solid fill, and there is no `solid` variant
+
+D-107 §3 measured Toggle's pressed fill, step 5, at **1.26:1** against the
+page in light and 1.49:1 in dark, and left it because a multi-select row was
+not in scope. The argument that made SegmentedControl's checked segment solid
+applies unchanged: in a toolbar's Bold / Italic the fill is the only thing
+telling a pressed toggle from the one beside it, states side by side, where
+WCAG 1.4.11 asks 3:1. Computed first, against neutral steps 1–3:
+
+| Solid (step 9) | light | dark |
+| --- | --- | --- |
+| neutral | 5.90 / 5.66 / 5.31 | 7.07 / 6.59 / 5.90 |
+| accent | 4.86 / 4.67 / 4.38 | 7.00 / 6.53 / 5.85 |
+| danger | 4.83 / 4.64 / 4.35 | 6.00 / 5.60 / 5.02 |
+| success | 4.86 / 4.66 / 4.37 | 8.08 / 7.53 / 6.75 |
+| warning | **1.87 / 1.79 / 1.68** | 10.63 / 9.92 / 8.89 |
+
+Pressed is `--pp-tone-solid` with `--pp-tone-on-solid` ink and a border of the
+fill. A solid has a darker step, so pressed hovers to `--pp-tone-solid-hover`
+and presses to `--pp-tone-solid-active`, as a solid Button does; the old
+reason for holding the fill ("no darker step to move to") is gone, and
+lighter would still read as releasing. A disabled pressed toggle is Button's
+disabled surface with a subtle edge, SegmentedControl's rule. `check.mjs`
+asserts neutral's, danger's and success's solid on steps 1–3 in both themes
+(18, replacing D-107 §3's 6 for neutral alone): not warning, which fails, and
+not accent, which a consumer chooses (D-103) and may choose light. The docs
+send a Toggle away from warning with the number.
+
+**No `solid` variant.** Pressed is the solid fill, so a toggle solid at rest
+would look the same on and off; before this it was solid off and *lighter*
+on, which inverted "off is quiet; on fills in". `ToggleVariant` excludes it;
+an untyped `solid` is drawn as `ghost` with a development warning (D-031's
+"Omit does not delete properties"). Pre-1.0, a minor marked breaking at the
+type level. The playground's variant row loses its solid pair.
+
+An alternative was weighed and not taken: keep the soft fill and add
+`--pp-tone-border-strong` (4.59:1 at the worst, every hue, every palette).
+It passes for a `ghost` toggle, whose resting state has no edge, but beside
+an `outline` toggle at rest the difference between pressed and not is an
+edge against an edge.
+
+### 2. A `SegmentedControl` in a `Toolbar` is walked segment by segment
+
+D-107 §8 left it untested: the toolbar's roving finds every radio as a
+control, and its arrows move focus without selecting. That is the APG's own
+toolbar example, whose text-alignment radio group is walked the same way,
+with `Space` selecting — so it is the behaviour, documented and tested
+rather than changed. Verified in Chromium before writing it down: a radio
+with `tabindex="0"` is a tab stop whether or not another in its group is
+checked, so the toolbar's stop on an unchecked segment is reachable from both
+sides. Toolbar.md §5, SegmentedControl.md and the Toolbar page say so; a unit
+test and a browser test walk Bold → Left → Center, select with `Space`, move
+on without selecting, and come back to the segment focused last.
+
+### 3. The visual job reads which failures are only missing baselines (closes D-106 §5)
+
+The job failed only when a baseline differed or none was new, so an
+authoring run passed over a harness or phone test that failed in it. CI's
+Playwright now also writes a JSON report, and `scripts/classify-visual.mjs`
+counts a failed test as awaiting a baseline only if it is in the screenshot
+suite and every error of every attempt is Playwright's own "A snapshot
+doesn't exist at …". Anything else — another error, a test in another file,
+an error outside any test, or no report at all — sets `functional=true`,
+which stops authoring and fails the job. The message was read from a real
+run with a baseline removed, not assumed; the classifier is unit-tested on
+the report's shape. Whether the step behaves on the runner is proven by this
+PR's own authoring run, which is the only place it can be (D-106 §5's
+reason for not changing it then).
+
+### 4. A bare `<code>` in the playground is set in the pinned mono, and `?gallery=open` stays whole (closes D-102 §2's follow-ups)
+
+`globals.css` sets `:where(code, kbd, samp)` to `--pp-font-family-mono`,
+unlayered and at no specificity, so the browser's generic `monospace` no
+longer resolves per machine; the library's own `Code`, `Kbd` and `CodeBlock`
+already read the same token. A `.nowrap` class keeps the four `?gallery=open`
+snippets on one line. Not a global `nowrap`: the longest bare snippet is 63
+characters, wider than a phone's 358px.
+
+**Baselines (D-050 §5's method, D-107 §7's shape).** Every page was
+captured on a production build of `main` and of this branch, locally, at a
+zero-pixel threshold, `main` first compared against itself (158 / 158
+identical). 119 captures on 60 pages differ. The line boxes holding a bare `<code>` were
+counted on each page: 59 pages hold 1 to 32 such lines, 480 in all, and on
+the runner each was 2px taller than a plain line (D-102 §2), so their heights
+will change there and cannot be measured here. Those 59 are re-baselined
+with `npm run dimensions -- --rebaseline`. The other 20 hold none; one,
+`examples`, changed pixels (its Toggles, §1) at the same height, so its two
+baselines are deleted and their manifest entries kept; the 19 that did not
+change are left to be compared. Locally only checkbox (−25px), number-input
+(−26px), toggle (−67px, §1's row and prose) and toolbar (+730px, §2's
+section) moved.
+
+### 5. The sweep: eleven items to `done`, 84 / 84
+
+6.1–6.7 and 3.18 waited only on their CI-authored baselines (D-069 §2). They
+were authored on PR #42 and compared green on `main` by runs 205 and 209
+(D-013's second half). 0.10, 0.12 and 0.13 also waited on "the user's review
+of the PR", and that PR, #35, merged — D-107 §8 surfaced the stale line and
+this reconciles it. Gate D's other boxes were walked when each went to
+`review` (D-094 to D-100, D-103 to D-105, D-107 §9); the last box, "visual
+regression snapshots committed (light + dark)", is now met. This PR
+re-authors most of their baselines again (§4), which is a re-baseline of
+`done` components, as D-107 §7's was.
+
+### 6. Launchpad's layout primitives were already consumed
+
+The roadmap's last open line asked launchpad to delete `.lp-stack`,
+`.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
+media query. Read on launchpad's `main` (e95d1e7): the first three and every
+`@media` are gone, its shell is `Split` and its page `Container`. `.lp-shell`
+holds only `min-block-size: 100dvh` and `.lp-page` only its block padding,
+both marked `@replaced-by AppShell`. The line is closed. Adopting AppShell,
+NavSidebar and PageHeader is new work, and it needs launchpad's pin moved
+past D-107 §2, whose removal of `Split.Sidebar` breaks its `AppFrame`; not
+done here.
+
+### 7. Found and not fixed
+
+- **Pagination's current page** is the same step-5 fill, with
+  `--pp-tone-border` as its edge. Whether that edge alone carries 1.4.11
+  beside the other pages was not measured here.
+- **Warning and a light accent on a Toggle** fail §1's 3:1; the docs say so
+  rather than a rule.

@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-100; awaiting its CI-authored baseline (D-013). Added to the roadmap by D-100 §1 |
+| **Status** | `done` — 2026-10-07; written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-100. Added to the roadmap by D-100 §1; its CI-authored baselines compared green on runs 205 and 209 (D-013; the sweep is D-108 §5) |
 | **Sizing contract** | n/a — a provider with no box of its own; its hints are a fixed overlay, the viewport's (D-067 §2's shape) |
 | **RSC** | `client` — document listeners, a portal, state |
 | **Depends on** | 1.10 `Kbd` (`done`): the hint is a keycap; 4.4 `Dialog` (`done`): the help sheet; 1.4 `VisuallyHidden`: the live status; 4.14 `CommandPalette` (`done`): the same `mod+k` chord grammar, decided on the platform when pressed (D-078) |

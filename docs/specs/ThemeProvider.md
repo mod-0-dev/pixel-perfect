@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written, one renamed by the rule lint (§3, D-094 §1); rulings and findings in D-094; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-10-07; written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written, one renamed by the rule lint (§3, D-094 §1); rulings and findings in D-094; its CI-authored baselines compared green on runs 205 and 209 (D-013; the sweep is D-108 §5) |
 | **Sizing contract** | `n/a` — renders no element of its own: the children as given and one inline `<script>` |
 | **RSC** | `client` — a context, an effect that follows `prefers-color-scheme`, a storage listener. The script it renders is emitted on the server too, which is the point |
 | **Depends on** | T0 (`done`): the tokens' four theme scopes (D-010, D-011) and the base layer's `color-scheme` |
