@@ -10,7 +10,7 @@ Tier 4 is built on [Radix Primitives](https://www.radix-ui.com/primitives).
 The portal, the dismissable layer, the focus scope, the ARIA wiring and the
 positioning (floating-ui) come from the primitive; every DOM node, class name,
 token and pixel is this library's. Each component adds its own
-`@radix-ui/react-<name>` as a dependency of `pixel-perfect`. They are
+`@radix-ui/react-<name>` as a dependency of `@mod-0-dev/pixel-perfect`. They are
 side-effect-free and tree-shakeable: an app that never imports `Popover`
 bundles no Radix.
 

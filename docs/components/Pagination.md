@@ -5,7 +5,7 @@ of page numbers around the current one with the first and the last always
 reachable. Spec: [`Pagination.md`](../specs/Pagination.md).
 
 ```tsx
-import { Pagination } from 'pixel-perfect';
+import { Pagination } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component. It pages nothing itself: `onPageChange` says which

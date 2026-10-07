@@ -4,7 +4,7 @@ A control that performs an action. Spec:
 [`tier-3a-action.md` §3.1](../specs/tier-3a-action.md#31-button).
 
 ```tsx
-import { Button } from 'pixel-perfect';
+import { Button } from '@mod-0-dev/pixel-perfect';
 ```
 
 The first focusable component in the library, so it settles two things

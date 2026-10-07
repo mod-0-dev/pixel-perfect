@@ -4,7 +4,7 @@ A vertical stack of sections, each with a heading that shows or hides its
 content. Spec: [`Accordion.md`](../specs/Accordion.md).
 
 ```tsx
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from 'pixel-perfect';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@mod-0-dev/pixel-perfect';
 ```
 
 Behaviour is [Radix Accordion](https://www.radix-ui.com/primitives/docs/components/accordion)'s:

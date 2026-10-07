@@ -5,7 +5,7 @@ they make it. Spec: [`AlertDialog.md`](../specs/AlertDialog.md). It is
 [`Dialog`](Dialog.md) with two rules changed.
 
 ```tsx
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from 'pixel-perfect';
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from '@mod-0-dev/pixel-perfect';
 ```
 
 **The two rules.** A press on the scrim does not close it, and focus lands on

@@ -4,7 +4,7 @@ A heading whose visual size is decoupled from its semantic level. Spec:
 [`tier-1-atoms.md` §1.2](../specs/tier-1-atoms.md#12-heading).
 
 ```tsx
-import { Heading } from 'pixel-perfect';
+import { Heading } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

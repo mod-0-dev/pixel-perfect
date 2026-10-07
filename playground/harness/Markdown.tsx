@@ -21,7 +21,7 @@ import {
   type HeadingSize,
   type Space,
   type TableAlign,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 import { Fragment, type ReactNode } from 'react';
 
 import { COMPONENTS } from '../app/components/registry';

@@ -4,7 +4,7 @@ Exactly one of a few options, drawn as an attached row of buttons.
 Spec: [`SegmentedControl.md`](../specs/SegmentedControl.md).
 
 ```tsx
-import { SegmentedControl, SegmentedControlItem } from 'pixel-perfect';
+import { SegmentedControl, SegmentedControlItem } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component. Underneath it is a radio group: one tab stop, arrows

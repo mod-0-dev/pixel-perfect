@@ -1,6 +1,6 @@
 'use client';
 
-import { Checkbox, Field, Stack, Text } from 'pixel-perfect';
+import { Checkbox, Field, Stack, Text } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 const ITEMS = ['Releases', 'Security advisories', 'Deprecations'] as const;

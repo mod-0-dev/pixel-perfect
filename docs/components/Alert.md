@@ -5,7 +5,7 @@ true, about the region of the page it sits in. Spec:
 [`Alert.md`](../specs/Alert.md).
 
 ```tsx
-import { Alert } from 'pixel-perfect';
+import { Alert } from '@mod-0-dev/pixel-perfect';
 ```
 
 It does **not** float, stack, queue or time out — that is `Toast` (4.12) — it

@@ -4,7 +4,7 @@ Block code in a frame: numbered if asked, a line pointed at, a button
 that copies it. Spec: [`CodeBlock.md`](../specs/CodeBlock.md).
 
 ```tsx
-import { CodeBlock, CodeBlockLine } from 'pixel-perfect';
+import { CodeBlock, CodeBlockLine } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component, for its copy button. **Highlighting is yours**: the

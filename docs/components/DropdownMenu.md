@@ -9,7 +9,7 @@ import {
   DropdownMenuCheckboxItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuItemIndicator,
   DropdownMenuGroup, DropdownMenuLabel, DropdownMenuSeparator,
   DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 ```
 
 Behaviour is [Radix DropdownMenu](https://www.radix-ui.com/primitives/docs/components/dropdown-menu)'s

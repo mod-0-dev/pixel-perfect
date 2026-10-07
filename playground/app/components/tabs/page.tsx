@@ -5,7 +5,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the tabs' ids come from Radix's
  * `useId()`, and the browser suite finds its sections by `data-testid`.
  */
-import { Stack, Text } from 'pixel-perfect';
+import { Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 import { Gallery, KeptForm, Rtl, Settings, Vertical } from './Demos';

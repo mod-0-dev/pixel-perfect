@@ -4,7 +4,7 @@ One choice from a visible set. Spec:
 [`tier-3c-inputs.md` §3.11](../specs/tier-3c-inputs.md).
 
 ```tsx
-import { Radio, RadioGroup } from 'pixel-perfect';
+import { Radio, RadioGroup } from '@mod-0-dev/pixel-perfect';
 ```
 
 `RadioGroup` owns the `name`, the value and the grouping semantics; `Radio` is

@@ -17,7 +17,7 @@ import {
   Heading,
   Link,
   Stack,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

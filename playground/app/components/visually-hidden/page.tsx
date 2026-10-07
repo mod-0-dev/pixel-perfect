@@ -1,4 +1,4 @@
-import { VisuallyHidden } from 'pixel-perfect';
+import { VisuallyHidden } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

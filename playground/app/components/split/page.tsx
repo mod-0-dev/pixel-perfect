@@ -1,4 +1,4 @@
-import { Badge, Cluster, Heading, Split, SplitMain, SplitSidebar, Stack, Text } from 'pixel-perfect';
+import { Badge, Cluster, Heading, Split, SplitMain, SplitSidebar, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

@@ -4,7 +4,7 @@ A small, non-interactive label for status or category. Spec:
 [`tier-1-atoms.md` §1.8](../specs/tier-1-atoms.md#18-badge).
 
 ```tsx
-import { Badge } from 'pixel-perfect';
+import { Badge } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

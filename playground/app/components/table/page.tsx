@@ -7,7 +7,7 @@
  * finds its sections by `data-testid`. The one id on the page is a
  * heading's, which `aria-labelledby` is for.
  */
-import { Badge, Stack, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from 'pixel-perfect';
+import { Badge, Stack, Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

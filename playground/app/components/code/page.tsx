@@ -1,4 +1,4 @@
-import { Code, Heading, Text } from 'pixel-perfect';
+import { Code, Heading, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

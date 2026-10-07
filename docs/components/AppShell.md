@@ -4,7 +4,7 @@ The frame a layout wraps its pages in: header, sidebar, main, footer, and a
 skip link first. Spec: [`AppShell.md`](../specs/AppShell.md).
 
 ```tsx
-import { AppShell } from 'pixel-perfect';
+import { AppShell } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component. `header`, `sidebar` and `footer` are slots;
@@ -21,7 +21,7 @@ link: the frame, not a panel.
 
 ```tsx
 // app/layout.tsx
-import { AppShell, Cluster, Container, Text, ThemeToggle } from 'pixel-perfect';
+import { AppShell, Cluster, Container, Text, ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

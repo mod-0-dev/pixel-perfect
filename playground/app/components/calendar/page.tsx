@@ -6,7 +6,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the browser suite finds its
  * sections by `data-testid`.
  */
-import { Calendar, Stack } from 'pixel-perfect';
+import { Calendar, Stack } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

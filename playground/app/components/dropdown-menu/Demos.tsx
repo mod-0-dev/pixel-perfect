@@ -21,7 +21,7 @@ import {
   IconButton,
   Stack,
   Text,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 function Dots() {

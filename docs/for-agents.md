@@ -7,15 +7,15 @@ or its accessibility wiring. Read this file before writing UI code, and open
 the component's own doc (linked below) before using a component for the
 first time.
 
-This file ships inside the package (`node_modules/pixel-perfect/dist/AGENTS.md`)
+This file ships inside the package (`node_modules/@mod-0-dev/pixel-perfect/dist/AGENTS.md`)
 and is regenerated with every release, so it describes the version installed.
 
 ## Setup, once per app
 
 ```tsx
 // app/layout.tsx
-import 'pixel-perfect/styles.css';          // the one stylesheet, imported once
-import { ThemeProvider } from 'pixel-perfect';
+import '@mod-0-dev/pixel-perfect/styles.css'; // the one stylesheet, imported once
+import { ThemeProvider } from '@mod-0-dev/pixel-perfect';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,9 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-Everything is a named export of `pixel-perfect`. A brand colour comes from
+Everything is a named export of `@mod-0-dev/pixel-perfect`. A brand colour comes from
 `npx pixel-perfect theme --accent "#7c3aed" --out src/brand.css`: import that
-file after `pixel-perfect/styles.css` and never hand-edit it.
+file after `@mod-0-dev/pixel-perfect/styles.css` and never hand-edit it.
 
 A responsive app should also put `text-size-adjust: 100%` on `html` in its
 own stylesheet. Without it iOS Safari enlarges text in anything that runs

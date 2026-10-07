@@ -1,4 +1,4 @@
-import type { Tone } from 'pixel-perfect';
+import type { Tone } from '@mod-0-dev/pixel-perfect';
 
 /*
  * The dashboard's releases: 128 deploys over the 30 days to 6 October 2026,

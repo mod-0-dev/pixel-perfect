@@ -1,4 +1,4 @@
-import { AspectRatio, Badge, Grid, Stack, Text } from 'pixel-perfect';
+import { AspectRatio, Badge, Grid, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

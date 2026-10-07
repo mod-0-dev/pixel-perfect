@@ -4,7 +4,7 @@ A square `Button` that cannot be built without an accessible name. Spec:
 [`tier-3a-action.md` §3.2](../specs/tier-3a-action.md#32-iconbutton).
 
 ```tsx
-import { IconButton } from 'pixel-perfect';
+import { IconButton } from '@mod-0-dev/pixel-perfect';
 ```
 
 It is a separate component rather than a `Button` prop because the guarantee has

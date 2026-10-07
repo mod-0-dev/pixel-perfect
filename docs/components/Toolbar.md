@@ -4,7 +4,7 @@ A named row of controls reached with one Tab and walked with the arrow
 keys. Spec: [`Toolbar.md`](../specs/Toolbar.md).
 
 ```tsx
-import { Toolbar } from 'pixel-perfect';
+import { Toolbar } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put your controls inside — [`Button`](Button.md), [`IconButton`](IconButton.md),

@@ -4,7 +4,7 @@ A rule between two groups of content, horizontal or vertical. Spec:
 [`tier-1-atoms.md` §1.5](../specs/tier-1-atoms.md#15-separator).
 
 ```tsx
-import { Separator } from 'pixel-perfect';
+import { Separator } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

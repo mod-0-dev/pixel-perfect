@@ -4,7 +4,7 @@ An on/off control whose effect is **immediate**. Spec:
 [`tier-3c-inputs.md` §3.12](../specs/tier-3c-inputs.md).
 
 ```tsx
-import { Field, Switch } from 'pixel-perfect';
+import { Field, Switch } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md), with `orientation="horizontal"`. The field owns

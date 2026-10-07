@@ -4,7 +4,7 @@ A horizontal row that wraps. Spec:
 [`tier-2-layout.md` §2.2](../specs/tier-2-layout.md#22-cluster).
 
 ```tsx
-import { Cluster } from 'pixel-perfect';
+import { Cluster } from '@mod-0-dev/pixel-perfect';
 ```
 
 It is called `Cluster` and not `Row` because wrapping is the default. A

@@ -1,6 +1,6 @@
 'use client';
 
-import { Field, Input, Stack, Tabs, TabsContent, TabsList, TabsTrigger, Text } from 'pixel-perfect';
+import { Field, Input, Stack, Tabs, TabsContent, TabsList, TabsTrigger, Text } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 const SECTIONS = [

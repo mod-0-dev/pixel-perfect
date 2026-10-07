@@ -13,7 +13,7 @@ import {
   PageHeaderDescription,
   PageHeaderTitle,
   Stack,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

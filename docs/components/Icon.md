@@ -4,7 +4,7 @@ Consistent sizing, colour and accessible-name handling for any SVG. Ships no
 icons. Spec: [`tier-1-atoms.md` §1.3](../specs/tier-1-atoms.md#13-icon).
 
 ```tsx
-import { Icon } from 'pixel-perfect';
+import { Icon } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

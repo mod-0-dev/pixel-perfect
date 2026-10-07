@@ -4,7 +4,7 @@ Related buttons rendered as one attached unit. Spec:
 [`tier-3a-action.md` §3.4](../specs/tier-3a-action.md#34-buttongroup).
 
 ```tsx
-import { ButtonGroup } from 'pixel-perfect';
+import { ButtonGroup } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## It is the attached case, and only the attached case

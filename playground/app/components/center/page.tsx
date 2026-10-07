@@ -1,4 +1,4 @@
-import { Badge, Center, Heading, Spinner, Stack, Text } from 'pixel-perfect';
+import { Badge, Center, Heading, Spinner, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

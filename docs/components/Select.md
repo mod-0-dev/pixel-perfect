@@ -4,7 +4,7 @@ The native `<select>` on the shared control surface, with our chevron. Spec:
 [`tier-3c-inputs.md` §3.13](../specs/tier-3c-inputs.md).
 
 ```tsx
-import { Field, Select } from 'pixel-perfect';
+import { Field, Select } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md). The field owns the label, the description, the

@@ -11,7 +11,7 @@
  * argument for controls reading their wiring from context instead of being
  * handed it: context has no such restriction.
  */
-import { Field, Input, Stack, Text } from 'pixel-perfect';
+import { Field, Input, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

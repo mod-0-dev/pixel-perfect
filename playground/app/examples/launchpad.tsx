@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { Avatar, Badge, Cluster, Icon, Separator, Text, ThemeToggle } from 'pixel-perfect';
+import { Avatar, Badge, Cluster, Icon, Separator, Text, ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 import { CheckCircleGlyph, LaunchpadMark } from './glyphs';
 

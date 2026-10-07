@@ -4,7 +4,7 @@ A person's picture, with initials until it loads and for good if it fails.
 Spec: [`tier-1-atoms.md` §1.9](../specs/tier-1-atoms.md#19-avatar).
 
 ```tsx
-import { Avatar } from 'pixel-perfect';
+import { Avatar } from '@mod-0-dev/pixel-perfect';
 ```
 
 The only client component in Tier 1: whether an image loaded is runtime

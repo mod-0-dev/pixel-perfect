@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Cluster, Stack, Text, ToastProvider, useToast, type ToastPlacement } from 'pixel-perfect';
+import { Button, Cluster, Stack, Text, ToastProvider, useToast, type ToastPlacement } from '@mod-0-dev/pixel-perfect';
 import { useEffect, useRef } from 'react';
 
 function Tick() {

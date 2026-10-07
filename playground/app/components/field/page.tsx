@@ -11,7 +11,7 @@
  * an ELEMENT, which serializes fine, and that is exactly why controls read
  * their wiring from context instead of being handed it.
  */
-import { Container, Field, Stack, Text } from 'pixel-perfect';
+import { Container, Field, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

@@ -5,7 +5,7 @@ keyboard focus lands on it. Spec: [`Tooltip.md`](../specs/Tooltip.md).
 Foundation: [Overlays](../overlays.md).
 
 ```tsx
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from 'pixel-perfect';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@mod-0-dev/pixel-perfect';
 ```
 
 It **describes** its trigger — `aria-describedby`, never the name — and it is

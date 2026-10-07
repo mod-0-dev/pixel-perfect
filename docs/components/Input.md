@@ -4,7 +4,7 @@ A single-line text control. Spec:
 [`tier-3c-inputs.md` §3.8](../specs/tier-3c-inputs.md).
 
 ```tsx
-import { Field, Input } from 'pixel-perfect';
+import { Field, Input } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md). The field owns the label, the description, the

@@ -4,7 +4,7 @@ Navigation. Spec:
 [`tier-3a-action.md` §3.3](../specs/tier-3a-action.md#33-link).
 
 ```tsx
-import { Link } from 'pixel-perfect';
+import { Link } from '@mod-0-dev/pixel-perfect';
 ```
 
 It knows nothing about routing, prefetching or external-link detection, and it

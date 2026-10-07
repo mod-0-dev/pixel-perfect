@@ -3,7 +3,7 @@
 The visible name of a form control. Spec: [`Label.md`](../specs/Label.md).
 
 ```tsx
-import { Label } from 'pixel-perfect';
+import { Label } from '@mod-0-dev/pixel-perfect';
 ```
 
 Almost nobody renders this directly. Every input in Tier 3C reaches it through

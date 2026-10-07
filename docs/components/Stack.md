@@ -4,7 +4,7 @@ Vertical flow with a gap. Spec:
 [`tier-2-layout.md` §2.1](../specs/tier-2-layout.md#21-stack).
 
 ```tsx
-import { Stack } from 'pixel-perfect';
+import { Stack } from '@mod-0-dev/pixel-perfect';
 ```
 
 This is the answer to "how do I put space between two components", and it is the

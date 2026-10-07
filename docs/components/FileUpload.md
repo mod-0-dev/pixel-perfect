@@ -5,7 +5,7 @@ dashed zone that takes a drop, and a list of what was chosen with how
 far each has got. Spec: [`FileUpload.md`](../specs/FileUpload.md).
 
 ```tsx
-import { FileUpload, FileUploadDropzone, FileUploadTrigger, FileUploadList, FileUploadItem } from 'pixel-perfect';
+import { FileUpload, FileUploadDropzone, FileUploadTrigger, FileUploadList, FileUploadItem } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component. It **selects and shows**; uploading is yours:

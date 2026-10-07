@@ -5,7 +5,7 @@ may be absent, and a hairline between the ones that are present. Spec:
 [`Card.md`](../specs/Card.md).
 
 ```tsx
-import { Card, CardHeader, CardBody, CardFooter } from 'pixel-perfect';
+import { Card, CardHeader, CardBody, CardFooter } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component. Not a layout (`Stack`, `Grid`, `Split` are) and not a

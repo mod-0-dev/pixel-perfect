@@ -4,7 +4,7 @@ A square button that flips the page between light and dark. Spec:
 [`ThemeToggle.md`](../specs/ThemeToggle.md).
 
 ```tsx
-import { ThemeToggle } from 'pixel-perfect';
+import { ThemeToggle } from '@mod-0-dev/pixel-perfect';
 ```
 
 Under a [`ThemeProvider`](ThemeProvider.md). Shows a sun while the page is

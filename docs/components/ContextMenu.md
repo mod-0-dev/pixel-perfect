@@ -10,7 +10,7 @@ import {
   ContextMenuCheckboxItem, ContextMenuRadioGroup, ContextMenuRadioItem, ContextMenuItemIndicator,
   ContextMenuGroup, ContextMenuLabel, ContextMenuSeparator,
   ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 ```
 
 A secondary press on the region, a long press with touch or pen, or

@@ -4,7 +4,7 @@ An overflow container that says there is more content past the edge. Spec:
 [`tier-2-layout.md` §2.8](../specs/tier-2-layout.md#28-scroller).
 
 ```tsx
-import { Scroller } from 'pixel-perfect';
+import { Scroller } from '@mod-0-dev/pixel-perfect';
 ```
 
 The affordance is the entire point: an overflowing region with no shadow and no

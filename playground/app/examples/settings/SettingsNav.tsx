@@ -2,7 +2,7 @@
 
 import NextLink from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { NavSidebar, NavSidebarItem, NavSidebarSection } from 'pixel-perfect';
+import { NavSidebar, NavSidebarItem, NavSidebarSection } from '@mod-0-dev/pixel-perfect';
 
 import { ArrowLeftGlyph, BellGlyph, CardGlyph, ShieldGlyph, UserGlyph, UsersGlyph } from '../glyphs';
 

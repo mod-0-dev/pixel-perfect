@@ -5,7 +5,7 @@ move focus to each field, and refuses a second submission while the first is
 pending. Spec: [`Form.md`](../specs/Form.md).
 
 ```tsx
-import { Form, type FormError } from 'pixel-perfect';
+import { Form, type FormError } from '@mod-0-dev/pixel-perfect';
 ```
 
 It does **not** validate, hold field values, or disable anything. Your app

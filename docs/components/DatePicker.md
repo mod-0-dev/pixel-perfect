@@ -5,7 +5,7 @@ button, and `Calendar` in a `Popover` behind the button. Spec:
 [`DatePicker.md`](../specs/DatePicker.md).
 
 ```tsx
-import { DatePicker } from 'pixel-perfect';
+import { DatePicker } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component. The value is an ISO date, `2026-09-28`; the field

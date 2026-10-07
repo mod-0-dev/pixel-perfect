@@ -28,7 +28,7 @@ import {
   Switch,
   Text,
   type Tone,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 
 import { Stage } from '../../../harness/Stage';
 import { AlertGlyph, PlusGlyph } from '../glyphs';

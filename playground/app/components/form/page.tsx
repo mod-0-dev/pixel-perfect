@@ -14,7 +14,7 @@
  * row) — so on load, focus is on the last one. That is the behaviour being
  * demonstrated, not an accident of the page.
  */
-import { Button, Cluster, Field, Form, Heading, Input, type FormError } from 'pixel-perfect';
+import { Button, Cluster, Field, Form, Heading, Input, type FormError } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 import { SignUp } from './SignUp';

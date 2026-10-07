@@ -4,7 +4,7 @@ A rendered keyboard key. Spec:
 [`tier-1-atoms.md` §1.10](../specs/tier-1-atoms.md#110-kbd).
 
 ```tsx
-import { Kbd } from 'pixel-perfect';
+import { Kbd } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

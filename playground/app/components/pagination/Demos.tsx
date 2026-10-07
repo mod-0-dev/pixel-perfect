@@ -1,6 +1,6 @@
 'use client';
 
-import { Pagination } from 'pixel-perfect';
+import { Pagination } from '@mod-0-dev/pixel-perfect';
 
 /**
  * A function cannot cross from a Server Component page into a client

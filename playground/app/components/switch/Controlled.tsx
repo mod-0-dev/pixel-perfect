@@ -1,6 +1,6 @@
 'use client';
 
-import { Field, Stack, Switch, Text } from 'pixel-perfect';
+import { Field, Stack, Switch, Text } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 /**

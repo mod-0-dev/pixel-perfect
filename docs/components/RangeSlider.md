@@ -5,7 +5,7 @@ and [`NumberInput`](NumberInput.md). Spec:
 [`RangeSlider.md`](../specs/RangeSlider.md).
 
 ```tsx
-import { Field, RangeSlider } from 'pixel-perfect';
+import { Field, RangeSlider } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md) **with `group`**. The root is a `role="group"`,

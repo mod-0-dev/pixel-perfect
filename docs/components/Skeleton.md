@@ -4,7 +4,7 @@ A placeholder for content that has not arrived. Spec:
 [`tier-1-atoms.md` §1.7](../specs/tier-1-atoms.md#17-skeleton).
 
 ```tsx
-import { Skeleton } from 'pixel-perfect';
+import { Skeleton } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

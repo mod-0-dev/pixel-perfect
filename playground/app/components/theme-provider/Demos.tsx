@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, ButtonGroup, Stack, Text, useTheme } from 'pixel-perfect';
+import { Button, ButtonGroup, Stack, Text, useTheme } from '@mod-0-dev/pixel-perfect';
 
 /**
  * Reads the layout's provider — the same one the chrome's switcher sets —

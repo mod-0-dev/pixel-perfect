@@ -4,7 +4,7 @@ A binary or tri-state checkbox, painted by us and operated by the browser. Spec:
 [`tier-3c-inputs.md` §3.10](../specs/tier-3c-inputs.md).
 
 ```tsx
-import { Checkbox, Field } from 'pixel-perfect';
+import { Checkbox, Field } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md), with `orientation="horizontal"`. The field owns

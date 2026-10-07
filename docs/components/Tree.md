@@ -4,7 +4,7 @@ A hierarchy to walk and pick from: the ARIA tree view, drawn with the
 control tokens. Spec: [`Tree.md`](../specs/Tree.md).
 
 ```tsx
-import { Tree, TreeItem } from 'pixel-perfect';
+import { Tree, TreeItem } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component. It holds which nodes are open and which one is
