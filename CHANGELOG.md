@@ -1,5 +1,48 @@
 # pixel-perfect
 
+## 0.11.0
+
+### Minor Changes
+
+- fe9a437: **Breaking.** `Split`'s parts are named exports, `SplitSidebar` and
+  `SplitMain`, like every other compound's. `Split.Sidebar` and `Split.Main`
+  are gone, not deprecated: replace `<Split.Sidebar>` with `<SplitSidebar>` and
+  `<Split.Main>` with `<SplitMain>`, and import both. `SplitSlotProps` is now
+  `SplitSidebarProps` and `SplitMainProps`.
+  
+  **Breaking, at the type level.** `CodeBlock` needs a `title` or a `label`.
+  Its scroll region was named "Code" by default, so a page of blocks was a page
+  of regions nobody could tell apart. Untyped callers that give neither get a
+  development warning and the old name.
+- fe9a437: Add `SegmentedControl` and `SegmentedControlItem`: exactly one of a few
+  options, drawn as an attached row of buttons, built on native radios — one
+  tab stop, arrows that move and select, a value that submits with a form, and
+  "Light, radio button, checked, 2 of 3" to a screen reader. The checked segment
+  is the neutral solid fill, 5.90:1 against the page in light and 7.07:1 in
+  dark. A pressed `Toggle`'s fill is 1.26:1, too faint to tell a choice from its
+  neighbour. Named by `label`, or by the `Field` around it. Use it where you had
+  a `ButtonGroup` of `Toggle`s with exactly one pressed.
+
+### Patch Changes
+
+- fe9a437: Fix `AvatarGroup` hiding part of every covered face's initials: the overlap
+  did not count the 2px ring each face draws outside itself, so the next face
+  hid a fifth of the face plus the ring. The overlap now includes the ring, and
+  a covered face's initials sit in the middle of the part left visible, so
+  pairs like "AT", "GH" and "MH" keep both letters (MH at `md` and `lg`).
+  The group is 2px wider per face.
+  
+  Fix `Code` inside a `Link` keeping its own grey ink: it takes the link's
+  colour, at rest and on hover, on its own background. Every link tone on that
+  background is 4.5:1 or better in both themes, now asserted by
+  `npm run lint:contrast`.
+  
+  Fix code blocks, tables and scrollers rendering larger text on iPhone when
+  their content is wider than the screen: iOS Safari's text autosizing enlarged
+  text in any box whose lines ran past the screen edge. `CodeBlock`, `Table`
+  and `Scroller` set `text-size-adjust: 100%`. A responsive app should set it
+  on `html` too, for its own content.
+
 ## 0.10.0
 
 ### Minor Changes
