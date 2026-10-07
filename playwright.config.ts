@@ -61,7 +61,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
+  // The JSON report is how the visual job tells a missing baseline from a
+  // failed test (scripts/classify-visual.mjs, D-108 §3).
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never' }], ['json', { outputFile: 'test-results/visual.json' }]]
+    : [['list']],
   snapshotPathTemplate: '{testDir}/__screenshots__/{arg}{ext}',
 
   expect: {

@@ -808,6 +808,37 @@ test.describe('Toolbar', () => {
     expect(direction).toBe('rtl');
   });
 
+  test('a SegmentedControl inside is walked segment by segment without selecting; Space selects; Tab out and back lands on the segment focused last (spec §5, D-108 §2)', async ({ page }) => {
+    await page.goto('/components/toolbar');
+    const cell = page.getByTestId('toolbar-segmented').locator('.matrix__cell').last();
+    const radio = (value: string) => cell.locator(`input[value="${value}"]`);
+    const checked = () => cell.locator('input:checked').evaluateAll((els) => els.map((n) => (n as HTMLInputElement).value));
+    await cell.locator('[data-role="before"]').focus();
+    await page.keyboard.press('Tab');
+    await expect(cell.getByRole('button', { name: 'Bold' })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(radio('left')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(radio('center')).toBeFocused();
+    // The toolbar took the arrow before the radio could: focus moved, the value did not.
+    expect(await checked()).toEqual(['left']);
+    await page.keyboard.press('Space');
+    expect(await checked()).toEqual(['center']);
+    await page.keyboard.press('ArrowRight');
+    await expect(radio('right')).toBeFocused();
+    expect(await checked()).toEqual(['center']);
+    // The ring is on the segment the toolbar moved to.
+    expect(
+      await cell.locator('.pp-segmented-control__item:has(input[value="right"])').evaluate((n) => getComputedStyle(n).outlineStyle),
+    ).toBe('solid');
+    // An unchecked radio is the stop, and Tab reaches it from both sides.
+    await page.keyboard.press('Tab');
+    await expect(cell.locator('[data-role="after"]')).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(radio('right')).toBeFocused();
+    expect(await cell.locator('.pp-toolbar [tabindex="0"]').count()).toBe(1);
+  });
+
   test('the vertical toolbar is a column that answers ArrowDown and stops at its ends with loop={false} (spec §3, §6)', async ({ page }) => {
     await page.goto('/components/toolbar');
     const bar = page.getByTestId('toolbar-vertical').locator('.matrix__cell').last().locator('.pp-toolbar');
@@ -1505,7 +1536,7 @@ test.describe('IconButton', () => {
 });
 
 test.describe('Toggle', () => {
-  test('pressed is visibly distinct, and does not lighten on hover', async ({ page }) => {
+  test('pressed is the tone\'s solid fill with its ink, and hovers darker, never lighter (D-108 §1)', async ({ page }) => {
     await page.goto('/components/toggle');
 
     const cell = page
@@ -1517,21 +1548,37 @@ test.describe('Toggle', () => {
     const off = cell.getByRole('button', { name: 'ghost off' }).first();
     const on = cell.getByRole('button', { name: 'ghost on' }).first();
 
-    const bg = (el: import('@playwright/test').Locator) =>
-      el.evaluate((node) => getComputedStyle(node).backgroundColor);
-    const border = (el: import('@playwright/test').Locator) =>
-      el.evaluate((node) => getComputedStyle(node).borderTopColor);
+    const read = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => {
+        const cs = getComputedStyle(node);
+        return { bg: cs.backgroundColor, color: cs.color, border: cs.borderTopColor };
+      });
+    // The gallery's Toggles are tone="accent".
+    const token = (name: string) =>
+      page.evaluate((t) => {
+        const scope = document.createElement('div');
+        scope.setAttribute('data-pp-tone', 'accent');
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = `var(${t})`;
+        scope.appendChild(probe);
+        document.body.appendChild(scope);
+        const c = getComputedStyle(probe).backgroundColor;
+        scope.remove();
+        return c;
+      }, name);
 
-    const offBg = await bg(off);
-    const onBg = await bg(on);
-    expect(onBg).not.toBe(offBg);
+    // 1.26:1 against the page was step 5; the solid is what lint:contrast
+    // asserts at 3:1 on steps 1-3.
+    const pressed = await read(on);
+    expect(pressed.bg).toBe(await token('--pp-tone-solid'));
+    expect(pressed.border).toBe(pressed.bg);
+    expect(pressed.color).toBe(await token('--pp-tone-on-solid'));
+    expect((await read(off)).bg).not.toBe(pressed.bg);
 
-    // Pressed is already the filled end of the ramp. Hovering must not walk it
-    // back toward the resting colour — that reads as releasing the button.
-    const onBorderRest = await border(on);
+    // A solid has a darker step, so pressed hovers as a solid Button does.
+    // Walking back toward the resting fill would read as releasing.
     await on.hover();
-    expect(await bg(on)).toBe(onBg);
-    expect(await border(on)).not.toBe(onBorderRest);
+    expect((await read(on)).bg).toBe(await token('--pp-tone-solid-hover'));
   });
 });
 

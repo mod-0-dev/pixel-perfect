@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 3 — Form & Action Core |
-| **Status** | `review` — written and built 2026-10-07 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-107 §3; awaiting its CI-authored baselines (D-013) |
+| **Status** | `done` — 2026-10-07; written and built 2026-10-07 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-107 §3; its CI-authored baselines compared green on runs 205 and 209 (D-013; the sweep is D-108 §5) |
 | **Sizing contract** | `hug` |
 | **RSC** | `client` — `useId`, `useControllableState` and a context provider |
 | **Depends on** | 3.4 `ButtonGroup` (`done`) for the seams, 3.11 `Radio` / `RadioGroup` (`done`) for the semantics, 3.7 `Field` (`done`) for the name |
@@ -269,9 +269,10 @@ shorter options, or a `Select`.
 
 ## Out of scope, recorded
 
-- **Inside a `Toolbar`.** A Toolbar's roving finds every radio as a
-  control of its own, and its arrows move focus without selecting.
-  Not designed for or tested here.
+- **Inside a `Toolbar`** — designed and tested since D-108 §2, in
+  `Toolbar.md` §5: each radio is a control of the toolbar, the arrows move
+  focus without selecting, as the APG toolbar example's alignment group
+  does, and `Space` selects.
 - **Animated thumb.** The fill moves at once; a sliding thumb is
   motion with nothing to say.
 

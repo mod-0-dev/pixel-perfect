@@ -27,7 +27,7 @@ export default async function DrawerPage({ searchParams }: { searchParams: Promi
           An <code>end</code> drawer per cell, contained in its cell: at 240 the panel is the full
           width (the token is 20rem), at 480 and 960 it is 20rem at the right edge. Open one from its
           cell; Escape, the scrim or Close closes it. The screenshot suite opens all three at load
-          with <code>?gallery=open</code>.
+          with <code className="nowrap">?gallery=open</code>.
         </p>
         <Matrix>
           <Gallery open={open} />

@@ -21,6 +21,12 @@ toolbar's last-focused button, from which the arrows reach everything.
 A field is never the tab stop, for exactly that reason. No caret-edge
 trick.
 
+**A [`SegmentedControl`](SegmentedControl.md) inside is walked segment by
+segment.** The arrows move focus onto each segment without selecting it,
+as the APG's toolbar example walks its alignment group, and `Space`
+selects the focused one. Standing alone, its arrows select; in a toolbar
+the toolbar has them.
+
 ## Usage
 
 ```tsx

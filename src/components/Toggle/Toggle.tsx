@@ -1,10 +1,14 @@
 'use client';
 
-import { forwardRef, type MouseEvent } from 'react';
+import { forwardRef, useEffect, type MouseEvent } from 'react';
 
 import { cx } from '../../internal/cx';
 import { useControllableState } from '../../internal/useControllableState';
 import { Button, type ButtonProps } from '../Button/Button';
+
+// The library ships no Node types; a bundler replaces this or leaves it out.
+declare const process: { env?: { NODE_ENV?: string } } | undefined;
+const isProduction = () => typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production';
 
 /**
  * A button that stays pressed. Bold in a text editor; a filter chip that is on.
@@ -20,7 +24,15 @@ import { Button, type ButtonProps } from '../Button/Button';
  *
  * Spec: docs/specs/tier-3a-action.md §3.5
  */
-export interface ToggleProps extends Omit<ButtonProps, 'loading'> {
+/**
+ * No `solid` (D-108 §1): pressed IS the solid fill, so a toggle that was
+ * solid at rest would look the same pressed and not.
+ */
+export type ToggleVariant = Exclude<ButtonProps['variant'], 'solid' | undefined>;
+
+export interface ToggleProps extends Omit<ButtonProps, 'loading' | 'variant'> {
+  /** Off is quiet; on is the tone's solid fill. Default `'ghost'`. */
+  variant?: ToggleVariant;
   /** Controlled. */
   pressed?: boolean;
   /** Uncontrolled. */
@@ -47,6 +59,14 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle
   const { loading: _loading, ...props } = rest as typeof rest & { loading?: boolean };
   void _loading;
 
+  /* An untyped `solid` would draw on and off the same (D-108 §1). */
+  const solid = (variant as string) === 'solid';
+  useEffect(() => {
+    if (solid && !isProduction()) {
+      console.warn('[pixel-perfect] <Toggle> has no `solid` variant: pressed is the solid fill. Using `ghost`.');
+    }
+  }, [solid]);
+
   const [isPressed, setPressed] = useControllableState({
     value: pressed,
     defaultValue: defaultPressed,
@@ -67,7 +87,7 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle
     <Button
       ref={ref}
       className={cx('pp-toggle', className)}
-      variant={variant}
+      variant={solid ? 'ghost' : variant}
       // ALWAYS present, "true" or "false" — never absent. A button with no
       // aria-pressed is announced as a plain button, and the user is simply
       // never told it has two states.

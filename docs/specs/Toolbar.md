@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-098; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-10-07; written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-098; its CI-authored baselines compared green on runs 205 and 209 (D-013; the sweep is D-108 §5) |
 | **Sizing contract** | `fill` — a bar across its container; block-level, `min-inline-size: 0` |
 | **RSC** | `client` — a roving tabindex is key handling and focus tracking |
 | **Depends on** | 3.4 `ButtonGroup` (`done`): the attached groups inside it, and the ruling that it is *not* this component (D-030 §7, D-031); 3.1 `Button`, 3.2 `IconButton`, 3.5 `Toggle`, 1.5 `Separator`: what goes in it |
@@ -102,6 +102,16 @@ toolbar does not know which gaps are boundaries. A `DropdownMenu`'s
 trigger is a control; its open list is portalled, outside the toolbar's
 subtree, and Radix's own arrow handling has it. The toolbar handles a key
 only when the key's target is one of its controls.
+
+A `SegmentedControl` (3.18) inside is its native radios, and each is a
+control of the toolbar like a `ButtonGroup`'s buttons: the arrows walk
+onto and off its segments and move focus without selecting, and `Space`
+selects the focused one. That is the APG toolbar example's own text
+alignment group, which its arrows walk the same way; the browser's own
+"arrow selects" belongs to a radio group standing alone, and the toolbar
+has taken the arrows. The stop is the segment focused last, checked or
+not; Chromium tabs to a radio with `tabindex="0"` whether or not another
+in its group is checked (D-108 §2).
 
 ### 6. Layout: a wrapping row with a gap, or a column
 
@@ -236,14 +246,18 @@ The row wraps by its own content at any width; no query.
   stop hands the stop to the first; a click on a control makes it the
   stop; inside a text input the arrows and `Home` / `End` are left alone
   and the field is never the stop, so `Tab` out and back lands on a button;
-  a `ButtonGroup`'s buttons are controls and it keeps its group; RTL
+  a `ButtonGroup`'s buttons are controls and it keeps its group; a
+  `SegmentedControl`'s radios are walked without selecting; RTL
   mirrors `Left` / `Right`; `gap` writes `data-pp-gap`; `ref`,
   `className`, `style`, rest; `label` required at the type level; axe.
 - **Browser:** `Tab` from before the toolbar lands on its first control
   and `Tab` again leaves it past the rest; `ArrowRight` walks the row,
   `End` and `Home` jump; under `dir="rtl"` `ArrowRight` goes to the
   control on the right; the row wraps in the narrow cell and spans the
-  wide one; the vertical toolbar is a column and answers `ArrowDown`.
+  wide one; the vertical toolbar is a column and answers `ArrowDown`; a
+  `SegmentedControl` inside is walked segment by segment without selecting,
+  `Space` selects, and `Tab` out and back lands on the segment focused last
+  (§5, D-108 §2).
 
 ## Open questions
 
