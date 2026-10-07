@@ -43,6 +43,14 @@
     "width": 1280,
     "height": 1903
   },
+  "avatar-group-dark.png": {
+    "width": 1280,
+    "height": 1349
+  },
+  "avatar-group-light.png": {
+    "width": 1280,
+    "height": 1349
+  },
   "avatar-light.png": {
     "width": 1280,
     "height": 1903
@@ -66,6 +74,14 @@
   "button-dark.png": {
     "width": 1280,
     "height": 5767
+  },
+  "button-group-dark.png": {
+    "width": 1280,
+    "height": 3448
+  },
+  "button-group-light.png": {
+    "width": 1280,
+    "height": 3448
   },
   "button-light.png": {
     "width": 1280,
@@ -295,6 +311,16 @@
     "width": 1280,
     "height": 2532
   },
+  "index-dark.png": {
+    "width": 1280,
+    "height": 4745,
+    "components": 70
+  },
+  "index-light.png": {
+    "width": 1280,
+    "height": 4745,
+    "components": 70
+  },
   "input-dark.png": {
     "width": 1280,
     "height": 5030
@@ -326,6 +352,14 @@
   "label-light.png": {
     "width": 1280,
     "height": 5180
+  },
+  "link-dark.png": {
+    "width": 1280,
+    "height": 3948
+  },
+  "link-light.png": {
+    "width": 1280,
+    "height": 3948
   },
   "nav-sidebar-dark.png": {
     "width": 1280,
@@ -406,6 +440,14 @@
   "scroller-light.png": {
     "width": 1280,
     "height": 2653
+  },
+  "segmented-control-dark.png": {
+    "width": 1280,
+    "height": 1799
+  },
+  "segmented-control-light.png": {
+    "width": 1280,
+    "height": 1799
   },
   "select-dark.png": {
     "width": 1280,
