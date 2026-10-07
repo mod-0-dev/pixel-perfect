@@ -20,7 +20,7 @@ It does not manage selection either:
 | --- | --- |
 | Actions that sit together | `ButtonGroup` |
 | Actions with space between them | `Cluster` |
-| Exactly one of several chosen | `RadioGroup` (3.11), styled as buttons |
+| Exactly one of several chosen | [`SegmentedControl`](SegmentedControl.md) (3.18) — this look, radio semantics |
 | Several of many chosen | a row of `Toggle`s (3.5) |
 
 ## Usage
@@ -92,9 +92,14 @@ with `--pp-tone-solid-active`.
 <ButtonGroup>…</ButtonGroup>
 
 // ✗ this is a single-select control. A group of buttons cannot announce
-//   "Week, 2 of 3, selected", and nothing here tracks which one is on.
+//   "Week, 2 of 3, selected", and nothing here tracks which one is on —
+//   nor does a group of Toggles, which announce "pressed".
 <ButtonGroup label="View"><Button>Day</Button><Button>Week</Button></ButtonGroup>
-// ✓ a RadioGroup (3.11), or Toggles if several may be on at once
+// ✓ a SegmentedControl (3.18), or Toggles if several may be on at once
+<SegmentedControl label="View" defaultValue="day">
+  <SegmentedControlItem value="day">Day</SegmentedControlItem>
+  <SegmentedControlItem value="week">Week</SegmentedControlItem>
+</SegmentedControl>
 
 // ✗ the group name does not name the buttons inside it.
 <ButtonGroup label="Align"><IconButton label="Align"><X /></IconButton></ButtonGroup>

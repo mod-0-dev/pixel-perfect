@@ -4,7 +4,7 @@ A fixed pane beside a flexible one, which stacks when the container gets narrow.
 Spec: [`tier-2-layout.md` §2.6](../specs/tier-2-layout.md#26-split).
 
 ```tsx
-import { Split } from 'pixel-perfect';
+import { Split, SplitMain, SplitSidebar } from 'pixel-perfect';
 ```
 
 This is the component that makes [RULES §1](../RULES.md)'s container-query claim
@@ -15,12 +15,12 @@ viewport, and it has never heard of the viewport.
 
 ```tsx
 <Split sidebarInlineSize="15rem" collapseBelow="lg" gap="0">
-  <Split.Sidebar asChild>
+  <SplitSidebar asChild>
     <nav aria-label="Main">…</nav>
-  </Split.Sidebar>
-  <Split.Main asChild>
+  </SplitSidebar>
+  <SplitMain asChild>
     <main>…</main>
-  </Split.Main>
+  </SplitMain>
 </Split>
 ```
 
@@ -34,7 +34,7 @@ viewport, and it has never heard of the viewport.
 | `collapseBelow` | `'sm' \| 'md' \| 'lg' \| 'never'` | `'md'` | `30rem` / `45rem` / `60rem`. Mirrored as `data-collapse-below` |
 | `gap` | `'0' \| '1' \| … \| '9'` | `'0'` | Between the panes, in both layouts |
 
-`Split.Sidebar` and `Split.Main` each take `asChild` plus every `<div>`
+`SplitSidebar` and `SplitMain` each take `asChild` plus every `<div>`
 attribute, and forward `ref`.
 
 ## Why the breakpoints are named, not free-form
@@ -49,7 +49,7 @@ Anything else is `--pp-split-sidebar-inline-size` for the basis, or a `Grid`.
 
 ## There is no `side` prop
 
-A right-hand sidebar is `Split.Main` written first. The alternative is `order`,
+A right-hand sidebar is `SplitMain` written first. The alternative is `order`,
 which desynchronises reading order from visual order — a screen reader and a
 keyboard walk the DOM, a sighted user walks the screen — and a prop whose only
 function is to create that divergence is not worth the two lines it saves. The
@@ -65,19 +65,24 @@ order in both layouts. See [D-022 §3](../DECISIONS.md).
 
 ## Accessibility
 
-No role on the root. `Split.Sidebar` is frequently a landmark — `asChild` with
-`<aside>` or `<nav aria-label="Main">` — and `Split.Main` is frequently
+No role on the root. `SplitSidebar` is frequently a landmark — `asChild` with
+`<aside>` or `<nav aria-label="Main">` — and `SplitMain` is frequently
 `<main>`. `Split` does not guess at either, because a `Split` inside a page that
 already has a `<main>` would then emit two.
 
 ## Don't
 
 ```tsx
-// ✗ There is no side prop. Put Split.Main first for a right-hand sidebar.
+// ✗ Dotting into the root. The parts are named exports, as every compound's
+//   are (RULES §5.6); `Split.Sidebar` was this component's spelling until
+//   D-107 §2 and is gone, not deprecated.
+<Split><Split.Sidebar/><Split.Main/></Split>
+
+// ✗ There is no side prop. Put SplitMain first for a right-hand sidebar.
 <Split side="end">…</Split>
 
 // ✗ Three panes is not a Split. It is a Grid.
-<Split><Split.Sidebar/><Split.Main/><Split.Sidebar/></Split>
+<Split><SplitSidebar/><SplitMain/><SplitSidebar/></Split>
 
 // ✗ A viewport media query to collapse it. The whole point is that Split
 //   cannot see one, and this is the regression the test suite watches for.

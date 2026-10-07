@@ -24,6 +24,19 @@
     -webkit-box-decoration-break: clone;
   }
 
+  /*
+   * INSIDE A LINK, THE CODE IS PART OF THE LINK (D-107 §5). Its ink is the
+   * link's — `currentColor` on `color` is the inherited value, so it follows
+   * the link's hover too — and the chip stays this component's neutral step
+   * 3. Every hue's 11 and 12 on that step is asserted in `lint:contrast`.
+   * The consumer's `--pp-code-color` still wins. Specificity (0,2,0), over
+   * the root rule above and the tone context alike: a toned Code inside a
+   * link is still the link.
+   */
+  .pp-link .pp-code {
+    color: var(--pp-code-color, currentColor);
+  }
+
   .pp-code[data-size="sm"] { --_font-size: var(--pp-font-size-1); }
   .pp-code[data-size="md"] { --_font-size: var(--pp-font-size-2); }
   .pp-code[data-size="lg"] { --_font-size: var(--pp-font-size-3); }

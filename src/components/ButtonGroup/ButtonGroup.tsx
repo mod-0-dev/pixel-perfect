@@ -12,8 +12,9 @@ import { cx } from '../../internal/cx';
  * die. So there is no `attached` prop: `attached={false}` is spelled `Cluster`.
  *
  * It also does not manage selection. A segmented control where exactly one
- * option is chosen is a `RadioGroup` (3.11) styled as buttons; one where
- * several may be is a set of `Toggle`s (3.5).
+ * option is chosen is `SegmentedControl` (3.18), which carries this class
+ * for its seams (D-107 §3); one where several may be is a set of `Toggle`s
+ * (3.5) inside this group.
  *
  * Sizing contract: hug. inline-flex, no width declaration.
  * RSC: server. A container and nothing else.

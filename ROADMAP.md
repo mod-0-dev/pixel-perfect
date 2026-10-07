@@ -49,17 +49,16 @@ enough to be read first.
   and the component docs to a consuming app's coding agent (D-105). Each waits
   on the user's review of the PR; 0.10 and 0.12 also on their pages'
   CI-authored baselines.
-- **Every baseline is re-authored on this PR** (D-102 §2). The chrome carried a
-  second gutter that put it 24px inside the page at the suite's own 1280px,
-  and it gained three places, so every page's pixels move. Their heights do
-  not — measured against `main` — except four, re-baselined with
-  `--rebaseline` (the index, AlertDialog, CommandPalette, Combobox); the
-  manifest holds the other 68 through the window, and the twelve new
-  captures are authored fresh. The guard caught two more on the runner,
-  Dialog and Drawer at +2px: a line of new prose holding a bare `<code>`,
-  which the local measurement could not see. The PR merged with the guard
-  red, and a follow-up re-baselines both (D-102 §2). Its authoring run, then
-  one more run that compares what it authored, turn `main` green again.
+- **Every baseline is re-authored on this PR** (D-107 §7). The chrome's theme
+  switcher is a `SegmentedControl` now, so every page's pixels change at the
+  switcher. That is under the 1% tolerance on most pages, which is the stale
+  baseline D-101 §1 re-authored rather than left. Heights were measured
+  against `main`: only avatar-group (+262px), link (+684px) and the new
+  segmented-control page move. Those, the index (one more registry card)
+  and button-group (a line of prose with a bare `<code>`, D-102 §2) are
+  re-baselined with `--rebaseline`; the manifest holds the other 148 through
+  the window. Its authoring run, then one more run that compares what it
+  authored, close it.
 - **The playground works on a phone** (D-102). A `phone` Playwright project
   (390x844, touch) asserts every page fits the screen and scrolls under a
   finger. It found the four modal galleries that locked a phone out for
@@ -69,16 +68,24 @@ enough to be read first.
   own overflow flag had been reporting it). `AppShell`'s skip link read a
   token that does not exist (6.3, fixed), and `lint:rules` now fails any
   stylesheet that does (D-102 §7).
-- **Found and not fixed, each its own next item** (D-102 §7): `AvatarGroup`'s
-  overlap ignores each face's ring, so wide initials lose a letter; `Split`
-  still has dotted parts and no named exports (RULES §5.6); `ButtonGroup.md`
-  and `ThemeToggle.md` disagree on a single-choice group; every `CodeBlock`
-  is named "Code" by default; `Code` inside a `Link` keeps neutral ink;
-  a bare `<code>` in the playground's prose (58 files) is set in the
-  machine's own `monospace` instead of the pinned mono, so its lines measure
-  differently here and on the runner, and AlertDialog's baseline shows
-  `?gallery=open` broken after its `?` (D-102 §2). And the visual job passes an
-  authoring run in which a functional test failed (D-106 §5).
+- **D-102 §7's five, fixed, and a sixth from a phone** (D-107, 2026-10-07):
+  `AvatarGroup` counts each face's ring in its overlap and centres a covered
+  face's initials in what stays visible (§1); `Split`'s parts are named
+  exports (§2, breaking); a single choice is the new 3.18 `SegmentedControl`,
+  which `ThemeToggle.md`, the chrome's theme switcher and the Stage presets
+  now use (§3); `CodeBlock` needs a `title` or a `label` (§4, breaking at the
+  type level); `Code` inside a `Link` takes its ink (§5); and iOS Safari no
+  longer enlarges the text in a `CodeBlock`, `Table` or `Scroller` whose
+  lines run past the screen (§6). The chrome's switcher changed, so every
+  baseline is re-authored (§7).
+- **Found and not fixed:** a pressed `Toggle`'s fill is 1.26:1 against the
+  page, so a row of them (a toolbar's Bold / Italic) tells pressed from not
+  by a fill nobody measured (D-107 §8); a `SegmentedControl` inside a
+  `Toolbar` is untested (spec, out of scope); a bare `<code>` in the
+  playground's prose (58 files) is set in the machine's own `monospace`,
+  and AlertDialog's baseline shows `?gallery=open` broken after its `?`
+  (D-102 §2); and the visual job passes an authoring run in which a
+  functional test failed (D-106 §5).
 - **6.1–6.7 are `review`**, each waiting only on its CI-authored baseline,
   which this PR's authoring run re-authors with the rest (D-069 §2). The sweep
   of Tier 6 to `done` follows the run that compares them.
@@ -86,10 +93,11 @@ enough to be read first.
   [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
   `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
   media query
-- **Done:** 73 / 83 tracked items (13 foundations + 70 components) — 10
+- **Done:** 73 / 84 tracked items (13 foundations + 71 components) — 10
   foundations + 63 components. The denominator moved from 81 to 83 when 0.12
-  and 0.13 were added (D-103 §6, D-105 §3). What remains is Tier 6 (6.1–6.7),
-  0.10, 0.12 and 0.13, all in `review`.
+  and 0.13 were added (D-103 §6, D-105 §3), and to 84 with 3.18 (D-107 §3).
+  What remains is Tier 6 (6.1–6.7), 3.18, 0.10, 0.12 and 0.13, all in
+  `review`.
 
 ---
 
@@ -188,6 +196,7 @@ to the component it was written about — see
 | 3.15 | `Slider` | `done` | fill | client | 3.7 | Native `<input type="range">`, **single-thumb**. The track is ours and the thumb is the platform's: the fill is a grid **column**, not a gradient, so RTL needs no declaration (D-052 §1). `onValueCommit`, because React maps `onChange` to *input*. No `readOnly` — HTML's ruling (D-049 §4's shape) |
 | 3.16 | `Form` | `done` | fill | client | 3.7, 5.2, 3.3 | [`Form.md`](docs/specs/Form.md). Built 2026-09-22 (D-058); **done** 2026-09-26, once its CI-authored baseline had been compared green on `main` (D-013's second half). Deps gained 3.3 `Link`, which the summary composes (spec §9). Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
 | 3.17 | `RangeSlider` | `done` | fill | client | 3.15 | [`RangeSlider.md`](docs/specs/RangeSlider.md), approved by delegation (D-057); built 2026-09-26, the day Gate A opened (D-060). Its baseline was CI-authored on the PR branch and compared green on the re-run (D-013); recording it tripped the dimensions guard at exactly the limit D-054 §2 set, because `form.png` and `tokens.png` were unrecorded too — all three are now in the manifest. Both blockers below have a proposed answer: the inputs are transparent and the visible thumbs are ours, so the ring is drawn on a thumb with nothing suppressed; a track press is routed to the nearer thumb by the root (spec §1, §2). The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
+| 3.18 | `SegmentedControl` | `review` | hug | client | 3.4, 3.7, 3.11 | [`SegmentedControl.md`](docs/specs/SegmentedControl.md), added, written and built 2026-10-07 under the standing delegation (D-069 §1); rulings in D-107 §3; awaiting its CI-authored baselines (D-013). Exactly one of a few options as an attached row of buttons: native radios, so the browser is the APG pattern and the value submits (§1); the checked segment solid neutral, because a pressed Toggle's fill is 1.26:1 against the page (§2); ButtonGroup's seams and Button's box by the two-class contract (§3); named by `label` or its `Field` (§4); painted from `:checked` (§5). What `ButtonGroup.md` meant by "a RadioGroup styled as buttons"; the playground's theme switcher and Stage presets are made of it |
 
 ---
 

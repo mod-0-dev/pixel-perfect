@@ -58,17 +58,20 @@ three words, not a square:
 ```tsx
 const { theme, setTheme } = useTheme();
 
-<ButtonGroup label="Theme">
-  {(['system', 'light', 'dark'] as const).map((value) => (
-    <Toggle key={value} size="sm" variant="outline" pressed={theme === value} onPressedChange={() => setTheme(value)}>
-      {value[0].toUpperCase() + value.slice(1)}
-    </Toggle>
-  ))}
-</ButtonGroup>
+<SegmentedControl label="Theme" size="sm" value={theme} onValueChange={(value) => setTheme(value as Theme)}>
+  <SegmentedControlItem value="system">System</SegmentedControlItem>
+  <SegmentedControlItem value="light">Light</SegmentedControlItem>
+  <SegmentedControlItem value="dark">Dark</SegmentedControlItem>
+</SegmentedControl>
 ```
 
+A [`SegmentedControl`](SegmentedControl.md): a theme is exactly one of
+three, so it is a radio group — "Light, radio button, checked, 2 of 3".
+This recipe was a `ButtonGroup` of `Toggle`s until D-107 §3, which a
+screen reader heard as three pressed-or-not buttons, and which
+[`ButtonGroup.md`](ButtonGroup.md) has always said a single choice is not.
 `theme` is `system` on the server and the first client render (the
-provider reads the stored choice after mount), so the pressed toggle
+provider reads the stored choice after mount), so the checked segment
 catches up one render after hydration; the page's colours do not wait.
 
 ## Don't

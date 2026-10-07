@@ -14,11 +14,17 @@ import type { Space } from '../../types';
  * pattern with its own keyboard contract, and if it is ever wanted it is a
  * separate component.
  *
- * THERE IS NO `side` PROP (D-022 §3). Split.Sidebar and Split.Main render in
- * DOM order; a right-hand sidebar is written by putting Split.Main first. The
+ * THERE IS NO `side` PROP (D-022 §3). SplitSidebar and SplitMain render in
+ * DOM order; a right-hand sidebar is written by putting SplitMain first. The
  * alternative is `order`, which desynchronises reading order from visual order,
  * and a prop whose only function is to create that is not worth two saved
  * lines.
+ *
+ * THE PARTS ARE NAMED EXPORTS, as every compound's are (RULES §5.6, D-079 §1).
+ * Split was the last compound still dotted — `Split.Sidebar` — and the only
+ * one: it shipped before D-062 found that a Server Component cannot dot into
+ * a client module, and a server compound that could dot would make two
+ * spellings for one idea (D-107 §2).
  *
  * Sizing contract: fill.
  * RSC: server. No hooks, no browser APIs — the collapse is pure CSS.
@@ -43,12 +49,17 @@ export interface SplitProps extends ComponentPropsWithoutRef<'div'> {
   gap?: Space;
 }
 
-export type SplitSlotProps = ComponentPropsWithoutRef<'div'> & {
-  /** Render the single child element instead of a `<div>` — usually `<aside>`, `<nav>` or `<main>`. */
+export interface SplitSidebarProps extends ComponentPropsWithoutRef<'div'> {
+  /** Render the single child element instead of a `<div>` — usually `<aside>` or `<nav>`. */
   asChild?: boolean;
-};
+}
 
-const SplitRoot = forwardRef<HTMLDivElement, SplitProps>(function Split(
+export interface SplitMainProps extends ComponentPropsWithoutRef<'div'> {
+  /** Render the single child element instead of a `<div>` — usually `<main>`. */
+  asChild?: boolean;
+}
+
+export const Split = forwardRef<HTMLDivElement, SplitProps>(function Split(
   { sidebarInlineSize = '16rem', collapseBelow = 'md', gap = '0', className, style, ...props },
   ref,
 ) {
@@ -69,7 +80,7 @@ const SplitRoot = forwardRef<HTMLDivElement, SplitProps>(function Split(
   );
 });
 
-const Sidebar = forwardRef<HTMLDivElement, SplitSlotProps>(function SplitSidebar(
+export const SplitSidebar = forwardRef<HTMLDivElement, SplitSidebarProps>(function SplitSidebar(
   { asChild = false, className, ...props },
   ref,
 ) {
@@ -77,12 +88,10 @@ const Sidebar = forwardRef<HTMLDivElement, SplitSlotProps>(function SplitSidebar
   return <Component ref={ref} className={cx('pp-split__sidebar', className)} {...props} />;
 });
 
-const Main = forwardRef<HTMLDivElement, SplitSlotProps>(function SplitMain(
+export const SplitMain = forwardRef<HTMLDivElement, SplitMainProps>(function SplitMain(
   { asChild = false, className, ...props },
   ref,
 ) {
   const Component = asChild ? Slot : 'div';
   return <Component ref={ref} className={cx('pp-split__main', className)} {...props} />;
 });
-
-export const Split = Object.assign(SplitRoot, { Sidebar, Main });

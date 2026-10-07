@@ -66,6 +66,9 @@
       var(--_pp-scroller-start-pos) center,
       var(--_pp-scroller-end-pos) center;
     background-repeat: no-repeat;
+    /* Content laid out wider than the screen on purpose, which iOS Safari's
+       text autosizing reads as a desktop page and enlarges (D-107 §6). */
+    text-size-adjust: 100%;
   }
 
   [dir="rtl"] .pp-scroller,

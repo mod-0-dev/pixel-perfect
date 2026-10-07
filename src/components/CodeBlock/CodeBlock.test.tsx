@@ -53,10 +53,24 @@ describe('CodeBlock', () => {
     expect(document.querySelector('.pp-code-block__copy')).toBeNull();
   });
 
+  it('needs a title or a label at the type level; without either it warns and falls back to "Code" (D-107 §4)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    // @ts-expect-error A block with neither a title nor a label is a region nobody can tell apart.
+    const { getByRole, unmount } = renderWithTheme(<CodeBlock code="one" />);
+    expect(getByRole('region', { name: 'Code' })).toBeInTheDocument();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('needs a `title` or a `label`'));
+    unmount();
+    warn.mockClear();
+    // @ts-expect-error Both is not a choice: the title names the region, so a label would be ignored.
+    const both = renderWithTheme(<CodeBlock code="one" title="install.sh" label="ignored" />);
+    expect(both.getByRole('region', { name: 'install.sh' })).toBeInTheDocument();
+    expect(warn).not.toHaveBeenCalledWith(expect.stringContaining('needs a `title` or a `label`'));
+  });
+
   it('renders children lines as given, with `highlighted`; both forms given warns and the children win', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     renderWithTheme(
-      <CodeBlock code="ignored" copy={false}>
+      <CodeBlock code="ignored" copy={false} label="Two lines">
         <CodeBlockLine>
           <span style={{ color: 'rebeccapurple' }}>const</span> a
         </CodeBlockLine>
@@ -72,7 +86,7 @@ describe('CodeBlock', () => {
   it('copies the text, says Copied for two seconds, and returns (spec §3)', async () => {
     const user = userEvent.setup();
     writeText = mockClipboard();
-    const { getByRole, findByRole, queryByRole } = renderWithTheme(<CodeBlock code={SNIPPET} />);
+    const { getByRole, findByRole, queryByRole } = renderWithTheme(<CodeBlock code={SNIPPET} label="Config" />);
     await user.click(getByRole('button', { name: 'Copy code' }));
     expect(writeText).toHaveBeenCalledWith("export default {\n  theme: 'dark',\n};");
     expect(await findByRole('button', { name: 'Copied' })).toHaveAttribute('data-state', 'copied');
@@ -86,7 +100,7 @@ describe('CodeBlock', () => {
     const user = userEvent.setup();
     writeText = mockClipboard();
     const { getByRole } = renderWithTheme(
-      <CodeBlock>
+      <CodeBlock label="Script">
         <CodeBlockLine>
           <span>const</span> a = 1;
         </CodeBlockLine>
@@ -139,7 +153,7 @@ describe('CodeBlock', () => {
     const root = createRef<HTMLDivElement>();
     const line = createRef<HTMLSpanElement>();
     renderWithTheme(
-      <CodeBlock ref={root} wrap className="c" style={{ opacity: 0.5 }} data-testid="cb">
+      <CodeBlock ref={root} wrap className="c" style={{ opacity: 0.5 }} data-testid="cb" label="x">
         <CodeBlockLine ref={line} className="l" style={{ order: 1 }}>
           x
         </CodeBlockLine>
@@ -157,7 +171,7 @@ describe('CodeBlock', () => {
     const light = renderWithTheme(<CodeBlock title="pixel.config.ts" language="ts" code={SNIPPET} lineNumbers highlightLines={[2]} />);
     await expectNoA11yViolations(light.container);
     light.unmount();
-    const dark = renderWithTheme(<CodeBlock code="npm install pixel-perfect" />, { theme: 'dark' });
+    const dark = renderWithTheme(<CodeBlock code="npm install pixel-perfect" label="Install" />, { theme: 'dark' });
     await expectNoA11yViolations(dark.container);
   });
 });

@@ -41,10 +41,9 @@ export const CodeBlockLine = forwardRef<HTMLSpanElement, CodeBlockLineProps>(fun
 });
 
 /** `title` is ours — a node, the block's name — and replaces the HTML attribute of the same name. */
-export interface CodeBlockProps extends Omit<ComponentPropsWithoutRef<'div'>, 'title'> {
+type CodeBlockBase = Omit<ComponentPropsWithoutRef<'div'>, 'title'> & {
   /** Plain text; split into lines. Or render `CodeBlockLine` children. */
   code?: string;
-  title?: ReactNode;
   language?: string;
   lineNumbers?: boolean;
   /** 1-based, for the `code` form. */
@@ -53,9 +52,26 @@ export interface CodeBlockProps extends Omit<ComponentPropsWithoutRef<'div'>, 't
   wrap?: boolean;
   /** The copy button. */
   copy?: boolean;
-  /** The region's name when there is no title. */
-  label?: string;
-}
+};
+
+/**
+ * One of `title` and `label` is required: the `<pre>` is a focusable region,
+ * and a page of regions all named "Code" says nothing about any of them
+ * (D-107 §4) — Scroller's and Table's rule (D-022 §7, D-081 §1).
+ */
+export type CodeBlockProps = CodeBlockBase &
+  (
+    | {
+        /** Shown in the header, and the region's name. */
+        title: Exclude<ReactNode, null | undefined | boolean>;
+        label?: never;
+      }
+    | {
+        title?: never;
+        /** The region's name when there is no title. */
+        label: string;
+      }
+  );
 
 function CopyGlyph() {
   return (
@@ -77,7 +93,7 @@ function CheckGlyph() {
 const COPIED_FOR = 2000;
 
 export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function CodeBlock(
-  { code, title, language, lineNumbers = false, highlightLines, wrap = false, copy = true, label = 'Code', className, children, ...props },
+  { code, title, language, lineNumbers = false, highlightLines, wrap = false, copy = true, label, className, children, ...props },
   ref,
 ) {
   const codeRef = useRef<HTMLElement | null>(null);
@@ -86,6 +102,17 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
   const titleId = useId();
 
   const hasChildren = Children.toArray(children).some((child) => isValidElement(child) || (typeof child === 'string' && child.trim() !== ''));
+  /* Read as `unknown`: the type rules out null and false, an untyped caller does not. */
+  const titled: unknown = title;
+  const named = titled !== undefined && titled !== null && titled !== false;
+  const unnamed = !named && (label === undefined || label.trim() === '');
+  useEffect(() => {
+    /* The type makes this impossible; a caller who does not typecheck gets
+       the generic name and is told why (D-031's other half). */
+    if (unnamed && !isProduction()) {
+      console.warn('[pixel-perfect] <CodeBlock> needs a `title` or a `label`: its scroll region is named by one, and without either it is called "Code", like every other unnamed block on the page.');
+    }
+  }, [unnamed]);
   useEffect(() => {
     if (hasChildren && code !== undefined && !isProduction()) {
       console.warn('[pixel-perfect] <CodeBlock> was given both `code` and children; the children are rendered and `code` is ignored.');
@@ -131,7 +158,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     timer.current = setTimeout(() => setCopied(false), COPIED_FOR);
   };
 
-  const hasHeader = title !== undefined || language !== undefined || copy;
+  const hasHeader = named || language !== undefined || copy;
   const setCodeRef = useMemo(() => mergeRefs<HTMLElement>(codeRef), []);
 
   return (
@@ -145,7 +172,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
     >
       {hasHeader ? (
         <div className="pp-code-block__header">
-          {title !== undefined ? (
+          {named ? (
             <span id={titleId} className="pp-code-block__title">
               {title}
             </span>
@@ -173,7 +200,7 @@ export const CodeBlock = forwardRef<HTMLDivElement, CodeBlockProps>(function Cod
         className="pp-code-block__pre"
         role="region"
         tabIndex={0}
-        {...(title !== undefined ? { 'aria-labelledby': titleId } : { 'aria-label': label })}
+        {...(named ? { 'aria-labelledby': titleId } : { 'aria-label': unnamed ? 'Code' : label })}
       >
         <code ref={setCodeRef} className="pp-code-block__code">
           {lines

@@ -70,6 +70,10 @@
     scrollbar-width: thin;
     counter-reset: pp-code-line;
     font: inherit;
+    /* Content laid out wider than the screen on purpose, which iOS Safari's
+       text autosizing reads as a desktop page and enlarges: a block with long
+       lines came out bigger than one beside it with short lines (D-107 §6). */
+    text-size-adjust: 100%;
   }
 
   .pp-code-block__pre:focus-visible {

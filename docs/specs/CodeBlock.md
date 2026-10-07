@@ -120,8 +120,11 @@ the `<pre>` inside scrolls or wraps.
 **`CodeBlock`**: `code?: string`, `title?: ReactNode`, `language?:
 string`, `lineNumbers?: boolean`, `highlightLines?: number[]`, `wrap?:
 boolean`, `copy?: boolean` (`true`), `label?: string` (the region's name
-when there is no title; `'Code'`), `children?` (`CodeBlockLine`s),
-…`<'div'>`. **`CodeBlockLine`**: `highlighted?: boolean`, …`<'span'>`.
+when there is no title), `children?` (`CodeBlockLine`s), …`<'div'>`.
+**One of `title` and `label` is required, at the type level** — amended
+by D-107 §4: the default name was `'Code'`, so every unnamed block on a
+page was a region of the same name. Neither given (an untyped caller)
+warns and falls back to `'Code'`. **`CodeBlockLine`**: `highlighted?: boolean`, …`<'span'>`.
 
 Exported types: `CodeBlockProps`, `CodeBlockLineProps`.
 

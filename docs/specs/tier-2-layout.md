@@ -133,8 +133,8 @@ implies". Three named breakpoints say what happens.
 The roadmap describes `Split` as "sidebar + main". The obvious prop is
 `side="start" | "end"`.
 
-**Proposal: there is no `side` prop.** `Split.Sidebar` and `Split.Main` render in
-DOM order, and a right-hand sidebar is expressed by writing `Split.Main` first.
+**Proposal: there is no `side` prop.** `SplitSidebar` and `SplitMain` render in
+DOM order, and a right-hand sidebar is expressed by writing `SplitMain` first.
 
 The alternative is `order`, which makes reading order and visual order disagree —
 a screen reader and a keyboard walk the DOM, and a sighted user walks the
@@ -830,7 +830,7 @@ separate component.
 ### Sizing contract justification
 
 `fill`. `Split` takes the inline space it is given and divides it. Setting
-`flex-basis` on `Split.Sidebar` and `min-inline-size: 0` on `Split.Main` is the
+`flex-basis` on `SplitSidebar` and `min-inline-size: 0` on `SplitMain` is the
 parent sizing the boxes it created, which is decision 3 exactly.
 
 ### Anatomy
@@ -847,9 +847,11 @@ parent sizing the boxes it created, which is decision 3 exactly.
 | sidebar | `pp-split__sidebar` | `<div>` | `flex: 0 0 var(--pp-split-sidebar-inline-size)`. `<aside>`/`<nav>` via its own `asChild` |
 | main | `pp-split__main` | `<div>` | `flex: 1 1 0`, `min-inline-size: 0` |
 
-Compound, per RULES §5.6: `Split.Sidebar` and `Split.Main`. Positional children
+Compound, per RULES §5.6: `SplitSidebar` and `SplitMain`. Positional children
 would leave "which one is the sidebar" to a tuple type that JSX does not reliably
-preserve, and named slots read better at the call site regardless.
+preserve, and named slots read better at the call site regardless. (Built as
+`Split.Sidebar` and `Split.Main`; named exports since D-107 §2, the spelling
+every other compound already had — RULES §5.6, D-079 §1.)
 
 ### Props
 
@@ -861,7 +863,7 @@ preserve, and named slots read better at the call site regardless.
 | `collapseBelow` | `'sm' \| 'md' \| 'lg' \| 'never'` | `'md'` | Decision 4 |
 | `gap` | `Space` | `'0'` | Between the two panes, in both layouts |
 
-`Split.Sidebar` and `Split.Main`: `asChild` and the standard root props. No
+`SplitSidebar` and `SplitMain`: `asChild` and the standard root props. No
 `side` prop anywhere — decision 5.
 
 ### State
@@ -890,8 +892,8 @@ None. `Split` is not a window splitter (see Purpose).
 
 ### Accessibility notes
 
-No role on the root. `Split.Sidebar` is frequently a landmark — `asChild` with
-`<aside>` or `<nav aria-label="Main">` — and `Split.Main` is frequently `<main>`.
+No role on the root. `SplitSidebar` is frequently a landmark — `asChild` with
+`<aside>` or `<nav aria-label="Main">` — and `SplitMain` is frequently `<main>`.
 `Split` does not guess at either, because a `Split` inside a page that already
 has a `<main>` would then emit two.
 
@@ -920,12 +922,12 @@ never heard of the viewport.
 
 ```tsx
 <Split sidebarInlineSize="15rem" collapseBelow="lg" gap="0">
-  <Split.Sidebar asChild>
+  <SplitSidebar asChild>
     <nav aria-label="Main">…</nav>
-  </Split.Sidebar>
-  <Split.Main asChild>
+  </SplitSidebar>
+  <SplitMain asChild>
     <main>…</main>
-  </Split.Main>
+  </SplitMain>
 </Split>
 ```
 
@@ -936,7 +938,7 @@ never heard of the viewport.
 <Split side="end">…</Split>
 
 // ✗ Three panes is not a Split. It is a Grid.
-<Split><Split.Sidebar/><Split.Main/><Split.Sidebar/></Split>
+<Split><SplitSidebar/><SplitMain/><SplitSidebar/></Split>
 
 // ✗ A viewport media query. The whole point is that Split cannot see one.
 @media (max-width: 52rem) { .pp-split { … } }
@@ -1189,7 +1191,7 @@ Gate C cleared 2026-09-17. All four open items were accepted as recommended.
 | 6 | Does `Grid` accept a raw `grid-template-columns` string? | **Yes.** `columns?: number \| string`. [D-022 §4](../DECISIONS.md) |
 | — | `Container` measures | **`40rem` / `64rem` / `80rem`.** The app's `72rem` becomes `lg` at `80rem`. [D-022 §5](../DECISIONS.md) |
 | 10 | A new `--pp-color-shadow-edge` token | **Added**, light and dark, no contrast assertion. [D-023](../DECISIONS.md) |
-| 5 | Does `Split` get a `side` prop? | **No.** Put `Split.Main` first. [D-022 §3](../DECISIONS.md) |
+| 5 | Does `Split` get a `side` prop? | **No.** Put `SplitMain` first. [D-022 §3](../DECISIONS.md) |
 
 The remaining decisions in this document were accepted as written: `gap` as the
 fourth vocabulary term ([D-020](../DECISIONS.md)), layout primitives sizing their

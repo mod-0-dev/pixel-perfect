@@ -35,7 +35,7 @@ export default function ButtonGroupPage() {
         space between buttons is <code>&lt;Cluster gap=&quot;2&quot;&gt;</code>, so there is no{' '}
         <code>attached</code> prop — <code>attached={'{false}'}</code> is spelled{' '}
         <code>Cluster</code>. It does not manage selection either: one-of-many is a{' '}
-        <code>RadioGroup</code> (3.11), several-of-many is a set of <code>Toggle</code>s.
+        <code>SegmentedControl</code> (3.18), several-of-many is a set of <code>Toggle</code>s.
       </p>
 
       <section>

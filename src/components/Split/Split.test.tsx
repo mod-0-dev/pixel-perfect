@@ -2,7 +2,7 @@ import { createRef } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import { expectNoA11yViolations, renderWithTheme } from '../../test';
-import { Split } from './Split';
+import { Split, SplitMain, SplitSidebar } from './Split';
 
 const basis = (el: HTMLElement) => el.style.getPropertyValue('--_pp-split-sidebar');
 
@@ -10,8 +10,8 @@ describe('Split', () => {
   it('renders a root with both slots and the defaults exposed', () => {
     const { getByTestId } = renderWithTheme(
       <Split data-testid="s">
-        <Split.Sidebar data-testid="side">nav</Split.Sidebar>
-        <Split.Main data-testid="main">content</Split.Main>
+        <SplitSidebar data-testid="side">nav</SplitSidebar>
+        <SplitMain data-testid="main">content</SplitMain>
       </Split>,
     );
     const root = getByTestId('s');
@@ -26,8 +26,8 @@ describe('Split', () => {
   it.each(['sm', 'md', 'lg', 'never'] as const)('exposes collapseBelow %s', (collapseBelow) => {
     const { getByTestId } = renderWithTheme(
       <Split collapseBelow={collapseBelow} data-testid="s">
-        <Split.Sidebar>a</Split.Sidebar>
-        <Split.Main>b</Split.Main>
+        <SplitSidebar>a</SplitSidebar>
+        <SplitMain>b</SplitMain>
       </Split>,
     );
     expect(getByTestId('s')).toHaveAttribute('data-collapse-below', collapseBelow);
@@ -40,8 +40,8 @@ describe('Split', () => {
         style={{ '--pp-split-sidebar-inline-size': '20rem' } as React.CSSProperties}
         data-testid="s"
       >
-        <Split.Sidebar>a</Split.Sidebar>
-        <Split.Main>b</Split.Main>
+        <SplitSidebar>a</SplitSidebar>
+        <SplitMain>b</SplitMain>
       </Split>,
     );
     const root = getByTestId('s');
@@ -54,13 +54,13 @@ describe('Split', () => {
   it('always writes the sidebar property, so a nested Split does not inherit it', () => {
     const { getByTestId } = renderWithTheme(
       <Split sidebarInlineSize="24rem" data-testid="outer">
-        <Split.Sidebar>a</Split.Sidebar>
-        <Split.Main>
+        <SplitSidebar>a</SplitSidebar>
+        <SplitMain>
           <Split data-testid="inner">
-            <Split.Sidebar>a</Split.Sidebar>
-            <Split.Main>b</Split.Main>
+            <SplitSidebar>a</SplitSidebar>
+            <SplitMain>b</SplitMain>
           </Split>
-        </Split.Main>
+        </SplitMain>
       </Split>,
     );
     expect(basis(getByTestId('outer'))).toBe('24rem');
@@ -71,10 +71,10 @@ describe('Split', () => {
   describe('there is no side prop', () => {
     it('rejects one at the type level', () => {
       renderWithTheme(
-        // @ts-expect-error `side` is not part of SplitProps — put Split.Main first instead.
+        // @ts-expect-error `side` is not part of SplitProps — put SplitMain first instead.
         <Split side="end">
-          <Split.Sidebar>a</Split.Sidebar>
-          <Split.Main>b</Split.Main>
+          <SplitSidebar>a</SplitSidebar>
+          <SplitMain>b</SplitMain>
         </Split>,
       );
     });
@@ -82,8 +82,8 @@ describe('Split', () => {
     it('renders the slots in DOM order, whichever comes first', () => {
       const { getByTestId } = renderWithTheme(
         <Split data-testid="s">
-          <Split.Main data-testid="main">content</Split.Main>
-          <Split.Sidebar data-testid="side">nav</Split.Sidebar>
+          <SplitMain data-testid="main">content</SplitMain>
+          <SplitSidebar data-testid="side">nav</SplitSidebar>
         </Split>,
       );
       const children = Array.from(getByTestId('s').children);
@@ -96,12 +96,12 @@ describe('Split', () => {
     it('take asChild, so the sidebar and main can be landmarks', () => {
       const { getByRole } = renderWithTheme(
         <Split>
-          <Split.Sidebar asChild>
+          <SplitSidebar asChild>
             <nav aria-label="Main">nav</nav>
-          </Split.Sidebar>
-          <Split.Main asChild>
+          </SplitSidebar>
+          <SplitMain asChild>
             <main>content</main>
-          </Split.Main>
+          </SplitMain>
         </Split>,
       );
       expect(getByRole('navigation', { name: 'Main' })).toHaveClass('pp-split__sidebar');
@@ -113,10 +113,10 @@ describe('Split', () => {
       const main = createRef<HTMLDivElement>();
       renderWithTheme(
         <Split>
-          <Split.Sidebar ref={side} className="mine">
+          <SplitSidebar ref={side} className="mine">
             a
-          </Split.Sidebar>
-          <Split.Main ref={main}>b</Split.Main>
+          </SplitSidebar>
+          <SplitMain ref={main}>b</SplitMain>
         </Split>,
       );
       expect(side.current).toHaveClass('pp-split__sidebar');
@@ -130,8 +130,8 @@ describe('Split', () => {
       const ref = createRef<HTMLDivElement>();
       renderWithTheme(
         <Split ref={ref}>
-          <Split.Sidebar>a</Split.Sidebar>
-          <Split.Main>b</Split.Main>
+          <SplitSidebar>a</SplitSidebar>
+          <SplitMain>b</SplitMain>
         </Split>,
       );
       expect(ref.current).toHaveClass('pp-split');
@@ -140,8 +140,8 @@ describe('Split', () => {
     it('spreads remaining props onto the root', () => {
       const { getByRole } = renderWithTheme(
         <Split role="group" aria-label="Shell" id="shell">
-          <Split.Sidebar>a</Split.Sidebar>
-          <Split.Main>b</Split.Main>
+          <SplitSidebar>a</SplitSidebar>
+          <SplitMain>b</SplitMain>
         </Split>,
       );
       expect(getByRole('group', { name: 'Shell' })).toHaveAttribute('id', 'shell');
@@ -150,27 +150,34 @@ describe('Split', () => {
     it('puts no role on the root — Split does not guess at landmarks', () => {
       const { getByTestId } = renderWithTheme(
         <Split data-testid="s">
-          <Split.Sidebar>a</Split.Sidebar>
-          <Split.Main>b</Split.Main>
+          <SplitSidebar>a</SplitSidebar>
+          <SplitMain>b</SplitMain>
         </Split>,
       );
       expect(getByTestId('s')).not.toHaveAttribute('role');
     });
   });
 
+  it('exports its parts by name and attaches none to the root (RULES §5.6, D-107 §2)', () => {
+    // The dotted spelling is gone, not kept beside the named one: two
+    // spellings for one idea is what D-079 §1 refused.
+    expect(Split).not.toHaveProperty('Sidebar');
+    expect(Split).not.toHaveProperty('Main');
+  });
+
   it('has no axe violations', async () => {
     const { container } = renderWithTheme(
       <Split>
-        <Split.Sidebar asChild>
+        <SplitSidebar asChild>
           <nav aria-label="Sections">
             <a href="/tasks">Tasks</a>
           </nav>
-        </Split.Sidebar>
-        <Split.Main asChild>
+        </SplitSidebar>
+        <SplitMain asChild>
           <main>
             <h1>Task board</h1>
           </main>
-        </Split.Main>
+        </SplitMain>
       </Split>,
     );
     await expectNoA11yViolations(container);

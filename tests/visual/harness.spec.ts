@@ -37,7 +37,9 @@ async function ringOf(el: import('@playwright/test').Locator) {
  */
 async function setTheme(page: import('@playwright/test').Page, theme: 'system' | 'light' | 'dark') {
   const label = theme.charAt(0).toUpperCase() + theme.slice(1);
-  await page.getByTestId('theme-switcher').getByRole('button', { name: label }).click();
+  // The segment, as a person clicks it: the radio inside is transparent and
+  // takes no pointer events, and the label activates it (D-107 §3).
+  await page.getByTestId('theme-switcher').locator('.pp-segmented-control__item', { hasText: label }).click();
   const html = page.locator('html');
   if (theme === 'system') await expect(html).not.toHaveAttribute('data-pp-theme', /.*/);
   else await expect(html).toHaveAttribute('data-pp-theme', theme);
@@ -201,7 +203,7 @@ test.describe('ThemeProvider', () => {
     await expect(page.getByTestId('theme-resolved').first()).toHaveText('dark');
     expect(await page.evaluate(() => localStorage.getItem('pp-theme'))).toBe('dark');
     // The chrome's switcher shows the same choice.
-    await expect(page.getByTestId('theme-switcher').getByRole('button', { name: 'Dark' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('theme-switcher').getByRole('radio', { name: 'Dark' })).toBeChecked();
     // And it survives a reload, applied before React: read from the served attribute at once.
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-pp-theme', 'dark');
@@ -1087,7 +1089,7 @@ test.describe('layout primitives', () => {
     }
   });
 
-  test('Split.Main shrinks rather than pushing the sidebar away', async ({ page }) => {
+  test('SplitMain shrinks rather than pushing the sidebar away', async ({ page }) => {
     await page.goto('/components/split');
 
     const section = page.locator('section', { hasText: 'so a wide child does not push' });
@@ -1432,6 +1434,41 @@ test.describe('Link', () => {
     // every link in the library is the same colour — the D-011 failure mode.
     expect(accent).not.toBe(neutral);
     expect(danger).not.toBe(accent);
+  });
+
+  test('a Code inside a link takes the link\'s ink, at rest and on hover, on its own chip (D-107 §5)', async ({ page }) => {
+    await page.goto('/components/link');
+
+    const cell = page
+      .locator('section', { hasText: 'Code inside a link' })
+      .locator('.matrix__cell')
+      .filter({ hasText: 'wide · 960px' })
+      .first();
+    const style = (el: import('@playwright/test').Locator) =>
+      el.evaluate((node) => {
+        const s = getComputedStyle(node);
+        return { color: s.color, bg: s.backgroundColor };
+      });
+
+    for (const tone of ['accent', 'neutral'] as const) {
+      const link = cell.locator(`.pp-link[data-pp-tone="${tone}"]`).first();
+      const code = link.locator('.pp-code');
+      const rest = await style(link);
+      expect((await style(code)).color).toBe(rest.color);
+      // `neutral` is the case the bug could hide in: a neutral link and a
+      // neutral Code are both neutral, and only the step tells them apart.
+      await link.hover();
+      const hovered = await style(link);
+      expect(hovered.color).not.toBe(rest.color);
+      expect((await style(code)).color).toBe(hovered.color);
+      await page.mouse.move(0, 0);
+    }
+
+    // The chip is Code's, and a bare Code keeps its own ink.
+    const bare = cell.locator('.pp-code').filter({ hasText: /^Code$/ });
+    const inLink = cell.locator('.pp-link[data-pp-tone="accent"] .pp-code');
+    expect((await style(inLink)).bg).toBe((await style(bare)).bg);
+    expect((await style(bare)).color).not.toBe((await style(cell.locator('.pp-link[data-pp-tone="accent"]').first())).color);
   });
 });
 
@@ -6343,7 +6380,11 @@ test.describe('DropdownMenu', () => {
       const first = s.getByRole('menuitem', { name: 'Archive' });
       await expect(first).toBeFocused();
       await expect(s).toHaveAttribute('data-side', rtl ? 'left' : 'right');
-      const [t, sp, f] = await Promise.all([trigger.boundingBox(), placedBox(s), first.boundingBox()]);
+      // The submenu settles first, then its item is read: read alongside the
+      // wait, the item's box was taken before the panel moved (750px and
+      // 836px off on a loaded run, D-107 §9) — D-066's still box, kept.
+      const sp = await placedBox(s);
+      const [t, f] = await Promise.all([trigger.boundingBox(), first.boundingBox()]);
       if (rtl) {
         expect(sp!.x + sp!.width, `${id}: the submenu is not on the left`).toBeLessThanOrEqual(t!.x + 1);
       } else {
@@ -8576,6 +8617,35 @@ test.describe('Tree', () => {
   });
 });
 
+/*
+ * iOS Safari's text autosizing enlarges text whose lines run wider than the
+ * screen — on a page laid out for the device, that is only what overflows on
+ * purpose, so a CodeBlock with long lines came out larger than one beside it
+ * (D-107 §6). WebKit's autosizer cannot run here; what can be read is that
+ * each of the three regions that scroll text sideways holds it at 100% on its
+ * own, under a page that does not.
+ */
+test('the regions that scroll text sideways opt out of text autosizing, whatever the page says (D-107 §6)', async ({ page }) => {
+  for (const [path, selector] of [
+    ['/components/code-block', '.pp-code-block__pre'],
+    ['/components/table', '.pp-table'],
+    ['/components/scroller', '.pp-scroller'],
+  ] as const) {
+    await page.goto(path);
+    const read = await page.evaluate((sel) => {
+      // The playground opts its whole page out; put it back, so the component's
+      // own declaration is the only thing that can answer.
+      document.documentElement.style.setProperty('text-size-adjust', 'auto');
+      return {
+        page: getComputedStyle(document.querySelector('main p') ?? document.body).textSizeAdjust,
+        region: getComputedStyle(document.querySelector(sel)!).textSizeAdjust,
+      };
+    }, selector);
+    expect(read.page, path).toBe('auto');
+    expect(read.region, path).toBe('100%');
+  }
+});
+
 test.describe('CodeBlock', () => {
   type Page = import('@playwright/test').Page;
   const resolveIn = (page: Page, token: string, tone: string) =>
@@ -8726,8 +8796,11 @@ test.describe('AvatarGroup', () => {
   }) => {
     await page.goto('/components/avatar-group');
     const size = await px(page, '--pp-size-8');
-    /* A fifth of the face. */
+    /* A fifth of the face, ring included: the columns are a ring wider than
+       "face less overlap", so the next face's ring lands a fifth in (D-107 §1). */
     const overlap = size / 5;
+    const ring = 2;
+    const step = size - overlap + ring;
     const cells = await page.locator('.matrix__cell .pp-avatar-group').evaluateAll((els) =>
       els.map((n) => {
         const root = n as HTMLElement;
@@ -8752,11 +8825,11 @@ test.describe('AvatarGroup', () => {
     for (const c of cells) {
       expect(c.lefts).toHaveLength(4);
       expect(c.groupWidth).toBeLessThan(c.parentWidth - 20);
-      for (let i = 1; i < c.lefts.length; i += 1) expect(Math.abs(c.lefts[i]! - c.lefts[i - 1]! - (size - overlap))).toBeLessThanOrEqual(0.5);
+      for (let i = 1; i < c.lefts.length; i += 1) expect(Math.abs(c.lefts[i]! - c.lefts[i - 1]! - step)).toBeLessThanOrEqual(0.5);
       for (const s of c.sizes) expect(Math.abs(s - size)).toBeLessThanOrEqual(0.5);
       expect(c.lastInside).toBe(true);
       expect(c.firstInside).toBe(true);
-      expect(Math.abs(c.groupWidth - (3 * (size - overlap) + size))).toBeLessThanOrEqual(1);
+      expect(Math.abs(c.groupWidth - (3 * step + size))).toBeLessThanOrEqual(1);
       expect(c.ring).toContain(surface);
       expect(c.ring).toMatch(/0px 0px 0px 2px/);
       expect(c.moreBg).toBe(sunken);
@@ -8791,6 +8864,53 @@ test.describe('AvatarGroup', () => {
       hugs: n.getBoundingClientRect().width < (n.parentElement as HTMLElement).getBoundingClientRect().width / 2,
     }));
     expect(inline).toEqual({ faces: 5, more: true, hugs: true });
+  });
+
+  test('every covered face keeps its initials clear of the next face\'s ring; the last is centred (D-107 §1)', async ({ page }) => {
+    await page.goto('/components/avatar-group');
+    await page.evaluate(() => document.fonts.ready);
+    const rows = await page.locator('[data-testid="avatar-group-wide"] .pp-avatar-group').evaluateAll((groups) =>
+      groups.map((g) => {
+        const faces = Array.from(g.querySelectorAll<HTMLElement>('.pp-avatar'));
+        const ink = (face: HTMLElement) => {
+          // The glyphs' ink, not their advance box: the box carries the
+          // trailing letter-spacing and the side bearings, which nothing hides.
+          const span = face.querySelector<HTMLElement>('.pp-avatar__fallback')!;
+          const range = document.createRange();
+          range.selectNodeContents(span);
+          const start = range.getBoundingClientRect().left;
+          const cs = getComputedStyle(face);
+          const ctx = document.createElement('canvas').getContext('2d')!;
+          ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+          ctx.letterSpacing = cs.letterSpacing;
+          const m = ctx.measureText(span.textContent ?? '');
+          return { left: start - m.actualBoundingBoxLeft, right: start + m.actualBoundingBoxRight, advance: m.width, start };
+        };
+        const ringWidth = parseFloat(getComputedStyle(faces[0]!).boxShadow.split(' ').at(-1)!);
+        const covered = faces.slice(0, -1).map((face, i) => ({
+          text: face.textContent,
+          clearance: faces[i + 1]!.getBoundingClientRect().left - ringWidth - ink(face).right,
+        }));
+        const last = faces[faces.length - 1]!;
+        const rect = last.getBoundingClientRect();
+        const lastInk = ink(last);
+        return {
+          size: g.getAttribute('data-size'),
+          covered,
+          lastOffCentre: lastInk.start + lastInk.advance / 2 - (rect.left + rect.width / 2),
+        };
+      }),
+    );
+    expect(rows.map((r) => r.size)).toEqual(['sm', 'md', 'lg']);
+    for (const row of rows) {
+      for (const face of row.covered) {
+        // MH is wider than what a fifth leaves of a 24px face; the docs say so.
+        if (row.size === 'sm' && face.text === 'MH') continue;
+        expect(face.clearance, `${row.size} ${face.text}`).toBeGreaterThanOrEqual(0);
+      }
+      // The trailing letter-spacing is in the advance; half a pixel either way.
+      expect(Math.abs(row.lastOffCentre), `${row.size} last`).toBeLessThanOrEqual(1);
+    }
   });
 });
 
@@ -8923,12 +9043,12 @@ test.describe('Stage', () => {
     const columns = () =>
       frame.locator('.pp-card').evaluateAll((els) => new Set(els.map((el) => Math.round(el.getBoundingClientRect().x))).size);
 
-    await page.getByRole('button', { name: 'Phone' }).click();
+    await page.locator('.pp-segmented-control__item', { hasText: 'Phone' }).first().click();
     await expect.poll(width).toBe(375);
     await expect.poll(columns, 'the cards did not stack in a phone-wide frame').toBe(1);
     expect(page.viewportSize()!.width, 'the window is what it was').toBe(1280);
 
-    await page.getByRole('button', { name: 'Full' }).click();
+    await page.locator('.pp-segmented-control__item', { hasText: 'Full' }).first().click();
     await expect.poll(columns, 'the cards did not sit in a row in a full-width frame').toBe(3);
 
     // The Slider is the control a screen reader has; it carries the stage's name.
@@ -8976,5 +9096,158 @@ test.describe('Theme lab', () => {
     await expect(field).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByText('Not a colour.', { exact: false })).toBeVisible();
     await expect(page.locator('style[data-theme-lab]')).toHaveCount(1);
+  });
+});
+
+/*
+ * 3.18 SegmentedControl (D-107 §3). What jsdom cannot say: the seams and the
+ * fill (layers, `:has()`), the browser's own radio keys, the ring, and a
+ * form reset repainting behind React.
+ */
+test.describe('SegmentedControl', () => {
+  type Page = import('@playwright/test').Page;
+  const resolve = (page: Page, token: string) =>
+    page.evaluate((t) => {
+      const probe = document.createElement('div');
+      probe.style.backgroundColor = `var(${t})`;
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return c;
+    }, token);
+  const paint = (el: import('@playwright/test').Locator) =>
+    el.evaluate((n) => {
+      const s = getComputedStyle(n);
+      return { bg: s.backgroundColor, color: s.color, border: s.borderInlineEndColor };
+    });
+
+  test('attached like a ButtonGroup; the checked segment solid with on-solid text, the rest outline; as tall as a Button; it hugs at every width (spec §2, §3)', async ({ page }) => {
+    await page.goto('/components/segmented-control');
+    const cells = await page.locator('.matrix__cell .pp-segmented-control').evaluateAll((els) =>
+      els.map((root) => {
+        const items = Array.from(root.querySelectorAll<HTMLElement>('.pp-segmented-control__item'));
+        const s = items.map((i) => getComputedStyle(i));
+        return {
+          width: Math.round(root.getBoundingClientRect().width),
+          parent: (root.parentElement as HTMLElement).getBoundingClientRect().width,
+          // One seam: every segment but the first drops its leading border.
+          leading: s.map((x) => x.borderInlineStartWidth),
+          // End radii on the ends, square between.
+          firstStart: s[0]!.borderStartStartRadius,
+          firstEnd: s[0]!.borderStartEndRadius,
+          lastEnd: s[s.length - 1]!.borderEndEndRadius,
+          tops: items.map((i) => Math.round(i.getBoundingClientRect().top)),
+        };
+      }),
+    );
+    expect(cells).toHaveLength(3);
+    for (const c of cells) {
+      expect(c.leading).toEqual(['1px', '0px', '0px']);
+      expect(c.firstStart).not.toBe('0px');
+      expect(c.firstEnd).toBe('0px');
+      expect(c.lastEnd).toBe(c.firstStart);
+      expect(new Set(c.tops).size, 'one row').toBe(1);
+      expect(c.width).toBeLessThan(c.parent - 20);
+    }
+    expect(cells.map((c) => c.width)).toEqual([cells[0]!.width, cells[0]!.width, cells[0]!.width]);
+
+    const cell = page.locator('.matrix__cell').filter({ hasText: 'wide · 960px' }).first();
+    const checked = await paint(cell.locator('.pp-segmented-control__item[data-state="checked"]'));
+    const unchecked = await paint(cell.locator('.pp-segmented-control__item[data-state="unchecked"]').first());
+    expect(checked.bg).toBe(await resolve(page, '--pp-tone-solid'));
+    expect(checked.color).toBe(await resolve(page, '--pp-tone-on-solid'));
+    expect(checked.border).toBe(checked.bg);
+    expect(unchecked.bg).toBe('rgba(0, 0, 0, 0)');
+    expect(unchecked.border).toBe(await resolve(page, '--pp-tone-border'));
+    // The fill holds under the pointer: pressing a checked radio does nothing.
+    await cell.locator('.pp-segmented-control__item[data-state="checked"]').hover();
+    expect((await paint(cell.locator('.pp-segmented-control__item[data-state="checked"]'))).bg).toBe(checked.bg);
+
+    const heights = await page.locator('[data-testid="segmented-sizes"] > *').evaluateAll((rows) =>
+      rows.map((row) => ({
+        segment: Math.round(row.querySelector('.pp-segmented-control__item')!.getBoundingClientRect().height),
+        button: Math.round(row.querySelector('button.pp-button')!.getBoundingClientRect().height),
+      })),
+    );
+    expect(heights.map((h) => h.segment)).toEqual(heights.map((h) => h.button));
+    expect(heights.map((h) => h.segment)).toEqual([32, 40, 48]);
+  });
+
+  test('a click on the text selects; Tab lands on the checked segment; arrows select, wrap and skip a disabled one; RTL mirrors them (spec §1)', async ({ page }) => {
+    await page.goto('/components/segmented-control');
+    const group = page.locator('.matrix__cell').filter({ hasText: 'wide · 960px' }).first().locator('.pp-segmented-control');
+    const value = (g: import('@playwright/test').Locator) => g.locator('input:checked').evaluate((i) => (i as HTMLInputElement).value);
+
+    await group.getByText('System').click();
+    expect(await value(group)).toBe('system');
+    await expect(group.locator('.pp-segmented-control__item').first()).toHaveAttribute('data-state', 'checked');
+
+    // Tab from the element before lands on the checked segment, not the first.
+    await group.getByText('Dark').click();
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(group.getByRole('radio', { name: 'Dark' })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    expect(await value(group), 'wraps to the first').toBe('system');
+    await page.keyboard.press('ArrowLeft');
+    expect(await value(group), 'wraps to the last').toBe('dark');
+
+    const range = page.locator('[data-testid="segmented-states"] [role="radiogroup"]').nth(2);
+    await range.getByRole('radio', { name: 'Week' }).focus();
+    await page.keyboard.press('ArrowRight');
+    expect(await value(range), 'the disabled Month is skipped').toBe('year');
+
+    const rtl = page.locator('[data-testid="segmented-rtl"] [role="radiogroup"]');
+    const first = await rtl.locator('.pp-segmented-control__item').first().boundingBox();
+    const last = await rtl.locator('.pp-segmented-control__item').last().boundingBox();
+    expect(first!.x, 'the first segment is on the right').toBeGreaterThan(last!.x);
+    await rtl.locator('input[value="light"]').focus();
+    await page.keyboard.press('ArrowLeft');
+    expect(await value(rtl), 'ArrowLeft moves on, toward the end of an RTL row').toBe('dark');
+  });
+
+  test('the ring is drawn on the focused segment and raised above its neighbour (spec §3)', async ({ page }) => {
+    await page.goto('/components/segmented-control');
+    const group = page.locator('[data-testid="segmented-icons"] [role="radiogroup"]');
+    await group.getByRole('radio', { name: 'Align left' }).focus();
+    await page.keyboard.press('ArrowRight');
+    const item = group.locator('.pp-segmented-control__item').nth(1);
+    await expect(group.getByRole('radio', { name: 'Align centre' })).toBeFocused();
+    await settled(page);
+    const ring = await item.evaluate((n) => {
+      const s = getComputedStyle(n);
+      return { style: s.outlineStyle, color: s.outlineColor, z: s.zIndex };
+    });
+    expect(ring.style).toBe('solid');
+    expect(ring.color).toBe(await page.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.color = 'var(--pp-color-focus-ring)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    }));
+    expect(Number(ring.z)).toBeGreaterThan(0);
+    // A segment whose radio is not focused draws none.
+    expect(await group.locator('.pp-segmented-control__item').first().evaluate((n) => getComputedStyle(n).outlineStyle)).toBe('none');
+  });
+
+  test('a form reset puts the radio back behind React, and the fill follows :checked (spec §5); a disabled group keeps its choice on the sunken surface', async ({ page }) => {
+    await page.goto('/components/segmented-control');
+    const form = page.locator('[data-testid="segmented-form"]');
+    const standard = form.locator('.pp-segmented-control__item').first();
+    const express = form.locator('.pp-segmented-control__item').nth(1);
+    const solid = await resolve(page, '--pp-tone-solid');
+
+    await express.click();
+    expect((await paint(express)).bg).toBe(solid);
+    await form.getByRole('button', { name: 'Reset' }).click();
+    await expect(form.getByRole('radio', { name: 'Standard' })).toBeChecked();
+    expect((await paint(standard)).bg, 'painted from :checked, which the reset changed').toBe(solid);
+    expect((await paint(express)).bg).toBe('rgba(0, 0, 0, 0)');
+
+    const plan = page.locator('[data-testid="segmented-states"] [role="radiogroup"]').nth(1);
+    expect((await paint(plan.locator('.pp-segmented-control__item').nth(1))).bg).toBe(await resolve(page, '--pp-color-bg-sunken'));
+    expect((await paint(plan.locator('.pp-segmented-control__item').first())).bg).toBe('rgba(0, 0, 0, 0)');
   });
 });

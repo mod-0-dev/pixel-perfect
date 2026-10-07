@@ -45,11 +45,11 @@
   },
   "avatar-group-dark.png": {
     "width": 1280,
-    "height": 1085
+    "height": 1349
   },
   "avatar-group-light.png": {
     "width": 1280,
-    "height": 1085
+    "height": 1349
   },
   "avatar-light.png": {
     "width": 1280,
@@ -314,12 +314,12 @@
   "index-dark.png": {
     "width": 1280,
     "height": 4745,
-    "components": 69
+    "components": 70
   },
   "index-light.png": {
     "width": 1280,
     "height": 4745,
-    "components": 69
+    "components": 70
   },
   "input-dark.png": {
     "width": 1280,
@@ -355,11 +355,11 @@
   },
   "link-dark.png": {
     "width": 1280,
-    "height": 3264
+    "height": 3948
   },
   "link-light.png": {
     "width": 1280,
-    "height": 3264
+    "height": 3948
   },
   "nav-sidebar-dark.png": {
     "width": 1280,
@@ -440,6 +440,14 @@
   "scroller-light.png": {
     "width": 1280,
     "height": 2653
+  },
+  "segmented-control-dark.png": {
+    "width": 1280,
+    "height": 1799
+  },
+  "segmented-control-light.png": {
+    "width": 1280,
+    "height": 1799
   },
   "select-dark.png": {
     "width": 1280,

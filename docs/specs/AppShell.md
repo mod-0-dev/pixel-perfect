@@ -82,7 +82,7 @@ edge shows where focus went.
 
 `sidebarInlineSize` (`'16rem'`) and `collapseBelow` (`'md'`) are `Split`'s
 props with `Split`'s defaults, forwarded as they are; the sidebar is
-`Split.Sidebar` and the main is `Split.Main` rendered as `<main>`. Below
+`SplitSidebar` and the main is `SplitMain` rendered as `<main>`. Below
 the threshold the sidebar stacks above the content at full width — the
 honest no-JavaScript narrow layout; a sidebar that becomes a drawer is
 6.4's decision, made with `Dialog`'s machinery, not a layout's. With no

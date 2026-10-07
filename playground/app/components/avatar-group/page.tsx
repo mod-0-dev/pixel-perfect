@@ -62,6 +62,25 @@ export default function AvatarGroupDemoPage() {
       </section>
 
       <section>
+        <h2>Wide initials</h2>
+        <p>
+          The next face hides a fifth of this one, its ring included, and the initials sit in the
+          middle of what is left — so a wide pair like AT, GH or MH keeps both letters. A pair as
+          wide as the face itself (MW) cannot clear any overlap at <code>sm</code> or{' '}
+          <code>md</code>.
+        </p>
+        <Stack gap="3" data-testid="avatar-group-wide">
+          {(['sm', 'md', 'lg'] as const).map((size) => (
+            <AvatarGroup key={size} size={size}>
+              {['Alan Turing', 'Grace Hopper', 'Margaret Hamilton', 'Katherine Johnson'].map((name, i) => (
+                <Avatar key={name} name={name} tone={TONES[i % TONES.length]!} />
+              ))}
+            </AvatarGroup>
+          ))}
+        </Stack>
+      </section>
+
+      <section>
         <h2>Right to left</h2>
         <div dir="rtl" data-testid="avatar-group-rtl">
           <Team max={3} />

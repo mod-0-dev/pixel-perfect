@@ -1,6 +1,6 @@
 'use client';
 
-import { ButtonGroup, Field, Slider, Toggle } from 'pixel-perfect';
+import { Field, SegmentedControl, SegmentedControlItem, Slider } from 'pixel-perfect';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 
 /**
@@ -75,19 +75,20 @@ export function Stage({ label, defaultWidth = Number.POSITIVE_INFINITY, children
   return (
     <div className="stage" ref={outer}>
       <div className="stage__controls">
-        <ButtonGroup label={`${label}: preset widths`}>
+        {/* One of three, or none once the edge is dragged off a preset: a
+            radio group with nothing checked (D-107 §3). */}
+        <SegmentedControl
+          label={`${label}: preset widths`}
+          size="sm"
+          value={full ? 'Full' : (PRESETS.find((preset) => preset.width === width)?.label ?? '')}
+          onValueChange={(choice) => setRequested(PRESETS.find((preset) => preset.label === choice)!.width)}
+        >
           {PRESETS.map((preset) => (
-            <Toggle
-              key={preset.label}
-              variant="outline"
-              size="sm"
-              pressed={preset.width === Number.POSITIVE_INFINITY ? full : !full && width === preset.width}
-              onPressedChange={() => setRequested(preset.width)}
-            >
+            <SegmentedControlItem key={preset.label} value={preset.label}>
               {preset.label}
-            </Toggle>
+            </SegmentedControlItem>
           ))}
-        </ButtonGroup>
+        </SegmentedControl>
         <div className="stage__width">
           <Field label={`${label}: width in pixels`} labelHidden>
             <Slider min={MIN} max={max} step={1} value={width} onValueChange={setRequested} size="sm" />

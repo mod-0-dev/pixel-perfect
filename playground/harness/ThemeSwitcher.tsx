@@ -1,6 +1,6 @@
 'use client';
 
-import { ButtonGroup, Toggle, useTheme, type Theme } from 'pixel-perfect';
+import { SegmentedControl, SegmentedControlItem, useTheme, type Theme } from 'pixel-perfect';
 
 /**
  * The playground's theme, chosen once and kept (D-063), through the
@@ -8,13 +8,14 @@ import { ButtonGroup, Toggle, useTheme, type Theme } from 'pixel-perfect';
  * provider, this reads and sets its choice. Same key, same values, same
  * attribute, same DOM as before, so no baseline moved.
  *
- * Built from the library's own parts: a `ButtonGroup` of three `Toggle`s,
- * exactly one pressed. Pressing the pressed one keeps it pressed, because a
- * theme is never "none". `theme` is `system` on the server and on the first
- * client render (the provider reads the stored choice after mount, spec §5),
- * so the pressed toggle catches up one render after hydration; the page's
- * colours do not wait for it — the provider's script set the attribute
- * before the first paint.
+ * Built from the library's own parts: a `SegmentedControl`, because a theme
+ * is exactly one of three. It was a `ButtonGroup` of `Toggle`s until D-107
+ * §3 — pressed buttons, of which pressing the pressed one did nothing, and
+ * which a screen reader never heard as one of three. `theme` is `system` on
+ * the server and on the first client render (the provider reads the stored
+ * choice after mount, spec §5), so the checked segment catches up one render
+ * after hydration; the page's colours do not wait for it — the provider's
+ * script set the attribute before the first paint.
  */
 
 const CHOICES: ReadonlyArray<{ value: Theme; label: string }> = [
@@ -27,12 +28,12 @@ export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <ButtonGroup label="Theme" data-testid="theme-switcher">
+    <SegmentedControl label="Theme" size="sm" value={theme} onValueChange={(value) => setTheme(value as Theme)} data-testid="theme-switcher">
       {CHOICES.map(({ value, label }) => (
-        <Toggle key={value} size="sm" variant="outline" pressed={theme === value} onPressedChange={() => setTheme(value)}>
+        <SegmentedControlItem key={value} value={value}>
           {label}
-        </Toggle>
+        </SegmentedControlItem>
       ))}
-    </ButtonGroup>
+    </SegmentedControl>
   );
 }

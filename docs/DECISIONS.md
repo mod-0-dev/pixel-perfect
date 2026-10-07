@@ -8056,3 +8056,247 @@ for good; but on a PR whose head is its authoring commit the tick is green
 over them. Recorded rather than changed here, because the fix — telling
 "failed only for missing baselines" from "failed" in the test results — is a
 change to the job that can only be proven on CI.
+
+<a id="d-107"></a>
+
+## D-107 — D-102 §7's five, and a sixth from a phone: a ring the overlap ignored, the last dotted compound, a single choice the library could not draw, a page of regions named "Code", a link's ink, and text iOS enlarged
+
+**Date:** 2026-10-07 · **Status:** accepted · **Amends:** RULES — none;
+`docs/specs/AvatarGroup.md` §3, `docs/specs/tier-2-layout.md` §2.6,
+`docs/specs/CodeBlock.md` (props), `docs/specs/ThemeToggle.md` §1,
+`docs/specs/tier-3a-action.md` §3.4, ROADMAP.md (3.18 added),
+`src/theme/check.mjs` (two cross-hue checks), every screenshot baseline ·
+**Extends:** D-016 §7, D-019, D-022 §7, D-030 §7, D-031, D-033, D-039 §1 and
+§5, D-047, D-059, D-062 §1, D-069 §1, D-070 §1, D-079 §1, D-081 §1, D-089,
+D-090, D-101 §1, D-102 §2, §3 and §7
+
+Asked to work on D-102 §7's "found and not fixed", and, mid-way, about a
+phone screenshot of `/docs/text` in which some code blocks were set larger
+than others "if a code example follows a title directly". The ButtonGroup /
+ThemeToggle disagreement was put to the user with three options; they chose
+to build the missing control in this PR (§3). Everything else extends a
+ruling already made.
+
+### 1. `AvatarGroup`: the overlap counts the ring, and a covered face's initials sit in what is visible
+
+D-102 §7 said a wide pair ("AT") lost its second letter. Measured before
+anything changed — each covered face's glyph ink against the outer edge of
+the next face's ring, Chromium, the pinned Inter — it was every pair,
+including the gallery's own narrow ones, at `sm` and `md`:
+
+| Initials, `md` | before | ring counted only | ring counted, initials centred in what is visible |
+| --- | --- | --- | --- |
+| AL, AT, KJ (the gallery's) | −1.3 to −1.5px | +0.5 to +0.7 | +3.4 to +4.1 |
+| GH | −2.4 | −0.4 | +2.3 |
+| MH | −3.6 | −1.6 | +1.6 |
+| MW, WW | −5.7, −6.6 | −3.7, −4.6 | −0.4, −1.8 |
+
+D-090 §4 chose "a fifth of the face" so the initials would clear, and each
+face's 2px ring, drawn outside it, put the next face's visible edge 2px
+further in: what was hidden was a fifth *plus* the ring. Counting the ring
+alone still clipped every pair at `sm`. So the columns are a ring wider than
+"face less overlap" — the overlap is now how much of a face is hidden, ring
+included — and the fallback of every item but the last is padded at its end
+by the overlap, which moves Avatar's centred initials to the middle of what
+the next face leaves visible. An image fills the face and is untouched; the
+last face and the count are whole and stay centred. The box still holds the
+faces and not their rings, so the end padding is the overlap less the ring
+(it clamps at 0 for an overlap under the ring's width). The group is 2px
+wider per covered face.
+
+A pair as wide as the face ("MW", "WW") cannot clear any overlap at `sm` or
+`md`; MH clips by 0.7px at `sm`. The docs say so and point at `size="lg"` or
+a smaller overlap. The browser test measures the ink of every covered face
+in a gallery of AT, GH, MH and KJ at three sizes (MH at `sm` excepted, as
+documented) and that the last is centred.
+
+### 2. `Split`'s parts are named exports, and the dotted spelling is gone
+
+`SplitSidebar` and `SplitMain`, with `SplitSidebarProps` and
+`SplitMainProps` in place of `SplitSlotProps`. RULES §5.6 says the parts of
+every compound are named exports "never properties of the root" (D-079 §1),
+and Split — built before D-062 found that a Server Component cannot dot into
+a client module — was the one compound still dotted. Removed rather than
+deprecated: keeping `Split.Sidebar` beside `SplitSidebar` is the two
+spellings for one idea D-079 §1 refused, and the package is pre-1.0, so the
+changeset is a minor marked breaking. AppShell, the playground, the docs and
+the tier-2 spec move with it; a unit test asserts the root carries neither
+property.
+
+### 3. `SegmentedControl` (3.18), added and built: a single choice is a radio group drawn as buttons
+
+`ButtonGroup.md` (D-030 §7) sent "exactly one of several" to "a `RadioGroup`
+styled as buttons", which the library could not draw — `RadioGroup` draws
+round radios — so `ThemeToggle.md`'s three-way recipe, the chrome's theme
+switcher and the Stage presets each used a `ButtonGroup` of `Toggle`s: three
+`aria-pressed` buttons, never "2 of 3", of which pressing the pressed one did
+nothing. The user was given three options — fix the docs and plan the
+component, build it now, or accept Toggles for a single choice — with the
+first recommended and the third argued against; they chose to build it now.
+
+Written and built under the standing delegation (D-069 §1), every
+recommendation in the spec adopted:
+
+- **Native radios** in `<label>`s, so the browser is the APG Radio Group
+  pattern and the value submits and resets (D-039 §5). No roving tabindex;
+  a generated `name`.
+- **The checked segment is solid neutral, and there is no `tone` or
+  `variant`.** Computed first (D-047 §3's lesson): Toggle's pressed fill is
+  **1.26:1** against the page in light and 1.49:1 in dark; neutral's solid
+  is 5.90:1 and 7.07:1; warning's solid is 1.87:1 in light. The fill is the
+  only thing telling a selected segment from the one beside it — states side
+  by side, which is where 1.4.11 asks 3:1. `check.mjs` now asserts neutral's
+  solid against steps 1–3 in both themes (6 assertions), so the spec's
+  number is a check and not a calculation.
+- **ButtonGroup's seams and Button's box by the two-class contract**
+  (D-070 §1): the root is `pp-button-group pp-segmented-control`, each item
+  `pp-button pp-segmented-control__item` with `data-variant="outline"`.
+  The stylesheet adds the checked fill (Button's private properties, Toggle's
+  device), where the radio sits, and the ring, drawn on the segment from
+  `:has(:focus-visible)` and raised as D-033 raises a focused button.
+- **Named by `label`, or by the `Field` around it**, RadioGroup's wiring; a
+  development warning with neither, because a type cannot see a context
+  (D-031's other half).
+- **Painted from `:checked`**, Radio's deviation from RULES §4 for Radio's
+  reason (D-047 §2); `data-state` emitted for consumers. The browser test
+  proves it with a form reset, which changes the radio behind React.
+- **One draft corrected before the build:** the input was to cover its
+  segment at `inset: 0`. An absolutely placed form control keeps its
+  intrinsic size under insets, as a replaced element does, and stretching it
+  would take an `inline-size` exemption from RULES §1 — a rule bend, which
+  the delegation does not cover. It is not needed: a click anywhere on a
+  `<label>` is a click on its radio. The radio is transparent, pinned inside
+  the segment (D-102 §3's lesson about an absolute box with no inline inset)
+  and takes no pointer events; the harness clicks the segment, as a person
+  does.
+
+The chrome's theme switcher and the Stage presets are SegmentedControls now
+(the presets with nothing checked once the edge is dragged off a preset);
+`ThemeToggle.md`'s recipe, `ButtonGroup.md`'s table and "don't", the
+ButtonGroup page and the tier-3a spec say so. 3.18 is in Tier 3 with Deps
+3.4, 3.7 and 3.11, in `review` for its CI-authored baselines; the
+denominator moves from 83 to 84.
+
+### 4. `CodeBlock` needs a `title` or a `label`
+
+Its default name was "Code", so every block on a page without a title was a
+region named "Code" — the docs renderer had worked around it by naming each
+block after its heading. Scroller (D-022 §7) and Table (D-081 §1) require a
+name at the type level for the same focusable region; CodeBlock now does
+too: `title` or `label`, never neither and never both. An untyped caller
+with neither gets a development warning and the old name, so nothing breaks
+at runtime. Pre-1.0, a minor marked breaking.
+
+### 5. A `Code` inside a `Link` takes the link's ink
+
+`Code` sets its own neutral tone, so inside a link its text stayed neutral
+12 beside the link's accent 11 — grey code in a blue link. Inside `.pp-link`
+its colour is `currentColor`, the inherited value, so it follows the link at
+rest and on hover; the chip stays Code's neutral step 3, and a consumer's
+`--pp-code-color` still wins. Each hue's 11 and 12 are solved against that
+hue's own step 3, so the pairing a browser draws — accent 11 on *neutral* 3
+— is one no per-hue check saw. It holds by a hair (4.56:1 at the worst,
+light success and dark danger), and `check.mjs` now asserts all twenty
+(each hue's 11 and 12, both themes) at 4.5:1. The Link page gains a section;
+the browser test reads the code's colour against its link's, at rest and on
+hover, for an accent and a neutral link.
+
+### 6. iOS Safari enlarged the text of anything wider than the screen
+
+The screenshot: on `/docs/text` on an iPhone, the "Usage" block and the
+block after "Inline, inside a sentence:" were set visibly larger than the
+`import` block at the top. The user's reading was that a block after a
+heading inherits its size; the screenshot's own last block follows a
+paragraph and is enlarged too, and the first follows a paragraph and is
+not. What the enlarged ones share is lines longer than the screen —
+measured on a 390px phone, their `<pre>`s scroll 528–847px of content in a
+356px box, the first's fits — and that is what iOS Safari's text autosizing
+enlarges: text in a block whose lines run wider than the visible width, a
+heuristic for desktop pages that misreads content laid out wider on purpose.
+
+Chromium's emulation does not reproduce it (its autosizer compares the
+layout width to the device's, equal on a page with a viewport meta), and
+there is no WebKit here; every block measured 14px. The fix is the
+standard one, placed where the library creates the condition:
+`text-size-adjust: 100%` on the three regions that scroll text on the
+inline axis — CodeBlock's `<pre>`, Table's region, Scroller — which
+Lightning CSS emits with the `-webkit-` prefix iOS reads. Not in the reset,
+which "does four things and stops" to the consumer's document; the
+playground, an app, sets it on its own `:root`, which also covers the
+Matrix's 960px cells on a phone, and `for-agents.md` tells a consuming app
+to do the same. The browser test sets the page back to `auto` and asserts
+each region still holds 100% on its own. **Confirmed only on the device:**
+the runner can say the declaration ships, not that WebKit honours it.
+
+### 7. Every baseline is re-authored
+
+The chrome's switcher is a SegmentedControl, so every page's pixels change
+at the switcher — a selected segment that was neutral 5 is neutral 9. That
+alone is under the 1% tolerance on most pages, which is exactly the stale
+baseline D-101 §1 re-authored rather than left. So every baseline is
+deleted for CI to author (D-013), the window D-050 §5 describes. Heights
+were measured, not assumed — every page in both themes on a production
+build of `main` and of this branch, locally (D-102 §2's method):
+three pages changed height — avatar-group (+262px, §1's gallery),
+link (+684px, §5's section) and the new segmented-control page — and the
+index did not (one more card fits its tier's row), nor did any page behind
+the chrome's switcher, which is as tall as the Toggles it replaced. The index
+(whose entry records the registry count it was authored with, D-066 §2),
+link, avatar-group and button-group are re-baselined with
+`npm run dimensions -- --rebaseline`; button-group measured unchanged, but
+§3 rewrote a line of its prose that holds a bare `<code>` — the one text
+that measures differently on the runner (D-102 §2) — so its height is left
+for the runner to record rather than held. The other 148 baselines are
+deleted and keep their manifest entries, so the geometry guard holds their
+heights through the window; segmented-control's two are authored fresh.
+
+### 8. Found and not fixed
+
+- **A row of pressed Toggles has the same 1.26:1.** §3's number is
+  Toggle's pressed fill, which a toolbar's Bold / Italic still use, side
+  by side. A multi-select row is not a single choice and was not in scope;
+  whether a pressed Toggle needs more than its fill is its own question.
+- **A SegmentedControl in a Toolbar** is untested: the Toolbar's roving
+  finds every radio as a control and its arrows move without selecting
+  (spec, out of scope).
+- **The roadmap's 0.10, 0.12 and 0.13** still read "waits on the user's
+  review of the PR", and that PR (#35) has merged. Surfaced, not reconciled
+  (the skill: a tracking discrepancy goes to the user).
+
+### 9. Verified, and the breaks
+
+Unit: SegmentedControl, sixteen tests — the radiogroup and the two-class
+contract, generated and explicit names, uncontrolled and controlled, a click
+on the text selecting, nothing selected, `disabled` on the group and an item,
+`required`, `size` and `orientation`, the Field's name, description, error,
+size and requirement, `label` winning inside a field and the warning with no
+name, the prop split, an untyped `role` / `type` / `checked` dropped, a
+chained `onChange` and its veto, a form submitting the value, axe in both
+themes. CodeBlock gains the type-level and runtime name test; Split the
+named-export test; `theme.test.ts` the new count. Browser: §1's clearance
+and the corrected geometry; §5's ink; §6's opt-out; SegmentedControl's
+seams, fill, heights and hug, keys (wrap, a disabled segment skipped, RTL),
+ring, and a form reset. `lint:contrast` counts 331, up from 305.
+
+Break checks (D-035 §3), two broken builds, each break confirmed absent from
+the served stylesheet first (D-047 §5): Code's `.pp-link` rule dropped (the
+ink test); the ring dropped from AvatarGroup's columns (the geometry test,
+and the clearance test with it); the initials' end padding dropped (the
+clearance test alone, "sm AT"); CodeBlock's `text-size-adjust` dropped (the
+opt-out test); the segment's ring dropped (the ring test); the checked fill
+dropped (the fill test, and the reset test that reads it); and
+`:has(:checked)` replaced with `[data-state="checked"]` — the reset test
+alone, while the fill test stayed green, because inside a group React and
+the platform agree until something changes the radio behind React, which is
+D-047 §2's argument made a test a second time. Each failed on exactly the
+test named for it.
+
+Two browser tests failed in the full parallel run and passed alone, on this
+machine. "The ring is on the focused thumb" (RangeSlider) fails the same way
+on `main`'s own suite against `main`'s build here — not this branch's, and
+`main`'s CI is green, so it is recorded and left. The DropdownMenu submenu
+test passed on `main` once and failed twice here, and the race was the
+test's: the first sub-item's box was read in the same `Promise.all` as
+`placedBox(s)`, so under load it was taken before the panel moved (750px and
+836px off its trigger's row). The panel settles first now, then its item is
+read — D-066 §3's still box, kept for the item as for the panel.

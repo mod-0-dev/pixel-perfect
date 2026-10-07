@@ -43,10 +43,17 @@ items", then each avatar's name, then "2 more". `label` names the list.
 
 | Custom property | Default token | Affects |
 | --- | --- | --- |
-| `--pp-avatar-group-overlap` | a fifth of the face | How far each face sits inside the last |
+| `--pp-avatar-group-overlap` | a fifth of the face | How much of each face the next one hides, its ring included |
 | `--pp-avatar-group-ring-color` | `--pp-color-bg-surface` | The ring between faces |
 | `--pp-avatar-group-more-bg` | `--pp-color-bg-sunken` | The count |
 | `--pp-avatar-group-more-color` | `--pp-color-text-muted` | The count's text |
+
+Each face but the last is partly covered, so its initials sit in the
+middle of what is left visible rather than of the whole face; an image
+fills the face as always. At the default overlap a pair of initials as
+wide as "MH" keeps both letters at `md` and `lg`; one as wide as the
+face itself ("MW") cannot clear any overlap at `sm` or `md`. If your
+names run wide, use `size="lg"` or a smaller overlap (D-107 §1).
 
 ## Anatomy
 

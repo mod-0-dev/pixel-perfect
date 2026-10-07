@@ -3,11 +3,18 @@
  *
  * OVERLAP WITHOUT A MARGIN (spec §2): the group is an inline grid whose
  * columns are an avatar's size less the overlap, so each item starts inside
- * the one before it; the last runs past its column by the overlap and the
- * group pads its end by the same amount, so its hug box holds it. The
- * parent sizing the boxes it created (D-021); RULES §2 keeps its margins.
- * Later items sit over earlier ones — document order, which RTL reverses
- * with nothing said here.
+ * the one before it; the last runs past its column and the group pads its
+ * end by as much, so its hug box holds it. The parent sizing the boxes it
+ * created (D-021); RULES §2 keeps its margins. Later items sit over earlier
+ * ones — document order, which RTL reverses with nothing said here.
+ *
+ * THE OVERLAP IS HOW MUCH OF A FACE IS HIDDEN, RING INCLUDED (D-107 §1).
+ * Each face draws its ring outside itself, so the next face hides the
+ * overlap PLUS the ring — 8.4px of a 32px face where a fifth was meant, and
+ * every pair of initials in the gallery lost an edge of its second letter.
+ * The columns are a ring wider than "face less overlap", so what is hidden
+ * is exactly the overlap; and the initials of every face but the last sit
+ * in the middle of what is left visible, not of the whole face.
  *
  * `size` IS THE GROUP'S (spec §3): written into Avatar's private variables
  * from here, the way Toggle writes Button's, so one `size` sizes every face
@@ -24,13 +31,17 @@
        (D-090 §4). */
     --_overlap: var(--pp-avatar-group-overlap, calc(var(--_face) / 5));
     --_ring: var(--pp-avatar-group-ring-color, var(--pp-color-bg-surface));
+    --_ring-width: var(--pp-border-width-2);
 
     display: inline-grid;
     grid-auto-flow: column;
-    grid-auto-columns: calc(var(--_face) - var(--_overlap));
+    grid-auto-columns: calc(var(--_face) - var(--_overlap) + var(--_ring-width));
     margin: 0;
     padding-block: 0;
-    padding-inline: 0 var(--_overlap);
+    /* What the last face runs past its column by. The box holds the faces,
+       not their rings, on every side; an overlap under the ring's width
+       leaves a gap and this clamps to 0. */
+    padding-inline: 0 calc(var(--_overlap) - var(--_ring-width));
     list-style: none;
     vertical-align: middle;
   }
@@ -58,7 +69,16 @@
     --_size: var(--_face);
     --_font-size: var(--_face-font);
 
-    box-shadow: 0 0 0 var(--pp-border-width-2) var(--_ring);
+    box-shadow: 0 0 0 var(--_ring-width) var(--_ring);
+  }
+
+  /* The initials (or a consumer's `fallback`) of every face the next one
+     covers, centred in the part left visible: padding the end of Avatar's
+     centred fallback by the overlap moves its content back by half of it.
+     An image fills the face and is untouched. The last item — the last
+     face, or the count — is whole and stays centred. */
+  .pp-avatar-group__item:not(:last-child) .pp-avatar__fallback {
+    padding-inline-end: var(--_overlap);
   }
 
   .pp-avatar-group__more {

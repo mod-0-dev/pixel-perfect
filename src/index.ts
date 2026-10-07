@@ -258,6 +258,13 @@ export {
   type RadioGroupProps,
 } from './components/Radio/RadioGroup';
 export {
+  SegmentedControl,
+  SegmentedControlItem,
+  type SegmentedControlItemProps,
+  type SegmentedControlOrientation,
+  type SegmentedControlProps,
+} from './components/SegmentedControl/SegmentedControl';
+export {
   Scroller,
   overflowState,
   type ScrollerOrientation,
@@ -282,9 +289,12 @@ export {
 export { Spinner, type SpinnerProps } from './components/Spinner/Spinner';
 export {
   Split,
+  SplitMain,
+  SplitSidebar,
   type SplitCollapse,
+  type SplitMainProps,
   type SplitProps,
-  type SplitSlotProps,
+  type SplitSidebarProps,
 } from './components/Split/Split';
 export { Stack, type StackAlign, type StackProps } from './components/Stack/Stack';
 export {

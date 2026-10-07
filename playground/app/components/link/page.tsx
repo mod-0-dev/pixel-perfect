@@ -1,4 +1,4 @@
-import { Cluster, Link, Stack, Text } from 'pixel-perfect';
+import { Cluster, Code, Link, Stack, Text } from 'pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 
@@ -67,6 +67,30 @@ export default function LinkPage() {
                 {tone}
               </Link>
             ))}
+          </Stack>
+        </Matrix>
+      </section>
+
+      <section>
+        <h2>Code inside a link takes the link&apos;s ink</h2>
+        <p>
+          The chip stays Code&apos;s; the text is the link&apos;s, at rest and on hover, so the code
+          reads as part of what you click. Hover each one.
+        </p>
+        <Matrix>
+          <Stack gap="2">
+            <Text>
+              Configure it in <Link href="#code-in-link">the <Code>pixel.config.ts</Code> file</Link>.
+            </Text>
+            <Text>
+              <Link href="#code-in-link" tone="neutral">
+                <Code>useTheme()</Code>
+              </Link>{' '}
+              reads the stored choice.
+            </Text>
+            <Text>
+              A bare <Code>Code</Code> beside them, for comparison.
+            </Text>
           </Stack>
         </Matrix>
       </section>
