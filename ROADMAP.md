@@ -37,67 +37,28 @@ line in [`docs/DECISIONS-INDEX.md`](docs/DECISIONS-INDEX.md) (D-106). This block
 says where things stand, is refreshed on every transition, and stays short
 enough to be read first.
 
-- **In review: 0.10 docs site, 0.12 brand accent and 0.13 agent docs**
-  (2026-10-06, under the standing delegation of D-069 §1). 0.10 is the
-  playground made a front door: a composition on a `Stage` you can resize
-  leads the index, three example screens built from the library alone, every
-  component's doc rendered by the library's own components, and the rules as
-  a page (D-104). 0.12 is `pixel-perfect/theme` and
-  `npx pixel-perfect theme --accent …`: the palette solved around a
-  consumer's accent by the library's own generator and checked by its own
-  contrast checks, with a lab at `/theme` (D-103). 0.13 ships `dist/AGENTS.md`
-  and the component docs to a consuming app's coding agent (D-105). Each waits
-  on the user's review of the PR; 0.10 and 0.12 also on their pages'
-  CI-authored baselines.
-- **Every baseline is re-authored on this PR** (D-107 §7). The chrome's theme
-  switcher is a `SegmentedControl` now, so every page's pixels change at the
-  switcher. That is under the 1% tolerance on most pages, which is the stale
-  baseline D-101 §1 re-authored rather than left. Heights were measured
-  against `main`: only avatar-group (+262px), link (+684px) and the new
-  segmented-control page move. Those, the index (one more registry card)
-  and button-group (a line of prose with a bare `<code>`, D-102 §2) are
-  re-baselined with `--rebaseline`; the manifest holds the other 148 through
-  the window. Its authoring run, then one more run that compares what it
-  authored, close it.
-- **The playground works on a phone** (D-102). A `phone` Playwright project
-  (390x844, touch) asserts every page fits the screen and scrolls under a
-  finger. It found the four modal galleries that locked a phone out for
-  good, `/tokens` pushing the page sideways, `VisuallyHidden` widening the
-  document from inside a scrolled region (1.4, fixed, D-102 §3), and
-  `Combobox` unable to be narrower than ~256px (4.11, fixed — the harness's
-  own overflow flag had been reporting it). `AppShell`'s skip link read a
-  token that does not exist (6.3, fixed), and `lint:rules` now fails any
-  stylesheet that does (D-102 §7).
-- **D-102 §7's five, fixed, and a sixth from a phone** (D-107, 2026-10-07):
-  `AvatarGroup` counts each face's ring in its overlap and centres a covered
-  face's initials in what stays visible (§1); `Split`'s parts are named
-  exports (§2, breaking); a single choice is the new 3.18 `SegmentedControl`,
-  which `ThemeToggle.md`, the chrome's theme switcher and the Stage presets
-  now use (§3); `CodeBlock` needs a `title` or a `label` (§4, breaking at the
-  type level); `Code` inside a `Link` takes its ink (§5); and iOS Safari no
-  longer enlarges the text in a `CodeBlock`, `Table` or `Scroller` whose
-  lines run past the screen (§6). The chrome's switcher changed, so every
-  baseline is re-authored (§7).
-- **Found and not fixed:** a pressed `Toggle`'s fill is 1.26:1 against the
-  page, so a row of them (a toolbar's Bold / Italic) tells pressed from not
-  by a fill nobody measured (D-107 §8); a `SegmentedControl` inside a
-  `Toolbar` is untested (spec, out of scope); a bare `<code>` in the
-  playground's prose (58 files) is set in the machine's own `monospace`,
-  and AlertDialog's baseline shows `?gallery=open` broken after its `?`
-  (D-102 §2); and the visual job passes an authoring run in which a
-  functional test failed (D-106 §5).
-- **6.1–6.7 are `review`**, each waiting only on its CI-authored baseline,
-  which this PR's authoring run re-authors with the rest (D-069 §2). The sweep
-  of Tier 6 to `done` follows the run that compares them.
-- **Still open from Tier 2:** consume the layout primitives in
-  [launchpad](https://github.com/mod-0-dev/launchpad), deleting `.lp-stack`,
-  `.lp-cluster`, `.lp-grid`, `.lp-page`, `.lp-shell` and its last viewport
-  media query
-- **Done:** 73 / 84 tracked items (13 foundations + 71 components) — 10
-  foundations + 63 components. The denominator moved from 81 to 83 when 0.12
-  and 0.13 were added (D-103 §6, D-105 §3), and to 84 with 3.18 (D-107 §3).
-  What remains is Tier 6 (6.1–6.7), 3.18, 0.10, 0.12 and 0.13, all in
-  `review`.
+- **The roadmap is complete: 84 / 84** (13 foundations + 71 components), as
+  of 2026-10-07 (D-108 §5). 6.1–6.7, 3.18, 0.10, 0.12 and 0.13 went to `done`
+  once their CI-authored baselines had been compared green on `main` (runs
+  205 and 209); 0.10, 0.12 and 0.13's PR (#35) had merged.
+- **D-107 §8 and D-106 §5, closed** (D-108): a pressed `Toggle` is its
+  tone's solid fill, and `Toggle` has no `solid` variant (§1, breaking at
+  the type level); a `SegmentedControl` inside a `Toolbar` is walked segment
+  by segment and tested (§2); the visual job fails, and authors nothing, when
+  a test fails for any reason but a missing baseline (§3); the playground's
+  bare `<code>` is set in the pinned mono and `?gallery=open` no longer breaks
+  (§4, D-102 §2's two follow-ups).
+- **60 pages' baselines are re-authored on this PR** (D-108 §4): the 59 that
+  hold a bare `<code>` with `--rebaseline`, because each such line was 2px
+  taller on the runner and their heights change there; `examples` with its
+  manifest entries kept. The 19 that did not change are compared. Its
+  authoring run, then one more run that compares what it authored, close it.
+- **Launchpad's Tier 2 line, closed** (D-108 §6): it already consumes the
+  layout primitives. Adopting AppShell, NavSidebar and PageHeader there is
+  new work, and needs its pin moved past D-107 §2's breaking `Split` change.
+- **Found and not fixed:** Pagination's current page is the same 1.26:1 fill
+  with an edge, not measured against 1.4.11 (D-108 §7); a bare `<code>`'s
+  runner heights are known only after the authoring run.
 
 ---
 
@@ -116,10 +77,10 @@ Not components. Nothing else may start until this tier is `done`.
 | 0.7 | **Rule lint** — fail on banned CSS/props | `done` | 0.3 | `npm run lint`: stylelint + source rules + contrast + a self-test proving every rule still fires |
 | 0.8 | Changesets + release pipeline | `done` | 0.1 | Proven end to end 2026-09-18 after five silent failures (D-038): **`v0.1.0` tagged**, `CHANGELOG.md` on `main`, 27 changesets consumed. npm publish stays opt-in via `PUBLISH_TO_NPM`. See `docs/RELEASING.md` |
 | 0.9 | CI pipeline (GitHub Actions) | `done` | 0.5, 0.6 | Lint, typecheck, test, build, token-freshness, visual regression on every PR |
-| 0.10 | Docs site | `review` | 0.4 | The playground made a front door rather than a second site (D-104 §1): the index leads with a composition on a resizable `Stage`, then Examples, Theme and Rules; `/docs/<slug>` renders `docs/components/<Name>.md` with the library's own components; `/examples` holds three screens built from the library alone, each on a `Stage`; `/rules` renders `docs/RULES.md`. Waits on review and its pages' CI-authored baselines |
+| 0.10 | Docs site | `done` | 0.4 | The playground made a front door rather than a second site (D-104 §1): the index leads with a composition on a resizable `Stage`, then Examples, Theme and Rules; `/docs/<slug>` renders `docs/components/<Name>.md` with the library's own components; `/examples` holds three screens built from the library alone, each on a `Stage`; `/rules` renders `docs/RULES.md`. **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5) |
 | 0.11 | **Focus ring off the page** | `done` | 0.2 | `--pp-color-focus-ring` is asserted against `neutral-1` only, where it is 3.06:1. It is **2.94 / 2.85** on `--pp-color-bg-surface` and **2.74–2.77 / 2.54–2.57** on a tinted step 3, against 1.4.11's 3:1 (D-053 §2). **Done** 2026-09-21 (D-056). Solved against steps 1, 2 and 3 of **every hue** rather than neutral's step 1 — a border's surfaces are neutral, a ring's are not. Light 66.18% → 63.34%, dark 49.70% → 53.99%; worst pairing **2.54 → 3.06**. **293** assertions in `lint:contrast`, up from 242, including a cross-hue set for the one ring colour that ships. `/tokens` now draws `focus`, `edge` and `edge-strong`, which it never had — one baseline re-authored, no component CSS touched. D-055 corrects this row's first estimate, which claimed one shared colour and a re-baseline of 35 |
-| 0.12 | Brand accent, solved and proven | `review` | 0.2 | `pixel-perfect/theme` (`createTheme`) and `npx pixel-perfect theme --accent …`: the complete palette solved around a consumer's accent by the generator that writes the library's own, emitted in `pp.overrides` across the four theme scopes, and checked from its text by the checks `lint:contrast` runs (D-103). The library accent reproduces `primitives.css` declaration for declaration; 96 accents around the hue wheel pass all 290. A lab at `/theme`. Waits on review and `/theme`'s CI-authored baselines |
-| 0.13 | Agent docs in the package | `review` | 0.1 | `npm run build` writes `dist/AGENTS.md` (the rules that change what an agent writes, the banned list, setup, an index of every component) and ships `docs/components/*.md` and `docs/RULES.md` beside it, links re-pointed so none dead-ends (D-105). Waits on review |
+| 0.12 | Brand accent, solved and proven | `done` | 0.2 | `pixel-perfect/theme` (`createTheme`) and `npx pixel-perfect theme --accent …`: the complete palette solved around a consumer's accent by the generator that writes the library's own, emitted in `pp.overrides` across the four theme scopes, and checked from its text by the checks `lint:contrast` runs (D-103). The library accent reproduces `primitives.css` declaration for declaration; 96 accents around the hue wheel pass all 290. A lab at `/theme`. **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5) |
+| 0.13 | Agent docs in the package | `done` | 0.1 | `npm run build` writes `dist/AGENTS.md` (the rules that change what an agent writes, the banned list, setup, an index of every component) and ships `docs/components/*.md` and `docs/RULES.md` beside it, links re-pointed so none dead-ends (D-105). **done** 2026-10-07: its PR (#35) merged and the baselines were compared green on `main` (runs 205 and 209, D-108 §5) |
 
 ---
 
@@ -196,7 +157,7 @@ to the component it was written about — see
 | 3.15 | `Slider` | `done` | fill | client | 3.7 | Native `<input type="range">`, **single-thumb**. The track is ours and the thumb is the platform's: the fill is a grid **column**, not a gradient, so RTL needs no declaration (D-052 §1). `onValueCommit`, because React maps `onChange` to *input*. No `readOnly` — HTML's ruling (D-049 §4's shape) |
 | 3.16 | `Form` | `done` | fill | client | 3.7, 5.2, 3.3 | [`Form.md`](docs/specs/Form.md). Built 2026-09-22 (D-058); **done** 2026-09-26, once its CI-authored baseline had been compared green on `main` (D-013's second half). Deps gained 3.3 `Link`, which the summary composes (spec §9). Error summary, submission state; validation stays the app's job. **Its own Gate C**, approved out of the 3D group 2026-09-21: it is not a composite input, its error summary is an `Alert` (5.2), and addressing each field by id may need `Field` to gain a registration API — the class D-014's carve-out was written about |
 | 3.17 | `RangeSlider` | `done` | fill | client | 3.15 | [`RangeSlider.md`](docs/specs/RangeSlider.md), approved by delegation (D-057); built 2026-09-26, the day Gate A opened (D-060). Its baseline was CI-authored on the PR branch and compared green on the re-run (D-013); recording it tripped the dimensions guard at exactly the limit D-054 §2 set, because `form.png` and `tokens.png` were unrecorded too — all three are now in the manifest. Both blockers below have a proposed answer: the inputs are transparent and the visible thumbs are ours, so the ring is drawn on a thumb with nothing suppressed; a track press is routed to the nearer thumb by the root (spec §1, §2). The two-thumb case, deferred from 3.15 with both blockers named (D-052 §5): two overlapping inputs each ring the **whole** track, and moving the ring onto the thumb needs `outline: none` (banned, D-029); and the `pointer-events` layering that makes both thumbs draggable takes a track click away |
-| 3.18 | `SegmentedControl` | `review` | hug | client | 3.4, 3.7, 3.11 | [`SegmentedControl.md`](docs/specs/SegmentedControl.md), added, written and built 2026-10-07 under the standing delegation (D-069 §1); rulings in D-107 §3; awaiting its CI-authored baselines (D-013). Exactly one of a few options as an attached row of buttons: native radios, so the browser is the APG pattern and the value submits (§1); the checked segment solid neutral, because a pressed Toggle's fill is 1.26:1 against the page (§2); ButtonGroup's seams and Button's box by the two-class contract (§3); named by `label` or its `Field` (§4); painted from `:checked` (§5). What `ButtonGroup.md` meant by "a RadioGroup styled as buttons"; the playground's theme switcher and Stage presets are made of it |
+| 3.18 | `SegmentedControl` | `done` | hug | client | 3.4, 3.7, 3.11 | [`SegmentedControl.md`](docs/specs/SegmentedControl.md), added, written and built 2026-10-07 under the standing delegation (D-069 §1); rulings in D-107 §3; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). Exactly one of a few options as an attached row of buttons: native radios, so the browser is the APG pattern and the value submits (§1); the checked segment solid neutral, because a pressed Toggle's fill is 1.26:1 against the page (§2); ButtonGroup's seams and Button's box by the two-class contract (§3); named by `label` or its `Field` (§4); painted from `:checked` (§5). What `ButtonGroup.md` meant by "a RadioGroup styled as buttons"; the playground's theme switcher and Stage presets are made of it |
 
 ---
 
@@ -249,13 +210,13 @@ Opinionated patterns. Only build what the consuming app actually needs.
 
 | # | Component | Status | Contract | RSC | Deps | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| 6.1 | `ThemeProvider` | `review` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-094; awaiting its CI-authored baseline (D-013). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), `value` / `defaultValue` / `onValueChange` — RULES §5 bans `theme` as a prop name (§3, D-094 §1) — with the app's persistence in controlled mode, an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5). The playground is themed by it, with the same key, values and switcher DOM, so no baseline moved (§7); the index is re-baselined for the tier and the entry (D-066 §2)
-| 6.2 | `ThemeToggle` | `review` | hug | client | 6.1, 3.2 | [`ThemeToggle.md`](docs/specs/ThemeToggle.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-095; awaiting its CI-authored baseline (D-013). Gate B read 6.1's `review` (baseline only) as `done` (D-073 §2). A square button that flips light and dark (§1); both faces rendered and one displayed by CSS from the document's theme — the tokens' four scopes read from the toggle's side — so it is right before hydration and cannot disagree with the page (§2); the icon shows what is on, the name says what a press does (§3); Button with IconButton's class, not IconButton, because the name is content (§4); `:root`, not the nearest scope (§5); no ARIA state (§6); its own page, the chrome unchanged (§7) |
-| 6.3 | `AppShell` | `review` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-096; awaiting its CI-authored baseline (D-013). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1, D-096 §1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7) |
-| 6.4 | `NavSidebar` | `review` | fill | client | 6.3, 5.11 | [`NavSidebar.md`](docs/specs/NavSidebar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-099; awaiting its CI-authored baseline (D-013). The app's primary navigation for AppShell's sidebar slot: a named `<nav>` of sections, items and disclosure groups (§1); the app says which link is current and a group holding it is open and marked (§2); a closed group's list is rendered and `hidden` — which needs its own `display: none`, because an author `display` beats the user agent's (§3, D-099 §1); plain links, no roving tabindex, 5.11's row and not its role (§4, §5); not a drawer, composition instead (§6); `asChild` for `next/link` (§7). The last component of the roadmap |
-| 6.5 | `PageHeader` | `review` | fill | server | 2.2, 5.6 | [`PageHeader.md`](docs/specs/PageHeader.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-097; awaiting its CI-authored baseline (D-013). Four named parts — title, description, actions, the root — and the consumer's `Breadcrumb` first, placed by its class (§1); one flex row that wraps, so an absent part costs no gap and nothing is placed by area (§2); the description reads after the title and paints after the actions by `order`, the library's one visual reorder, of a paragraph nothing focuses (§3); the title a `Heading` at level 1 (§4) |
-| 6.6 | `Toolbar` | `review` | fill | client | 3.4 | [`Toolbar.md`](docs/specs/Toolbar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-098; awaiting its CI-authored baseline (D-013). The roving component `ButtonGroup`'s spec promised (D-030 §7): `role="toolbar"` with a required name, one tab stop over the controls found in its own subtree and re-read by an observer, no wrapper part (§1, D-098 §2); the last-focused control remembered — never a text field, whose arrows are the caret's and which would strand the controls after it (§2, §4, D-098 §1); arrows by orientation mirrored in RTL, wrapping unless `loop={false}` (§3); a wrapping row with a `gap`, not a `Cluster` (§6) |
-| 6.7 | `KeyHints` | `review` | n/a | client | 1.10, 4.4, 4.14 | [`KeyHints.md`](docs/specs/KeyHints.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-100; awaiting its CI-authored baseline (D-013). The parked idea of D-069 §3 in the form that passes the accessibility gate: a shortcut declared on the control (`data-pp-hotkey`) or registered as a command (`useKeyHint`), `mod+k` chords and `g i` sequences (§1); hold `revealKey` to see every shortcut on its control, a picture and never a mode, hints that climb when they would overlap (§2, D-100 §3); `jumpKey` labels every control on screen and typing the label focuses it (§3); `helpKey` opens the sheet on a Dialog (§4); every key remappable and off-able, WCAG 2.1.4 (§5); a modifier that changes what a component does is ruled out (§6). Added per D-100 §1 |
+| 6.1 | `ThemeProvider` | `done` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-094; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), `value` / `defaultValue` / `onValueChange` — RULES §5 bans `theme` as a prop name (§3, D-094 §1) — with the app's persistence in controlled mode, an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5). The playground is themed by it, with the same key, values and switcher DOM, so no baseline moved (§7); the index is re-baselined for the tier and the entry (D-066 §2)
+| 6.2 | `ThemeToggle` | `done` | hug | client | 6.1, 3.2 | [`ThemeToggle.md`](docs/specs/ThemeToggle.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-095; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). Gate B read 6.1's `review` (baseline only) as `done` (D-073 §2). A square button that flips light and dark (§1); both faces rendered and one displayed by CSS from the document's theme — the tokens' four scopes read from the toggle's side — so it is right before hydration and cannot disagree with the page (§2); the icon shows what is on, the name says what a press does (§3); Button with IconButton's class, not IconButton, because the name is content (§4); `:root`, not the nearest scope (§5); no ARIA state (§6); its own page, the chrome unchanged (§7) |
+| 6.3 | `AppShell` | `done` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-096; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1, D-096 §1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7) |
+| 6.4 | `NavSidebar` | `done` | fill | client | 6.3, 5.11 | [`NavSidebar.md`](docs/specs/NavSidebar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-099; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The app's primary navigation for AppShell's sidebar slot: a named `<nav>` of sections, items and disclosure groups (§1); the app says which link is current and a group holding it is open and marked (§2); a closed group's list is rendered and `hidden` — which needs its own `display: none`, because an author `display` beats the user agent's (§3, D-099 §1); plain links, no roving tabindex, 5.11's row and not its role (§4, §5); not a drawer, composition instead (§6); `asChild` for `next/link` (§7). The last component of the roadmap |
+| 6.5 | `PageHeader` | `done` | fill | server | 2.2, 5.6 | [`PageHeader.md`](docs/specs/PageHeader.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-097; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). Four named parts — title, description, actions, the root — and the consumer's `Breadcrumb` first, placed by its class (§1); one flex row that wraps, so an absent part costs no gap and nothing is placed by area (§2); the description reads after the title and paints after the actions by `order`, the library's one visual reorder, of a paragraph nothing focuses (§3); the title a `Heading` at level 1 (§4) |
+| 6.6 | `Toolbar` | `done` | fill | client | 3.4 | [`Toolbar.md`](docs/specs/Toolbar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-098; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The roving component `ButtonGroup`'s spec promised (D-030 §7): `role="toolbar"` with a required name, one tab stop over the controls found in its own subtree and re-read by an observer, no wrapper part (§1, D-098 §2); the last-focused control remembered — never a text field, whose arrows are the caret's and which would strand the controls after it (§2, §4, D-098 §1); arrows by orientation mirrored in RTL, wrapping unless `loop={false}` (§3); a wrapping row with a `gap`, not a `Cluster` (§6) |
+| 6.7 | `KeyHints` | `done` | n/a | client | 1.10, 4.4, 4.14 | [`KeyHints.md`](docs/specs/KeyHints.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-100; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The parked idea of D-069 §3 in the form that passes the accessibility gate: a shortcut declared on the control (`data-pp-hotkey`) or registered as a command (`useKeyHint`), `mod+k` chords and `g i` sequences (§1); hold `revealKey` to see every shortcut on its control, a picture and never a mode, hints that climb when they would overlap (§2, D-100 §3); `jumpKey` labels every control on screen and typing the label focuses it (§3); `helpKey` opens the sheet on a Dialog (§4); every key remappable and off-able, WCAG 2.1.4 (§5); a modifier that changes what a component does is ruled out (§6). Added per D-100 §1 |
 
 ---
 

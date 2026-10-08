@@ -112,6 +112,16 @@ describe('Toggle', () => {
     expect(el.querySelector('.pp-spinner')).toBeNull();
   });
 
+  it('takes no `solid` variant — pressed is the solid fill — and draws an untyped one as ghost, with a warning (D-108 §1)', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { getByRole } = renderWithTheme(
+      // @ts-expect-error `solid` is not a ToggleVariant
+      <Toggle variant="solid">Bold</Toggle>,
+    );
+    expect(getByRole('button', { name: 'Bold' })).toHaveAttribute('data-variant', 'ghost');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('no `solid` variant'));
+  });
+
   describe('interaction', () => {
     it('does not toggle when disabled', async () => {
       const onPressedChange = vi.fn();

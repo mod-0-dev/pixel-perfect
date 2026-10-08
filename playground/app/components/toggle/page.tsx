@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Matrix } from '../../../harness/Matrix';
 
 const TONES = ['neutral', 'accent', 'danger', 'success', 'warning'] as const;
-const VARIANTS = ['solid', 'outline', 'ghost', 'plain'] as const;
+const VARIANTS = ['outline', 'ghost', 'plain'] as const;
 
 function Bold() {
   return (
@@ -45,8 +45,9 @@ export default function TogglePage() {
       <section>
         <h2>Off and on, across variants</h2>
         <p>
-          Pressed sits at the filled end of the background ramp, so there is no darker step to move
-          to on hover — the fill holds and the border carries the feedback. Hover the pressed row.
+          Pressed is the tone&rsquo;s solid fill, which is what tells it from the one beside it at
+          3:1 or more against the page. There is no <code>solid</code> variant: it would look the same
+          on and off. Hover a pressed one: it darkens, as a solid Button does, and never lightens.
         </p>
         <Matrix>
           <div className="stack-tight">
@@ -66,6 +67,10 @@ export default function TogglePage() {
 
       <section>
         <h2>tone</h2>
+        <p>
+          Warning&rsquo;s solid is light: 1.87:1 against the page in the light theme, too faint to
+          tell pressed from not. Keep warning off a Toggle.
+        </p>
         <Matrix>
           <div className="row-wrap">
             {TONES.map((tone) => (

@@ -127,6 +127,16 @@ jobs:
             echo "$new"
           fi
 
+      # A FAILED TEST IS NOT A MISSING BASELINE (D-106 §5, D-108 §3). A
+      # harness or phone test that fails writes no -diff.png, so the step
+      # above cannot see it, and a run that also authored baselines used to
+      # pass over it. Playwright's JSON report says which failures are only
+      # "A snapshot doesn't exist"; anything else stops authoring and fails
+      # the run.
+      - name: Classify the failures
+        id: tests
+        run: node scripts/classify-visual.mjs
+
       # Authoring happens on a PR branch and nowhere else. A push to `main`
       # cannot do it — the branch is protected, so this `git push` is rejected
       # by policy (GH006) and the job dies at its last step with everything
@@ -154,6 +164,7 @@ jobs:
           github.event_name == 'pull_request'
           && steps.classify.outputs.new == 'true'
           && steps.classify.outputs.changed == 'false'
+          && steps.tests.outputs.functional == 'false'
         run: |
           npm run dimensions
           git config user.name "github-actions[bot]"
@@ -174,7 +185,11 @@ jobs:
           exit 1
 
       - name: Fail on regression
-        if: steps.visual.outcome == 'failure' && (steps.classify.outputs.changed == 'true' || steps.classify.outputs.new == 'false')
+        if: >-
+          steps.visual.outcome == 'failure'
+          && (steps.classify.outputs.changed == 'true'
+            || steps.classify.outputs.new == 'false'
+            || steps.tests.outputs.functional == 'true')
         run: exit 1
 
       - uses: actions/upload-artifact@v4

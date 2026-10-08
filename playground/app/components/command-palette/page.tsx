@@ -29,7 +29,7 @@ export default async function CommandPalettePage({ searchParams }: { searchParam
           A palette per cell, portalled into a contained stage, with &ldquo;go&rdquo; typed. The panel sits
           high, a token wide or the stage&rsquo;s width, whichever is less. Open one from its cell;
           Escape or the scrim closes it. The screenshot suite opens all three at load with{' '}
-          <code>?gallery=open</code>.
+          <code className="nowrap">?gallery=open</code>.
         </p>
         <Matrix>
           <Gallery open={open} />

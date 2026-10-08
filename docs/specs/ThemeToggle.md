@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-095; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-10-07; written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-095; its CI-authored baselines compared green on runs 205 and 209 (D-013; the sweep is D-108 §5) |
 | **Sizing contract** | `hug` — a square button, Button's box through the two-class contract with `IconButton` |
 | **RSC** | `client` — reads and sets `ThemeProvider`'s context |
 | **Depends on** | 6.1 `ThemeProvider` (`review`, baseline only — `done` for Gate B under D-073 §2): the context it reads; 3.2 `IconButton` (`done`): the square box, by its class; 3.1 `Button`: the element; 1.3 `Icon`; 1.4 `VisuallyHidden` |

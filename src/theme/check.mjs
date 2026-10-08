@@ -225,29 +225,36 @@ export function checkPalette(THEMES) {
   }
 
   /*
-   * THE CHECKED SEGMENT AGAINST WHAT IT SITS ON (D-107 §3).
+   * A CHECKED SEGMENT AND A PRESSED TOGGLE AGAINST WHAT THEY SIT ON (D-107 §3,
+   * D-108 §1).
    *
-   * A SegmentedControl's checked segment is neutral's solid fill beside
-   * unchecked segments that are the surface itself, and the fill is the only
-   * thing telling one from the other — states side by side, which is where
-   * WCAG 1.4.11 asks 3:1. Neutral only: the control takes no tone, because
-   * warning's solid is 1.87:1 against the page in light.
+   * A SegmentedControl's checked segment and a pressed Toggle are their
+   * tone's solid fill beside neighbours that are the surface itself, and the
+   * fill is the only thing telling one from the other — states side by side,
+   * which is where WCAG 1.4.11 asks 3:1. Neutral (the segment's only tone,
+   * and the Toggle's default), danger and success, each of whose solid takes
+   * light ink and so sits far from the page. Not warning, whose solid is
+   * 1.87:1 against the page in light — the docs send a Toggle away from it —
+   * and not accent, which a consumer chooses (D-103) and may choose light.
    */
   for (const [theme, hues] of Object.entries(THEMES)) {
-    const steps = hues.neutral;
-    if (!steps?.['9']) {
-      report(`✗ ${theme}: no neutral step 9 to check a checked segment against`);
-      continue;
-    }
-    for (const surface of ['1', '2', '3']) {
-      const against = steps[surface];
-      if (!against) continue;
-      const ratio = contrastOklch(steps['9'], against);
-      checked++;
-      if (ratio < 3.0) {
-        report(
-          `✗ ${theme}: a checked segment (neutral solid) vs neutral step ${surface} is ${ratio.toFixed(2)}:1, below 3:1`,
-        );
+    const surfaces = hues.neutral;
+    for (const hue of ['neutral', 'danger', 'success']) {
+      const solid = hues[hue]?.['9'];
+      if (!solid || !surfaces) {
+        report(`✗ ${theme}: no ${hue} step 9 to check a pressed fill against`);
+        continue;
+      }
+      for (const surface of ['1', '2', '3']) {
+        const against = surfaces[surface];
+        if (!against) continue;
+        const ratio = contrastOklch(solid, against);
+        checked++;
+        if (ratio < 3.0) {
+          report(
+            `✗ ${theme}: a pressed fill (${hue} solid) vs neutral step ${surface} is ${ratio.toFixed(2)}:1, below 3:1`,
+          );
+        }
       }
     }
   }

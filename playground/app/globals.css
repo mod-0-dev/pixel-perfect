@@ -15,6 +15,24 @@
   text-size-adjust: 100%;
 }
 
+/*
+ * A bare <code> in the playground's prose. The library's `Code` reads
+ * --pp-font-family-mono; a bare element gets the browser's generic
+ * `monospace`, resolved on each machine, and on the runner a line holding
+ * one was 2px taller than a plain line — the one text the pinning above
+ * missed, which took three baselines' heights unseen (D-102 §2, D-108 §4).
+ * Unlayered, so it beats the reset; `:where`, so any class still wins.
+ */
+:where(code, kbd, samp) {
+  font-family: var(--pp-font-family-mono);
+}
+
+/* A snippet that must stay on one line, such as a query string the runner
+   broke after its `?` (D-102 §2). Short ones only: a phone has 358px. */
+.nowrap {
+  white-space: nowrap;
+}
+
 body {
   margin: 0;
   padding: 0;
