@@ -11,7 +11,7 @@ import {
   Field,
   Stack,
   Text,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 import { useEffect, useState } from 'react';
 
 const CITIES: Array<[string, string, string]> = [

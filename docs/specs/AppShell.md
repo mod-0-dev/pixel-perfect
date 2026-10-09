@@ -246,7 +246,7 @@ that would stack at a 480px window.
 
 ```tsx
 // app/layout.tsx — a Server Component
-import { AppShell, Container } from 'pixel-perfect';
+import { AppShell, Container } from '@mod-0-dev/pixel-perfect';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

@@ -3,7 +3,7 @@
  * handler, and a Server Component cannot pass one to a client component).
  * NOTHING HERE WRITES AN ID (D-035 §1).
  */
-import { Text } from 'pixel-perfect';
+import { Text } from '@mod-0-dev/pixel-perfect';
 
 import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';

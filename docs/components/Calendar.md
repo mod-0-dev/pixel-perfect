@@ -5,7 +5,7 @@ A month of days to pick one from. Spec:
 in a `Popover` behind an input.
 
 ```tsx
-import { Calendar } from 'pixel-perfect';
+import { Calendar } from '@mod-0-dev/pixel-perfect';
 ```
 
 A client component. The value is an ISO date, `2026-09-28` — not a

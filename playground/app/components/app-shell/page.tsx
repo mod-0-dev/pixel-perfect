@@ -4,7 +4,7 @@
  * by `data-testid`. A gallery: three shells per section, so this page has
  * three <main>s on purpose — a real page has one.
  */
-import { AppShell, Container, Heading, Link, Stack, Text, ThemeToggle } from 'pixel-perfect';
+import { AppShell, Container, Heading, Link, Stack, Text, ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

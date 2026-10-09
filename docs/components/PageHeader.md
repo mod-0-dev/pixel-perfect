@@ -5,7 +5,7 @@ and the actions that act on the whole page. Spec:
 [`PageHeader.md`](../specs/PageHeader.md).
 
 ```tsx
-import { PageHeader, PageHeaderTitle, PageHeaderDescription, PageHeaderActions } from 'pixel-perfect';
+import { PageHeader, PageHeaderTitle, PageHeaderDescription, PageHeaderActions } from '@mod-0-dev/pixel-perfect';
 ```
 
 Four parts, plus your [`Breadcrumb`](Breadcrumb.md) as the first child.

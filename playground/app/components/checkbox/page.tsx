@@ -7,7 +7,7 @@
  * The one interactive demo is a client island in `SelectAll.tsx`, so this page
  * never becomes a client component to get it.
  */
-import { Checkbox, Cluster, Field, Stack, Text } from 'pixel-perfect';
+import { Checkbox, Cluster, Field, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 import { SelectAll } from './SelectAll';

@@ -4,7 +4,7 @@ Content available to assistive technology and hidden from sight. Spec:
 [`tier-1-atoms.md` §1.4](../specs/tier-1-atoms.md#14-visuallyhidden).
 
 ```tsx
-import { VisuallyHidden } from 'pixel-perfect';
+import { VisuallyHidden } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

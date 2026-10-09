@@ -1,4 +1,4 @@
-import { Scroller } from 'pixel-perfect';
+import { Scroller } from '@mod-0-dev/pixel-perfect';
 
 const HUES = ['neutral', 'accent', 'danger', 'success', 'warning'] as const;
 

@@ -1,4 +1,4 @@
-import { Button, Cluster, Container, Label, Stack, Text } from 'pixel-perfect';
+import { Button, Cluster, Container, Label, Stack, Text } from '@mod-0-dev/pixel-perfect';
 import type { CSSProperties } from 'react';
 
 import { Matrix } from '../../../harness/Matrix';

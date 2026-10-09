@@ -10,6 +10,21 @@ A component library with opinions.
 React + TypeScript for Next.js. Plain CSS, two-tier design tokens, one
 stylesheet. Zero runtime dependencies outside Tier 4 overlays.
 
+## Install
+
+```bash
+npm install @mod-0-dev/pixel-perfect
+```
+
+```tsx
+// app/layout.tsx
+import '@mod-0-dev/pixel-perfect/styles.css';
+import { ThemeProvider } from '@mod-0-dev/pixel-perfect';
+```
+
+React 18 or later is a peer dependency. Releasing, and installing from git
+instead of npm: [`docs/RELEASING.md`](docs/RELEASING.md).
+
 ## The one rule that shapes everything
 
 No component declares its own `width`, `max-width`, or `margin`. Every component
@@ -26,9 +41,9 @@ npx pixel-perfect theme --accent "#7c3aed" --out src/brand.css
 Solves the whole palette around your accent with the library's own generator
 and checks the result with its own contrast checks — text, fills, control
 edges and the focus ring, in both themes — then writes a stylesheet to import
-after `pixel-perfect/styles.css`. A palette that fails a check is reported and
+after `@mod-0-dev/pixel-perfect/styles.css`. A palette that fails a check is reported and
 not written. The playground's `/theme` page runs the same code as you drag.
-`import { createTheme } from 'pixel-perfect/theme'` is the same thing as a
+`import { createTheme } from '@mod-0-dev/pixel-perfect/theme'` is the same thing as a
 function.
 
 ## For your app's coding agent
@@ -39,7 +54,7 @@ beside it. Point your agent at it. For Claude Code, one line in your app's
 `CLAUDE.md`:
 
 ```md
-@node_modules/pixel-perfect/dist/AGENTS.md
+@node_modules/@mod-0-dev/pixel-perfect/dist/AGENTS.md
 ```
 
 Other agents: reference the same path from your `AGENTS.md`.
@@ -52,7 +67,7 @@ The library is not deployable; the playground is. On Vercel, set the project's
 
 The install command there does what CI does: installs the library at the repo
 root (its `prepare` hook builds `dist/`), then installs the playground, whose
-`pixel-perfect` dependency is a `file:..` link to that `dist/`.
+`@mod-0-dev/pixel-perfect` dependency is a `file:..` link to that `dist/`.
 
 `--include=dev` on both installs is not decoration. The first seven Vercel
 deployments died inside the library's `prepare` hook with

@@ -33,7 +33,7 @@ import {
   Toolbar,
   VisuallyHidden,
   type BadgeProps,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 
 import { ArrowDownGlyph, ArrowUpGlyph, CheckCircleGlyph, SearchGlyph } from '../glyphs';
 import { ENVIRONMENTS, PEOPLE, RELEASES, type Environment, type Release, type ReleaseStatus } from './data';

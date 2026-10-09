@@ -6,7 +6,7 @@ control on screen and type the label to focus it, press a key for the
 sheet of every shortcut. Spec: [`KeyHints.md`](../specs/KeyHints.md).
 
 ```tsx
-import { KeyHints, useKeyHint, formatKeys } from 'pixel-perfect';
+import { KeyHints, useKeyHint, formatKeys } from '@mod-0-dev/pixel-perfect';
 ```
 
 One provider around the app. Declare a shortcut on the control that

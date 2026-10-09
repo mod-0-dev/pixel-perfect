@@ -8,7 +8,7 @@
  * through `aria-labelledby`, so there is no `controlId` to hand out. The
  * sections the browser suite drives are found by `data-testid` instead.
  */
-import { Field, RangeSlider, Stack, Text } from 'pixel-perfect';
+import { Field, RangeSlider, Stack, Text } from '@mod-0-dev/pixel-perfect';
 import type { CSSProperties } from 'react';
 
 import { Matrix } from '../../../harness/Matrix';

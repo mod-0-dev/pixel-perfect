@@ -5,7 +5,7 @@ Inline code — an identifier, a path, a flag. Block code with highlighting is
 [`tier-1-atoms.md` §1.11](../specs/tier-1-atoms.md#111-code).
 
 ```tsx
-import { Code } from 'pixel-perfect';
+import { Code } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

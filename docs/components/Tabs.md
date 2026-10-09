@@ -3,7 +3,7 @@
 One panel of several, chosen by its tab. Spec: [`Tabs.md`](../specs/Tabs.md).
 
 ```tsx
-import { Tabs, TabsList, TabsTrigger, TabsContent } from 'pixel-perfect';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@mod-0-dev/pixel-perfect';
 ```
 
 Behaviour is [Radix Tabs](https://www.radix-ui.com/primitives/docs/components/tabs)'s:

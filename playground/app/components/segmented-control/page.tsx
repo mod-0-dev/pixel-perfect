@@ -7,7 +7,7 @@
  * Matrix renders each demo three times, and three groups sharing a name
  * would be one group.
  */
-import { Button, Cluster, Field, Icon, SegmentedControl, SegmentedControlItem, Stack } from 'pixel-perfect';
+import { Button, Cluster, Field, Icon, SegmentedControl, SegmentedControlItem, Stack } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

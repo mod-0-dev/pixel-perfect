@@ -5,7 +5,7 @@ one now, the ones to come, and a line joining them. Spec:
 [`Stepper.md`](../specs/Stepper.md).
 
 ```tsx
-import { Stepper, Step } from 'pixel-perfect';
+import { Stepper, Step } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component and a status display, not a control: it holds no

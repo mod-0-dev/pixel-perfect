@@ -1,6 +1,6 @@
 'use client';
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Field, Input, Stack, Text } from 'pixel-perfect';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Field, Input, Stack, Text } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 const FAQ = [

@@ -4,7 +4,7 @@ A single-thumb range control on `<input type="range">`. Spec:
 [`tier-3d-composite.md` §3.15](../specs/tier-3d-composite.md).
 
 ```tsx
-import { Field, Slider } from 'pixel-perfect';
+import { Field, Slider } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md). The field owns the label, the description, the

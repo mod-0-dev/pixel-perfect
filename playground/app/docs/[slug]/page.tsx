@@ -4,7 +4,7 @@ import path from 'node:path';
 import type { Metadata } from 'next';
 import NextLink from 'next/link';
 import { notFound } from 'next/navigation';
-import { Cluster, Code, Heading, Link, Stack, Text, VisuallyHidden } from 'pixel-perfect';
+import { Cluster, Code, Heading, Link, Stack, Text, VisuallyHidden } from '@mod-0-dev/pixel-perfect';
 
 import { Markdown, docsLinkResolver } from '../../../harness/Markdown';
 import { COMPONENTS, type ComponentEntry } from '../../components/registry';

@@ -7,7 +7,7 @@ commands, in a modal. Spec: [`CommandPalette.md`](../specs/CommandPalette.md).
 import {
   CommandPalette, CommandPaletteTrigger, CommandPaletteContent, CommandPaletteInput, CommandPaletteList,
   CommandPaletteItem, CommandPaletteGroup, CommandPaletteLabel, CommandPaletteShortcut, CommandPaletteEmpty,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 ```
 
 A [`Dialog`](Dialog.md) holding a [`Combobox`](Combobox.md)-style field

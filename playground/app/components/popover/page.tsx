@@ -7,7 +7,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the popover's ids come from
  * `useId()`, and the browser suite finds its sections by `data-testid`.
  */
-import { Stack, Text } from 'pixel-perfect';
+import { Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 import { Controlled, FilterPopover, Gallery, Modal, Sides, ThemeCrossing } from './Demos';

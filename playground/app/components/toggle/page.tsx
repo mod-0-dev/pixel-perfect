@@ -1,6 +1,6 @@
 'use client';
 
-import { Cluster, Icon, Stack, Text, Toggle } from 'pixel-perfect';
+import { Cluster, Icon, Stack, Text, Toggle } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 import { Matrix } from '../../../harness/Matrix';

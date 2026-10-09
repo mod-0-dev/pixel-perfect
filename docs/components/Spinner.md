@@ -4,7 +4,7 @@ An indeterminate busy indicator. If you know the percentage, use `Progress`
 (5.3). Spec: [`tier-1-atoms.md` §1.6](../specs/tier-1-atoms.md#16-spinner).
 
 ```tsx
-import { Spinner } from 'pixel-perfect';
+import { Spinner } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from 'pixel-perfect';
+import { Link } from '@mod-0-dev/pixel-perfect';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 

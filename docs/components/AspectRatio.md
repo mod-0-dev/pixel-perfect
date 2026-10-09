@@ -4,7 +4,7 @@ Reserves a box of a given shape before its content loads. Spec:
 [`tier-2-layout.md` §2.7](../specs/tier-2-layout.md#27-aspectratio).
 
 ```tsx
-import { AspectRatio } from 'pixel-perfect';
+import { AspectRatio } from '@mod-0-dev/pixel-perfect';
 ```
 
 Inline size comes from the parent exactly as always; block size is

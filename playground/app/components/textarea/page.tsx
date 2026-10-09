@@ -4,7 +4,7 @@
  * boundary where functions do not (D-037 §2). Both components are 'use client'
  * and neither forces this page to be.
  */
-import { Field, Input, Stack, Text, Textarea } from 'pixel-perfect';
+import { Field, Input, Stack, Text, Textarea } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

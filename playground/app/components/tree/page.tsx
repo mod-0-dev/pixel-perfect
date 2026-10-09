@@ -6,7 +6,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the browser suite finds its
  * sections by `data-testid`.
  */
-import { Tree, TreeItem } from 'pixel-perfect';
+import { Tree, TreeItem } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

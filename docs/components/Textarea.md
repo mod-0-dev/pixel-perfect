@@ -4,7 +4,7 @@ A multi-line text control on the same surface as [`Input`](Input.md). Spec:
 [`tier-3c-inputs.md` §3.9](../specs/tier-3c-inputs.md).
 
 ```tsx
-import { Field, Textarea } from 'pixel-perfect';
+import { Field, Textarea } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md). The field owns the label, the description, the

@@ -1,6 +1,6 @@
 import NextLink from 'next/link';
 import type { ReactNode } from 'react';
-import { Card, CardBody, CardFooter, CardHeader, Cluster, Code, Grid, Heading, Icon, Stack, Text } from 'pixel-perfect';
+import { Card, CardBody, CardFooter, CardHeader, Cluster, Code, Grid, Heading, Icon, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { ArrowRightGlyph, GridGlyph, SlidersGlyph, UserGlyph } from './glyphs';
 

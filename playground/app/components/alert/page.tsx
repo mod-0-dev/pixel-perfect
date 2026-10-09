@@ -7,7 +7,7 @@
  * NOTHING INSIDE A MATRIX WRITES AN ID — the harness renders its subtree six
  * times (D-035 §1).
  */
-import { Alert, Button, Cluster, Heading, Link, Stack, Text } from 'pixel-perfect';
+import { Alert, Button, Cluster, Heading, Link, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 import { Dismissible } from './Dismissible';

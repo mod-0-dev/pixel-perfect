@@ -5,7 +5,7 @@
  * finds its sections by `data-testid`. The one id on the page is the
  * label's, which `aria-labelledby` is for.
  */
-import { Cluster, Progress, Stack, Text } from 'pixel-perfect';
+import { Cluster, Progress, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

@@ -4,7 +4,7 @@ Two-dimensional layout in three modes. Spec:
 [`tier-2-layout.md` §2.3](../specs/tier-2-layout.md#23-grid).
 
 ```tsx
-import { Grid } from 'pixel-perfect';
+import { Grid } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

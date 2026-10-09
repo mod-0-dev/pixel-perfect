@@ -271,7 +271,7 @@ None. Not a box.
 
 ```tsx
 // app/layout.tsx — once, first in <body>
-import { ThemeProvider } from 'pixel-perfect';
+import { ThemeProvider } from '@mod-0-dev/pixel-perfect';
 
 export default function RootLayout({ children }) {
   return (

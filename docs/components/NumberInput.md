@@ -5,7 +5,7 @@ correct outside en-US. Spec:
 [`tier-3d-composite.md` §3.14](../specs/tier-3d-composite.md).
 
 ```tsx
-import { Field, NumberInput } from 'pixel-perfect';
+import { Field, NumberInput } from '@mod-0-dev/pixel-perfect';
 ```
 
 Put it in a [`Field`](Field.md). The field owns the label, the description, the

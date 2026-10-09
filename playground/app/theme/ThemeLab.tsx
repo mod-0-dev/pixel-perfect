@@ -22,8 +22,8 @@ import {
   TabsList,
   TabsTrigger,
   Text,
-} from 'pixel-perfect';
-import { createTheme, parseColor, type AccentSummary, type Theme } from 'pixel-perfect/theme';
+} from '@mod-0-dev/pixel-perfect';
+import { createTheme, parseColor, type AccentSummary, type Theme } from '@mod-0-dev/pixel-perfect/theme';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 
 /**
@@ -179,7 +179,7 @@ export function ThemeLab() {
         <h2>Take it with you</h2>
         <p>
           Generate the file in your app with the same code, then import it after{' '}
-          <code>pixel-perfect/styles.css</code>. It sits in the <code>pp.overrides</code> layer and carries
+          <code>@mod-0-dev/pixel-perfect/styles.css</code>. It sits in the <code>pp.overrides</code> layer and carries
           all four theme scopes, so import order does not matter and light, dark, system and nested
           themes all follow it.
         </p>

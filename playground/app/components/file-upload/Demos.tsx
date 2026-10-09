@@ -11,7 +11,7 @@ import {
   FileUploadTrigger,
   Text,
   type FileRejection,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 
 interface Item {
   id: string;

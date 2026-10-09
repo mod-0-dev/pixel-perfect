@@ -4,7 +4,7 @@ A window over the page that the user must deal with before continuing.
 Spec: [`Dialog.md`](../specs/Dialog.md). Foundation: [Overlays](../overlays.md).
 
 ```tsx
-import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from 'pixel-perfect';
+import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogClose } from '@mod-0-dev/pixel-perfect';
 ```
 
 The page behind it is inert — no pointer, no scroll, no focus, nothing read

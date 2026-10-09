@@ -3,7 +3,7 @@
  * layout's provider, so nothing here needs a hook. NOTHING HERE WRITES AN ID
  * (D-035 §1): the browser suite finds its sections by `data-testid`.
  */
-import { Cluster, IconButton, Stack, Text, ThemeToggle } from 'pixel-perfect';
+import { Cluster, IconButton, Stack, Text, ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

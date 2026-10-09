@@ -4,7 +4,7 @@
 //   npx pixel-perfect theme --accent "#7c3aed" --out src/brand.css
 //
 // Writes the library's complete palette, solved around the accent, as a
-// stylesheet to import after pixel-perfect/styles.css, and refuses to write
+// stylesheet to import after @mod-0-dev/pixel-perfect/styles.css, and refuses to write
 // one that fails any of the checks the library's own tokens pass.
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -22,7 +22,7 @@ generator, then checks the stylesheet with the checks its own tokens pass: text,
 fills, control edges and the focus ring, in both themes. A palette that fails one
 is reported and not written.
 
-Import the file after pixel-perfect/styles.css. Regenerate it after upgrading.`;
+Import the file after @mod-0-dev/pixel-perfect/styles.css. Regenerate it after upgrading.`;
 
 /** `--name value` and `--name=value`, nothing cleverer. */
 function parse(argv) {

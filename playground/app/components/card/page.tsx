@@ -4,7 +4,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the browser suite finds its sections
  * by `data-testid`.
  */
-import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Cluster, Grid, Heading, Stack, Text } from 'pixel-perfect';
+import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Cluster, Grid, Heading, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

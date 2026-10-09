@@ -19,8 +19,8 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/jetbrains-mono/600.css';
 
 // Exactly how a consuming app pulls the library in: one stylesheet, once.
-import 'pixel-perfect/styles.css';
-import { ThemeProvider } from 'pixel-perfect';
+import '@mod-0-dev/pixel-perfect/styles.css';
+import { ThemeProvider } from '@mod-0-dev/pixel-perfect';
 
 import { Chrome } from '../harness/Chrome';
 import { HydrationMark } from '../harness/HydrationMark';

@@ -87,7 +87,7 @@ per component is the unit.
 
 Each Tier 4 component adds its own `@radix-ui/react-<name>` to
 `dependencies` (caret range) in the commit that builds it. Not
-`peerDependencies`: a consumer installing `pixel-perfect` should not be asked
+`peerDependencies`: a consumer installing `@mod-0-dev/pixel-perfect` should not be asked
 to know which primitive a `Tooltip` is made of, and a version they pick could
 be one our CSS was not written against.
 
@@ -96,7 +96,7 @@ side-effect-free and marked so, so an app that imports `Button` and never
 `Dialog` bundles no Radix. Asserted at Gate D: a build of the playground's
 `/components/button` page is checked for the absence of the Radix chunk.
 
-**What the playground needs.** It installs `pixel-perfect` as `file:..`
+**What the playground needs.** It installs `@mod-0-dev/pixel-perfect` as `file:..`
 (D-012), a symlink to the repository root; the library's own dependencies
 resolve from the root's `node_modules`, which `npm ci` at the root provides in
 CI before the playground's own install. Turbopack's root is already pinned to

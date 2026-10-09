@@ -1,4 +1,4 @@
-import { Cluster, Code, Link, Stack, Text } from 'pixel-perfect';
+import { Cluster, Code, Link, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

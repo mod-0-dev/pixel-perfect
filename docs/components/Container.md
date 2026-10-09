@@ -4,7 +4,7 @@ Constrains a measure and centres it. Spec:
 [`tier-2-layout.md` §2.4](../specs/tier-2-layout.md#24-container).
 
 ```tsx
-import { Container } from 'pixel-perfect';
+import { Container } from '@mod-0-dev/pixel-perfect';
 ```
 
 **This is the only component in the library permitted to set `max-inline-size`.**

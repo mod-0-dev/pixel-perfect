@@ -1,8 +1,25 @@
 {
-  "name": "pixel-perfect",
+  "name": "@mod-0-dev/pixel-perfect",
   "version": "0.11.1",
   "description": "A component library with opinions.",
   "license": "MIT",
+  "author": "mod-0-dev (https://github.com/mod-0-dev)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mod-0-dev/pixel-perfect.git"
+  },
+  "homepage": "https://github.com/mod-0-dev/pixel-perfect#readme",
+  "bugs": {
+    "url": "https://github.com/mod-0-dev/pixel-perfect/issues"
+  },
+  "keywords": [
+    "react",
+    "components",
+    "component-library",
+    "design-system",
+    "nextjs",
+    "css"
+  ],
   "type": "module",
   "sideEffects": [
     "*.css"
@@ -16,7 +33,8 @@
       "types": "./dist/theme/index.d.mts",
       "default": "./dist/theme/index.mjs"
     },
-    "./styles.css": "./dist/pixel-perfect.css"
+    "./styles.css": "./dist/pixel-perfect.css",
+    "./package.json": "./package.json"
   },
   "bin": {
     "pixel-perfect": "./dist/theme/cli.mjs"
@@ -24,9 +42,12 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "npm run build:js && npm run build:css && npm run build:agents",
-    "build:js": "tsc -p tsconfig.build.json",
+    "build:js": "tsc -p tsconfig.build.json && node scripts/esm-specifiers.mjs",
     "build:css": "lightningcss --bundle --targets 'defaults' src/styles/index.css -o dist/pixel-perfect.css",
     "build:agents": "node scripts/build-agent-docs.mjs",
     "prepare": "npm run build",

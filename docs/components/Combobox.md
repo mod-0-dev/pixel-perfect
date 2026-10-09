@@ -5,7 +5,7 @@ one — or several. Spec: [`Combobox.md`](../specs/Combobox.md). Foundation:
 [Overlays](../overlays.md).
 
 ```tsx
-import { Combobox, ComboboxInput, ComboboxList, ComboboxOption, ComboboxEmpty } from 'pixel-perfect';
+import { Combobox, ComboboxInput, ComboboxList, ComboboxOption, ComboboxEmpty } from '@mod-0-dev/pixel-perfect';
 ```
 
 The component owns the text, the selection, the open state, the highlight

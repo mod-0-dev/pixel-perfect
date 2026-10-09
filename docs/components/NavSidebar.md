@@ -5,7 +5,7 @@ An app's primary navigation, down the side, for
 [`NavSidebar.md`](../specs/NavSidebar.md).
 
 ```tsx
-import { NavSidebar, NavSidebarSection, NavSidebarItem, NavSidebarGroup } from 'pixel-perfect';
+import { NavSidebar, NavSidebarSection, NavSidebarItem, NavSidebarGroup } from '@mod-0-dev/pixel-perfect';
 ```
 
 A named `<nav>` of sections, each a list of links, with groups that

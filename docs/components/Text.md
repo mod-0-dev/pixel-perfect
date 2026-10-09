@@ -4,7 +4,7 @@ Body copy with a typography scale, a colour role and truncation. Spec:
 [`tier-1-atoms.md` §1.1](../specs/tier-1-atoms.md#11-text).
 
 ```tsx
-import { Text } from 'pixel-perfect';
+import { Text } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## Usage

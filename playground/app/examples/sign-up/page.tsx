@@ -1,5 +1,5 @@
 import NextLink from 'next/link';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, Center, Container, Link, Stack, Text } from 'pixel-perfect';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, Center, Container, Link, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Stage } from '../../../harness/Stage';
 import { Brand } from '../launchpad';

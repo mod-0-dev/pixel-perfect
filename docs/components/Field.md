@@ -4,7 +4,7 @@ A labelled control with its description, its error, and the ARIA relationships
 between them. Spec: [`Field.md`](../specs/Field.md).
 
 ```tsx
-import { Field } from 'pixel-perfect';
+import { Field } from '@mod-0-dev/pixel-perfect';
 ```
 
 This is the component every input composes into. If you are rendering a form
@@ -69,7 +69,7 @@ this component renders the answer.
 it:
 
 ```tsx
-import { useField } from 'pixel-perfect';
+import { useField } from '@mod-0-dev/pixel-perfect';
 
 function MyControl({ size: sizeProp, ...props }) {
   const field = useField();          // null outside a Field

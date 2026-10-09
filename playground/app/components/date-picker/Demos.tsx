@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { DatePicker, Field, Text } from 'pixel-perfect';
+import { DatePicker, Field, Text } from '@mod-0-dev/pixel-perfect';
 
 const TODAY = '2026-09-28';
 

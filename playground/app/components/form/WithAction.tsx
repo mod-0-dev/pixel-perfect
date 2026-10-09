@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Cluster, Field, Form, Input, type FormError } from 'pixel-perfect';
+import { Button, Cluster, Field, Form, Input, type FormError } from '@mod-0-dev/pixel-perfect';
 import { useActionState } from 'react';
 
 interface State {

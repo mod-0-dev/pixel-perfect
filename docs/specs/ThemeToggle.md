@@ -215,7 +215,7 @@ None. A square button.
 ## Usage
 
 ```tsx
-import { ThemeToggle } from 'pixel-perfect';
+import { ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 // In a header, under the app's ThemeProvider.
 <ThemeToggle />

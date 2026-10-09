@@ -1,5 +1,19 @@
 # Releasing and consuming
 
+## Installing
+
+```bash
+npm install @mod-0-dev/pixel-perfect
+```
+
+React 18 or later is a peer dependency. Import the stylesheet once at the app
+root and the components from the package root:
+
+```tsx
+import '@mod-0-dev/pixel-perfect/styles.css';
+import { Button } from '@mod-0-dev/pixel-perfect';
+```
+
 ## You do not need a registry to use this
 
 The package builds itself on install (`prepare`), so a git dependency works with
@@ -8,7 +22,7 @@ no registry, no auth, and no publish step:
 ```json
 {
   "dependencies": {
-    "pixel-perfect": "github:mod-0-dev/pixel-perfect#v0.3.0"
+    "@mod-0-dev/pixel-perfect": "github:mod-0-dev/pixel-perfect#v0.11.1"
   }
 }
 ```
@@ -57,16 +71,42 @@ git dependency needs.
 > rule it left: infrastructure is done when it has been observed producing its
 > artifact, not when its config file exists.
 
-**To publish to npm as well**, set the repository variable `PUBLISH_TO_NPM=true`
-and add an `NPM_TOKEN` secret — **after renaming the package.** The name
-`pixel-perfect` is taken on npm by an unrelated package (an SCSS stylesheet,
-`2.0.26`, last published 2022), so a publish under it is refused at the last
-step of the workflow, which is D-038's shape exactly. Choose a scope you own
-(`@mod-0-dev/pixel-perfect`, say) and rename once, before the first consumer
-outside this repository: every import path and the `pixel-perfect/styles.css`
-specifier change with it. Until then the release workflow fails at its first
-step when `PUBLISH_TO_NPM` is set, naming the reason, rather than at its last
-(D-106 §4).
+**To publish to npm as well** (D-109). The scope is the npm user
+`mod-0-dev`, which exists; only its owner can publish under it.
+
+1. **The first publish needs a credential**, because npm configures a
+   trusted publisher on a package that already exists. Either:
+   - **From the workflow, with a short-lived token.** On npmjs.com, Access
+     Tokens → Generate New Token → Granular Access Token: expires in 1 day,
+     Read and write on all packages, "Bypass two-factor authentication"
+     ticked. Add it as the repository secret `NPM_TOKEN`, set the
+     repository variable `PUBLISH_TO_NPM` = `true`, and merge the Version
+     Packages PR.
+   - **Or by hand**, from a clean checkout of `main`, with 2FA as usual:
+
+     ```bash
+     npm login
+     npm ci                 # also builds dist/ via prepare
+     npm pack --dry-run     # read the file list: dist/, LICENSE, README.md, package.json
+     npm publish            # prepare rebuilds; publishConfig makes it public
+     ```
+
+2. **Make the workflow the publisher.** On the package's page on npmjs.com,
+   Settings → Trusted publishing → GitHub Actions: owner `mod-0-dev`,
+   repository `pixel-perfect`, workflow `release.yml`, no environment. Then,
+   under Publishing access, require 2FA and disallow tokens.
+3. **Remove the token.** Delete the `NPM_TOKEN` secret and revoke the token
+   on npmjs.com. `PUBLISH_TO_NPM` stays `true`.
+
+From then on, merging a Version Packages PR publishes that version with
+provenance, using the workflow's OIDC identity — no token to create, store
+or rotate. A repository secret named `NPM_TOKEN`, while one exists, is used
+instead.
+
+`pixel-perfect` without a scope is somebody else's name on npm (an unrelated
+SCSS stylesheet), which is why the package is scoped (D-106 §4). The release
+workflow still fails at its first step, naming the reason, if the scope is
+ever dropped.
 
 ## Versioning
 

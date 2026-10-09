@@ -8,7 +8,7 @@ import { createTheme, LIBRARY_ACCENT } from '../../src/theme/index.mjs';
 import { paletteDeclarations, solvePalette } from '../../src/theme/palette.mjs';
 
 /**
- * pixel-perfect/theme (D-103): a consumer's accent goes through the solver
+ * @mod-0-dev/pixel-perfect/theme (D-103): a consumer's accent goes through the solver
  * the library's own palette comes from, and the stylesheet it writes is held
  * to the checks `npm run lint:contrast` holds primitives.css to.
  *

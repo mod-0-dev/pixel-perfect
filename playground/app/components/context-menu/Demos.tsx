@@ -16,7 +16,7 @@ import {
   ContextMenuTrigger,
   Stack,
   Text,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 import { useEffect, useRef, useState } from 'react';
 
 /**

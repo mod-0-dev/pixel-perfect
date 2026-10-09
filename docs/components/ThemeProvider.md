@@ -5,7 +5,7 @@ paint, kept across loads and tabs, readable and settable from anywhere
 below. Spec: [`ThemeProvider.md`](../specs/ThemeProvider.md).
 
 ```tsx
-import { ThemeProvider, useTheme } from 'pixel-perfect';
+import { ThemeProvider, useTheme } from '@mod-0-dev/pixel-perfect';
 ```
 
 One provider, first in `<body>`, writing `data-pp-theme` on `<html>`. It
@@ -22,7 +22,7 @@ JavaScript. A theme for *part* of a page is that part's own attribute:
 
 ```tsx
 // app/layout.tsx
-import { ThemeProvider } from 'pixel-perfect';
+import { ThemeProvider } from '@mod-0-dev/pixel-perfect';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

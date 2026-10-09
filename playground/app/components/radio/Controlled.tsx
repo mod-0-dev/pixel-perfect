@@ -1,6 +1,6 @@
 'use client';
 
-import { Field, Radio, RadioGroup, Stack, Text } from 'pixel-perfect';
+import { Field, Radio, RadioGroup, Stack, Text } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 const TARGETS = [

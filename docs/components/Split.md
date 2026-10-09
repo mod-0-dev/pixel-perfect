@@ -4,7 +4,7 @@ A fixed pane beside a flexible one, which stacks when the container gets narrow.
 Spec: [`tier-2-layout.md` §2.6](../specs/tier-2-layout.md#26-split).
 
 ```tsx
-import { Split, SplitMain, SplitSidebar } from 'pixel-perfect';
+import { Split, SplitMain, SplitSidebar } from '@mod-0-dev/pixel-perfect';
 ```
 
 This is the component that makes [RULES §1](../RULES.md)'s container-query claim

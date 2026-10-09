@@ -1,4 +1,4 @@
-// pixel-perfect/theme — a brand accent, solved and proven (D-103).
+// @mod-0-dev/pixel-perfect/theme — a brand accent, solved and proven (D-103).
 //
 // The library's palette is five hues run through palette.mjs. This module
 // runs a consumer's accent through the same solver, lays the result out in
@@ -166,7 +166,7 @@ ${paletteDeclarations(dark.ramps, '    ')}
  * The library's complete palette, every hue in both themes, solved around
  * this accent by the library's own generator and checked by its own contrast
  * checks: ${checks.checked} assertions, ${checks.failures.length === 0 ? 'all passing' : `${checks.failures.length} FAILING`}.
- * Import it after pixel-perfect/styles.css. It sits in the pp.overrides
+ * Import it after @mod-0-dev/pixel-perfect/styles.css. It sits in the pp.overrides
  * layer, so it wins over the library's tokens whichever is imported first,
  * and it carries all four theme scopes, so light, dark, system and nested
  * themes all follow it. Regenerate after upgrading pixel-perfect.

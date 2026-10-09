@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, Button, Stack } from 'pixel-perfect';
+import { Alert, Button, Stack } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 /**

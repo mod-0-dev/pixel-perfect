@@ -5,7 +5,7 @@ full height (or width) of it. Spec: [`Drawer.md`](../specs/Drawer.md). It is
 a [`Dialog`](Dialog.md) with a different placement.
 
 ```tsx
-import { Drawer, DrawerTrigger, DrawerContent, DrawerTitle, DrawerDescription, DrawerClose } from 'pixel-perfect';
+import { Drawer, DrawerTrigger, DrawerContent, DrawerTitle, DrawerDescription, DrawerClose } from '@mod-0-dev/pixel-perfect';
 ```
 
 The page behind it is inert until it closes — scroll locked, hidden from

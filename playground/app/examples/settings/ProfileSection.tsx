@@ -23,7 +23,7 @@ import {
   Text,
   Textarea,
   type FormError,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 
 import { CameraGlyph } from '../glyphs';
 

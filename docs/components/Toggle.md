@@ -4,7 +4,7 @@ A button that stays pressed. Spec:
 [`tier-3a-action.md` §3.5](../specs/tier-3a-action.md#35-toggle).
 
 ```tsx
-import { Toggle } from 'pixel-perfect';
+import { Toggle } from '@mod-0-dev/pixel-perfect';
 ```
 
 ## It is not `Switch`

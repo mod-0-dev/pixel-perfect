@@ -5,7 +5,7 @@ segment sweeping while the size of the work is unknown. Spec:
 [`Progress.md`](../specs/Progress.md).
 
 ```tsx
-import { Progress } from 'pixel-perfect';
+import { Progress } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component; the motion is CSS. The determinate half of what

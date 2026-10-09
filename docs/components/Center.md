@@ -4,7 +4,7 @@ Centres its children in the box it was given. Spec:
 [`tier-2-layout.md` §2.5](../specs/tier-2-layout.md#25-center).
 
 ```tsx
-import { Center } from 'pixel-perfect';
+import { Center } from '@mod-0-dev/pixel-perfect';
 ```
 
 It does **not** constrain a measure. Centring a column of text by giving it a

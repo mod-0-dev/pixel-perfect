@@ -5,7 +5,7 @@ to here, the last one the page itself and not a link. Spec:
 [`Breadcrumb.md`](../specs/Breadcrumb.md).
 
 ```tsx
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbEllipsis } from 'pixel-perfect';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbEllipsis } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component. A navigation landmark named "Breadcrumb", an ordered

@@ -4,7 +4,7 @@ Who is on it: a few avatars overlapping in a row, and "+2" for the rest.
 Spec: [`AvatarGroup.md`](../specs/AvatarGroup.md).
 
 ```tsx
-import { AvatarGroup, Avatar } from 'pixel-perfect';
+import { AvatarGroup, Avatar } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component. Children are `Avatar`s; the group adds the overlap

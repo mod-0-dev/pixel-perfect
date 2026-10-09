@@ -10,7 +10,7 @@ import {
   Radio,
   RadioGroup,
   type FormError,
-} from 'pixel-perfect';
+} from '@mod-0-dev/pixel-perfect';
 import { useState, type SyntheticEvent } from 'react';
 
 /**

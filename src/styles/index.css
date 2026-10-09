@@ -1,6 +1,6 @@
 /*
  * pixel-perfect — single stylesheet entry point.
- * Consumers import "pixel-perfect/styles.css" once, at the app root.
+ * Consumers import "@mod-0-dev/pixel-perfect/styles.css" once, at the app root.
  *
  * The layer order below is the whole cascade strategy. It is declared before
  * anything is imported, so the order is fixed by this statement rather than by

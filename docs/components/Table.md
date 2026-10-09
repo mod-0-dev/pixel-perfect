@@ -5,7 +5,7 @@ data the reader scans, with the native element's semantics and nothing
 that needs a data layer. Spec: [`Table.md`](../specs/Table.md).
 
 ```tsx
-import { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell } from 'pixel-perfect';
+import { Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component. Sorting and selection are hooks: the header says how

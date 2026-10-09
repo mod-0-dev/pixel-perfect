@@ -1,4 +1,4 @@
-import { Spinner, Text } from 'pixel-perfect';
+import { Spinner, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

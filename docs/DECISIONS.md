@@ -8440,3 +8440,50 @@ done here.
   beside the other pages was not measured here.
 - **Warning and a light accent on a Toggle** fail §1's 3:1; the docs say so
   rather than a rule.
+
+<a id="d-109"></a>
+
+## D-109 — Publish-ready for npm: `@mod-0-dev/pixel-perfect`, relative imports that name their file, and trusted publishing
+
+**Date:** 2026-10-07 · **Status:** accepted · **Amends:** `package.json`
+(name, metadata, `build:js`), every import specifier in the docs and the
+playground, `docs/RELEASING.md`, README.md, `.github/workflows/release.yml`,
+`LICENSE` (new) · **Extends:** D-038, D-105, D-106 §4
+
+Asked to get the library onto npm so it can be consumed.
+
+### 1. The name
+
+D-106 §4 left the scope to the owner. `@mod-0-dev/pixel-perfect` matches the
+repository's owner and is the name RELEASING.md already suggested; the owner
+created the npm user `mod-0-dev`, which owns the scope. The rename is mechanical: every `'pixel-perfect'`,
+`pixel-perfect/styles.css`, `pixel-perfect/theme` and
+`node_modules/pixel-perfect` outside the historical record (this log,
+`HISTORY.md`, `CHANGELOG.md`, the roadmap) and outside component source. The
+CLI keeps its bin name, so `npx pixel-perfect theme` works in an app that
+has the package installed. The `[pixel-perfect]` prefix on runtime warnings
+is a brand, not a specifier, and stays.
+
+### 2. Relative imports name their file
+
+The package is `"type": "module"` and `tsc` under `moduleResolution:
+bundler` emits `./components/Button/Button` as written. Installed from a
+packed tarball into a scratch app, the package failed under Node
+(`ERR_MODULE_NOT_FOUND` on the first import), webpack 5 ("Can't resolve") and
+TypeScript under `nodenext` (TS2835 on every re-export). Vite and Turbopack
+guess the extension, which is why the playground never saw it.
+`scripts/esm-specifiers.mjs` rewrites dist/ after `tsc` — 445 specifiers —
+resolving each against the file `tsc` wrote and failing the build on one
+that names none. The source is unchanged. After it, the same tarball imports
+under Node, builds under webpack 5 and Vite, type-checks under `nodenext`, and
+its bin writes a theme.
+
+### 3. Publishing
+
+The first publish needs a credential, because npm's trusted publisher is
+configured on an existing package: the owner chose a one-day token in the
+`NPM_TOKEN` secret over publishing from their machine, revoked once the
+trusted publisher is in place. After it the release
+workflow publishes with its OIDC identity (`id-token: write`, npm ≥ 11.5.1)
+and no long-lived token, provenance included; an `NPM_TOKEN` secret, if set,
+still wins. `PUBLISH_TO_NPM` stays the switch.

@@ -4,7 +4,7 @@ A small panel of interactive content anchored to the control that opened it.
 Spec: [`Popover.md`](../specs/Popover.md). Foundation: [Overlays](../overlays.md).
 
 ```tsx
-import { Popover, PopoverTrigger, PopoverContent, PopoverTitle, PopoverClose } from 'pixel-perfect';
+import { Popover, PopoverTrigger, PopoverContent, PopoverTitle, PopoverClose } from '@mod-0-dev/pixel-perfect';
 ```
 
 Non-modal by default: the page behind still works, and the popover closes on

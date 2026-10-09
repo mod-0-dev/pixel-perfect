@@ -1,6 +1,6 @@
 'use client';
 
-import { Field, SegmentedControl, SegmentedControlItem, Slider } from 'pixel-perfect';
+import { Field, SegmentedControl, SegmentedControlItem, Slider } from '@mod-0-dev/pixel-perfect';
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 
 /**

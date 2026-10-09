@@ -5,7 +5,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the ids come from `useId()`, and the
  * browser suite finds its sections by `data-testid`.
  */
-import { Text } from 'pixel-perfect';
+import { Text } from '@mod-0-dev/pixel-perfect';
 
 import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';

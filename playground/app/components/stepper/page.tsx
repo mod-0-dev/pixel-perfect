@@ -4,7 +4,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the browser suite finds its
  * sections by `data-testid`.
  */
-import { Stack, Step, Stepper } from 'pixel-perfect';
+import { Stack, Step, Stepper } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Card, CardBody, CardHeader, Cluster, IconButton, Input, Kbd, KeyHints, Stack, Text, useKeyHint } from 'pixel-perfect';
+import { Button, Card, CardBody, CardHeader, Cluster, IconButton, Input, Kbd, KeyHints, Stack, Text, useKeyHint } from '@mod-0-dev/pixel-perfect';
 import { useState } from 'react';
 
 function Plus() {

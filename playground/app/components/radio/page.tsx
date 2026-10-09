@@ -11,7 +11,7 @@
  * (D-039 §5), which is what keeps the six cells independent — asserted in the
  * browser suite rather than left to look right.
  */
-import { Field, Radio, RadioGroup, Stack, Text } from 'pixel-perfect';
+import { Field, Radio, RadioGroup, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 import { Controlled } from './Controlled';

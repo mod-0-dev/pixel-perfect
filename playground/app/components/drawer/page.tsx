@@ -2,7 +2,7 @@
  * A Server Component; every demo lives in Demos.tsx. NOTHING HERE WRITES AN
  * ID (D-035 §1).
  */
-import { Text } from 'pixel-perfect';
+import { Text } from '@mod-0-dev/pixel-perfect';
 
 import { galleryOpen, type GalleryParams } from '../../../harness/gallery';
 import { Matrix } from '../../../harness/Matrix';

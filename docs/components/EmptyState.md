@@ -5,7 +5,7 @@ the action that would fill the space. Spec:
 [`EmptyState.md`](../specs/EmptyState.md).
 
 ```tsx
-import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateActions } from 'pixel-perfect';
+import { EmptyState, EmptyStateIcon, EmptyStateTitle, EmptyStateDescription, EmptyStateActions } from '@mod-0-dev/pixel-perfect';
 ```
 
 A Server Component. Every part is a Tier 1–2 primitive with the empty

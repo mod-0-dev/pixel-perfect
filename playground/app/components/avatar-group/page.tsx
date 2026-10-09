@@ -6,7 +6,7 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the browser suite finds its
  * sections by `data-testid`.
  */
-import { Avatar, AvatarGroup, Cluster, Stack, Text } from 'pixel-perfect';
+import { Avatar, AvatarGroup, Cluster, Stack, Text } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 

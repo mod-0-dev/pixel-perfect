@@ -4,7 +4,7 @@ A brief message about something that just happened, at a corner of the
 viewport, announced, gone after a moment. Spec: [`Toast.md`](../specs/Toast.md).
 
 ```tsx
-import { ToastProvider, useToast } from 'pixel-perfect';
+import { ToastProvider, useToast } from '@mod-0-dev/pixel-perfect';
 ```
 
 One provider near the root, one hook anywhere below, and no element to

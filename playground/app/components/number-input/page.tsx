@@ -10,7 +10,7 @@
  * in another cell (D-035 §1). Appearance goes in the matrices; association goes
  * below them, once.
  */
-import { Cluster, Field, NumberInput, Stack, Text } from 'pixel-perfect';
+import { Cluster, Field, NumberInput, Stack, Text } from '@mod-0-dev/pixel-perfect';
 import type { CSSProperties } from 'react';
 
 import { Matrix } from '../../../harness/Matrix';

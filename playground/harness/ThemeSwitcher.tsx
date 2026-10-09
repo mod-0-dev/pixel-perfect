@@ -1,6 +1,6 @@
 'use client';
 
-import { SegmentedControl, SegmentedControlItem, useTheme, type Theme } from 'pixel-perfect';
+import { SegmentedControl, SegmentedControlItem, useTheme, type Theme } from '@mod-0-dev/pixel-perfect';
 
 /**
  * The playground's theme, chosen once and kept (D-063), through the
