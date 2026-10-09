@@ -5,7 +5,17 @@
  * NOTHING HERE WRITES AN ID (D-035 §1): the browser suite finds its
  * sections by `data-testid`.
  */
-import { Button, ButtonGroup, IconButton, Input, Separator, Toggle, Toolbar } from '@mod-0-dev/pixel-perfect';
+import {
+  Button,
+  ButtonGroup,
+  IconButton,
+  Input,
+  SegmentedControl,
+  SegmentedControlItem,
+  Separator,
+  Toggle,
+  Toolbar,
+} from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
 
@@ -130,6 +140,40 @@ export default function ToolbarPage() {
               Before
             </Button>
             <Formatting label="Editing" field={false} />
+            <Button size="sm" variant="ghost" data-role="after">
+              After
+            </Button>
+          </div>
+        </Matrix>
+      </section>
+
+      <section data-testid="toolbar-segmented">
+        <h2>With a SegmentedControl</h2>
+        <p>
+          The alignment is a SegmentedControl. The arrows walk its segments like any other control and
+          move focus without selecting, as the APG&rsquo;s toolbar example walks its alignment group;
+          Space selects the focused one.
+        </p>
+        <Matrix>
+          <div style={{ display: 'grid', gap: '0.5rem', justifyItems: 'start' }}>
+            <Button size="sm" variant="ghost" data-role="before">
+              Before
+            </Button>
+            <Toolbar label="Paragraph">
+              <Toggle size="sm" aria-label="Bold">
+                <strong>B</strong>
+              </Toggle>
+              <Separator orientation="vertical" />
+              <SegmentedControl size="sm" label="Alignment" defaultValue="left">
+                <SegmentedControlItem value="left">Left</SegmentedControlItem>
+                <SegmentedControlItem value="center">Center</SegmentedControlItem>
+                <SegmentedControlItem value="right">Right</SegmentedControlItem>
+              </SegmentedControl>
+              <Separator orientation="vertical" />
+              <Button size="sm" variant="outline">
+                Publish
+              </Button>
+            </Toolbar>
             <Button size="sm" variant="ghost" data-role="after">
               After
             </Button>

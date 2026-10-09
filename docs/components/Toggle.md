@@ -38,7 +38,7 @@ Toolbar with an icon → `Toggle`. Settings row with a label to its left →
 | `pressed` | `boolean` | — | Controlled |
 | `defaultPressed` | `boolean` | `false` | Uncontrolled |
 | `onPressedChange` | `(pressed: boolean) => void` | — | Fires in both modes |
-| `variant` | `'solid' \| 'outline' \| 'ghost' \| 'plain'` | `'ghost'` | Off is quiet; on fills in |
+| `variant` | `'outline' \| 'ghost' \| 'plain'` | `'ghost'` | Off is quiet; on is the tone's solid fill. No `solid`: it would look the same on and off |
 | `tone`, `size`, `disabled`, `asChild`, `type` | as [`Button`](Button.md) | as `Button` | |
 
 `ref` goes to the root, which carries both `pp-button` and `pp-toggle`. Exposed
@@ -68,12 +68,15 @@ Every `--pp-button-*` property, plus:
 
 | Custom property | Default | Affects |
 | --- | --- | --- |
-| `--pp-toggle-bg-on` | `--pp-tone-bg-active` | Background when pressed |
-| `--pp-toggle-color-on` | `--pp-tone-text-strong` | Label when pressed |
+| `--pp-toggle-bg-on` | `--pp-tone-solid` | Background and border when pressed |
+| `--pp-toggle-color-on` | `--pp-tone-on-solid` | Label when pressed |
 
-Pressed sits at the filled end of the background ramp, so hovering holds the
-fill and strengthens the border instead. Walking the background back toward its
-resting colour on hover reads as releasing the button.
+Pressed is the tone's solid fill, because in a row of toggles the fill is the
+only thing telling a pressed one from the one beside it, and WCAG 1.4.11 asks
+3:1 for that. The soft fill it used to be was 1.26:1 against the page (D-108
+§1). Hovering a pressed toggle darkens it, as a solid `Button` does; walking it
+back toward its resting colour would read as releasing. A `--pp-toggle-bg-on`
+of your own is held on hover, and its contrast is yours to check.
 
 ## Don't
 
@@ -87,6 +90,10 @@ resting colour on hover reads as releasing the button.
 
 // ✗ controlled and uncontrolled at once. Decide once.
 <Toggle pressed={on} defaultPressed onPressedChange={setOn} />
+
+// ✗ warning. Its solid is light, 1.87:1 against the page in the light theme,
+//   so pressed and not are too close to tell apart.
+<Toggle tone="warning">Flag</Toggle>
 
 // ✗ icon-only with no name.
 <Toggle><Icon decorative><Bold /></Icon></Toggle>

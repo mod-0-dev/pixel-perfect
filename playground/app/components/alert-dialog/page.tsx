@@ -26,7 +26,7 @@ export default async function AlertDialogPage({ searchParams }: { searchParams: 
         <p>
           One per cell, contained in its cell (Dialog §10). Open one from its cell; Escape or either
           button closes it &mdash; the scrim will not. The screenshot suite opens all three at load
-          with <code>?gallery=open</code>.
+          with <code className="nowrap">?gallery=open</code>.
         </p>
         <Matrix>
           <Gallery open={open} />

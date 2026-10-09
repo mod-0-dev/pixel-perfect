@@ -8,6 +8,7 @@ import { Button } from '../Button/Button';
 import { ButtonGroup } from '../ButtonGroup/ButtonGroup';
 import { IconButton } from '../IconButton/IconButton';
 import { Input } from '../Input/Input';
+import { SegmentedControl, SegmentedControlItem } from '../SegmentedControl/SegmentedControl';
 import { Separator } from '../Separator/Separator';
 import { Toggle } from '../Toggle/Toggle';
 import { Toolbar, type ToolbarProps } from './Toolbar';
@@ -229,6 +230,52 @@ describe('Toolbar', () => {
     expect(focusedName()).toBe('Publish');
     // @ts-expect-error label is required
     void (<Toolbar />);
+  });
+
+  it('walks a SegmentedControl\'s segments as controls of its own, focus without selection, as the APG toolbar walks its radio group; Space selects; Tab out and back lands on the segment focused last (spec §5, D-108 §2)', async () => {
+    const user = userEvent.setup();
+    renderWithTheme(
+      <>
+        <Button>Before</Button>
+        <Toolbar label="Formatting">
+          <Toggle aria-label="Bold">B</Toggle>
+          <SegmentedControl label="Alignment" defaultValue="left">
+            <SegmentedControlItem value="left">Left</SegmentedControlItem>
+            <SegmentedControlItem value="center">Center</SegmentedControlItem>
+            <SegmentedControlItem value="right">Right</SegmentedControlItem>
+          </SegmentedControl>
+          <Button>Publish</Button>
+        </Toolbar>
+        <Button>After</Button>
+      </>,
+    );
+    const radio = (name: string) => toolbar().querySelector(`input[value="${name}"]`) as HTMLInputElement;
+    const checked = () => Array.from(toolbar().querySelectorAll<HTMLInputElement>('input:checked')).map((n) => n.value);
+    /* Every radio is a control: one stop over five. */
+    expect(toolbar().querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    expect(radio('center')).toHaveAttribute('tabindex', '-1');
+
+    await user.tab();
+    await user.tab();
+    expect(focusedName()).toBe('Bold');
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(radio('left'));
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(radio('center'));
+    /* The arrow moved focus and nothing else. */
+    expect(checked()).toEqual(['left']);
+    await user.keyboard(' ');
+    expect(checked()).toEqual(['center']);
+    await user.keyboard('{ArrowRight}{ArrowRight}');
+    expect(focusedName()).toBe('Publish');
+    expect(checked()).toEqual(['center']);
+    await user.keyboard('{ArrowLeft}');
+    expect(document.activeElement).toBe(radio('right'));
+    await user.tab();
+    expect(focusedName()).toBe('After');
+    await user.tab({ shift: true });
+    expect(document.activeElement).toBe(radio('right'));
+    expect(checked()).toEqual(['center']);
   });
 
   it('renders on the server with the role and no tabindex written', () => {

@@ -34,7 +34,7 @@ export default async function DialogPage({ searchParams }: { searchParams: Promi
           240 and 480 the panel is narrower than its ceiling and every control in it fills; at 960
           it sits at its 40rem ceiling with scrim on either side. Open one from its cell; Escape,
           the scrim or either button closes it. The screenshot suite opens all three at load with{' '}
-          <code>?gallery=open</code> — a gallery, not a use, which locks the page&rsquo;s scroll
+          <code className="nowrap">?gallery=open</code> — a gallery, not a use, which locks the page&rsquo;s scroll
           three times over until each is closed.
         </p>
         <Matrix>

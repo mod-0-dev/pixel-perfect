@@ -3,7 +3,7 @@
 | | |
 | --- | --- |
 | **Tier** | 6 — App Shell |
-| **Status** | `review` — written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-099; awaiting its CI-authored baseline (D-013) |
+| **Status** | `done` — 2026-10-07; written and built 2026-09-29 under the standing delegation (D-069 §1); every recommendation adopted as written; rulings and findings in D-099; its CI-authored baselines compared green on runs 205 and 209 (D-013; the sweep is D-108 §5) |
 | **Sizing contract** | `fill` — a block that takes the sidebar's width; `min-inline-size: 0`; a long label truncates |
 | **RSC** | `client` — a group holds whether it is open. The root, a section and an item have no state, but they share one module with the group |
 | **Depends on** | 6.3 `AppShell` (`review`, `done` under the batch, D-073 §2): the slot it is written for; 5.11 `Tree` (`done`): the row it is drawn like — indent by level through one property, the accent surface, the turning chevron — and not the role (§4); 1.11 `Icon`, 1.6 `Badge`: what a row holds |

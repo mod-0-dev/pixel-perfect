@@ -1009,7 +1009,7 @@ applies.
 | `pressed` | `boolean` | — | Controlled |
 | `defaultPressed` | `boolean` | `false` | Uncontrolled |
 | `onPressedChange` | `(pressed: boolean) => void` | — | Fires on activation in both modes |
-| `variant` | `'solid' \| 'outline' \| 'ghost' \| 'plain'` | `'ghost'` | Off is quiet; on fills in |
+| `variant` | `'outline' \| 'ghost' \| 'plain'` | `'ghost'` | Off is quiet; on fills in. No `solid` since D-108 §1: pressed is the solid fill |
 | `tone`, `size`, `disabled`, `asChild`, `type` | as `Button` | as `Button` | |
 
 No `loading` — a toggle's effect is immediate by definition. Omitted from the
@@ -1029,7 +1029,7 @@ consumer eventually does by accident.
 
 | State | Exposed as | Visual treatment |
 | --- | --- | --- |
-| On | `data-state="on"` + `aria-pressed="true"` | `--pp-tone-bg-active`, `--pp-tone-text-strong`, border `--pp-tone-border` |
+| On | `data-state="on"` + `aria-pressed="true"` | `--pp-tone-solid` fill and border, `--pp-tone-on-solid` ink; hover `--pp-tone-solid-hover` (D-108 §1 — it was `--pp-tone-bg-active`, 1.26:1 against the page) |
 | Off | `data-state="off"` + `aria-pressed="false"` | The `variant`'s normal resting treatment |
 | Disabled | `data-disabled` + native `disabled` | As `Button` |
 
@@ -1041,8 +1041,8 @@ Every `--pp-button-*` property, plus:
 
 | Custom property | Default | Affects |
 | --- | --- | --- |
-| `--pp-toggle-bg-on` | `--pp-tone-bg-active` | Background when pressed |
-| `--pp-toggle-color-on` | `--pp-tone-text-strong` | Label when pressed |
+| `--pp-toggle-bg-on` | `--pp-tone-solid` | Background and border when pressed (D-108 §1) |
+| `--pp-toggle-color-on` | `--pp-tone-on-solid` | Label when pressed (D-108 §1) |
 
 ### Keyboard interaction
 

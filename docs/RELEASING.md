@@ -71,7 +71,7 @@ git dependency needs.
 > rule it left: infrastructure is done when it has been observed producing its
 > artifact, not when its config file exists.
 
-**To publish to npm as well** (D-108):
+**To publish to npm as well** (D-109):
 
 1. **Create the scope.** On npmjs.com, sign in and create a free
    organization named `mod-0-dev` (Add Organization, "Unlimited public
@@ -90,7 +90,7 @@ git dependency needs.
    npm asks for a one-time password if the account has 2FA on.
 3. **Make the workflow the publisher.** On the package's page on npmjs.com,
    Settings → Trusted publishing → GitHub Actions: owner `mod-0-dev`,
-   repository `pixel-perfect`, workflow `release.yml`, no environment. Then,
+   repository `@mod-0-dev/pixel-perfect`, workflow `release.yml`, no environment. Then,
    under Publishing access, require 2FA and disallow tokens.
 4. **Switch it on.** In the repository, Settings → Secrets and variables →
    Actions → Variables, add `PUBLISH_TO_NPM` = `true`.
@@ -100,7 +100,7 @@ provenance, using the workflow's OIDC identity — no `NPM_TOKEN` to create,
 store or rotate. A repository secret named `NPM_TOKEN`, if one is added,
 is used instead.
 
-`pixel-perfect` without a scope is somebody else's name on npm (an unrelated
+`@mod-0-dev/pixel-perfect` without a scope is somebody else's name on npm (an unrelated
 SCSS stylesheet), which is why the package is scoped (D-106 §4). The release
 workflow still fails at its first step, naming the reason, if the scope is
 ever dropped.

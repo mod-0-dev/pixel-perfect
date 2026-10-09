@@ -15,22 +15,40 @@
  */
 
 @layer pp.components {
+  /*
+   * PRESSED IS THE TONE'S SOLID FILL (D-108 §1). It was the soft end of the
+   * background ramp, step 5, which is 1.26:1 against the page in light and
+   * 1.49:1 in dark — and in a toolbar's Bold / Italic the fill is the only
+   * thing telling a pressed toggle from the one beside it. Those are states
+   * side by side, where WCAG 1.4.11 asks 3:1; neutral's solid is 5.31:1 at
+   * the worst against steps 1–3, and `lint:contrast` asserts it with
+   * danger's and success's. SegmentedControl's checked segment made the same
+   * move for the same number (D-107 §3).
+   */
   .pp-toggle[data-state="on"] {
-    --_bg: var(--pp-toggle-bg-on, var(--pp-tone-bg-active));
-    --_color: var(--pp-toggle-color-on, var(--pp-tone-text-strong));
-    --_border: var(--pp-tone-border);
+    --_bg: var(--pp-toggle-bg-on, var(--pp-tone-solid));
+    --_color: var(--pp-toggle-color-on, var(--pp-tone-on-solid));
+    --_border: var(--pp-toggle-bg-on, var(--pp-tone-solid));
 
     /*
-     * Pressed is already the filled end of the background ramp — bg(3),
-     * bg-hover(4), bg-active(5) — so there is no darker step to move to, and
-     * moving to a LIGHTER one on hover would read as releasing. The fill holds
-     * and the border carries the hover feedback instead.
+     * A solid fill has a darker step to move to, so pressed hovers and
+     * presses as a solid Button does. Darker, never lighter: a lighter hover
+     * would read as releasing.
      */
-    --_bg-hover: var(--pp-toggle-bg-on, var(--pp-tone-bg-active));
-    --_bg-active: var(--pp-toggle-bg-on, var(--pp-tone-bg-active));
+    --_bg-hover: var(--pp-toggle-bg-on, var(--pp-tone-solid-hover));
+    --_bg-active: var(--pp-toggle-bg-on, var(--pp-tone-solid-active));
   }
 
-  .pp-toggle[data-state="on"]:not([data-disabled]):hover {
-    --_border: var(--pp-tone-border-strong);
+  /*
+   * Disabled still says it is pressed, quietly: Button's disabled surface
+   * with an edge, where a disabled toggle that is off has none — the solid
+   * fill would read as available. SegmentedControl's rule (D-107 §3).
+   */
+  .pp-toggle[data-state="on"][data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+    --_border: var(--pp-color-border-subtle);
+    --_bg-hover: var(--pp-color-bg-sunken);
+    --_bg-active: var(--pp-color-bg-sunken);
   }
 }
