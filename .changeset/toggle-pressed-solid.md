@@ -1,5 +1,5 @@
 ---
-'pixel-perfect': minor
+'@mod-0-dev/pixel-perfect': minor
 ---
 
 **A pressed `Toggle` is its tone's solid fill.** It was the soft end of the
