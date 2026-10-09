@@ -1,5 +1,30 @@
 # pixel-perfect
 
+## 0.12.0
+
+### Minor Changes
+
+- efcafe2: The package is published to npm as `@mod-0-dev/pixel-perfect` (the unscoped name belongs to someone else). Import from `@mod-0-dev/pixel-perfect`, `@mod-0-dev/pixel-perfect/theme` and `@mod-0-dev/pixel-perfect/styles.css`; a git dependency keyed `pixel-perfect` should be re-keyed to the new name. Relative imports inside `dist/` now name their file, so the package loads under Node, webpack 5 and TypeScript's `nodenext` resolution as well as Vite and Turbopack.
+- 6840439: **A pressed `Toggle` is its tone's solid fill.** It was the soft end of the
+  background ramp, 1.26:1 against the page in the light theme, so in a row of
+  toggles (a toolbar's Bold and Italic) pressed and not pressed were hard to
+  tell apart. Pressed is now `--pp-tone-solid` with `--pp-tone-on-solid` text,
+  and hovering it darkens to `--pp-tone-solid-hover`. A disabled pressed toggle
+  keeps a subtle edge, so it still reads as pressed. `--pp-toggle-bg-on` and
+  `--pp-toggle-color-on` still override both, and now default to the solid
+  tokens.
+  
+  **Breaking, at the type level.** `Toggle` has no `solid` variant, because
+  pressed is the solid fill and a solid toggle would look the same on and off.
+  Use `ghost` (the default), `outline` or `plain`. An untyped `variant="solid"`
+  is drawn as `ghost` with a development warning. `ToggleVariant` is exported.
+  Keep `tone="warning"` off a Toggle: its solid is 1.87:1 against the page in
+  the light theme.
+  
+  `Toolbar` is now tested and documented with a `SegmentedControl` inside it.
+  Its arrows walk the segments without selecting them, as the APG toolbar
+  example walks its alignment group, and `Space` selects the focused one.
+
 ## 0.11.1
 
 ### Patch Changes
