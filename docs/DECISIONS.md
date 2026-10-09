@@ -8455,9 +8455,8 @@ Asked to get the library onto npm so it can be consumed.
 ### 1. The name
 
 D-106 §4 left the scope to the owner. `@mod-0-dev/pixel-perfect` matches the
-repository's owner and is the name RELEASING.md already suggested; npm has no
-user or org called `mod-0-dev` yet, so the owner creates the org before the
-first publish. The rename is mechanical: every `'pixel-perfect'`,
+repository's owner and is the name RELEASING.md already suggested; the owner
+created the npm user `mod-0-dev`, which owns the scope. The rename is mechanical: every `'pixel-perfect'`,
 `pixel-perfect/styles.css`, `pixel-perfect/theme` and
 `node_modules/pixel-perfect` outside the historical record (this log,
 `HISTORY.md`, `CHANGELOG.md`, the roadmap) and outside component source. The
@@ -8481,8 +8480,10 @@ its bin writes a theme.
 
 ### 3. Publishing
 
-The first publish is the owner's, from their machine: npm's trusted
-publisher is configured on an existing package. After it the release
+The first publish needs a credential, because npm's trusted publisher is
+configured on an existing package: the owner chose a one-day token in the
+`NPM_TOKEN` secret over publishing from their machine, revoked once the
+trusted publisher is in place. After it the release
 workflow publishes with its OIDC identity (`id-token: write`, npm ≥ 11.5.1)
 and no long-lived token, provenance included; an `NPM_TOKEN` secret, if set,
 still wins. `PUBLISH_TO_NPM` stays the switch.

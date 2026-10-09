@@ -71,36 +71,39 @@ git dependency needs.
 > rule it left: infrastructure is done when it has been observed producing its
 > artifact, not when its config file exists.
 
-**To publish to npm as well** (D-109):
+**To publish to npm as well** (D-109). The scope is the npm user
+`mod-0-dev`, which exists; only its owner can publish under it.
 
-1. **Create the scope.** On npmjs.com, sign in and create a free
-   organization named `mod-0-dev` (Add Organization, "Unlimited public
-   packages"). npm has no user or org by that name today, and a scoped name
-   can only be published by its owner.
-2. **Publish once by hand**, because a trusted publisher is configured on a
-   package that already exists. From a clean checkout of `main`:
+1. **The first publish needs a credential**, because npm configures a
+   trusted publisher on a package that already exists. Either:
+   - **From the workflow, with a short-lived token.** On npmjs.com, Access
+     Tokens → Generate New Token → Granular Access Token: expires in 1 day,
+     Read and write on all packages, "Bypass two-factor authentication"
+     ticked. Add it as the repository secret `NPM_TOKEN`, set the
+     repository variable `PUBLISH_TO_NPM` = `true`, and merge the Version
+     Packages PR.
+   - **Or by hand**, from a clean checkout of `main`, with 2FA as usual:
 
-   ```bash
-   npm login
-   npm ci                 # also builds dist/ via prepare
-   npm pack --dry-run     # read the file list: dist/, LICENSE, README.md, package.json
-   npm publish            # prepare rebuilds; publishConfig makes it public
-   ```
+     ```bash
+     npm login
+     npm ci                 # also builds dist/ via prepare
+     npm pack --dry-run     # read the file list: dist/, LICENSE, README.md, package.json
+     npm publish            # prepare rebuilds; publishConfig makes it public
+     ```
 
-   npm asks for a one-time password if the account has 2FA on.
-3. **Make the workflow the publisher.** On the package's page on npmjs.com,
+2. **Make the workflow the publisher.** On the package's page on npmjs.com,
    Settings → Trusted publishing → GitHub Actions: owner `mod-0-dev`,
-   repository `@mod-0-dev/pixel-perfect`, workflow `release.yml`, no environment. Then,
+   repository `pixel-perfect`, workflow `release.yml`, no environment. Then,
    under Publishing access, require 2FA and disallow tokens.
-4. **Switch it on.** In the repository, Settings → Secrets and variables →
-   Actions → Variables, add `PUBLISH_TO_NPM` = `true`.
+3. **Remove the token.** Delete the `NPM_TOKEN` secret and revoke the token
+   on npmjs.com. `PUBLISH_TO_NPM` stays `true`.
 
 From then on, merging a Version Packages PR publishes that version with
-provenance, using the workflow's OIDC identity — no `NPM_TOKEN` to create,
-store or rotate. A repository secret named `NPM_TOKEN`, if one is added,
-is used instead.
+provenance, using the workflow's OIDC identity — no token to create, store
+or rotate. A repository secret named `NPM_TOKEN`, while one exists, is used
+instead.
 
-`@mod-0-dev/pixel-perfect` without a scope is somebody else's name on npm (an unrelated
+`pixel-perfect` without a scope is somebody else's name on npm (an unrelated
 SCSS stylesheet), which is why the package is scoped (D-106 §4). The release
 workflow still fails at its first step, naming the reason, if the scope is
 ever dropped.
