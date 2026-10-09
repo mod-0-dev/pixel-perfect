@@ -67,10 +67,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      # Without a publish step nothing tags the release, and a git dependency
-      # pinned by semver range needs tags to resolve.
+      # A git dependency pinned by semver range needs tags to resolve. Without a
+      # publish step nothing tags the release; with one, `changeset publish`
+      # tags it in this checkout but changesets/action v1 never pushes the tag,
+      # because it looks for a "New tag:" line that @changesets/cli 3 no longer
+      # prints (v0.12.0, the first publish, went out untagged). `changeset tag`
+      # skips tags that exist, so this is the same step either way.
       - name: Tag release
-        if: ${{ steps.changesets.outputs.hasChangesets == 'false' && vars.PUBLISH_TO_NPM != 'true' }}
+        if: ${{ steps.changesets.outputs.hasChangesets == 'false' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
