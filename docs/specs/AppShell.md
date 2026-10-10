@@ -140,6 +140,38 @@ assumed one would be undone on every such page.
 
 ---
 
+### 9. `collapseTo="drawer"`: on a phone the sidebar leaves for a drawer
+
+*Added 2026-10-10 by D-110 §8, from the gap analysis.* Below `collapseBelow`
+the default stacks the sidebar above the content (§3), which on a phone puts
+the whole navigation between the header and the page on every page. With
+`collapseTo="drawer"` the sidebar is hidden there instead, and a menu
+button — an `IconButton` named by `menuLabel`, default "Menu" — is the first
+thing in the header. It opens the same `sidebar` content in a `Drawer` from
+the start edge, named by the same label. Above the breakpoint the button is
+hidden and the sidebar is back.
+
+- **The shell renders the button**, rather than a part the consumer places,
+  so a drawer shell cannot be left with no way to its navigation. It is the
+  one client island inside a Server Component; the shell stays `server`.
+- **Decided by the shell's width**, through a container named `pp-app-shell`,
+  at Split's thresholds (30 / 45 / 60rem), restated because a container query
+  cannot read a custom property. Named, so a `Container` inside the header —
+  itself a query container — cannot capture the button's query.
+- **The content is rendered twice while the drawer is open**: once in the
+  hidden sidebar (`display: none`, out of the accessibility tree) and once in
+  the drawer. Portalling one tree between the two was weighed and not taken:
+  it would make the sidebar a client component for a case that only exists
+  while the drawer is open.
+- **A followed link closes the drawer**, because a client-side navigation does
+  not unmount the shell. A modified click, `target="_blank"` or `download`
+  leaves it open.
+- **Controlled and uncontrolled** (RULES §5.5): `menuOpen`, `defaultMenuOpen`,
+  `onMenuOpenChange`, which also fires when a link closes it.
+- **Default stays `stack`**, so the shells already in use do not change.
+  With `collapseBelow="never"` or no sidebar there is nothing to collapse, and
+  no button.
+
 ## Sizing contract justification
 
 `fill`: a block-level grid with `min-inline-size: 0` and no inline size.

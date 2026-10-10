@@ -9366,3 +9366,35 @@ test.describe('InputGroup', () => {
     expect(await edge(invalid), 'the danger focus edge, not the neutral one').not.toBe(plainFocus);
   });
 });
+
+test.describe('AppShell collapseTo="drawer"', () => {
+  test('below the breakpoint the sidebar leaves and the menu button shows; at 960px the reverse (spec §9)', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    const cells = page.locator('[data-testid="app-shell-drawer"] .matrix__viewport');
+    await expect(cells).toHaveCount(3);
+    for (const [i, narrow] of [[0, true], [1, true], [2, false]] as const) {
+      const shell = cells.nth(i).locator('.pp-app-shell');
+      const menu = shell.getByRole('button', { name: 'Menu' });
+      const sidebar = shell.locator('.pp-app-shell__sidebar');
+      if (narrow) {
+        await expect(menu, `cell ${i}`).toBeVisible();
+        await expect(sidebar, `cell ${i}`).toBeHidden();
+      } else {
+        await expect(menu, `cell ${i}`).toBeHidden();
+        await expect(sidebar, `cell ${i}`).toBeVisible();
+      }
+    }
+  });
+
+  test('the menu opens the navigation from the start edge, and following a link closes it', async ({ page }) => {
+    await page.goto('/components/app-shell');
+    const shell = page.locator('[data-testid="app-shell-drawer"] .matrix__viewport').first().locator('.pp-app-shell');
+    await shell.getByRole('button', { name: 'Menu' }).click();
+    const drawer = page.getByRole('dialog', { name: 'Menu' });
+    await expect(drawer).toBeVisible();
+    const box = await drawer.boundingBox();
+    expect(box?.x, 'anchored to the left edge in a left-to-right page').toBe(0);
+    await drawer.getByRole('link', { name: 'Assets' }).click();
+    await expect(drawer).toBeHidden();
+  });
+});

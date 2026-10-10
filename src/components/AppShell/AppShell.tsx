@@ -2,6 +2,7 @@ import { forwardRef, useId, type ComponentPropsWithoutRef, type ReactNode } from
 
 import { cx } from '../../internal/cx';
 import { Split, SplitMain, SplitSidebar, type SplitCollapse } from '../Split/Split';
+import { AppShellMenu } from './AppShellMenu';
 
 /**
  * The frame of an app page: a header across the top, a sidebar beside the
@@ -18,6 +19,13 @@ import { Split, SplitMain, SplitSidebar, type SplitCollapse } from '../Split/Spl
  * `collapseBelow` the sidebar stacks above the content by the shell's own
  * width — the viewport media query the consuming app's `.lp-shell` still
  * carries, replaced. With no sidebar there is no Split.
+ *
+ * OR, WITH `collapseTo="drawer"`, IT LEAVES (spec §9, D-110 §8). On a phone a
+ * stacked sidebar pushes the page below the fold on every page, so below
+ * `collapseBelow` the sidebar is hidden and a menu button at the start of the
+ * header opens the same content in a Drawer. The shell renders the button
+ * itself, so a drawer shell cannot be left with no way to its navigation, and
+ * the button is the one client island in a server component.
  *
  * Sizing contract: fill; `min-block-size: 100%` defers to the parent for the
  * block axis (spec §6). RSC: server. Spec: docs/specs/AppShell.md
@@ -38,7 +46,23 @@ export interface AppShellProps extends ComponentPropsWithoutRef<'div'> {
   collapseBelow?: SplitCollapse;
   /** The header stays in view (spec §5). */
   sticky?: boolean;
+  /**
+   * What the sidebar does below `collapseBelow`: stack above the content, or
+   * leave for a Drawer opened by a menu button in the header (spec §9).
+   * Default `'stack'`.
+   */
+  collapseTo?: AppShellCollapseTo;
+  /** The menu button's name and the drawer's, with `collapseTo="drawer"`. */
+  menuLabel?: string;
+  /** The drawer, controlled. */
+  menuOpen?: boolean;
+  /** The drawer, uncontrolled. */
+  defaultMenuOpen?: boolean;
+  /** Fires in both modes, and when a link in the drawer is followed. */
+  onMenuOpenChange?: (open: boolean) => void;
 }
+
+export type AppShellCollapseTo = 'stack' | 'drawer';
 
 export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell(
   {
@@ -50,12 +74,21 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     sidebarInlineSize = '16rem',
     collapseBelow = 'md',
     sticky = false,
+    collapseTo = 'stack',
+    menuLabel = 'Menu',
+    menuOpen,
+    defaultMenuOpen,
+    onMenuOpenChange,
     className,
     ...props
   },
   ref,
 ) {
   const mainId = useId();
+  const hasHeader = header !== undefined && header !== null;
+  const hasSidebar = sidebar !== undefined && sidebar !== null;
+  /* A drawer needs a sidebar to hold and a breakpoint to appear below. */
+  const drawer = collapseTo === 'drawer' && hasSidebar && collapseBelow !== 'never';
   const main = (
     <main id={mainId} tabIndex={-1} className="pp-app-shell__main">
       {children}
@@ -63,12 +96,33 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   );
 
   return (
-    <div ref={ref} className={cx('pp-app-shell', className)} data-sticky={sticky || undefined} {...props}>
+    <div
+      ref={ref}
+      className={cx('pp-app-shell', className)}
+      data-sticky={sticky || undefined}
+      data-collapse-to={drawer ? 'drawer' : undefined}
+      data-collapse-below={drawer ? collapseBelow : undefined}
+      {...props}
+    >
       <a className="pp-app-shell__skip" href={`#${mainId}`}>
         {skipLinkLabel}
       </a>
-      {header !== undefined && header !== null ? <header className="pp-app-shell__header">{header}</header> : null}
-      {sidebar !== undefined && sidebar !== null ? (
+      {drawer ? (
+        <header className="pp-app-shell__header">
+          <AppShellMenu
+            label={menuLabel}
+            open={menuOpen}
+            defaultOpen={defaultMenuOpen}
+            onOpenChange={onMenuOpenChange}
+          >
+            {sidebar}
+          </AppShellMenu>
+          {hasHeader ? <div className="pp-app-shell__header-content">{header}</div> : null}
+        </header>
+      ) : hasHeader ? (
+        <header className="pp-app-shell__header">{header}</header>
+      ) : null}
+      {hasSidebar ? (
         <Split className="pp-app-shell__body" sidebarInlineSize={sidebarInlineSize} collapseBelow={collapseBelow} gap="0">
           <SplitSidebar className="pp-app-shell__sidebar">{sidebar}</SplitSidebar>
           <SplitMain asChild>{main}</SplitMain>

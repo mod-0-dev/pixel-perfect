@@ -84,6 +84,22 @@ export default function AppShellPage() {
         </Matrix>
       </section>
 
+      <section data-testid="app-shell-drawer">
+        <h2>On a phone, the sidebar becomes a drawer</h2>
+        <p>
+          With <code>collapseTo=&quot;drawer&quot;</code>, below <code>collapseBelow</code> the sidebar
+          leaves instead of stacking, and a menu button at the start of the header opens the same
+          content in a <code>Drawer</code> from the start edge. Following a link in it closes it. At
+          960px the sidebar is back and the button is gone; both are decided by the shell&rsquo;s own
+          width.
+        </p>
+        <Matrix>
+          <AppShell collapseTo="drawer" header={<Header />} sidebar={<Nav />} footer={<Footer />}>
+            <Page />
+          </AppShell>
+        </Matrix>
+      </section>
+
       <section data-testid="app-shell-tall">
         <h2>In a parent with a height</h2>
         <p>

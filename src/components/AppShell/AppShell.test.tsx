@@ -1,7 +1,8 @@
-import { render } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { renderToString } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { expectNoA11yViolations, renderWithTheme } from '../../test';
 import { AppShell } from './AppShell';
@@ -86,5 +87,84 @@ describe('AppShell', () => {
       await expectNoA11yViolations(container);
       unmount();
     }
+  });
+});
+
+describe('AppShell with collapseTo="drawer" (spec §9)', () => {
+  const drawerShell = (props: Partial<Parameters<typeof AppShell>[0]> = {}) => (
+    <AppShell
+      collapseTo="drawer"
+      header={<span>Brand</span>}
+      sidebar={
+        <nav aria-label="Main">
+          <a href="#reports">Reports</a>
+        </nav>
+      }
+      {...props}
+    >
+      <h1>Page</h1>
+    </AppShell>
+  );
+
+  it('puts a named menu button at the start of the header, and keeps the sidebar for wide shells', () => {
+    const { getByRole, container } = renderWithTheme(drawerShell());
+    const root = container.querySelector('.pp-app-shell') as HTMLElement;
+    expect(root).toHaveAttribute('data-collapse-to', 'drawer');
+    expect(root).toHaveAttribute('data-collapse-below', 'md');
+    const header = getByRole('banner');
+    const button = getByRole('button', { name: 'Menu' });
+    expect(header.firstElementChild).toBe(button);
+    expect(button).toHaveClass('pp-app-shell__menu');
+    expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(header.querySelector('.pp-app-shell__header-content')).toHaveTextContent('Brand');
+    expect(container.querySelector('.pp-app-shell__sidebar')).toHaveTextContent('Reports');
+  });
+
+  it('opens the sidebar’s content in a drawer from the start edge, and a followed link closes it', async () => {
+    const user = userEvent.setup();
+    const { getByRole } = renderWithTheme(drawerShell({ menuLabel: 'Navigation' }));
+    await user.click(getByRole('button', { name: 'Navigation' }));
+    // Portalled, so read from the document rather than the render container.
+    const dialog = screen.getByRole('dialog', { name: 'Navigation' });
+    expect(dialog).toHaveAttribute('data-side', 'left');
+    expect(within(dialog).getByRole('link', { name: 'Reports' })).toBeInTheDocument();
+    await user.click(dialog.querySelector('a') as HTMLElement);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('is controlled and uncontrolled, and reports both (RULES §5.5)', async () => {
+    const user = userEvent.setup();
+    const onMenuOpenChange = vi.fn();
+    const { getByRole, rerender } = render(drawerShell({ menuOpen: false, onMenuOpenChange }));
+    await user.click(getByRole('button', { name: 'Menu' }));
+    expect(onMenuOpenChange).toHaveBeenCalledWith(true);
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    rerender(drawerShell({ menuOpen: true, onMenuOpenChange }));
+    expect(screen.getByRole('dialog', { name: 'Menu' })).toBeInTheDocument();
+  });
+
+  it('renders no menu without a sidebar, or with collapseBelow="never"', () => {
+    const { queryByRole, rerender, container } = render(
+      <AppShell collapseTo="drawer" header={<span>Brand</span>}>
+        <h1>Page</h1>
+      </AppShell>,
+    );
+    expect(queryByRole('button', { name: 'Menu' })).toBeNull();
+    expect(container.querySelector('.pp-app-shell')).not.toHaveAttribute('data-collapse-to');
+    rerender(drawerShell({ collapseBelow: 'never' }));
+    expect(queryByRole('button', { name: 'Menu' })).toBeNull();
+  });
+
+  it('server-renders, with the button in the HTML before hydration', () => {
+    const html = renderToString(drawerShell());
+    expect(html).toContain('pp-app-shell__menu');
+    expect(html).toContain('aria-label="Menu"');
+  });
+
+  it('has no axe violations, with the drawer open', async () => {
+    const user = userEvent.setup();
+    const { getByRole } = renderWithTheme(drawerShell());
+    await user.click(getByRole('button', { name: 'Menu' }));
+    await expectNoA11yViolations(document.body);
   });
 });

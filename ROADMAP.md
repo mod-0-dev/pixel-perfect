@@ -37,28 +37,26 @@ line in [`docs/DECISIONS-INDEX.md`](docs/DECISIONS-INDEX.md) (D-106). This block
 says where things stand, is refreshed on every transition, and stays short
 enough to be read first.
 
-- **The roadmap is complete: 84 / 84** (13 foundations + 71 components), as
-  of 2026-10-07 (D-108 §5). 6.1–6.7, 3.18, 0.10, 0.12 and 0.13 went to `done`
-  once their CI-authored baselines had been compared green on `main` (runs
-  205 and 209); 0.10, 0.12 and 0.13's PR (#35) had merged.
-- **D-107 §8 and D-106 §5, closed** (D-108): a pressed `Toggle` is its
-  tone's solid fill, and `Toggle` has no `solid` variant (§1, breaking at
-  the type level); a `SegmentedControl` inside a `Toolbar` is walked segment
-  by segment and tested (§2); the visual job fails, and authors nothing, when
-  a test fails for any reason but a missing baseline (§3); the playground's
-  bare `<code>` is set in the pinned mono and `?gallery=open` no longer breaks
-  (§4, D-102 §2's two follow-ups).
-- **60 pages' baselines are re-authored on this PR** (D-108 §4): the 59 that
-  hold a bare `<code>` with `--rebaseline`, because each such line was 2px
-  taller on the runner and their heights change there; `examples` with its
-  manifest entries kept. The 19 that did not change are compared. Its
-  authoring run, then one more run that compares what it authored, close it.
-- **Launchpad's Tier 2 line, closed** (D-108 §6): it already consumes the
-  layout primitives. Adopting AppShell, NavSidebar and PageHeader there is
-  new work, and needs its pin moved past D-107 §2's breaking `Split` change.
-- **Found and not fixed:** Pagination's current page is the same 1.26:1 fill
-  with an edge, not measured against 1.4.11 (D-108 §7); a bare `<code>`'s
-  runner heights are known only after the authoring run.
+- **85 items: 84 `done`, 1 in `review`** (13 foundations + 72 components),
+  as of 2026-10-10 (D-110). 3.19 `InputGroup` was added, written and built
+  from the 2026-10-10 gap analysis (D-110 §7) and waits only on its
+  CI-authored baselines.
+- **D-110, from the 2026-10-10 gap analysis** (its findings are in the
+  entry): control text is 16px on a touch
+  screen, so iOS stops zooming into fields (§1); forced colours paint every
+  state that was a fill in system colours, tested (§2); `:hover` only where
+  the device hovers, linted (§3); safe-area insets on Dialog, Drawer and the
+  Toast region (§4); the unit tests run on React 18 too (§5); a pressed
+  warning Toggle carries its strong edge, and Pagination's current page was
+  measured and passes (§6); AppShell can collapse its sidebar into a drawer
+  (§8).
+- **Baselines re-authored on that PR:** `toggle`, `app-shell` and `index`
+  deleted for CI to author, and `input-group` new. Its authoring run, then
+  one more run that compares what it authored, close it and move 3.19 to
+  `done`.
+- **Found and not fixed:** a warning Toggle beside an `outline` one at rest
+  is still an edge against an edge (D-110 §6); a bare `<code>`'s runner
+  heights are known only after an authoring run (D-108 §4).
 
 ---
 
@@ -213,7 +211,7 @@ Opinionated patterns. Only build what the consuming app actually needs.
 | --- | --- | --- | --- | --- | --- | --- |
 | 6.1 | `ThemeProvider` | `done` | n/a | client | T0 | [`ThemeProvider.md`](docs/specs/ThemeProvider.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-094; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). No-flash SSR theme, `prefers-color-scheme` + override: one provider at the root writing `data-pp-theme` on `<html>`, `system` the absence of the attribute (§2), `value` / `defaultValue` / `onValueChange` — RULES §5 bans `theme` as a prop name (§3, D-094 §1) — with the app's persistence in controlled mode, an inline script rendered before the children for the first paint (§4), `useTheme()` with `resolvedTheme` `undefined` until mounted (§5). The playground is themed by it, with the same key, values and switcher DOM, so no baseline moved (§7); the index is re-baselined for the tier and the entry (D-066 §2)
 | 6.2 | `ThemeToggle` | `done` | hug | client | 6.1, 3.2 | [`ThemeToggle.md`](docs/specs/ThemeToggle.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-095; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). Gate B read 6.1's `review` (baseline only) as `done` (D-073 §2). A square button that flips light and dark (§1); both faces rendered and one displayed by CSS from the document's theme — the tokens' four scopes read from the toggle's side — so it is right before hydration and cannot disagree with the page (§2); the icon shows what is on, the name says what a press does (§3); Button with IconButton's class, not IconButton, because the name is content (§4); `:root`, not the nearest scope (§5); no ARIA state (§6); its own page, the chrome unchanged (§7) |
-| 6.3 | `AppShell` | `done` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-096; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1, D-096 §1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7) |
+| 6.3 | `AppShell` | `done` | fill | server | 2.6 | [`AppShell.md`](docs/specs/AppShell.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-096; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The frame a Next layout wraps its pages in: `header`, `sidebar` and `footer` as element slots and `children` as the `<main>` — a deliberate step off RULES §5.6's child-parts shape, because a Server Component root must own `<main>` to wire the skip link (§1, D-096 §1); the skip link built in and first (§2); `Split` as the middle row with its two knobs forwarded (§3); a sunken sidebar and hairlines that need no side (§4); `sticky` for the header (§5); fills the parent's block size, never the viewport's (§6); the document model, not scrolling panes (§7). **Amended 2026-10-10 (D-110 §8):** `collapseTo="drawer"` — below the breakpoint the sidebar leaves for a Drawer opened by a menu button the shell renders in its header; default `stack` unchanged; its baselines are re-authored on that PR |
 | 6.4 | `NavSidebar` | `done` | fill | client | 6.3, 5.11 | [`NavSidebar.md`](docs/specs/NavSidebar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-099; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The app's primary navigation for AppShell's sidebar slot: a named `<nav>` of sections, items and disclosure groups (§1); the app says which link is current and a group holding it is open and marked (§2); a closed group's list is rendered and `hidden` — which needs its own `display: none`, because an author `display` beats the user agent's (§3, D-099 §1); plain links, no roving tabindex, 5.11's row and not its role (§4, §5); not a drawer, composition instead (§6); `asChild` for `next/link` (§7). The last component of the roadmap |
 | 6.5 | `PageHeader` | `done` | fill | server | 2.2, 5.6 | [`PageHeader.md`](docs/specs/PageHeader.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-097; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). Four named parts — title, description, actions, the root — and the consumer's `Breadcrumb` first, placed by its class (§1); one flex row that wraps, so an absent part costs no gap and nothing is placed by area (§2); the description reads after the title and paints after the actions by `order`, the library's one visual reorder, of a paragraph nothing focuses (§3); the title a `Heading` at level 1 (§4) |
 | 6.6 | `Toolbar` | `done` | fill | client | 3.4 | [`Toolbar.md`](docs/specs/Toolbar.md), written and built 2026-09-29 under the standing delegation (D-069 §1); rulings and findings in D-098; **done** 2026-10-07: its CI-authored baselines were compared green on `main` (runs 205 and 209, D-108 §5). The roving component `ButtonGroup`'s spec promised (D-030 §7): `role="toolbar"` with a required name, one tab stop over the controls found in its own subtree and re-read by an observer, no wrapper part (§1, D-098 §2); the last-focused control remembered — never a text field, whose arrows are the caret's and which would strand the controls after it (§2, §4, D-098 §1); arrows by orientation mirrored in RTL, wrapping unless `loop={false}` (§3); a wrapping row with a `gap`, not a `Cluster` (§6) |
