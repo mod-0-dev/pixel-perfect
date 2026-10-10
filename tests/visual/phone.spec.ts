@@ -72,6 +72,17 @@ test.describe('on a phone', () => {
       }));
       expect(width.scroll, 'the page scrolls sideways').toBeLessThanOrEqual(width.client);
 
+      // iOS Safari zooms the page on focusing a text field set below 16px
+      // (D-110 §1). Chromium does not zoom, so the size is what is asserted.
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>('input, select, textarea')]
+          .filter((el) => !(el instanceof HTMLInputElement) || !['checkbox', 'radio', 'range', 'file', 'hidden', 'color'].includes(el.type))
+          .filter((el) => el.getClientRects().length > 0)
+          .filter((el) => parseFloat(getComputedStyle(el).fontSize) < 16)
+          .map((el) => `${el.tagName.toLowerCase()}.${el.className} ${getComputedStyle(el).fontSize}`),
+      );
+      expect(small, 'a text field iOS would zoom into').toEqual([]);
+
       const tall = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 100);
       if (!tall) return;
 

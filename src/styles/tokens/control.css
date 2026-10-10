@@ -62,4 +62,26 @@
        Select has one corner treatment rather than three. */
     --pp-control-radius: var(--pp-radius-2);
   }
+
+  /*
+   * TOUCH: 16px, every size (D-110 §1). iOS Safari zooms the page whenever a
+   * focused input, select or textarea is set below 16px, and leaves it zoomed
+   * when focus moves on — so at 14px every sm and md field on an iPhone
+   * enlarged the page it sat on. The cure that disables pinch zoom
+   * (`maximum-scale=1`) fails WCAG 1.4.4, so the text grows instead.
+   *
+   * The whole control scale moves, not the text-entry half of it: a Button
+   * beside an Input in a row keeps one font size, and Label, which scales off
+   * these (D-034), keeps matching its control. Heights do not move; 16px text
+   * in a 32px control is the lg proportion one step down.
+   *
+   * `pointer` is the input device, not the viewport, so RULES §1's ban on
+   * viewport queries does not reach it, and this is a token, not a component.
+   */
+  @media (pointer: coarse) {
+    :root {
+      --pp-control-font-size-sm: var(--pp-font-size-3);
+      --pp-control-font-size-md: var(--pp-font-size-3);
+    }
+  }
 }
