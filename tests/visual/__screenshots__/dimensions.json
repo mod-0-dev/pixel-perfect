@@ -23,6 +23,14 @@
     "width": 1280,
     "height": 9099
   },
+  "app-shell-dark.png": {
+    "width": 1280,
+    "height": 7750
+  },
+  "app-shell-light.png": {
+    "width": 1280,
+    "height": 7750
+  },
   "aspect-ratio-dark.png": {
     "width": 1280,
     "height": 11433
@@ -303,9 +311,27 @@
     "width": 1280,
     "height": 2530
   },
+  "index-dark.png": {
+    "width": 1280,
+    "height": 4745,
+    "components": 71
+  },
+  "index-light.png": {
+    "width": 1280,
+    "height": 4745,
+    "components": 71
+  },
   "input-dark.png": {
     "width": 1280,
     "height": 5002
+  },
+  "input-group-dark.png": {
+    "width": 1280,
+    "height": 4022
+  },
+  "input-group-light.png": {
+    "width": 1280,
+    "height": 4022
   },
   "input-light.png": {
     "width": 1280,
@@ -566,6 +592,14 @@
   "toast-light.png": {
     "width": 1280,
     "height": 2276
+  },
+  "toggle-dark.png": {
+    "width": 1280,
+    "height": 3282
+  },
+  "toggle-light.png": {
+    "width": 1280,
+    "height": 3282
   },
   "tokens-dark.png": {
     "width": 1280,
