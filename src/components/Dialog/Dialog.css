@@ -54,7 +54,12 @@
     /* Scroll container: a panel taller than the viewport scrolls here,
        with the gutter kept above and below it. */
     overflow: auto;
-    padding: var(--pp-dialog-gutter, var(--pp-space-4));
+    --_gutter: var(--pp-dialog-gutter, var(--pp-space-4));
+
+    /* Clear of the notch and the home indicator (D-110 §4); see Drawer.css
+       for why the inline side takes the larger inset. */
+    padding-block: max(var(--_gutter), env(safe-area-inset-top)) max(var(--_gutter), env(safe-area-inset-bottom));
+    padding-inline: max(var(--_gutter), env(safe-area-inset-left), env(safe-area-inset-right));
 
     background-color: var(--pp-dialog-scrim, var(--pp-color-bg-scrim));
     animation: pp-dialog-scrim-in var(--pp-duration-fast) var(--pp-easing-decelerate);

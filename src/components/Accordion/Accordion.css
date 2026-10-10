@@ -82,8 +82,10 @@
     transition: rotate var(--pp-duration-fast) var(--pp-easing-standard);
   }
 
-  .pp-accordion__trigger:hover .pp-accordion__chevron {
-    color: var(--pp-color-text);
+  @media (hover: hover) {
+    .pp-accordion__trigger:hover .pp-accordion__chevron {
+      color: var(--pp-color-text);
+    }
   }
 
   .pp-accordion__trigger[data-state="open"] .pp-accordion__chevron {

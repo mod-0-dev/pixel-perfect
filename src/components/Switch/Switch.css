@@ -218,4 +218,23 @@
       transition-property: none;
     }
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-switch {
+      --_thumb: CanvasText;
+    }
+
+    .pp-switch[data-state="checked"] {
+      --_track-bg: Highlight;
+      --_track-border: Highlight;
+      --_thumb: HighlightText;
+    }
+
+    .pp-switch[data-disabled] {
+      --_thumb: GrayText;
+    }
+  }
 }

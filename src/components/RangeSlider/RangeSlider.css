@@ -232,4 +232,13 @@
     outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
     outline-offset: var(--pp-focus-ring-offset);
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-range-slider__fill {
+      background-color: Highlight;
+    }
+  }
 }

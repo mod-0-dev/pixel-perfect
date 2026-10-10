@@ -184,4 +184,17 @@
       scale: 0.96;
     }
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    /* Also Combobox's options and CommandPalette's items, which wear this
+       row's class. */
+    .pp-dropdown-menu__item[data-highlighted],
+    .pp-dropdown-menu__sub-trigger[data-state="open"] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+  }
 }

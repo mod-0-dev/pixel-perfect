@@ -34,7 +34,10 @@
     inline-size: min(var(--pp-toast-width, var(--pp-measure-xs)), 100%);
     max-block-size: 100%;
     margin: 0;
-    padding: var(--_gutter);
+    /* Clear of the notch and the home indicator (D-110 §4); see Drawer.css
+       for why the inline side takes the larger inset. */
+    padding-block: max(var(--_gutter), env(safe-area-inset-top)) max(var(--_gutter), env(safe-area-inset-bottom));
+    padding-inline: max(var(--_gutter), env(safe-area-inset-left), env(safe-area-inset-right));
     list-style: none;
     pointer-events: none;
   }
@@ -142,6 +145,15 @@
 
     to {
       translate: calc(100% + var(--_gutter)) 0;
+    }
+  }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-toast {
+      outline: var(--pp-border-width-1) solid CanvasText;
     }
   }
 }

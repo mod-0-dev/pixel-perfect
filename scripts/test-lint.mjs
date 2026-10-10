@@ -77,6 +77,7 @@ const EXPECTED_RULE_LINT = [
   '`window` is accessed at module scope',
   'mixes `::-webkit-` and `::-moz-` pseudo-elements',
   'reads `--pp-font-size-sm`, which no token file or stylesheet defines',
+  '`.pp-bad:hover` is a :hover outside `@media (hover: hover)`',
 ];
 
 // Rule 7 must not fire for a component's own override hook, which is
@@ -140,4 +141,4 @@ if (failures > 0) {
 
 const total =
   Object.values(EXPECTED).reduce((n, s) => n + s.length, 0) + EXPECTED_RULE_LINT.length;
-console.log(`✓ linter self-test: ${total} violations caught across ${Object.keys(EXPECTED).length} CSS rules and 6 source rules`);
+console.log(`✓ linter self-test: ${total} violations caught across ${Object.keys(EXPECTED).length} CSS rules and 7 source rules`);

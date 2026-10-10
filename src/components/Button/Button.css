@@ -132,8 +132,10 @@
    * :hover still matches a disabled button, and a loading one is not disabled
    * at all, so both are excluded by hand rather than by hoping.
    */
-  .pp-button:not([data-disabled], [data-loading]):hover {
-    background-color: var(--pp-button-bg, var(--_bg-hover));
+  @media (hover: hover) {
+    .pp-button:not([data-disabled], [data-loading]):hover {
+      background-color: var(--pp-button-bg, var(--_bg-hover));
+    }
   }
 
   .pp-button:not([data-disabled], [data-loading]):active {

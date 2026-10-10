@@ -61,8 +61,10 @@
     cursor: not-allowed;
   }
 
-  .pp-tree__row:not([aria-disabled="true"]):hover {
-    background-color: var(--pp-tone-bg-hover);
+  @media (hover: hover) {
+    .pp-tree__row:not([aria-disabled="true"]):hover {
+      background-color: var(--pp-tone-bg-hover);
+    }
   }
 
   .pp-tree__row[data-selected] {
@@ -114,5 +116,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-tree__row[data-selected] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
   }
 }

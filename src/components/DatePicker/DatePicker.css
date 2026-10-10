@@ -83,8 +83,10 @@
     block-size: var(--pp-size-4);
   }
 
-  .pp-date-picker__toggle:hover:not(:disabled) {
-    color: var(--pp-color-text);
+  @media (hover: hover) {
+    .pp-date-picker__toggle:hover:not(:disabled) {
+      color: var(--pp-color-text);
+    }
   }
 
   .pp-date-picker__toggle:focus-visible {

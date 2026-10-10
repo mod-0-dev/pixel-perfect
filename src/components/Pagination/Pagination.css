@@ -110,4 +110,18 @@
       padding-inline: var(--pp-space-2);
     }
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-pagination__page[aria-current="page"] {
+      --_bg: Highlight;
+      --_bg-hover: Highlight;
+      --_bg-active: Highlight;
+      --_border: Highlight;
+
+      color: HighlightText;
+    }
+  }
 }

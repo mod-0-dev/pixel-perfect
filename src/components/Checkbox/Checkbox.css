@@ -176,4 +176,16 @@
        The solid-vs-on-solid pairing is solved once at the token layer. */
     color: var(--pp-checkbox-mark-color, var(--_mark));
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-checkbox[data-state="checked"]:not([data-disabled]),
+    .pp-checkbox[data-state="indeterminate"]:not([data-disabled]) {
+      --_bg: Highlight;
+      --_border: Highlight;
+      --_mark: HighlightText;
+    }
+  }
 }

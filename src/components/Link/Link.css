@@ -51,12 +51,16 @@
     text-decoration-line: none;
   }
 
-  .pp-link[data-underline="hover"]:hover {
-    text-decoration-line: underline;
+  @media (hover: hover) {
+    .pp-link[data-underline="hover"]:hover {
+      text-decoration-line: underline;
+    }
   }
 
-  .pp-link:hover {
-    color: var(--pp-link-color-hover, var(--_color-hover));
+  @media (hover: hover) {
+    .pp-link:hover {
+      color: var(--pp-link-color-hover, var(--_color-hover));
+    }
   }
 
   .pp-link:focus-visible {
