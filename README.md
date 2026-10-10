@@ -1,5 +1,8 @@
 # Pixel Perfect
 
+[![npm](https://img.shields.io/npm/v/@mod-0-dev/pixel-perfect)](https://www.npmjs.com/package/@mod-0-dev/pixel-perfect)
+[![license](https://img.shields.io/npm/l/@mod-0-dev/pixel-perfect)](LICENSE)
+
 A component library with opinions.
 
 - **Ground rules:** [`docs/RULES.md`](docs/RULES.md) — read these first
@@ -11,6 +14,9 @@ React + TypeScript for Next.js. Plain CSS, two-tier design tokens, one
 stylesheet. Zero runtime dependencies outside Tier 4 overlays.
 
 ## Install
+
+Published on npm as
+[`@mod-0-dev/pixel-perfect`](https://www.npmjs.com/package/@mod-0-dev/pixel-perfect).
 
 ```bash
 npm install @mod-0-dev/pixel-perfect
