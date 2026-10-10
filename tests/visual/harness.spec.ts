@@ -9298,3 +9298,71 @@ test.describe('SegmentedControl', () => {
     expect((await paint(plan.locator('.pp-segmented-control__item').first())).bg).toBe('rgba(0, 0, 0, 0)');
   });
 });
+
+test.describe('InputGroup', () => {
+  test('one box: the group is the Input’s height at each size, and the control inside has no edge or fill (spec §3)', async ({ page }) => {
+    await page.goto('/components/input-group');
+    for (const size of ['sm', 'md', 'lg'] as const) {
+      const group = page.locator(`.pp-input-group[data-size="${size}"]`).first();
+      const height = await group.evaluate((n) => n.getBoundingClientRect().height);
+      const token = await page.evaluate((s) => {
+        const probe = document.createElement('div');
+        probe.style.blockSize = `var(--pp-control-height-${s})`;
+        document.body.appendChild(probe);
+        const h = probe.getBoundingClientRect().height;
+        probe.remove();
+        return h;
+      }, size);
+      expect(height, `${size} group height`).toBe(token);
+    }
+    const control = page.locator('.pp-input-group .pp-input__control').first();
+    const paint = await control.evaluate((n) => {
+      const s = getComputedStyle(n);
+      return { border: s.borderTopWidth, bg: s.backgroundColor };
+    });
+    expect(paint).toEqual({ border: '0px', bg: 'rgba(0, 0, 0, 0)' });
+  });
+
+  test('the ring is drawn on the group, not the control; a button inside draws its own (spec §3)', async ({ page }) => {
+    await page.goto('/components/input-group');
+    const group = page.locator('.pp-input-group').first();
+    const control = group.locator('.pp-input__control');
+    await control.focus();
+    expect(await ringOf(group)).toMatchObject({ style: 'solid' });
+    expect((await ringOf(control)).style).toBe('none');
+
+    const password = page.locator('.pp-input-group').filter({ has: page.getByRole('button', { name: 'Show password' }) }).first();
+    await password.locator('.pp-input__control').focus();
+    await page.keyboard.press('Tab');
+    await expect(password.getByRole('button', { name: 'Show password' })).toBeFocused();
+    expect((await ringOf(password)).style, 'the box gives the ring up to the button').toBe('none');
+    expect((await ringOf(password.getByRole('button', { name: 'Show password' }))).style).toBe('solid');
+  });
+
+  test('a press on a unit focuses the field, and the field is wider than its 20 characters (spec §4, D-040)', async ({ page }) => {
+    await page.goto('/components/input-group');
+    const price = page.locator('.pp-input-group').filter({ hasText: 'EUR' }).first();
+    await price.locator('.pp-input-group__addon').click();
+    await expect(price.locator('.pp-input__control')).toBeFocused();
+
+    // The first matrix's third cell is the 960px one.
+    const wide = page.locator('.matrix').first().locator('.matrix__viewport').nth(2).locator('.pp-input-group').first();
+    const [groupWidth, inputWidth] = await wide.evaluate((n) => [
+      n.getBoundingClientRect().width,
+      (n.querySelector('.pp-input') as HTMLElement).getBoundingClientRect().width,
+    ]);
+    expect(inputWidth).toBeGreaterThan(groupWidth * 0.8);
+  });
+
+  test('invalid draws the danger edge, and keeps a danger edge under focus (spec §2)', async ({ page }) => {
+    await page.goto('/components/input-group');
+    const invalid = page.locator('.pp-input-group[data-invalid]').first();
+    const plain = page.locator('.pp-input-group:not([data-invalid], [data-disabled])').first();
+    const edge = (l: import('@playwright/test').Locator) => l.evaluate((n) => getComputedStyle(n).borderTopColor);
+    expect(await edge(invalid)).not.toBe(await edge(plain));
+    await plain.locator('.pp-input__control').focus();
+    const plainFocus = await edge(plain);
+    await invalid.locator('.pp-input__control').focus();
+    expect(await edge(invalid), 'the danger focus edge, not the neutral one').not.toBe(plainFocus);
+  });
+});

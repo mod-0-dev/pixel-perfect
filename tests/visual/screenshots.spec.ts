@@ -67,6 +67,7 @@ const PAGES: Array<{ name: string; path: string; query?: string }> = [
   { name: 'form', path: '/components/form' },
   { name: 'range-slider', path: '/components/range-slider' },
   { name: 'segmented-control', path: '/components/segmented-control' },
+  { name: 'input-group', path: '/components/input-group' },
   { name: 'popover', path: '/components/popover' },
   { name: 'tooltip', path: '/components/tooltip' },
   { name: 'dialog', path: '/components/dialog', query: GALLERY },

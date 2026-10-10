@@ -202,6 +202,14 @@ export {
 } from './components/FileUpload/FileUpload';
 export { Icon, type IconProps, type IconSize } from './components/Icon/Icon';
 export { Input, type InputProps, type InputType } from './components/Input/Input';
+export {
+  InputGroup,
+  InputGroupAddon,
+  useInputGroup,
+  type InputGroupAddonProps,
+  type InputGroupContextValue,
+  type InputGroupProps,
+} from './components/InputGroup/InputGroup';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
 export { KeyHints, formatKeys, useKeyHint, type KeyHintOptions, type KeyHintsProps } from './components/KeyHints/KeyHints';

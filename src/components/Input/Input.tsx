@@ -4,6 +4,7 @@ import { forwardRef, type ComponentPropsWithoutRef, type CSSProperties } from 'r
 
 import { cx } from '../../internal/cx';
 import { useField } from '../Field/Field';
+import { useInputGroup } from '../InputGroup/InputGroup';
 import type { Size } from '../../types';
 
 /**
@@ -88,15 +89,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   ref,
 ) {
   const field = useField();
+  const group = useInputGroup();
 
   /*
    * The one precedence rule, identical in all six controls of this tier:
    * explicit prop, then the field, then the default. Including
    * `disabled={false}` inside a disabled Field, which does enable this control.
+   * Inside an InputGroup the group comes between the prop and the field: it
+   * has already read the field, and it draws the box (InputGroup.md §2).
    */
-  const size = sizeProp ?? field?.size ?? 'md';
-  const invalid = invalidProp ?? field?.invalid ?? false;
-  const disabled = disabledProp ?? field?.disabled ?? false;
+  const size = sizeProp ?? group?.size ?? field?.size ?? 'md';
+  const invalid = invalidProp ?? group?.invalid ?? field?.invalid ?? false;
+  const disabled = disabledProp ?? group?.disabled ?? field?.disabled ?? false;
   const required = requiredProp ?? field?.required ?? false;
 
   return (
