@@ -55,6 +55,27 @@ jobs:
           git diff --exit-code -- src/styles/tokens/ \
             || (echo "::error::Token CSS is stale. Run 'npm run tokens' and commit the result." && exit 1)
 
+  # The peer range is `react >=18` and every other job installs 19, so the
+  # oldest version the package says it supports was never run (D-110 §5).
+  react-18:
+    name: Unit tests on React 18
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install React 18
+        run: npm install --no-save react@18.3.1 react-dom@18.3.1
+
+      - name: Unit tests
+        run: npm test
+
   visual:
     name: Visual regression
     runs-on: ubuntu-latest

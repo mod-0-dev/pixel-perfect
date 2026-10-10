@@ -91,9 +91,11 @@ of your own is held on hover, and its contrast is yours to check.
 // ✗ controlled and uncontrolled at once. Decide once.
 <Toggle pressed={on} defaultPressed onPressedChange={setOn} />
 
-// ✗ warning. Its solid is light, 1.87:1 against the page in the light theme,
-//   so pressed and not are too close to tell apart.
-<Toggle tone="warning">Flag</Toggle>
+// ✗ warning on an outline toggle. Its solid is light, 1.87:1 against the page
+//   in the light theme; a pressed warning toggle carries a 4.59:1 edge instead,
+//   which tells it from a ghost one at rest but not from an outline one, which
+//   has an edge of its own (D-110 §6).
+<Toggle tone="warning" variant="outline">Flag</Toggle>
 
 // ✗ icon-only with no name.
 <Toggle><Icon decorative><Bold /></Icon></Toggle>
