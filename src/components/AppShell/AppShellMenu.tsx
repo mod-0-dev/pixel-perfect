@@ -24,6 +24,7 @@ export interface AppShellMenuProps {
   open?: boolean | undefined;
   defaultOpen?: boolean | undefined;
   onOpenChange?: ((open: boolean) => void) | undefined;
+  container?: Element | null | undefined;
   children: ReactNode;
 }
 
@@ -35,7 +36,7 @@ function MenuGlyph() {
   );
 }
 
-export function AppShellMenu({ label, open, defaultOpen, onOpenChange, children }: AppShellMenuProps) {
+export function AppShellMenu({ label, open, defaultOpen, onOpenChange, container, children }: AppShellMenuProps) {
   const [isOpen, setOpen] = useControllableState({
     value: open,
     defaultValue: defaultOpen ?? false,
@@ -64,7 +65,13 @@ export function AppShellMenu({ label, open, defaultOpen, onOpenChange, children 
           <MenuGlyph />
         </IconButton>
       </DrawerTrigger>
-      <DrawerContent side="start" aria-label={label} className="pp-app-shell__drawer" onClick={closeOnNavigate}>
+      <DrawerContent
+        container={container ?? null}
+        side="start"
+        aria-label={label}
+        className="pp-app-shell__drawer"
+        onClick={closeOnNavigate}
+      >
         {children}
       </DrawerContent>
     </Drawer>

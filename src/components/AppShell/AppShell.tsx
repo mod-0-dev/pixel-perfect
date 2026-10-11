@@ -60,6 +60,13 @@ export interface AppShellProps extends ComponentPropsWithoutRef<'div'> {
   defaultMenuOpen?: boolean;
   /** Fires in both modes, and when a link in the drawer is followed. */
   onMenuOpenChange?: (open: boolean) => void;
+  /**
+   * Where the drawer is portalled, with `collapseTo="drawer"`. Defaults to
+   * `document.body`. For a shell inside a box narrower than the viewport — a
+   * preview pane, a docs example — so the drawer covers the shell it belongs
+   * to rather than the page (spec §9).
+   */
+  menuContainer?: Element | null;
 }
 
 export type AppShellCollapseTo = 'stack' | 'drawer';
@@ -79,6 +86,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     menuOpen,
     defaultMenuOpen,
     onMenuOpenChange,
+    menuContainer,
     className,
     ...props
   },
@@ -114,6 +122,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
             open={menuOpen}
             defaultOpen={defaultMenuOpen}
             onOpenChange={onMenuOpenChange}
+            container={menuContainer}
           >
             {sidebar}
           </AppShellMenu>

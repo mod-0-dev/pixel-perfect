@@ -7,6 +7,7 @@
 import { AppShell, Container, Heading, Link, Stack, Text, ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
+import { DrawerShell } from './DrawerShell';
 
 const SECTIONS = ['Overview', 'Assets', 'Releases', 'Settings'];
 
@@ -89,14 +90,15 @@ export default function AppShellPage() {
         <p>
           With <code>collapseTo=&quot;drawer&quot;</code>, below <code>collapseBelow</code> the sidebar
           leaves instead of stacking, and a menu button at the start of the header opens the same
-          content in a <code>Drawer</code> from the start edge. Following a link in it closes it. At
+          content in a <code>Drawer</code> from the start edge. Following a link in it closes it. Here each
+          cell is the shell&rsquo;s page, so <code>menuContainer</code> keeps the drawer inside it. At
           960px the sidebar is back and the button is gone; both are decided by the shell&rsquo;s own
           width.
         </p>
         <Matrix>
-          <AppShell collapseTo="drawer" header={<Header />} sidebar={<Nav />} footer={<Footer />}>
+          <DrawerShell header={<Header />} sidebar={<Nav />} footer={<Footer />}>
             <Page />
-          </AppShell>
+          </DrawerShell>
         </Matrix>
       </section>
 

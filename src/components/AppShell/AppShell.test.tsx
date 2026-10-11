@@ -143,6 +143,14 @@ describe('AppShell with collapseTo="drawer" (spec §9)', () => {
     expect(screen.getByRole('dialog', { name: 'Menu' })).toBeInTheDocument();
   });
 
+  it('portals the drawer into menuContainer when given', () => {
+    const box = document.createElement('div');
+    document.body.appendChild(box);
+    render(drawerShell({ defaultMenuOpen: true, menuContainer: box }));
+    expect(box).toContainElement(screen.getByRole('dialog', { name: 'Menu' }));
+    box.remove();
+  });
+
   it('renders no menu without a sidebar, or with collapseBelow="never"', () => {
     const { queryByRole, rerender, container } = render(
       <AppShell collapseTo="drawer" header={<span>Brand</span>}>

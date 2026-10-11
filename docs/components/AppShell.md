@@ -63,6 +63,7 @@ html, body { block-size: 100%; }
 | `collapseTo` | `'stack' \| 'drawer'` | `'stack'` | What the sidebar does below `collapseBelow` — see below |
 | `menuLabel` | `string` | `'Menu'` | With `drawer`: the menu button's and the drawer's name |
 | `menuOpen` / `defaultMenuOpen` / `onMenuOpenChange` | | — | With `drawer`: the drawer, controlled or not |
+| `menuContainer` | `Element \| null` | `document.body` | With `drawer`: where the drawer is portalled, for a shell inside a box narrower than the page. The box needs `contain: layout` |
 
 `ref`, `className`, `style` and the rest go to the root.
 

@@ -9392,8 +9392,12 @@ test.describe('AppShell collapseTo="drawer"', () => {
     await shell.getByRole('button', { name: 'Menu' }).click();
     const drawer = page.getByRole('dialog', { name: 'Menu' });
     await expect(drawer).toBeVisible();
-    const box = await drawer.boundingBox();
-    expect(box?.x, 'anchored to the left edge in a left-to-right page').toBe(0);
+    // menuContainer: the drawer is in the cell, anchored to its left edge, not the page's.
+    const stage = shell.locator('xpath=..');
+    await expect(stage.locator('[role="dialog"]')).toHaveCount(1);
+    const [box, frame] = await Promise.all([drawer.boundingBox(), stage.boundingBox()]);
+    expect(box?.x, 'anchored to the cell’s left edge in a left-to-right page').toBe(frame?.x);
+    expect(box!.y + box!.height, 'no taller than the cell').toBeLessThanOrEqual(frame!.y + frame!.height + 0.5);
     await drawer.getByRole('link', { name: 'Assets' }).click();
     await expect(drawer).toBeHidden();
   });

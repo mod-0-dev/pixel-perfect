@@ -168,6 +168,13 @@ hidden and the sidebar is back.
   leaves it open.
 - **Controlled and uncontrolled** (RULES §5.5): `menuOpen`, `defaultMenuOpen`,
   `onMenuOpenChange`, which also fires when a link closes it.
+- **`menuContainer`** passes through to `DrawerContent`'s `container`. The
+  shell's breakpoint is its own width, not the viewport's, so a shell in a box
+  narrower than the page (a preview pane, a docs example) shows the button
+  while the page is wide; portalled to `<body>`, the drawer would then cover
+  the page rather than the shell. The box needs to be the containing block of
+  the drawer's fixed scrim (`contain: layout`), as Drawer's own `container`
+  does. *Added 2026-10-11, D-110 §8.*
 - **Default stays `stack`**, so the shells already in use do not change.
   With `collapseBelow="never"` or no sidebar there is nothing to collapse, and
   no button.

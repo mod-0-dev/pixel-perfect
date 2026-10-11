@@ -8602,7 +8602,11 @@ a followed link closes it. The shell renders the button, so a drawer shell
 cannot lose its navigation, and stays a Server Component with one client
 island. The thresholds are Split's, restated, under a container named
 `pp-app-shell`. Default `stack`, so existing shells do not change.
-[`AppShell.md`](specs/AppShell.md) §9.
+Because the breakpoint is the shell's width, a shell inside a narrower box
+shows the button on a wide page, where a drawer on `<body>` would cover the
+page instead of the shell; `menuContainer` passes Drawer's `container`
+through (added 2026-10-11, after the playground's examples did exactly
+that). [`AppShell.md`](specs/AppShell.md) §9.
 
 ### 9. Considered and not done
 
