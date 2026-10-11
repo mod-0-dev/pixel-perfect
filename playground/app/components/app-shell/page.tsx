@@ -107,10 +107,11 @@ export default function AppShellPage() {
         <p>
           The wrapper is <code>20rem</code> tall &mdash; the parent&rsquo;s line, not the shell&rsquo;s. The
           shell fills it: the footer sits at the bottom and the sidebar&rsquo;s surface runs the full
-          height.
+          height. Where the shell is taller than that, at 240 and 480 where the sidebar stacks, the
+          wrapper scrolls, as a full-height page does (spec &sect;6).
         </p>
         <Matrix>
-          <div style={{ blockSize: '20rem' }}>
+          <div style={{ blockSize: '20rem', overflow: 'auto' }}>
             <AppShell header={<Header />} sidebar={<Nav />} footer={<Footer />}>
               <Page />
             </AppShell>
