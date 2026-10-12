@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { expectNoA11yViolations, renderWithTheme } from '../../test';
 import { Button } from '../Button/Button';
 import { Input } from '../Input/Input';
-import { formatKeys, KeyHints, useFormatKeys, useKeyHint, type KeyHintsProps } from './KeyHints';
+import { formatKeys, KeyHints, reservedChord, useFormatKeys, useKeyHint, type KeyHintsProps } from './KeyHints';
 
 function Commands({ onInbox, enabled = true }: { onInbox: () => void; enabled?: boolean }) {
   useKeyHint({ keys: 'g i', label: 'Go to inbox', onTrigger: onInbox, enabled });
@@ -22,7 +22,7 @@ function App({ onSave = () => {}, onInbox = () => {}, enabled, ...props }: Parti
       <Button data-pp-hotkey="mod+s" onClick={onSave}>
         Save
       </Button>
-      <Button data-pp-hotkey="mod+shift+n">New</Button>
+      <Button data-pp-hotkey="mod+shift+l">New</Button>
       <Input aria-label="Search" />
       <a href="#docs">Docs</a>
     </KeyHints>
@@ -39,7 +39,7 @@ afterEach(() => {
 describe('KeyHints', () => {
   it('formats keys as keycaps, mod resolved on the platform', () => {
     platform('MacIntel');
-    expect(formatKeys('mod+shift+n')).toEqual([['⇧', '⌘', 'N']]);
+    expect(formatKeys('mod+shift+l')).toEqual([['⇧', '⌘', 'L']]);
     expect(formatKeys('g i')).toEqual([['G'], ['I']]);
     expect(formatKeys('ctrl+arrowup')).toEqual([['⌃', '↑']]);
     platform('Win32');
@@ -132,7 +132,7 @@ describe('KeyHints', () => {
     fireEvent.keyDown(document.body, { key: 'Alt' });
     const overlay = document.querySelector('.pp-key-hints') as HTMLElement;
     expect(overlay).toHaveAttribute('aria-hidden', 'true');
-    expect(hints()).toEqual(['CtrlS', 'CtrlShiftN']);
+    expect(hints()).toEqual(['CtrlS', 'CtrlShiftL']);
     /* One keycap per key. */
     expect(Array.from(document.querySelectorAll('.pp-key-hints__hint')).map((h) => h.querySelectorAll('.pp-kbd').length)).toEqual([2, 3]);
     expect(document.querySelector('.pp-key-hints__hint')).toHaveAttribute('data-mode', 'reveal');
@@ -249,6 +249,28 @@ describe('KeyHints', () => {
 
     renderWithTheme(<App defaultOpen />);
     expect(queryByRole('dialog', { name: 'Keyboard shortcuts' })).not.toBeNull();
+  });
+
+  it('warns once in development for a chord the browser keeps, declared or registered; not for one it delivers (D-111 §6)', () => {
+    expect(reservedChord('mod+shift+n')).toBe('mod+shift+n');
+    expect(reservedChord('ctrl+t')).toBe('ctrl+t');
+    expect(reservedChord('g mod+w')).toBe('mod+w');
+    expect(reservedChord('mod+shift+l')).toBeNull();
+    expect(reservedChord('mod+alt+n')).toBeNull();
+    expect(reservedChord('n')).toBeNull();
+    expect(reservedChord('shift+n')).toBeNull();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    function Reserved() {
+      useKeyHint({ keys: 'mod+t', label: 'New tab', onTrigger: () => {} });
+      return <Button data-pp-hotkey="mod+shift+n">Private</Button>;
+    }
+    const { rerender } = renderWithTheme(<KeyHints><Reserved /></KeyHints>);
+    rerender(<KeyHints><Reserved /></KeyHints>);
+    fireEvent.keyDown(document.body, { key: 'x' });
+    const messages = warn.mock.calls.map((c) => String(c[0]));
+    expect(messages.filter((m) => m.includes('"mod+t"'))).toHaveLength(1);
+    expect(messages.filter((m) => m.includes('"mod+shift+n"'))).toHaveLength(1);
+    expect(messages.every((m) => !m.includes('mod+s"'))).toBe(true);
   });
 
   it('throws for useKeyHint outside the provider; a command unregisters on unmount', () => {

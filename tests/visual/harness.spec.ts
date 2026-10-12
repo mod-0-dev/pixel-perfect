@@ -556,7 +556,7 @@ test.describe('KeyHints', () => {
     expect(read.hidden).toBe('true');
     expect(read.count).toBe(read.targets);
     expect(read.count).toBe(3);
-    expect(read.texts).toEqual(['Ctrl⇧N', 'CtrlE', 'CtrlS'].map((t) => t.replace('⇧', 'Shift')));
+    expect(read.texts).toEqual(['Ctrl⇧L', 'CtrlE', 'CtrlS'].map((t) => t.replace('⇧', 'Shift')));
     expect(read.placed.every(Boolean)).toBe(true);
     expect(read.kbd).toBe(true);
     expect(read.caps).toEqual([3, 2, 2]);

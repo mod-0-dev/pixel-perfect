@@ -8618,7 +8618,7 @@ input, Rating, a data grid — under Tier 6's own rule.
 
 <a id="d-111"></a>
 
-## D-111 — From the launchpad conversion: an auto-fit floor clamped to its box, initials that do not break, a sheet a menu can open, and keycaps that hydrate
+## D-111 — From the launchpad conversion: an auto-fit floor clamped to its box, initials that do not break, a sheet a menu can open, keycaps that hydrate, and a warning for chords the browser keeps
 
 **Date:** 2026-10-12 · **Status:** accepted · **Amends:** `Grid.tsx`,
 `Avatar.css`, `KeyHints.tsx`, `docs/specs/tier-2-layout.md` (§6's
@@ -8691,3 +8691,20 @@ At 320px the launchpad's five-column task table overflowed its own region by
 19px. That is D-081 §1: the region scrolls inside its own box, and the page
 does not. The app's fix was its own, folding the due date into each row and
 moving the sort into a menu. No library change.
+
+### 6. The example chord was one the browser keeps, and KeyHints now warns about those
+
+Asked how the combinations are made: by hand. `formatKeys` only formats
+the string a developer wrote. The library's own example, `mod+shift+n` on
+the docs' and playground's New button, is Ctrl+Shift+N on Windows and Linux.
+Chrome opens an incognito window on it before the page sees the keydown,
+so it never fired there. On a Mac it is ⌘⇧N, which Chrome hands to the page,
+and that is how it went unnoticed. The example is now `mod+shift+l`. In
+development, KeyHints warns once per key string when a chord uses the
+primary modifier without Alt on a key the browsers keep: N, T, W and Q, the
+first three with Shift too, Tab and Shift+Tab, PgUp and PgDn, and Shift+P,
+which is Firefox's private window. It checks commands when they register and
+elements whenever the hotkeys are read. The list is short on purpose. It
+covers the chords that are never delivered, not every browser default a page
+may override, because a list of every OS and browser shortcut would never be
+complete.

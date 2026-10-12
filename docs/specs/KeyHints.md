@@ -39,7 +39,7 @@ own control or by `CommandPalette`.
 ```tsx
 <KeyHints revealKey="Alt">
   <Button data-pp-hotkey="mod+s" onClick={save}>Save</Button>
-  <IconButton data-pp-hotkey="mod+shift+n" label="New" onClick={create}><Plus /></IconButton>
+  <IconButton data-pp-hotkey="mod+shift+l" label="New" onClick={create}><Plus /></IconButton>
   …
 </KeyHints>
 

@@ -12,7 +12,7 @@ import { KeyHints, useKeyHint, useFormatKeys, formatKeys } from '@mod-0-dev/pixe
 One provider around the app. Declare a shortcut on the control that
 does the thing with `data-pp-hotkey`; register a command with
 `useKeyHint` when there is no control on screen. Chords are
-`mod+shift+n` (`mod` is ⌘ on Apple, Ctrl elsewhere); a sequence is
+`mod+shift+l` (`mod` is ⌘ on Apple, Ctrl elsewhere); a sequence is
 `g i`. Every single key is a prop, and `null` turns it off.
 
 **Nothing changes under a held key.** The hints are a picture of the
@@ -96,6 +96,11 @@ useKeyHint({ keys: 'mod+s', label: 'Save', onTrigger: save })   // there is a Sa
 
 // ✗ A single letter your reader cannot turn off. The keys here are props for that reason;
 //   a useKeyHint command with a bare letter needs the app to offer the same.
+
+// ✗ A chord the browser keeps. Ctrl+N, Ctrl+T, Ctrl+W (with or without Shift),
+//   Ctrl+Tab, Ctrl+PgUp/PgDn and Ctrl+Shift+P never reach the page on Windows or
+//   Linux, and their ⌘ forms are Safari's. KeyHints warns about these in development.
+<Button data-pp-hotkey="mod+shift+n">New</Button>   // opens a private window instead
 
 // ✗ Two providers. One registry per app.
 ```

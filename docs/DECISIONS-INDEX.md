@@ -121,4 +121,4 @@ whose title touches your work: they are rulings to extend, not to re-litigate
 | [D-108](DECISIONS.md#d-108) | 2026-10-07 | The roadmap closed: a pressed Toggle is solid, a SegmentedControl in a Toolbar, a visual job that cannot pass over a failed test, the playground's bare code pinned, and 84 / 84 |
 | [D-109](DECISIONS.md#d-109) | 2026-10-07 | Publish-ready for npm: `@mod-0-dev/pixel-perfect`, relative imports that name their file, and trusted publishing |
 | [D-110](DECISIONS.md#d-110) | 2026-10-10 | From a gap analysis: 16px fields on touch, states that survive forced colours, hover only where it exists, safe areas, React 18 run, a warning Toggle's edge, `InputGroup`, and a drawer for AppShell's sidebar |
-| [D-111](DECISIONS.md#d-111) | 2026-10-12 | From the launchpad conversion: an auto-fit floor clamped to its box, initials that do not break, a sheet a menu can open, and keycaps that hydrate |
+| [D-111](DECISIONS.md#d-111) | 2026-10-12 | From the launchpad conversion: an auto-fit floor clamped to its box, initials that do not break, a sheet a menu can open, keycaps that hydrate, and a warning for chords the browser keeps |

@@ -35,7 +35,7 @@ import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
  * ONE REGISTRY (spec §1): `data-pp-hotkey` on any element makes its chord
  * fire that element — focus, then click — and draws the hint on it;
  * `useKeyHint` registers a command with a label. Chords are CommandPalette's
- * grammar (`mod+shift+n`, `mod` resolved on the platform when pressed,
+ * grammar (`mod+shift+l`, `mod` resolved on the platform when pressed,
  * D-078 §4); a sequence is chords separated by spaces (`g i`).
  *
  * Sizing contract: none (no root element). RSC: client. Spec: docs/specs/KeyHints.md
@@ -70,7 +70,7 @@ function chordOf(text: string, apple = isApple()): Chord {
   };
 }
 
-/** `'mod+shift+n'` → one chord; `'g i'` → two. */
+/** `'mod+shift+l'` → one chord; `'g i'` → two. */
 function parseKeys(keys: string, apple = isApple()): Chord[] {
   return keys
     .trim()
@@ -147,6 +147,54 @@ export function useFormatKeys(keys: string): string[][] {
 }
 
 // ---------------------------------------------------------------------------
+// Chords the browser keeps
+
+/*
+ * tsconfig.build.json compiles the package with `types: []`, and the library
+ * may be loaded unbundled where `process` does not exist: declared locally and
+ * guarded, as useControllableState does.
+ */
+declare const process: { env?: { NODE_ENV?: string } } | undefined;
+const isProduction = () => typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production';
+
+/*
+ * A browser handles these before the page sees the keydown, so a shortcut on
+ * one never fires and nothing says why (D-111 §6). Ctrl+N, Ctrl+T and Ctrl+W
+ * with or without Shift, the tab switchers, and Firefox's private window, as
+ * Chrome and Firefox keep them on Windows and Linux and Safari keeps ⌘ on a
+ * Mac. Short on purpose: the never-delivered, not every default a page may
+ * override. Keyed on the primary modifier (`mod`, `ctrl` or `meta`, which is
+ * one of the two on every platform) without Alt.
+ */
+const RESERVED = new Set(['n', 't', 'w', 'q', 'tab', 'pageup', 'pagedown', 'shift+n', 'shift+t', 'shift+w', 'shift+p', 'shift+tab']);
+
+/** The first chord of `keys` a browser keeps for itself, as written, or null. */
+export function reservedChord(keys: string): string | null {
+  for (const text of keys.trim().split(/\s+/)) {
+    const parts = text.toLowerCase().split('+');
+    const key = parts[parts.length - 1] ?? '';
+    const mods = new Set(parts.slice(0, -1));
+    const primary = ['mod', 'ctrl', 'control', 'meta', 'cmd', 'command'].some((m) => mods.has(m));
+    const alt = mods.has('alt') || mods.has('option');
+    if (primary && !alt && RESERVED.has(mods.has('shift') ? `shift+${key}` : key)) return text;
+  }
+  return null;
+}
+
+/* Each key string is checked once, whether or not it warned. */
+const checked = new Set<string>();
+function warnIfReserved(keys: string): void {
+  if (isProduction() || checked.has(keys)) return;
+  checked.add(keys);
+  const chord = reservedChord(keys);
+  if (!chord) return;
+  console.warn(
+    `[pixel-perfect] KeyHints: "${chord}" is a shortcut the browser keeps for itself on at least one platform, ` +
+      'so the page never receives it. Pick another chord.',
+  );
+}
+
+// ---------------------------------------------------------------------------
 // The registry
 
 export interface KeyHintOptions {
@@ -207,7 +255,12 @@ function inViewport(el: HTMLElement): boolean {
   return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
 }
 
-const hotkeyElements = () => Array.from(document.querySelectorAll<HTMLElement>(HOTKEY_SELECTOR)).filter(usable);
+/* Read on every keydown, so an element mounted after the provider is checked too. */
+const hotkeyElements = () =>
+  Array.from(document.querySelectorAll<HTMLElement>(HOTKEY_SELECTOR)).filter((el) => {
+    warnIfReserved(el.getAttribute('data-pp-hotkey') ?? '');
+    return usable(el);
+  });
 
 const nameOf = (el: HTMLElement) => el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
 
@@ -279,6 +332,7 @@ export function KeyHints({
   const registry = useMemo<Registry>(
     () => ({
       register: (command) => {
+        warnIfReserved(command.keys);
         commands.current.set(command.id, command);
         setVersion((v) => v + 1);
         return () => {
@@ -291,7 +345,10 @@ export function KeyHints({
   );
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    for (const el of document.querySelectorAll<HTMLElement>(HOTKEY_SELECTOR)) warnIfReserved(el.getAttribute('data-pp-hotkey') ?? '');
+  }, []);
 
   const [revealing, setRevealing] = useState(false);
   const [jump, setJump] = useState<{ targets: HTMLElement[]; labels: string[]; typed: string } | null>(null);
