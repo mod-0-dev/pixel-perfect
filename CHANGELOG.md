@@ -1,5 +1,27 @@
 # pixel-perfect
 
+## 0.13.0
+
+### Minor Changes
+
+- 8ee00e4: `AppShell` takes `collapseTo="drawer"`: below `collapseBelow` the sidebar is hidden and a menu button at the start of the header opens the same content in a `Drawer` from the start edge; following a link closes it. `menuLabel`, `menuOpen`, `defaultMenuOpen` and `onMenuOpenChange` name and control it, and `menuContainer` portals the drawer into a box of your own, for a shell that is not the whole page. The default, `collapseTo="stack"`, is unchanged.
+- 8ee00e4: Windows contrast themes (forced colours): a pressed `Toggle`, the chosen `SegmentedControl` segment, `Radio`, `Checkbox` and `Switch` state, the active `Tabs` bar, `Progress`, `Slider` and `RangeSlider` fills, `Pagination`'s current page, `Calendar`'s selected day, `Tree`, `NavSidebar` and `Table` selections, a highlighted menu, `Combobox` or `CommandPalette` row and `Stepper`'s steps are painted in the user's `Highlight` colour instead of vanishing; `Tooltip`, `Toast` and `Drawer` keep an edge.
+  
+  Touch: hover styles apply only where the device can hover, so a tapped `Button`, `Card`, `Link` or row no longer stays painted. `Dialog`, `Drawer` and the `Toast` region keep clear of the notch and the home indicator when the app uses `viewport-fit=cover`.
+- 8ee00e4: New `InputGroup` and `InputGroupAddon` (3.19): an `Input` with an icon, a unit or a button inside its box. The group draws the box and the focus ring, reads `size`, `invalid` and `disabled` from the `Field` above it, and hands them to the `Input`; a press on an icon or a unit focuses the field. `Input` now reads an enclosing group between its own props and the field's. `useInputGroup` is exported beside `useField`.
+- f9555e2: Fixes from converting a full app to the library:
+  
+  - `Grid`'s `minItemInlineSize` is clamped to the grid. In a box narrower than the minimum, the grid is one column as wide as the box. Before, it was one column wider than the box.
+  - An `Avatar`'s initials no longer break onto two lines inside a `Card`, `Dialog` or `Alert`. This showed up mostly in `AvatarGroup`.
+  - `KeyHints` takes `open`, `defaultOpen` and `onOpenChange` for its shortcut sheet, so a menu item can open it.
+  - New `useFormatKeys(keys)`: keycaps for render that hydrate without a mismatch on a Mac. `formatKeys(keys, { apple })` now accepts the platform as an option.
+  - `KeyHints` warns in development when a shortcut uses a combination the browser keeps for itself and never passes to the page, such as Ctrl+Shift+N or Ctrl+T.
+- 8ee00e4: On a touch screen (`pointer: coarse`), control text is 16px at every size, so iOS Safari no longer zooms the page when a `sm` or `md` field is focused. Heights are unchanged. Desktop rendering is unchanged.
+
+### Patch Changes
+
+- 8ee00e4: A pressed `Toggle` in the `warning` tone carries its strong edge (4.59:1 or more against the page), because warning's light solid fill (1.87:1) could not show it was pressed on its own.
+
 ## 0.12.0
 
 ### Minor Changes
