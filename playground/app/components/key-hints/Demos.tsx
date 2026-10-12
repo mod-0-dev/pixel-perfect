@@ -28,7 +28,7 @@ export function Editor() {
           <Cluster gap="2" align="center" justify="between">
             <Text weight="semibold">Draft</Text>
             <Cluster gap="2">
-              <IconButton size="sm" label="New" data-pp-hotkey="mod+shift+n" onClick={() => note('New (mod+shift+n)')}>
+              <IconButton size="sm" label="New" data-pp-hotkey="mod+shift+l" onClick={() => note('New (mod+shift+l)')}>
                 <Plus />
               </IconButton>
               <Button size="sm" variant="outline" data-pp-hotkey="mod+e" onClick={() => note('Exported (mod+e)')}>

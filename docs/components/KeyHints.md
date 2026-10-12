@@ -6,13 +6,13 @@ control on screen and type the label to focus it, press a key for the
 sheet of every shortcut. Spec: [`KeyHints.md`](../specs/KeyHints.md).
 
 ```tsx
-import { KeyHints, useKeyHint, formatKeys } from '@mod-0-dev/pixel-perfect';
+import { KeyHints, useKeyHint, useFormatKeys, formatKeys } from '@mod-0-dev/pixel-perfect';
 ```
 
 One provider around the app. Declare a shortcut on the control that
 does the thing with `data-pp-hotkey`; register a command with
 `useKeyHint` when there is no control on screen. Chords are
-`mod+shift+n` (`mod` is ⌘ on Apple, Ctrl elsewhere); a sequence is
+`mod+shift+l` (`mod` is ⌘ on Apple, Ctrl elsewhere); a sequence is
 `g i`. Every single key is a prop, and `null` turns it off.
 
 **Nothing changes under a held key.** The hints are a picture of the
@@ -37,7 +37,13 @@ them.
 useKeyHint({ keys: 'g i', label: 'Go to inbox', onTrigger: () => router.push('/inbox') });
 
 // your own keycaps for a shortcut, resolved for the platform
-{formatKeys('mod+s')[0].map((k) => <Kbd key={k}>{k}</Kbd>)}
+const [chord] = useFormatKeys('mod+s');
+{chord.map((k) => <Kbd key={k}>{k}</Kbd>)}
+
+// the sheet from a menu item
+const [shortcutsOpen, setShortcutsOpen] = useState(false);
+<KeyHints open={shortcutsOpen} onOpenChange={setShortcutsOpen}>…</KeyHints>
+<DropdownMenuItem onSelect={() => setShortcutsOpen(true)}>Keyboard shortcuts</DropdownMenuItem>
 ```
 
 ## Props
@@ -47,12 +53,21 @@ useKeyHint({ keys: 'g i', label: 'Go to inbox', onTrigger: () => router.push('/i
 | `revealKey` | `'Alt' \| 'Control' \| 'Meta' \| 'Shift' \| null` | `null` | Hold to see shortcuts on their controls. Pick the modifier your app can afford: Alt opens menus on Windows, Meta is the OS's |
 | `jumpKey` | `string \| null` | `'f'` | Press to label every control; type a label to focus it |
 | `helpKey` | `string \| null` | `'?'` | Press for the sheet |
+| `open` | `boolean` | — | The sheet, controlled. For a "Keyboard shortcuts" menu item; `helpKey` still asks through `onOpenChange` |
+| `defaultOpen` | `boolean` | `false` | The sheet, uncontrolled |
+| `onOpenChange` | `(open: boolean) => void` | — | The sheet opened (by `helpKey`) or closed (`Escape`, the close button) |
 | `helpTitle` | `string` | `'Keyboard shortcuts'` | |
 | `jumpStatus` | `string` | `'Jump: type a label to focus a control. Escape cancels.'` | What the live region says |
 
 `useKeyHint({ keys, label, onTrigger, enabled })` registers a command
-while mounted. `formatKeys(keys)` returns the chords as arrays of keycap
-labels.
+while mounted. `useFormatKeys(keys)` returns the chords as arrays of
+keycap labels for render. `formatKeys(keys, { apple })` is the same as a
+function, for an event handler or anything after mount.
+
+**Render keycaps with `useFormatKeys`, not `formatKeys`.** The server has
+no platform, so `formatKeys` there labels for Windows and a Mac hydrates
+⌘ against it: a hydration mismatch. The hook renders the server's labels
+first and the platform's one commit later.
 
 ## Keyboard
 
@@ -81,6 +96,11 @@ useKeyHint({ keys: 'mod+s', label: 'Save', onTrigger: save })   // there is a Sa
 
 // ✗ A single letter your reader cannot turn off. The keys here are props for that reason;
 //   a useKeyHint command with a bare letter needs the app to offer the same.
+
+// ✗ A chord the browser keeps. Ctrl+N, Ctrl+T, Ctrl+W (with or without Shift),
+//   Ctrl+Tab, Ctrl+PgUp/PgDn and Ctrl+Shift+P never reach the page on Windows or
+//   Linux, and their ⌘ forms are Safari's. KeyHints warns about these in development.
+<Button data-pp-hotkey="mod+shift+n">New</Button>   // opens a private window instead
 
 // ✗ Two providers. One registry per app.
 ```

@@ -9,11 +9,13 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
 
 import { isEditing } from '../../internal/editing';
+import { useControllableState } from '../../internal/useControllableState';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../Dialog/Dialog';
 import { Kbd } from '../Kbd/Kbd';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
@@ -33,7 +35,7 @@ import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
  * ONE REGISTRY (spec §1): `data-pp-hotkey` on any element makes its chord
  * fire that element — focus, then click — and draws the hint on it;
  * `useKeyHint` registers a command with a label. Chords are CommandPalette's
- * grammar (`mod+shift+n`, `mod` resolved on the platform when pressed,
+ * grammar (`mod+shift+l`, `mod` resolved on the platform when pressed,
  * D-078 §4); a sequence is chords separated by spaces (`g i`).
  *
  * Sizing contract: none (no root element). RSC: client. Spec: docs/specs/KeyHints.md
@@ -54,11 +56,11 @@ const MODIFIERS = new Set(['mod', 'ctrl', 'control', 'meta', 'cmd', 'command', '
 
 const isApple = () => typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.platform ?? '');
 
-function chordOf(text: string): Chord {
+function chordOf(text: string, apple = isApple()): Chord {
   const parts = text.toLowerCase().split('+');
   const key = parts[parts.length - 1] ?? '';
   const mods = new Set(parts.slice(0, -1).filter((p) => MODIFIERS.has(p)));
-  if (mods.has('mod')) mods.add(isApple() ? 'meta' : 'ctrl');
+  if (mods.has('mod')) mods.add(apple ? 'meta' : 'ctrl');
   return {
     ctrl: mods.has('ctrl') || mods.has('control'),
     meta: mods.has('meta') || mods.has('cmd') || mods.has('command'),
@@ -68,9 +70,12 @@ function chordOf(text: string): Chord {
   };
 }
 
-/** `'mod+shift+n'` → one chord; `'g i'` → two. */
-function parseKeys(keys: string): Chord[] {
-  return keys.trim().split(/\s+/).map(chordOf);
+/** `'mod+shift+l'` → one chord; `'g i'` → two. */
+function parseKeys(keys: string, apple = isApple()): Chord[] {
+  return keys
+    .trim()
+    .split(/\s+/)
+    .map((text) => chordOf(text, apple));
 }
 
 function chordFromEvent(event: KeyboardEvent): Chord {
@@ -103,14 +108,20 @@ const KEY_LABELS: Record<string, string> = {
   pagedown: 'PgDn',
 };
 
+export interface FormatKeysOptions {
+  /** Label for Apple (`⌘ ⌥ ⇧ ⌃`) or not. Omitted, the platform it runs on decides. */
+  apple?: boolean;
+}
+
 /**
  * The chords of a key string as keycap labels, `mod` resolved on the
  * platform: `[['⌘', 'S']]` on Apple, `[['Ctrl', 'S']]` elsewhere. For an
- * app's own `Kbd`s.
+ * app's own `Kbd`s in an event handler or after mount: a server has no
+ * platform, so a keycap rendered from this on the server does not match the
+ * one a Mac hydrates. In render, use `useFormatKeys` (D-111 §4).
  */
-export function formatKeys(keys: string): string[][] {
-  const apple = isApple();
-  return parseKeys(keys).map((chord) => {
+export function formatKeys(keys: string, { apple = isApple() }: FormatKeysOptions = {}): string[][] {
+  return parseKeys(keys, apple).map((chord) => {
     const labels: string[] = [];
     if (chord.ctrl) labels.push(apple ? '⌃' : 'Ctrl');
     if (chord.alt) labels.push(apple ? '⌥' : 'Alt');
@@ -119,6 +130,68 @@ export function formatKeys(keys: string): string[][] {
     labels.push(KEY_LABELS[chord.key] ?? (chord.key.length === 1 ? chord.key.toUpperCase() : chord.key.charAt(0).toUpperCase() + chord.key.slice(1)));
     return labels;
   });
+}
+
+const subscribeToNothing = () => () => {};
+
+/**
+ * `formatKeys` for render. The server and the hydrating render label for
+ * not-Apple, so the HTML matches whatever machine hydrates it (RULES §7);
+ * React then renders again with the platform's labels, so a Mac shows ⌘
+ * one commit later. `useSyncExternalStore`'s server snapshot is exactly
+ * that contract (D-111 §4).
+ */
+export function useFormatKeys(keys: string): string[][] {
+  const apple = useSyncExternalStore(subscribeToNothing, isApple, () => false);
+  return useMemo(() => formatKeys(keys, { apple }), [keys, apple]);
+}
+
+// ---------------------------------------------------------------------------
+// Chords the browser keeps
+
+/*
+ * tsconfig.build.json compiles the package with `types: []`, and the library
+ * may be loaded unbundled where `process` does not exist: declared locally and
+ * guarded, as useControllableState does.
+ */
+declare const process: { env?: { NODE_ENV?: string } } | undefined;
+const isProduction = () => typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production';
+
+/*
+ * A browser handles these before the page sees the keydown, so a shortcut on
+ * one never fires and nothing says why (D-111 §6). Ctrl+N, Ctrl+T and Ctrl+W
+ * with or without Shift, the tab switchers, and Firefox's private window, as
+ * Chrome and Firefox keep them on Windows and Linux and Safari keeps ⌘ on a
+ * Mac. Short on purpose: the never-delivered, not every default a page may
+ * override. Keyed on the primary modifier (`mod`, `ctrl` or `meta`, which is
+ * one of the two on every platform) without Alt.
+ */
+const RESERVED = new Set(['n', 't', 'w', 'q', 'tab', 'pageup', 'pagedown', 'shift+n', 'shift+t', 'shift+w', 'shift+p', 'shift+tab']);
+
+/** The first chord of `keys` a browser keeps for itself, as written, or null. */
+export function reservedChord(keys: string): string | null {
+  for (const text of keys.trim().split(/\s+/)) {
+    const parts = text.toLowerCase().split('+');
+    const key = parts[parts.length - 1] ?? '';
+    const mods = new Set(parts.slice(0, -1));
+    const primary = ['mod', 'ctrl', 'control', 'meta', 'cmd', 'command'].some((m) => mods.has(m));
+    const alt = mods.has('alt') || mods.has('option');
+    if (primary && !alt && RESERVED.has(mods.has('shift') ? `shift+${key}` : key)) return text;
+  }
+  return null;
+}
+
+/* Each key string is checked once, whether or not it warned. */
+const checked = new Set<string>();
+function warnIfReserved(keys: string): void {
+  if (isProduction() || checked.has(keys)) return;
+  checked.add(keys);
+  const chord = reservedChord(keys);
+  if (!chord) return;
+  console.warn(
+    `[pixel-perfect] KeyHints: "${chord}" is a shortcut the browser keeps for itself on at least one platform, ` +
+      'so the page never receives it. Pick another chord.',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -182,7 +255,12 @@ function inViewport(el: HTMLElement): boolean {
   return rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
 }
 
-const hotkeyElements = () => Array.from(document.querySelectorAll<HTMLElement>(HOTKEY_SELECTOR)).filter(usable);
+/* Read on every keydown, so an element mounted after the provider is checked too. */
+const hotkeyElements = () =>
+  Array.from(document.querySelectorAll<HTMLElement>(HOTKEY_SELECTOR)).filter((el) => {
+    warnIfReserved(el.getAttribute('data-pp-hotkey') ?? '');
+    return usable(el);
+  });
 
 const nameOf = (el: HTMLElement) => el.getAttribute('aria-label') ?? el.textContent?.trim() ?? '';
 
@@ -224,6 +302,14 @@ export interface KeyHintsProps {
   jumpKey?: string | null;
   /** Press for the sheet (spec §4). `null` turns it off. */
   helpKey?: string | null;
+  /**
+   * The sheet, controlled: a menu's "Keyboard shortcuts" item sets it
+   * (D-111 §3). `helpKey` still opens it and reports through `onOpenChange`.
+   */
+  open?: boolean;
+  /** The sheet, uncontrolled. */
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   helpTitle?: string;
   /** What the live region says while jumping. */
   jumpStatus?: string;
@@ -234,6 +320,9 @@ export function KeyHints({
   revealKey = null,
   jumpKey = 'f',
   helpKey = '?',
+  open,
+  defaultOpen = false,
+  onOpenChange,
   helpTitle = 'Keyboard shortcuts',
   jumpStatus = 'Jump: type a label to focus a control. Escape cancels.',
   children,
@@ -243,6 +332,7 @@ export function KeyHints({
   const registry = useMemo<Registry>(
     () => ({
       register: (command) => {
+        warnIfReserved(command.keys);
         commands.current.set(command.id, command);
         setVersion((v) => v + 1);
         return () => {
@@ -255,11 +345,20 @@ export function KeyHints({
   );
 
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    for (const el of document.querySelectorAll<HTMLElement>(HOTKEY_SELECTOR)) warnIfReserved(el.getAttribute('data-pp-hotkey') ?? '');
+  }, []);
 
   const [revealing, setRevealing] = useState(false);
   const [jump, setJump] = useState<{ targets: HTMLElement[]; labels: string[]; typed: string } | null>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useControllableState({
+    value: open,
+    defaultValue: defaultOpen,
+    onChange: onOpenChange,
+    component: 'KeyHints',
+    prop: 'open',
+  });
   const [hints, setHints] = useState<Hint[]>([]);
   const pending = useRef<Chord[]>([]);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

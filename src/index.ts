@@ -212,7 +212,15 @@ export {
 } from './components/InputGroup/InputGroup';
 export { IconButton, type IconButtonProps } from './components/IconButton/IconButton';
 export { Kbd, type KbdProps } from './components/Kbd/Kbd';
-export { KeyHints, formatKeys, useKeyHint, type KeyHintOptions, type KeyHintsProps } from './components/KeyHints/KeyHints';
+export {
+  KeyHints,
+  formatKeys,
+  useFormatKeys,
+  useKeyHint,
+  type FormatKeysOptions,
+  type KeyHintOptions,
+  type KeyHintsProps,
+} from './components/KeyHints/KeyHints';
 export { Label, type LabelProps } from './components/Label/Label';
 export { Link, type LinkProps, type LinkUnderline } from './components/Link/Link';
 export {
