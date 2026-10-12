@@ -432,7 +432,7 @@ A single-line text control on the shared control surface, wired to whatever
 
 **What it deliberately does not do.** No `prefix` / `suffix` / `addon` slots: an
 `<input>` is a void element, so an addon needs a wrapper, and a wrapper needs a
-layout, and that is a different component with a different sizing story. No
+layout, and that is a different component with a different sizing story. (That component is 3.19 [`InputGroup`](InputGroup.md), added by D-110 §7.) No
 `type="number"` handling — locale, step buttons and clamping are `NumberInput`
 (3.14). No clear button, no character counter, no debounce.
 

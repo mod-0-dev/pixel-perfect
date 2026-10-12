@@ -96,4 +96,17 @@
       opacity: 0.4;
     }
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-progress {
+      border: var(--pp-border-width-1) solid CanvasText;
+    }
+
+    .pp-progress__fill {
+      background-color: Highlight;
+    }
+  }
 }

@@ -68,4 +68,17 @@
     outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
     outline-offset: var(--pp-focus-ring-offset);
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-segmented-control__item:not([data-disabled]):has(.pp-segmented-control__input:checked) {
+      --_bg: Highlight;
+      --_bg-hover: Highlight;
+      --_bg-active: Highlight;
+      --_color: HighlightText;
+      --_border: Highlight;
+    }
+  }
 }

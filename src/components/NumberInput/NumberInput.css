@@ -231,8 +231,10 @@
     transition-timing-function: var(--pp-easing-standard);
   }
 
-  .pp-number-input__stepper:hover:not(:disabled) {
-    color: var(--pp-color-text);
+  @media (hover: hover) {
+    .pp-number-input__stepper:hover:not(:disabled) {
+      color: var(--pp-color-text);
+    }
   }
 
   .pp-number-input__stepper:disabled {

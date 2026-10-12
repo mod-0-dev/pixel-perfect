@@ -27,6 +27,10 @@ Standalone, you supply the name yourself:
 <Input aria-label="Search orders" type="search" />
 ```
 
+An icon, a unit or a button inside the box — a search magnifier, a currency,
+a password reveal, a clear button — is [`InputGroup`](InputGroup.md): the
+`Input` goes inside it, and the group draws the box.
+
 ## Props
 
 | Prop | Type | Default | Notes |

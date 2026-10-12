@@ -189,4 +189,19 @@
       box-shadow: inset 0 calc(-1 * var(--pp-border-width-2)) 0 var(--_after);
     }
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-stepper__step[data-state="complete"] {
+      --_ring: Highlight;
+      --_fill: Highlight;
+      --_mark: HighlightText;
+    }
+
+    .pp-stepper__step[data-state="current"] {
+      --_ring: Highlight;
+    }
+  }
 }

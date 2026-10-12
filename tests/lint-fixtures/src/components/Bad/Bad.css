@@ -14,3 +14,15 @@
 .pp-bad__control::-moz-range-thumb {
   background-color: var(--pp-color-bg-surface);
 }
+
+/* Rule 8: a tap leaves :hover painted on a touch screen (D-110 §3). The
+   guarded one is not a violation. */
+.pp-bad:hover {
+  background-color: var(--pp-color-bg-surface);
+}
+
+@media (hover: hover) {
+  .pp-bad__control:hover {
+    background-color: var(--pp-color-bg-surface);
+  }
+}

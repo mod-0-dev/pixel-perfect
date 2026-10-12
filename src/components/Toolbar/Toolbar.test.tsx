@@ -15,9 +15,11 @@ import { Toolbar, type ToolbarProps } from './Toolbar';
 
 const Glyph = () => <svg viewBox="0 0 24 24" />;
 
-function Formatting(props: Partial<ToolbarProps> & { ref?: Ref<HTMLDivElement> } = {}) {
+// `toolbarRef`, not `ref`: a function component receives `ref` as a prop
+// only from React 19, and the peer range starts at 18 (D-110 §5).
+function Formatting({ toolbarRef, ...props }: Partial<ToolbarProps> & { toolbarRef?: Ref<HTMLDivElement> } = {}) {
   return (
-    <Toolbar label="Formatting" {...props}>
+    <Toolbar label="Formatting" ref={toolbarRef} {...props}>
       <ButtonGroup label="Style">
         <Toggle aria-label="Bold">B</Toggle>
         <Toggle aria-label="Italic">I</Toggle>
@@ -216,7 +218,7 @@ describe('Toolbar', () => {
       if (event.key === 'ArrowRight') event.preventDefault();
     });
     const ref = createRef<HTMLDivElement>();
-    renderWithTheme(<Formatting ref={ref} gap="4" className="mine" style={{ opacity: 0.5 }} data-testid="tb" onKeyDown={onKeyDown} />);
+    renderWithTheme(<Formatting toolbarRef={ref} gap="4" className="mine" style={{ opacity: 0.5 }} data-testid="tb" onKeyDown={onKeyDown} />);
     expect(ref.current).toBe(toolbar());
     expect(toolbar()).toHaveClass('pp-toolbar', 'mine');
     expect(toolbar()).toHaveStyle({ opacity: '0.5' });

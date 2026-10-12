@@ -575,6 +575,15 @@ body {
   background-color: var(--pp-color-bg-page);
 }
 
+/* AppShell page: a drawer shell's cell is its page. The drawer is portalled
+   here (`menuContainer`), and `contain: layout` makes this box the containing
+   block of its fixed scrim, as `.dialog-stage` does for a dialog. */
+.app-shell-stage {
+  position: relative;
+  contain: layout;
+  overflow: hidden;
+}
+
 /* A long paragraph block for the "taller than the viewport" demo. */
 /* A ContextMenu region for the gallery and the demos: a box that says what
    it is for, tall enough for the list a press opens inside it. */

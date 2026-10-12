@@ -67,7 +67,14 @@
     min-inline-size: 0;
     overflow: auto;
     overflow-wrap: anywhere;
-    padding: var(--pp-drawer-padding, var(--pp-space-5));
+    --_pad: var(--pp-drawer-padding, var(--pp-space-5));
+
+    /* Flush to the viewport, so clear of the notch and the home indicator
+       when the app draws under them (`viewport-fit=cover`, D-110 §4). The
+       insets are physical and the padding logical, so the inline side takes
+       the larger of left and right; each env() is 0 everywhere else. */
+    padding-block: max(var(--_pad), env(safe-area-inset-top)) max(var(--_pad), env(safe-area-inset-bottom));
+    padding-inline: max(var(--_pad), env(safe-area-inset-left), env(safe-area-inset-right));
     background-color: var(--pp-drawer-bg, var(--_bg));
     color: var(--pp-color-text);
   }
@@ -216,6 +223,14 @@
   @keyframes pp-drawer-out-bottom {
     to {
       translate: 0 100%;
+    }
+  }
+
+  /* FORCED COLOURS (D-110 §2). The hairline above is a shadow, and forced
+     colours drop shadows; an outline gives the panel its edge back. */
+  @media (forced-colors: active) {
+    .pp-drawer {
+      outline: var(--pp-border-width-1) solid CanvasText;
     }
   }
 }

@@ -7,6 +7,7 @@
 import { AppShell, Container, Heading, Link, Stack, Text, ThemeToggle } from '@mod-0-dev/pixel-perfect';
 
 import { Matrix } from '../../../harness/Matrix';
+import { DrawerShell } from './DrawerShell';
 
 const SECTIONS = ['Overview', 'Assets', 'Releases', 'Settings'];
 
@@ -84,15 +85,33 @@ export default function AppShellPage() {
         </Matrix>
       </section>
 
+      <section data-testid="app-shell-drawer">
+        <h2>On a phone, the sidebar becomes a drawer</h2>
+        <p>
+          With <code>collapseTo=&quot;drawer&quot;</code>, below <code>collapseBelow</code> the sidebar
+          leaves instead of stacking, and a menu button at the start of the header opens the same
+          content in a <code>Drawer</code> from the start edge. Following a link in it closes it. Here each
+          cell is the shell&rsquo;s page, so <code>menuContainer</code> keeps the drawer inside it. At
+          960px the sidebar is back and the button is gone; both are decided by the shell&rsquo;s own
+          width.
+        </p>
+        <Matrix>
+          <DrawerShell header={<Header />} sidebar={<Nav />} footer={<Footer />}>
+            <Page />
+          </DrawerShell>
+        </Matrix>
+      </section>
+
       <section data-testid="app-shell-tall">
         <h2>In a parent with a height</h2>
         <p>
           The wrapper is <code>20rem</code> tall &mdash; the parent&rsquo;s line, not the shell&rsquo;s. The
           shell fills it: the footer sits at the bottom and the sidebar&rsquo;s surface runs the full
-          height.
+          height. Where the shell is taller than that, at 240 and 480 where the sidebar stacks, the
+          wrapper scrolls, as a full-height page does (spec &sect;6).
         </p>
         <Matrix>
-          <div style={{ blockSize: '20rem' }}>
+          <div style={{ blockSize: '20rem', overflow: 'auto' }}>
             <AppShell header={<Header />} sidebar={<Nav />} footer={<Footer />}>
               <Page />
             </AppShell>

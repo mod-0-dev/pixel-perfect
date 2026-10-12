@@ -8487,3 +8487,131 @@ trusted publisher is in place. After it the release
 workflow publishes with its OIDC identity (`id-token: write`, npm ≥ 11.5.1)
 and no long-lived token, provenance included; an `NPM_TOKEN` secret, if set,
 still wins. `PUBLISH_TO_NPM` stays the switch.
+
+<a id="d-110"></a>
+
+## D-110 — From a gap analysis: 16px fields on touch, states that survive forced colours, hover only where it exists, safe areas, React 18 run, a warning Toggle's edge, `InputGroup`, and a drawer for AppShell's sidebar
+
+**Date:** 2026-10-10 · **Status:** accepted · **Amends:** `control.css`,
+the stylesheets of 28 components, `scripts/lint-rules.mjs` (rule 8),
+`.github/workflows/ci.yml`, `Toggle.css`, `Input.tsx`, `AppShell` ·
+**Adds:** 3.19 `InputGroup` · **Extends:** D-029, D-039 §4, D-050, D-069 §1,
+D-096, D-102 §5, D-107 §6, D-108 §1, D-108 §7
+
+Asked what the library was missing, compared with other component libraries
+and on phones. The analysis found that the components were not the gap —
+71 of them, and the obvious absentees turned down on purpose — and that
+mobile had never been a design axis: no `pointer` or `hover` query, no safe
+area, and the default fields set at 14px. The owner asked for the findings
+to be worked in the order the analysis ranked them.
+
+### 1. Control text is 16px on a touch screen
+
+`--pp-control-font-size-sm` and `-md` were both `--pp-font-size-2`, 14px.
+iOS Safari zooms the page whenever a focused `input`, `select` or `textarea`
+is set below 16px and leaves it zoomed, so every `sm` and `md` field on an
+iPhone enlarged the page it was on. Under `@media (pointer: coarse)`,
+`control.css` sets both to `--pp-font-size-3`. The whole control scale moves
+rather than the text-entry half, so a Button beside an Input keeps one size
+and Label (D-034) keeps matching its control; heights do not move.
+`maximum-scale=1` is the other common cure and fails WCAG 1.4.4. `pointer`
+describes the input device, not the viewport, so RULES §1's ban does not
+reach it, and it is a token. The phone project (D-102 §5) asserts every
+visible text field on every page computes 16px or more; with the query
+disabled it reported 43 fields at 14px across six pages.
+
+### 2. Every state that was a fill survives forced colours
+
+No stylesheet had a `forced-colors` rule. A contrast theme keeps only
+system colours, so a state painted only as a fill vanished. Measured on
+the playground in Chromium's emulation: a pressed Toggle looked released,
+`Progress`'s fill and track both computed to the same white, and the chosen
+segment, radio, tab, page, day and the Tree's, NavSidebar's and Table's
+selections looked like their neighbours. Each component now answers in its
+own stylesheet: `Highlight` / `HighlightText` for a selected, pressed,
+current, checked or highlighted state (the menu row covers Combobox and
+CommandPalette, which wear its class); `Highlight` for fills; an outline in
+`CanvasText` where an edge was a shadow (Tooltip, Toast, Drawer). Tabs'
+bar is a transparent border, which forced colours paint on every tab, so the
+bar is `forced-color-adjust: none` and only the active one has a colour.
+Focus rings were already outlines and survive. `forced-colors.spec.ts`
+compares what is painted for twelve states against their neighbours: all
+twelve fail on the stylesheets before this entry and pass after it.
+
+### 3. `:hover` only where the device hovers
+
+A tap applies `:hover` and leaves it until the next tap lands elsewhere, so
+a hover fill stayed painted on the Button a finger had lifted from. Every
+`:hover` in a component is now inside `@media (hover: hover)`, and rule 8 of
+`lint:rules` fails one that is not, with a fixture in the self-test. The one
+rule it caught that was not a plain hover — Calendar's selected day,
+listed with its own `:hover` to outrank the hover fill — is now excluded
+from the hover rule instead.
+
+### 4. Safe-area insets where a surface meets the viewport
+
+Dialog's scrim gutter, Drawer's padding and the Toast region's padding take
+`max(their token, env(safe-area-inset-*))`, so with `viewport-fit=cover` a
+bottom sheet or toast clears the home indicator and a landscape dialog the
+notch. The insets are physical and the padding logical, so the inline side
+takes the larger of left and right. Each `env()` is 0 everywhere else, so
+nothing changes without `viewport-fit=cover`.
+
+### 5. The unit tests run on React 18
+
+The peer range is `react >=18` and every job installed 19. A `react-18` job
+installs 18.3.1 over the lockfile and runs `npm test`. Run here first, it
+found one failure, in a test rather than the library: Toolbar's test helper
+took `ref` as a prop, which a function component receives only from 19. The
+helper takes `toolbarRef`. The built declarations also type-check under
+`@types/react` 18 with `skipLibCheck: false`.
+
+### 6. A pressed warning Toggle carries its strong edge; Pagination passes
+
+D-108 §1 left warning's pressed fill at 1.87:1 and said so in the docs.
+`--pp-tone-border-strong` is 4.59:1 or more against every neutral surface
+in both themes, and a ghost or plain Toggle at rest has no edge, so a
+pressed warning toggle now draws that edge and is told from a released one
+by a boundary that passes. Beside an `outline` toggle at rest it is still an
+edge against an edge, and the docs say so. D-108 §7's Pagination finding
+was measured: the current page's edge, `--pp-tone-border`, is 3.40 / 3.26 /
+3.06 against neutral steps 1–3 in light and 3.66 / 3.42 / 3.06 in dark, in
+every hue, and the other pages are ghost buttons with no edge, so the
+current page passes 1.4.11 by its edge. No change.
+
+### 7. 3.19 `InputGroup`
+
+The wrapper tier-3c-inputs.md §3.8 sent addons to and nobody built: an
+`Input` with an icon, a unit or a button inside its box. Written and built
+under D-069 §1 — [`InputGroup.md`](specs/InputGroup.md) §1–§5, every
+recommendation adopted as written and listed in the PR for reversal. The
+group draws the box and the ring, moved there through `:has()`; the Input
+inside gives its own up. Addons are in DOM order, with no `side`. The group
+resolves `size`, `invalid` and `disabled` because it draws the danger tone,
+and a tone is a context on the element that reads it (D-007); `Input` reads
+the group between its own prop and the field. An addon's text is not wired
+into the Input's description, and the docs put the unit in the label.
+
+### 8. AppShell can collapse its sidebar into a drawer
+
+Below `collapseBelow` the sidebar stacked above the content (D-096), which on
+a phone put the navigation between the header and the page on every page.
+`collapseTo="drawer"` hides it there and renders a menu button at the start
+of the header that opens the same content in a Drawer from the start edge;
+a followed link closes it. The shell renders the button, so a drawer shell
+cannot lose its navigation, and stays a Server Component with one client
+island. The thresholds are Split's, restated, under a container named
+`pp-app-shell`. Default `stack`, so existing shells do not change.
+Because the breakpoint is the shell's width, a shell inside a narrower box
+shows the button on a wide page, where a drawer on `<body>` would cover the
+page instead of the shell; `menuContainer` passes Drawer's `container`
+through (added 2026-10-11, after the playground's examples did exactly
+that). [`AppShell.md`](specs/AppShell.md) §9.
+
+### 9. Considered and not done
+
+Per-component CSS entry points (the stylesheet is 23 KB gzipped, and a
+second way to install the library costs more than it saves), virtualised
+lists (unmeasured; measure first), and the components other libraries ship
+that no consuming app has asked for — HoverCard, Carousel, Menubar, an OTP
+input, Rating, a data grid — under Tier 6's own rule.

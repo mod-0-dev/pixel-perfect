@@ -74,10 +74,12 @@
     transition-timing-function: var(--pp-easing-standard);
   }
 
-  .pp-card:is(a, button):hover {
-    --_border: var(--pp-card-border-color, var(--pp-color-border));
+  @media (hover: hover) {
+    .pp-card:is(a, button):hover {
+      --_border: var(--pp-card-border-color, var(--pp-color-border));
 
-    box-shadow: var(--pp-card-shadow, var(--pp-shadow-1));
+      box-shadow: var(--pp-card-shadow, var(--pp-shadow-1));
+    }
   }
 
   .pp-card:is(a, button):focus-visible {

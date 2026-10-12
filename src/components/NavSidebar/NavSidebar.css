@@ -93,8 +93,10 @@
     appearance: none;
   }
 
-  .pp-nav-sidebar__link:hover {
-    background-color: var(--pp-tone-bg-hover);
+  @media (hover: hover) {
+    .pp-nav-sidebar__link:hover {
+      background-color: var(--pp-tone-bg-hover);
+    }
   }
 
   .pp-nav-sidebar__link[aria-current="page"] {
@@ -149,5 +151,15 @@
 
   [dir="rtl"] .pp-nav-sidebar__group[data-state="open"] > .pp-nav-sidebar__toggle > .pp-nav-sidebar__chevron {
     rotate: -90deg;
+  }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-nav-sidebar__link[aria-current="page"] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
   }
 }

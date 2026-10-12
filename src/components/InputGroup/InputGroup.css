@@ -1,0 +1,157 @@
+/*
+ * INPUT GROUP — one box around an Input and the things beside it.
+ *
+ * Sizing contract: fill. The root is block-level flex with no width; the
+ * Input takes what the addons leave (`flex: 1 1 0`), and each addon hugs.
+ *
+ * The group draws the box Input normally draws on its control: the same
+ * --pp-control-* height, padding, radius and font, the same edge and fill,
+ * the same two rings (D-029, D-039 §4). The Input inside gives its own
+ * edge, fill and outline up, so there is one box and one ring — the ring
+ * moving to the group through :has(), because the group is what the user
+ * sees as the field.
+ *
+ * Spacing: the outer side of the first and last parts keeps the control's
+ * inline padding; between the Input and an addon is the control gap. An
+ * addon holding a button sits closer to the edge, because a button already
+ * carries its own padding.
+ *
+ * Spec: docs/specs/InputGroup.md
+ */
+
+@layer pp.components {
+  .pp-input-group {
+    --_height: var(--pp-control-height-md);
+    --_padding-inline: var(--pp-control-padding-inline-md);
+    --_gap: var(--pp-control-gap-md);
+    --_font-size: var(--pp-control-font-size-md);
+    --_bg: var(--pp-color-bg-surface);
+    --_border: var(--pp-color-border);
+    --_color: var(--pp-color-text);
+
+    display: flex;
+    align-items: center;
+    min-inline-size: 0;
+    min-block-size: var(--pp-input-group-height, var(--_height));
+    border: var(--pp-border-width-1) solid var(--pp-input-group-border-color, var(--_border));
+    border-radius: var(--pp-input-group-radius, var(--pp-control-radius));
+    background-color: var(--pp-input-group-bg, var(--_bg));
+    color: var(--_color);
+    font-size: var(--_font-size);
+    line-height: var(--pp-line-height-normal);
+    cursor: text;
+    transition-property: border-color, background-color;
+    transition-duration: var(--pp-duration-fast);
+    transition-timing-function: var(--pp-easing-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pp-input-group {
+      transition-property: none;
+    }
+  }
+
+  .pp-input-group[data-size="sm"] {
+    --_height: var(--pp-control-height-sm);
+    --_padding-inline: var(--pp-control-padding-inline-sm);
+    --_gap: var(--pp-control-gap-sm);
+    --_font-size: var(--pp-control-font-size-sm);
+  }
+
+  .pp-input-group[data-size="lg"] {
+    --_height: var(--pp-control-height-lg);
+    --_padding-inline: var(--pp-control-padding-inline-lg);
+    --_gap: var(--pp-control-gap-lg);
+    --_font-size: var(--pp-control-font-size-lg);
+  }
+
+  /* The Input fills what the addons leave, at the box's full height. */
+  .pp-input-group > .pp-input {
+    flex: 1 1 0;
+    align-self: stretch;
+  }
+
+  /* One box: the Input's own edge, fill and ring are the group's now. */
+  .pp-input-group .pp-input__control {
+    block-size: auto;
+    border: 0;
+    background-color: transparent;
+  }
+
+  .pp-input-group .pp-input__control:focus-visible {
+    /* Drawn on the group, below — a ring inside a ring would be two. */
+    outline-style: none;
+  }
+
+  .pp-input-group__addon + .pp-input .pp-input__control {
+    padding-inline-start: var(--_gap);
+  }
+
+  .pp-input-group .pp-input:has(+ .pp-input-group__addon) .pp-input__control {
+    padding-inline-end: var(--_gap);
+  }
+
+  .pp-input-group__addon {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: var(--_gap);
+    color: var(--pp-color-text-muted);
+    white-space: nowrap;
+  }
+
+  .pp-input-group__addon:first-child {
+    padding-inline-start: var(--_padding-inline);
+  }
+
+  .pp-input-group__addon:last-child {
+    padding-inline-end: var(--_padding-inline);
+  }
+
+  /* A button carries its own padding; the edge needs only a sliver. */
+  .pp-input-group__addon:first-child:has(> .pp-button) {
+    padding-inline-start: var(--pp-space-1);
+  }
+
+  .pp-input-group__addon:last-child:has(> .pp-button) {
+    padding-inline-end: var(--pp-space-1);
+  }
+
+  /* A button is not the field: it keeps its own cursor. */
+  .pp-input-group__addon .pp-button {
+    cursor: pointer;
+  }
+
+  .pp-input-group:has(.pp-input__control:focus-visible) {
+    --_border: var(--pp-tone-focus);
+
+    outline: var(--pp-focus-ring-width) solid var(--pp-color-focus-ring);
+    outline-offset: var(--pp-focus-ring-offset);
+  }
+
+  /* The root carries data-pp-tone="danger", so this is the danger edge
+     without the file naming a colour (D-007) — and focus, which outranks it,
+     is the danger focus edge, so an invalid field stays red while it is being
+     fixed, as on Input. */
+  .pp-input-group[data-invalid] {
+    --_border: var(--pp-tone-border);
+  }
+
+  .pp-input-group[data-disabled] {
+    --_bg: var(--pp-color-bg-sunken);
+    --_color: var(--pp-color-text-disabled);
+    /* Disabled is exempt from 1.4.11 and should look it (D-050). */
+    --_border: var(--pp-color-border-subtle);
+
+    cursor: not-allowed;
+  }
+
+  .pp-input-group[data-disabled] .pp-input-group__addon {
+    color: var(--pp-color-text-disabled);
+  }
+
+  /* Read-only is the Input's prop, so the group reads it from the Input. */
+  .pp-input-group:has(.pp-input[data-readonly]) {
+    --_bg: var(--pp-color-bg-sunken);
+  }
+}

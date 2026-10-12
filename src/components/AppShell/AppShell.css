@@ -25,6 +25,10 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
     container-type: inline-size;
+    /* Named, so the drawer rules below query the shell even from inside a
+       header that holds a Container of its own (D-110 §8). Split's unnamed
+       query still finds it as the nearest container. */
+    container-name: pp-app-shell;
     min-inline-size: 0;
     min-block-size: 100%;
   }
@@ -91,5 +95,47 @@
     padding-block: var(--pp-app-shell-footer-padding-block, var(--pp-space-3));
     padding-inline: var(--pp-app-shell-footer-padding-inline, var(--pp-space-5));
     border-block-start: var(--pp-border-width-1) solid var(--pp-app-shell-hairline, var(--pp-color-border-subtle));
+  }
+
+  /*
+   * collapseTo="drawer" (spec §9, D-110 §8). The header is a row: the menu
+   * button, then the consumer's header. Below the breakpoint the sidebar
+   * leaves and the button shows; above it, the reverse. The thresholds are
+   * Split's (Split.css), restated because a container query cannot read a
+   * custom property — the same reason Split writes them out three times.
+   */
+  .pp-app-shell[data-collapse-to="drawer"] > .pp-app-shell__header {
+    display: flex;
+    align-items: center;
+    gap: var(--pp-space-3);
+  }
+
+  .pp-app-shell__header-content {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+
+  @container pp-app-shell (max-inline-size: 30rem) {
+    .pp-app-shell[data-collapse-below="sm"] .pp-app-shell__sidebar { display: none; }
+  }
+
+  @container pp-app-shell (max-inline-size: 45rem) {
+    .pp-app-shell[data-collapse-below="md"] .pp-app-shell__sidebar { display: none; }
+  }
+
+  @container pp-app-shell (max-inline-size: 60rem) {
+    .pp-app-shell[data-collapse-below="lg"] .pp-app-shell__sidebar { display: none; }
+  }
+
+  @container pp-app-shell not (max-inline-size: 30rem) {
+    .pp-app-shell[data-collapse-below="sm"] .pp-app-shell__menu { display: none; }
+  }
+
+  @container pp-app-shell not (max-inline-size: 45rem) {
+    .pp-app-shell[data-collapse-below="md"] .pp-app-shell__menu { display: none; }
+  }
+
+  @container pp-app-shell not (max-inline-size: 60rem) {
+    .pp-app-shell[data-collapse-below="lg"] .pp-app-shell__menu { display: none; }
   }
 }

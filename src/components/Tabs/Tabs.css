@@ -79,9 +79,14 @@
     transition: color var(--pp-duration-fast) var(--pp-easing-standard);
   }
 
-  .pp-tabs__tab:hover,
   .pp-tabs__tab[data-state="active"] {
     color: var(--pp-color-text);
+  }
+
+  @media (hover: hover) {
+    .pp-tabs__tab:hover {
+      color: var(--pp-color-text);
+    }
   }
 
   .pp-tabs__tab:disabled {
@@ -131,6 +136,22 @@
   @media (prefers-reduced-motion: reduce) {
     .pp-tabs__tab {
       transition: none;
+    }
+  }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    /* A transparent border is painted in forced colours, so every tab would
+       carry the bar; the bar keeps its own colours, and only the active one
+       has any. */
+    .pp-tabs__tab::after {
+      forced-color-adjust: none;
+    }
+
+    .pp-tabs__tab[data-state="active"]::after {
+      border-color: Highlight;
     }
   }
 }

@@ -69,7 +69,8 @@ export default function TogglePage() {
         <h2>tone</h2>
         <p>
           Warning&rsquo;s solid is light: 1.87:1 against the page in the light theme, too faint to
-          tell pressed from not. Keep warning off a Toggle.
+          tell pressed from not on its own, so a pressed warning toggle carries its strong edge,
+          4.59:1. Keep warning off an outline toggle, whose resting edge is too close to it.
         </p>
         <Matrix>
           <div className="row-wrap">

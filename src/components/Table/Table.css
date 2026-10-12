@@ -146,4 +146,14 @@
   .pp-table__cell[data-align="end"] {
     text-align: end;
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-table__row[data-state="selected"] {
+      background-color: Highlight;
+      color: HighlightText;
+    }
+  }
 }

@@ -156,8 +156,10 @@
     block-size: var(--pp-size-3);
   }
 
-  .pp-combobox__remove:hover {
-    background-color: var(--pp-tone-bg-hover);
+  @media (hover: hover) {
+    .pp-combobox__remove:hover {
+      background-color: var(--pp-tone-bg-hover);
+    }
   }
 
   .pp-combobox__remove:focus-visible {

@@ -25,11 +25,11 @@
   },
   "app-shell-dark.png": {
     "width": 1280,
-    "height": 6478
+    "height": 7827
   },
   "app-shell-light.png": {
     "width": 1280,
-    "height": 6478
+    "height": 7827
   },
   "aspect-ratio-dark.png": {
     "width": 1280,
@@ -314,16 +314,24 @@
   "index-dark.png": {
     "width": 1280,
     "height": 4745,
-    "components": 70
+    "components": 71
   },
   "index-light.png": {
     "width": 1280,
     "height": 4745,
-    "components": 70
+    "components": 71
   },
   "input-dark.png": {
     "width": 1280,
     "height": 5002
+  },
+  "input-group-dark.png": {
+    "width": 1280,
+    "height": 4022
+  },
+  "input-group-light.png": {
+    "width": 1280,
+    "height": 4022
   },
   "input-light.png": {
     "width": 1280,
@@ -587,11 +595,11 @@
   },
   "toggle-dark.png": {
     "width": 1280,
-    "height": 3257
+    "height": 3282
   },
   "toggle-light.png": {
     "width": 1280,
-    "height": 3257
+    "height": 3282
   },
   "tokens-dark.png": {
     "width": 1280,

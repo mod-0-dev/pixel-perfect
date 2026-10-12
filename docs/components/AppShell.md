@@ -60,8 +60,26 @@ html, body { block-size: 100%; }
 | `sidebarInlineSize` | `string` | `'16rem'` | Split's |
 | `collapseBelow` | `'sm' \| 'md' \| 'lg' \| 'never'` | `'md'` | Split's: below it the sidebar stacks |
 | `sticky` | `boolean` | `false` | The header stays in view |
+| `collapseTo` | `'stack' \| 'drawer'` | `'stack'` | What the sidebar does below `collapseBelow` — see below |
+| `menuLabel` | `string` | `'Menu'` | With `drawer`: the menu button's and the drawer's name |
+| `menuOpen` / `defaultMenuOpen` / `onMenuOpenChange` | | — | With `drawer`: the drawer, controlled or not |
+| `menuContainer` | `Element \| null` | `document.body` | With `drawer`: where the drawer is portalled, for a shell inside a box narrower than the page. The box needs `contain: layout` |
 
 `ref`, `className`, `style` and the rest go to the root.
+
+## On a phone
+
+By default the sidebar stacks above the content below `collapseBelow`. For
+an app with more than a handful of links, use `collapseTo="drawer"`: below
+the breakpoint the sidebar is hidden, a menu button opens the same content
+in a [`Drawer`](Drawer.md) from the start edge, and following a link in it
+closes it. The shell renders the button at the start of the header itself.
+
+```tsx
+<AppShell collapseTo="drawer" header={<Brand />} sidebar={<NavSidebar label="Main">…</NavSidebar>}>
+  {children}
+</AppShell>
+```
 
 ## Styling
 

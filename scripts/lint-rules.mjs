@@ -8,6 +8,7 @@
 //   5. The built stylesheet establishes cascade layers in the declared order
 //   6. No selector list mixes a -webkit- and a -moz- pseudo-element
 //   7. Every --pp-* a component stylesheet reads is defined somewhere
+//   8. Every :hover sits inside @media (hover: hover)
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -114,6 +115,35 @@ for (const file of walk(join(SRC, 'components'), ['.css'])) {
         rel,
         `one selector list mixes \`::-webkit-\` and \`::-moz-\` pseudo-elements — an unknown pseudo-element invalidates the WHOLE list, so this unstyles one engine silently. Write the blocks out separately (tier-3d-composite.md §8, D-051 §4)`,
       );
+    }
+  }
+  /*
+   * 8. EVERY :hover SITS INSIDE @media (hover: hover) (D-110 §3).
+   *
+   * A touch screen applies :hover on a tap and keeps it until the next tap
+   * lands somewhere else, so a hover fill outside the query stays painted on
+   * the Button a finger just lifted from. The selector is read with the
+   * stack of at-rules around it, because the guard is a parent block.
+   */
+  {
+    const stack = [];
+    let head = '';
+    for (const ch of withoutComments) {
+      if (ch === '{') {
+        const prelude = head.trim();
+        if (/:hover\b/.test(prelude) && !prelude.startsWith('@') && !stack.some((p) => /^@media[^{]*\(hover:\s*hover\)/.test(p))) {
+          fail(rel, `\`${prelude.replace(/\s+/g, ' ')}\` is a :hover outside \`@media (hover: hover)\` — a tap leaves it painted on a touch screen (D-110 §3)`);
+        }
+        stack.push(prelude);
+        head = '';
+      } else if (ch === '}') {
+        stack.pop();
+        head = '';
+      } else if (ch === ';') {
+        head = '';
+      } else {
+        head += ch;
+      }
     }
   }
 }

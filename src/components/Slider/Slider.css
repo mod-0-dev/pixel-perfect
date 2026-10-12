@@ -206,4 +206,13 @@
     border-radius: var(--pp-radius-full);
     background-color: var(--pp-slider-thumb-color, var(--_thumb-color));
   }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-slider__fill {
+      background-color: Highlight;
+    }
+  }
 }

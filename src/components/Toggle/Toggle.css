@@ -40,6 +40,18 @@
   }
 
   /*
+   * WARNING'S SOLID IS LIGHT (D-110 §6): 1.87:1 against the page in the light
+   * theme, so the fill alone cannot carry 1.4.11. Its strong edge can —
+   * 4.59:1 or more on every surface — and a ghost or plain toggle at rest has
+   * no edge at all, so pressed is told from not by a boundary that passes.
+   * Beside an `outline` toggle at rest it is still an edge against an edge,
+   * which the docs keep saying.
+   */
+  .pp-toggle[data-state="on"][data-pp-tone="warning"] {
+    --_border: var(--pp-toggle-bg-on, var(--pp-tone-border-strong));
+  }
+
+  /*
    * Disabled still says it is pressed, quietly: Button's disabled surface
    * with an edge, where a disabled toggle that is off has none — the solid
    * fill would read as available. SegmentedControl's rule (D-107 §3).
@@ -50,5 +62,18 @@
     --_border: var(--pp-color-border-subtle);
     --_bg-hover: var(--pp-color-bg-sunken);
     --_bg-active: var(--pp-color-bg-sunken);
+  }
+
+  /* FORCED COLOURS (D-110 §2). The user's palette replaces every author
+     colour, so a state painted only as a fill vanishes; system colours are
+     the ones it keeps. */
+  @media (forced-colors: active) {
+    .pp-toggle[data-state="on"]:not([data-disabled]) {
+      --_bg: Highlight;
+      --_bg-hover: Highlight;
+      --_bg-active: Highlight;
+      --_color: HighlightText;
+      --_border: Highlight;
+    }
   }
 }
