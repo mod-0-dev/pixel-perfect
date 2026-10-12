@@ -1018,6 +1018,29 @@ test.describe('layout primitives', () => {
     expect(await columnCount(2)).toBeGreaterThan(2);
   });
 
+  test('an auto-fit floor wider than the container clamps to it: one column, never past the box (D-111 §1)', async ({ page }) => {
+    await page.goto('/components/grid');
+
+    const section = page.locator('section', { hasText: 'auto-fit is the container-native mode' });
+    // The 12rem (192px) floor in a box narrowed to 150px. Unclamped, the one
+    // column is 192px and the grid overflows its own box by 42px.
+    const result = await section
+      .locator('.matrix__viewport')
+      .first()
+      .locator('.pp-grid')
+      .evaluate((grid) => {
+        grid.style.inlineSize = '150px';
+        const box = grid.getBoundingClientRect();
+        const item = (grid.firstElementChild as HTMLElement).getBoundingClientRect();
+        return {
+          columns: getComputedStyle(grid).gridTemplateColumns.split(' ').length,
+          fits: item.right <= box.right + 0.5,
+          scroll: grid.scrollWidth <= grid.clientWidth,
+        };
+      });
+    expect(result).toEqual({ columns: 1, fits: true, scroll: true });
+  });
+
   test('a nested Grid does not inherit its parent tracks', async ({ page }) => {
     await page.goto('/components/grid');
 
@@ -8958,6 +8981,22 @@ test.describe('AvatarGroup', () => {
       // The trailing letter-spacing is in the advance; half a pixel either way.
       expect(Math.abs(row.lastOffCentre), `${row.size} last`).toBeLessThanOrEqual(1);
     }
+  });
+
+  test('initials never break between their letters, even under an inherited overflow-wrap: anywhere (D-111 §2)', async ({ page }) => {
+    await page.goto('/components/avatar-group');
+    await page.evaluate(() => document.fonts.ready);
+    /* What a Card, a Dialog or an Alert hands down. The sm row's MH is the
+       pair wider than what is left of its face. */
+    const lines = await page.locator('[data-testid="avatar-group-wide"]').evaluate((section) => {
+      section.style.overflowWrap = 'anywhere';
+      return Array.from(section.querySelectorAll<HTMLElement>('.pp-avatar__fallback')).map((span) => {
+        const lineHeight = parseFloat(getComputedStyle(span).fontSize);
+        return { text: span.textContent, lines: Math.round(span.getBoundingClientRect().height / lineHeight) };
+      });
+    });
+    expect(lines.length).toBeGreaterThan(0);
+    for (const face of lines) expect(face.lines, face.text ?? '').toBe(1);
   });
 });
 

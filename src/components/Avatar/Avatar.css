@@ -45,9 +45,16 @@
     object-fit: cover;
   }
 
+  /* Initials are one word and never break. Card, Dialog, Alert and Text set
+     `overflow-wrap: anywhere`, which inherits, and under it a pair wider
+     than the room it is given (MW on a small face, or any wide pair once
+     AvatarGroup's overlap pads it) broke between its letters onto two
+     lines. Unbroken, the pair overflows into the face's clip instead
+     (D-111 §2). */
   .pp-avatar__fallback {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    white-space: nowrap;
   }
 }

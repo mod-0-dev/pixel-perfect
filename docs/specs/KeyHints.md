@@ -161,18 +161,22 @@ and each hint hugs its keycap.
 | `revealKey` | `'Alt' \| 'Control' \| 'Meta' \| 'Shift' \| null` | `null` | Hold to reveal (§2) |
 | `jumpKey` | `string \| null` | `'f'` | Press to label the controls (§3) |
 | `helpKey` | `string \| null` | `'?'` | Press for the sheet (§4) |
+| `open` / `defaultOpen` / `onOpenChange` | `boolean` / `boolean` / `(open: boolean) => void` | — / `false` / — | The sheet, controlled and uncontrolled (RULES §5.5, D-111 §3). The help key asks through `onOpenChange` |
 | `helpTitle` | `string` | `'Keyboard shortcuts'` | The dialog's title |
 | `jumpStatus` | `string` | `'Jump: type a label to focus a control. Escape cancels.'` | The live region's text |
 | `children` | `ReactNode` | — | The app |
 
 **`useKeyHint({ keys, label, onTrigger, enabled = true })`**: registers a
-command while mounted. **`formatKeys(keys)`**: the chords of a key string
+command while mounted. **`formatKeys(keys, { apple })`**: the chords of a key string
 as arrays of keycap labels, `mod` resolved (`[['⌘', 'S']]` on Apple,
-`[['Ctrl', 'S']]` elsewhere) — for an app's own `Kbd`s. **`data-pp-hotkey`**:
+`[['Ctrl', 'S']]` elsewhere) — for an app's own `Kbd`s after mount.
+**`useFormatKeys(keys)`**: the same for render, hydration-safe — the
+server's labels (not Apple) on the server and the hydrating render, the
+platform's one commit later (D-111 §4). **`data-pp-hotkey`**:
 the attribute contract on any element.
 
-Exported: `KeyHints`, `useKeyHint`, `formatKeys`, `KeyHintsProps`,
-`KeyHintOptions`. No `ref`, `className` or `style`: there is no root
+Exported: `KeyHints`, `useKeyHint`, `formatKeys`, `useFormatKeys`,
+`KeyHintsProps`, `KeyHintOptions`, `FormatKeysOptions`. No `ref`, `className` or `style`: there is no root
 element (`ThemeProvider`'s shape, D-094).
 
 ## State

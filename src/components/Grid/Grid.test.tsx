@@ -44,7 +44,7 @@ describe('Grid', () => {
         </Grid>,
       );
       const el = getByTestId('g');
-      expect(tracks(el)).toBe('repeat(auto-fit, minmax(16rem, 1fr))');
+      expect(tracks(el)).toBe('repeat(auto-fit, minmax(min(16rem, 100%), 1fr))');
       expect(el).toHaveAttribute('data-mode', 'auto');
     });
 
@@ -171,7 +171,7 @@ describe('Grid', () => {
       const list = getByRole('list');
       expect(list.tagName).toBe('UL');
       expect(list).toHaveClass('pp-grid');
-      expect(tracks(list)).toBe('repeat(auto-fit, minmax(16rem, 1fr))');
+      expect(tracks(list)).toBe('repeat(auto-fit, minmax(min(16rem, 100%), 1fr))');
     });
   });
 

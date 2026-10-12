@@ -9,11 +9,13 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
 
 import { isEditing } from '../../internal/editing';
+import { useControllableState } from '../../internal/useControllableState';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../Dialog/Dialog';
 import { Kbd } from '../Kbd/Kbd';
 import { VisuallyHidden } from '../VisuallyHidden/VisuallyHidden';
@@ -54,11 +56,11 @@ const MODIFIERS = new Set(['mod', 'ctrl', 'control', 'meta', 'cmd', 'command', '
 
 const isApple = () => typeof navigator !== 'undefined' && /mac|iphone|ipad|ipod/i.test(navigator.platform ?? '');
 
-function chordOf(text: string): Chord {
+function chordOf(text: string, apple = isApple()): Chord {
   const parts = text.toLowerCase().split('+');
   const key = parts[parts.length - 1] ?? '';
   const mods = new Set(parts.slice(0, -1).filter((p) => MODIFIERS.has(p)));
-  if (mods.has('mod')) mods.add(isApple() ? 'meta' : 'ctrl');
+  if (mods.has('mod')) mods.add(apple ? 'meta' : 'ctrl');
   return {
     ctrl: mods.has('ctrl') || mods.has('control'),
     meta: mods.has('meta') || mods.has('cmd') || mods.has('command'),
@@ -69,8 +71,11 @@ function chordOf(text: string): Chord {
 }
 
 /** `'mod+shift+n'` → one chord; `'g i'` → two. */
-function parseKeys(keys: string): Chord[] {
-  return keys.trim().split(/\s+/).map(chordOf);
+function parseKeys(keys: string, apple = isApple()): Chord[] {
+  return keys
+    .trim()
+    .split(/\s+/)
+    .map((text) => chordOf(text, apple));
 }
 
 function chordFromEvent(event: KeyboardEvent): Chord {
@@ -103,14 +108,20 @@ const KEY_LABELS: Record<string, string> = {
   pagedown: 'PgDn',
 };
 
+export interface FormatKeysOptions {
+  /** Label for Apple (`⌘ ⌥ ⇧ ⌃`) or not. Omitted, the platform it runs on decides. */
+  apple?: boolean;
+}
+
 /**
  * The chords of a key string as keycap labels, `mod` resolved on the
  * platform: `[['⌘', 'S']]` on Apple, `[['Ctrl', 'S']]` elsewhere. For an
- * app's own `Kbd`s.
+ * app's own `Kbd`s in an event handler or after mount: a server has no
+ * platform, so a keycap rendered from this on the server does not match the
+ * one a Mac hydrates. In render, use `useFormatKeys` (D-111 §4).
  */
-export function formatKeys(keys: string): string[][] {
-  const apple = isApple();
-  return parseKeys(keys).map((chord) => {
+export function formatKeys(keys: string, { apple = isApple() }: FormatKeysOptions = {}): string[][] {
+  return parseKeys(keys, apple).map((chord) => {
     const labels: string[] = [];
     if (chord.ctrl) labels.push(apple ? '⌃' : 'Ctrl');
     if (chord.alt) labels.push(apple ? '⌥' : 'Alt');
@@ -119,6 +130,20 @@ export function formatKeys(keys: string): string[][] {
     labels.push(KEY_LABELS[chord.key] ?? (chord.key.length === 1 ? chord.key.toUpperCase() : chord.key.charAt(0).toUpperCase() + chord.key.slice(1)));
     return labels;
   });
+}
+
+const subscribeToNothing = () => () => {};
+
+/**
+ * `formatKeys` for render. The server and the hydrating render label for
+ * not-Apple, so the HTML matches whatever machine hydrates it (RULES §7);
+ * React then renders again with the platform's labels, so a Mac shows ⌘
+ * one commit later. `useSyncExternalStore`'s server snapshot is exactly
+ * that contract (D-111 §4).
+ */
+export function useFormatKeys(keys: string): string[][] {
+  const apple = useSyncExternalStore(subscribeToNothing, isApple, () => false);
+  return useMemo(() => formatKeys(keys, { apple }), [keys, apple]);
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +249,14 @@ export interface KeyHintsProps {
   jumpKey?: string | null;
   /** Press for the sheet (spec §4). `null` turns it off. */
   helpKey?: string | null;
+  /**
+   * The sheet, controlled: a menu's "Keyboard shortcuts" item sets it
+   * (D-111 §3). `helpKey` still opens it and reports through `onOpenChange`.
+   */
+  open?: boolean;
+  /** The sheet, uncontrolled. */
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   helpTitle?: string;
   /** What the live region says while jumping. */
   jumpStatus?: string;
@@ -234,6 +267,9 @@ export function KeyHints({
   revealKey = null,
   jumpKey = 'f',
   helpKey = '?',
+  open,
+  defaultOpen = false,
+  onOpenChange,
   helpTitle = 'Keyboard shortcuts',
   jumpStatus = 'Jump: type a label to focus a control. Escape cancels.',
   children,
@@ -259,7 +295,13 @@ export function KeyHints({
 
   const [revealing, setRevealing] = useState(false);
   const [jump, setJump] = useState<{ targets: HTMLElement[]; labels: string[]; typed: string } | null>(null);
-  const [helpOpen, setHelpOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useControllableState({
+    value: open,
+    defaultValue: defaultOpen,
+    onChange: onOpenChange,
+    component: 'KeyHints',
+    prop: 'open',
+  });
   const [hints, setHints] = useState<Hint[]>([]);
   const pending = useRef<Chord[]>([]);
   const pendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

@@ -39,7 +39,7 @@ export type GridProps =
     })
   | (GridBase & {
       columns?: never;
-      /** `repeat(auto-fit, minmax(<value>, 1fr))` — the container-native mode. */
+      /** `repeat(auto-fit, minmax(min(<value>, 100%), 1fr))` — the container-native mode. */
       minItemInlineSize: string;
     });
 
@@ -61,9 +61,12 @@ export function gridTracks(
   if (typeof columns === 'string') {
     return { template: columns, mode: 'template' };
   }
+  /* The floor is clamped to the container: a `22rem` floor in a 327px box
+     would make one 352px column and push the page sideways. A container
+     narrower than the floor gets one column as wide as it is (D-111 §1). */
   if (minItemInlineSize !== undefined) {
     return {
-      template: `repeat(auto-fit, minmax(${minItemInlineSize}, 1fr))`,
+      template: `repeat(auto-fit, minmax(min(${minItemInlineSize}, 100%), 1fr))`,
       mode: 'auto',
     };
   }

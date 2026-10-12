@@ -30,10 +30,15 @@ import { Grid } from '@mod-0-dev/pixel-perfect';
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `columns` | `number \| string` | — | A number is `repeat(n, minmax(0, 1fr))`; a string goes to `grid-template-columns` unchanged |
-| `minItemInlineSize` | `string` | — | `repeat(auto-fit, minmax(<value>, 1fr))` |
+| `minItemInlineSize` | `string` | — | `repeat(auto-fit, minmax(min(<value>, 100%), 1fr))` |
 | `gap` | `'0' \| '1' \| … \| '9'` | `'0'` | A step of `--pp-space-*`. Mirrored as `data-pp-gap` |
 | `align` | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | `align-items`. No `baseline` — it is meaningless across tracks |
 | `asChild` | `boolean` | `false` | Render the single child element instead of a `<div>` |
+
+The floor is clamped to the grid: in a box narrower than
+`minItemInlineSize` the grid is one column as wide as the box, never one
+column wider than it. Write the size you want at ease; a phone gets one
+column (D-111 §1).
 
 `columns` and `minItemInlineSize` are **mutually exclusive in the type**, not by
 precedence. Passing both is a mistake, and silently picking a winner hides it

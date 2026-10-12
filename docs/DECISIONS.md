@@ -8615,3 +8615,79 @@ second way to install the library costs more than it saves), virtualised
 lists (unmeasured; measure first), and the components other libraries ship
 that no consuming app has asked for — HoverCard, Carousel, Menubar, an OTP
 input, Rating, a data grid — under Tier 6's own rule.
+
+<a id="d-111"></a>
+
+## D-111 — From the launchpad conversion: an auto-fit floor clamped to its box, initials that do not break, a sheet a menu can open, and keycaps that hydrate
+
+**Date:** 2026-10-12 · **Status:** accepted · **Amends:** `Grid.tsx`,
+`Avatar.css`, `KeyHints.tsx`, `docs/specs/tier-2-layout.md` (§6's
+example), `docs/specs/KeyHints.md` (props, exports) · **Extends:** D-022 §4,
+D-078 §4, D-090, D-100 §2, D-107 §1
+
+The launchpad app was converted to all 72 components and checked at 320, 375
+and 1280px. Its README listed what it found in the library. Each finding was
+reproduced before it was fixed, and one was not what it looked like.
+
+### 1. `Grid`'s auto-fit floor is clamped to the grid
+
+`minItemInlineSize="22rem"` wrote `minmax(22rem, 1fr)`. On a 375px phone the
+content box was 327px, so the one column was 352px and the cards were wider
+than the screen. The app wrote `min(20rem, 100%)` itself. The generated track
+is now `repeat(auto-fit, minmax(min(<value>, 100%), 1fr))`: the same tracks
+whenever the box holds one floor, and one column the width of the box when it
+does not. Every auto-fit grid wants that, so it is not a prop. The browser
+test narrows the playground's 12rem grid to 150px and asserts one column
+inside the box. With the old template it fails, because the item is 192px.
+
+### 2. The faces did not shrink; their initials broke
+
+The report said `AvatarGroup`'s faces shrink in a flex row, and asked for
+`flex-shrink: 0`. Reproduced in a `Card`, the faces stayed 24px at every
+width, and the group stayed the same width with or without room. What broke
+was the initials: `GH` went onto two lines with the row wide open. `Card`,
+`Dialog`, `Alert`, `Text` and others set `overflow-wrap: anywhere`, which is
+inherited. Under it a pair can break between its letters as soon as it is
+wider than the space it has, and in a group the overlap padding (D-107 §1)
+leaves less space. A tight row only made it more likely. The fix is in
+Avatar, not AvatarGroup: the fallback is `white-space: nowrap`, so an
+initials pair that is too wide overflows into the face's clip and does not
+wrap. A lone `Avatar` with `MW` inside a `Card` had the same bug. The browser
+test sets `overflow-wrap: anywhere` on the wide-initials section and asserts
+every pair is one line; without the rule the `sm` row's `MH` is two.
+
+### 3. `KeyHints` takes `open` / `defaultOpen` / `onOpenChange` for its sheet
+
+The sheet opened on `helpKey` and on nothing else, so the launchpad's
+"Keyboard shortcuts" menu item dispatched a synthetic `?`. RULES §5.5 asks
+every stateful component for both modes. The sheet is KeyHints' only
+open-or-closed state: the reveal and the jump are gestures, not states a
+caller holds. So the sheet takes the fixed vocabulary, and not
+`helpOpen`. The help key and the dialog's close both go through
+`onOpenChange`, so a controlled sheet that is held shut stays shut when the key is
+pressed. The other choice was an imperative `openHelp()` from a hook. That
+would be a second way to say the same thing, and it was not chosen.
+
+### 4. `useFormatKeys` for render; `formatKeys` takes the platform
+
+`formatKeys` resolves `mod` on the platform it runs on. The server has no
+platform, so a keycap rendered from it on the server says Ctrl, and a Mac
+hydrates ⌘ against it. The docs' own example did exactly that. The app's
+workaround was to render keycaps after mount. `useFormatKeys(keys)` reads
+the platform through `useSyncExternalStore` with a server snapshot of
+"not Apple". The server render and the hydrating render agree (RULES §7),
+and React renders the platform's labels one commit later. `formatKeys(keys,
+{ apple })` takes the platform as an option for a caller that knows it.
+Without the option it behaves as before. The unit test renders to a string,
+hydrates with an Apple platform, and asserts there is no recoverable error
+and that the text is ⌘. With the hook calling `formatKeys` directly it fails
+on the mismatch. One finding came out of writing it: `mod` was resolved
+in the parser, so a `formatKeys` that was told the platform still asked
+`navigator` for `mod`. The parser now takes the platform too.
+
+### 5. The task table's sideways scroll is the Table's
+
+At 320px the launchpad's five-column task table overflowed its own region by
+19px. That is D-081 §1: the region scrolls inside its own box, and the page
+does not. The app's fix was its own, folding the due date into each row and
+moving the sort into a menu. No library change.

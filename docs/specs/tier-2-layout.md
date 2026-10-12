@@ -148,7 +148,7 @@ trade worth making for an ordering the caller can express by swapping two lines.
 
 ```tsx
 <Grid columns={3} />                      /* repeat(3, minmax(0, 1fr)) */
-<Grid minItemInlineSize="16rem" />        /* repeat(auto-fit, minmax(16rem, 1fr)) */
+<Grid minItemInlineSize="16rem" />        /* repeat(auto-fit, minmax(min(16rem, 100%), 1fr)) */
 ```
 
 The question is the third. The consuming app has two layouts that are neither —
@@ -519,7 +519,7 @@ blow the whole grid out of its container.
 | Prop | Type | Default | Notes |
 | --- | --- | --- | --- |
 | `columns` | `number \| string` | — | A number is `repeat(n, minmax(0, 1fr))`. A string is passed to `grid-template-columns`. Decision 6 |
-| `minItemInlineSize` | `string` | — | `repeat(auto-fit, minmax(<value>, 1fr))` |
+| `minItemInlineSize` | `string` | — | `repeat(auto-fit, minmax(min(<value>, 100%), 1fr))` |
 | `gap` | `Space` | `'0'` | |
 | `align` | `'start' \| 'center' \| 'end' \| 'stretch'` | `'stretch'` | `align-items` |
 | `asChild` | `boolean` | `false` | |
