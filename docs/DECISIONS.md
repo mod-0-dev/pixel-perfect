@@ -8708,3 +8708,61 @@ elements whenever the hotkeys are read. The list is short on purpose. It
 covers the chords that are never delivered, not every browser default a page
 may override, because a list of every OS and browser shortcut would never be
 complete.
+
+<a id="d-112"></a>
+
+## D-112 — Finding a component: a filter and the tiers beside the index's cards, and quick find on mod+k from every page
+
+**Date:** 2026-10-14 · **Status:** accepted · **Amends:** `playground/app/page.tsx`,
+`playground/harness/Chrome.tsx`, `playground/harness/ComponentFinder.tsx`,
+`playground/harness/QuickFind.tsx` and `playground/harness/find.ts` (new),
+`playground/app/globals.css`, `tests/visual/harness.spec.ts`, the `index`
+baselines · **Extends:** D-063 §4, D-066 §2, D-102 §2, D-104 §5
+
+Asked for "a better way to search for components", because the index was one
+huge scroll: seventy-odd cards in six tiers, and the only way to find one was
+to read down the page.
+
+### 1. The index: a filter, and the tiers in a column beside the cards
+
+Above the cards, a column holds an `InputGroup` filter and the six tiers, each
+a link to its `#tier-N` heading with its count. Typing narrows the cards and
+the counts; a tier with no match stays in the list, greyed, so the list does
+not move under the pointer. The column is pinned under the chrome while the
+cards scroll, and marks the tier being read with `aria-current="location"`.
+Enter opens the first match; `/` focuses the filter; an empty result is an
+`EmptyState` with a button that clears it. The text is kept in `?q=` by
+`replaceState`, so a filtered list can be shared, and it is read after
+hydration, so the server's page is always the whole list. Below 48rem the
+column goes above the cards and scrolls away with them.
+
+The tier headings move from `h2` to `h3`, under one `h2`, "Components". Every
+`#tier-N` anchor and every card's `/docs/<slug>` link is unchanged.
+
+The chrome publishes its pinned height as `--chrome-block-size` (zero where it
+is not pinned, D-102 §2), and both the column's `top` and the headings'
+`scroll-margin-top` clear it. Before this, a jump to `#tier-N` put the heading
+under the chrome.
+
+### 2. Quick find: the library's `CommandPalette`, on mod+k, on every page
+
+The chrome mounts a `CommandPalette` over every component, by the same matcher
+as the filter, grouped by tier; Enter opens the docs page. It draws no
+trigger. The chrome is in every baseline, and a button in it would move all of
+them for a feature the index already shows. The index's filter names the
+shortcut instead, on devices that hover. On `/components/command-palette` it
+binds no key, because that page's demo binds mod+k and its browser test
+presses it.
+
+### 3. One matcher
+
+`find.ts`: every word typed must appear in the entry's name, slug, tier, tier
+name or summary, and the registry's order is kept. There is no fuzzy ranking.
+With seventy entries, words over a short summary find what a reader means, and
+the result reads in the same order as the page.
+
+### 4. Baselines
+
+The index's layout changed, so its two baselines are deleted with
+`npm run dimensions -- --rebaseline index` for CI to author (D-066 §2). No
+other page moves: the palette renders nothing while it is closed.
