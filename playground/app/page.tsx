@@ -17,20 +17,22 @@ import {
 } from '@mod-0-dev/pixel-perfect';
 import NextLink from 'next/link';
 
+import { ComponentFinder } from '../harness/ComponentFinder';
 import { Stage } from '../harness/Stage';
-import { COMPONENTS, TIERS } from './components/registry';
+import { COMPONENTS } from './components/registry';
 
 /**
  * The front door (0.10, D-104). A Server Component: the cards are links, the
- * stage is the one client island, and the composition on it is rendered here
- * and handed to it as children.
+ * stage and the component list are the client islands, and the composition on
+ * the stage is rendered here and handed to it as children.
  *
  * It leads with the claim a screenshot cannot make — drag the stage and every
  * part answers to the box it was given — then the three places that show the
  * library's opinions rather than describe them, then every component by tier.
  * Grouped by tier because the tiers are the argument: atoms, then the only
  * components allowed to size others, then the controls that share one scale,
- * then the overlays.
+ * then the overlays. The list (harness/ComponentFinder.tsx) has a filter and
+ * the tiers beside it, because seventy-odd cards are too many to scroll for.
  */
 
 const START = [
@@ -153,31 +155,7 @@ export default function Home() {
         </ul>
       </section>
 
-      {TIERS.map((tier) => {
-        const entries = COMPONENTS.filter((entry) => entry.tier.split('.')[0] === tier.id);
-        if (entries.length === 0) return null;
-        return (
-          <section key={tier.id} className="tier" aria-labelledby={`tier-${tier.id}`}>
-            <div className="tier__head">
-              <Heading level={2} size="lg" id={`tier-${tier.id}`}>
-                <span className="tier__number">Tier {tier.id}</span> {tier.name}
-              </Heading>
-              <Text tone="muted">{tier.blurb}</Text>
-            </div>
-            <ul className="cards">
-              {entries.map((entry) => (
-                <li key={entry.slug}>
-                  <NextLink href={`/docs/${entry.slug}`} className="card">
-                    <span className="card__tier">{entry.tier}</span>
-                    <span className="card__name">{entry.name}</span>
-                    <span className="card__summary">{entry.summary}</span>
-                  </NextLink>
-                </li>
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+      <ComponentFinder />
 
       <section className="tier" aria-labelledby="foundations">
         <div className="tier__head">

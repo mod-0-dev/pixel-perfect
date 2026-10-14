@@ -620,3 +620,117 @@ body {
 .dialog-long p {
   margin: 0;
 }
+
+/*
+ * THE INDEX'S COMPONENT LIST (harness/ComponentFinder.tsx). A filter and the
+ * tiers in a column beside the cards, pinned under the chrome while the cards
+ * scroll, so the list can be narrowed or jumped through from anywhere in it.
+ * Below 48rem the column goes above the cards and scrolls away with them: a
+ * phone has no room beside them, and the filter is at the top of the list.
+ */
+.finder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-4);
+}
+
+.finder__layout {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  gap: var(--pp-space-6);
+  align-items: start;
+}
+
+.finder__side {
+  position: sticky;
+  top: calc(var(--chrome-block-size, 0px) + var(--pp-space-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-2);
+}
+
+.finder__nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.finder__jump {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr auto;
+  gap: var(--pp-space-2);
+  align-items: baseline;
+  padding: var(--pp-space-1) var(--pp-space-2);
+  border-radius: var(--pp-radius-2);
+  color: var(--pp-color-text-muted);
+  font-size: var(--pp-font-size-2);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  a.finder__jump:hover {
+    background-color: var(--pp-color-bg-sunken);
+    color: var(--pp-color-text);
+  }
+}
+
+.finder__jump[aria-current="location"] {
+  background-color: var(--pp-color-bg-sunken);
+  color: var(--pp-color-text);
+  font-weight: var(--pp-font-weight-medium);
+}
+
+.finder__jump[data-empty] {
+  opacity: 0.5;
+}
+
+.finder__number,
+.finder__count {
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-1);
+}
+
+.finder__results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pp-space-6);
+}
+
+.finder [id^="tier-"] {
+  scroll-margin-top: calc(var(--chrome-block-size, 0px) + var(--pp-space-4));
+}
+
+.quick-find__name {
+  flex: 1;
+}
+
+.quick-find__tier {
+  font-family: var(--pp-font-family-mono);
+  font-size: var(--pp-font-size-1);
+  color: var(--pp-color-text-muted);
+}
+
+@media (max-width: 48rem) {
+  .finder__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .finder__side {
+    position: static;
+  }
+
+  .finder__nav ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  }
+}
+
+/* The shortcuts, where there is a keyboard to press them on. */
+@media (hover: none) {
+  .finder__keys {
+    display: none;
+  }
+}

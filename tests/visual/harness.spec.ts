@@ -9146,6 +9146,67 @@ test.describe('Stage', () => {
 });
 
 /*
+ * Finding a component (D-112). The index's filter narrows the cards and the
+ * tier list, keeps the text in `?q=`, says when nothing matches, and opens the
+ * first match on Enter; mod+k opens quick find on any page but the
+ * CommandPalette's own, whose demo has the key.
+ */
+test.describe('Finding a component', () => {
+  test('the filter narrows the list, keeps its text in the URL, and Enter opens the first match', async ({ page }) => {
+    await page.goto('/');
+    const cards = page.locator('.finder .card');
+    const total = await cards.count();
+    expect(total).toBeGreaterThan(60);
+
+    await page.keyboard.press('/');
+    const filter = page.getByRole('searchbox', { name: 'Filter components' });
+    await expect(filter).toBeFocused();
+    await filter.fill('dialog');
+    await expect(cards).toHaveText([/Dialog/, /AlertDialog/]);
+    await expect(page.locator('#finder-status')).toHaveText(`2 of ${total} components match`);
+    await expect(page.locator('.finder__nav a')).toHaveCount(1);
+    await expect.poll(() => new URL(page.url()).searchParams.get('q')).toBe('dialog');
+
+    await filter.fill('zzz');
+    await expect(page.getByRole('heading', { name: /No component matches/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Clear the filter' }).click();
+    await expect(cards).toHaveCount(total);
+    await expect.poll(() => new URL(page.url()).searchParams.has('q')).toBe(false);
+
+    await page.goto('/?q=hierarchy');
+    await expect(cards).toHaveCount(1);
+    await page.getByRole('searchbox', { name: 'Filter components' }).press('Enter');
+    await page.waitForURL('**/docs/tree');
+  });
+
+  test('a tier in the list jumps to its heading, clear of the pinned chrome', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('.finder__nav a[href="#tier-4"]').click();
+    const heading = page.locator('#tier-4');
+    const chrome = await page.locator('.chrome').evaluate((el) => el.getBoundingClientRect().bottom);
+    await expect.poll(() => heading.evaluate((el) => el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(chrome);
+    await expect(page.locator('.finder__nav a[href="#tier-4"]')).toHaveAttribute('aria-current', 'location');
+  });
+
+  test('mod+k opens quick find on any page, and Enter opens the component', async ({ page }) => {
+    await page.goto('/components/button');
+    await page.keyboard.press('Control+k');
+    const palette = page.getByRole('dialog', { name: 'Find a component' });
+    await expect(palette).toBeVisible();
+    await page.keyboard.type('segmented');
+    await page.keyboard.press('Enter');
+    await page.waitForURL('**/docs/segmented-control');
+    await expect(palette).toBeHidden();
+
+    // The CommandPalette page's demo owns the key there.
+    await page.goto('/components/command-palette');
+    await page.keyboard.press('Control+k');
+    await expect(page.getByRole('dialog', { name: 'Commands' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Find a component' })).toHaveCount(0);
+  });
+});
+
+/*
  * The theme lab (0.12, D-103 §4): the library's generator and checks, in the
  * browser. Asserted: a typed accent is solved, proven and worn by the whole
  * page through the stylesheet the lab puts in <head>, and leaving the page
